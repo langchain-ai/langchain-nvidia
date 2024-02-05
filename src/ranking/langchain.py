@@ -73,13 +73,3 @@ class Reranker(BaseDocumentCompressor):
             doc.metadata["relevance_score"] = ranking.score
             final_results.append(doc)
         return final_results
-
-    async def acompress_documents(
-        self,
-        documents: Sequence[Document],
-        query: str,
-        callbacks: Optional[Callbacks] = None,
-    ) -> Sequence[Document]:
-        """Asynchronously run the LLM on the given prompt and input."""
-        # This is just a placeholder implementation. Replace with your actual implementation.
-        raise NotImplementedError("Asynchronous document compression is not yet implemented.")
