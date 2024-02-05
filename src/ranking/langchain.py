@@ -57,7 +57,7 @@ class Reranker(BaseDocumentCompressor):
         if len(documents) == 0:  # to avoid empty api call
             return []
         doc_list = list(documents)
-        _docs = [d.page_content.strip().replace("\n", "") for d in doc_list]
+        _docs = [d.page_content for d in doc_list]
         idx_ls, scores = self.fetch_reranking(query=query, documents=_docs, topN=3)
         final_results = []
         for idx, score in zip(idx_ls, scores):
