@@ -18,7 +18,7 @@ class Ranking(BaseModel):
 
 class Reranker(BaseDocumentCompressor):
     """
-    LangChain Document Compressor that uses the NVIDIA NeMo Retriever Reranking api.
+    LangChain Document Compressor that uses the NVIDIA NeMo Retriever Reranking API.
     """
 
     top_n: int = 5
@@ -31,6 +31,7 @@ class Reranker(BaseDocumentCompressor):
     def __init__(self, top_k: Optional[int] = None) -> None:
         super().__init__()
 
+    # todo: batching when len(documents) > endpoint's max batch size
     def _rank(self, documents: list[str], query: str) -> list[Ranking]:
         request = {
             "model": self.model,
@@ -40,9 +41,8 @@ class Reranker(BaseDocumentCompressor):
 
         url = f"{self.endpoint}/v1/ranking"
         response = requests.post(url, json=request)
-        rankings = response.json()[
-            "rankings"
-        ]  # list of {"index": int, "score": float} with length equal to passages
+        # todo: handle errors
+        rankings = response.json()["rankings"]
         return [Ranking(**ranking) for ranking in rankings[: self.top_n]]
 
     def compress_documents(
@@ -52,7 +52,7 @@ class Reranker(BaseDocumentCompressor):
         callbacks: Optional[Callbacks] = None,
     ) -> Sequence[Document]:
         """
-        Compress documents using NVIDIA's rerank Microservice API.
+        Compress documents using the NVIDIA NeMo Retriever Reranking microservice API.
 
         Args:
             documents: A sequence of documents to compress.
@@ -62,8 +62,9 @@ class Reranker(BaseDocumentCompressor):
         Returns:
             A sequence of compressed documents.
         """
-        if len(documents) == 0:  # to avoid empty api call
+        if len(documents) == 0 or self.top_n < 1:
             return []
+        # todo: consider optimization for len(documents) == 1
         doc_list = list(documents)
         _docs = [d.page_content for d in doc_list]
         rankings = self._rank(query=query, documents=_docs)
