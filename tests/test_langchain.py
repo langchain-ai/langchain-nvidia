@@ -2,8 +2,9 @@ import faker
 import pytest
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_core.documents import Document
+from requests.exceptions import ConnectionError, MissingSchema
 
-from ranking.langchain import Reranker
+from ranking.langchain import Reranker  # type: ignore
 
 
 @pytest.fixture
@@ -79,3 +80,19 @@ def test_langchain_reranker_direct_top_n_greater_len_docs(
     ranker.top_n = len(documents) * 2
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) == len(documents)
+
+
+def test_langchain_reranker_direct_endpoint_bogus(query: str, documents: list[Document]) -> None:
+    ranker = Reranker()
+    with pytest.raises(MissingSchema):
+        ranker.endpoint = "bogus"
+        ranker.compress_documents(documents=documents, query=query)
+
+
+def test_langchain_reranker_direct_endpoint_unavailable(
+    query: str, documents: list[Document]
+) -> None:
+    ranker = Reranker()
+    with pytest.raises(ConnectionError):
+        ranker.endpoint = "http://localhost:12321"
+        ranker.compress_documents(documents=documents, query=query)
