@@ -27,6 +27,7 @@ def documents(text: str, splitter: CharacterTextSplitter) -> list[Document]:
     return splitter.create_documents([text])
 
 
+@pytest.mark.requires_service
 def test_langchain_reranker_direct(query: str, documents: list[Document]) -> None:
     ranker = Reranker()
     result_docs = ranker.compress_documents(documents=documents, query=query)
@@ -57,6 +58,7 @@ def test_langchain_reranker_direct_top_n_zero(query: str, documents: list[Docume
     assert len(result_docs) == 0
 
 
+@pytest.mark.requires_service
 def test_langchain_reranker_direct_top_n_one(query: str, documents: list[Document]) -> None:
     ranker = Reranker()
     ranker.top_n = 1
@@ -64,6 +66,7 @@ def test_langchain_reranker_direct_top_n_one(query: str, documents: list[Documen
     assert len(result_docs) == 1
 
 
+@pytest.mark.requires_service
 def test_langchain_reranker_direct_top_n_equal_len_docs(
     query: str, documents: list[Document]
 ) -> None:
@@ -73,6 +76,7 @@ def test_langchain_reranker_direct_top_n_equal_len_docs(
     assert len(result_docs) == len(documents)
 
 
+@pytest.mark.requires_service
 def test_langchain_reranker_direct_top_n_greater_len_docs(
     query: str, documents: list[Document]
 ) -> None:
