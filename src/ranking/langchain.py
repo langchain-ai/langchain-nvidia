@@ -7,33 +7,43 @@ import requests
 from langchain.callbacks.manager import Callbacks
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
 from langchain_core.documents import Document
+from pydantic import BaseModel
 
-endpoint = os.environ["NVIDIA_NEMO_RERANKING_ENDPOINT"]
+
+class Ranking(BaseModel):
+    index: int
+    score: float
+    logit: Optional[float] = None
 
 
 class Reranker(BaseDocumentCompressor):
-    """Document compressor that uses `NV Rerank API`."""
+    """
+    LangChain Document Compressor that uses the NVIDIA NeMo Retriever Reranking api.
+    """
 
-    def __init__(self) -> None:
+    top_n: int = 5
+    """The max number of documents to return."""
+    model: str = "ignored"
+    """The model to use for reranking."""
+    endpoint: str = os.environ["NVIDIA_NEMO_RERANKING_ENDPOINT"]
+    """The endpoint to use for reranking."""
+
+    def __init__(self, top_k: Optional[int] = None) -> None:
         super().__init__()
 
-    def fetch_reranking(
-        self, query: str, documents: list[str], topN: int
-    ) -> tuple[list[int], list[float]]:
+    def _rank(self, documents: list[str], query: str) -> list[Ranking]:
         request = {
-            "model": "ignored",
+            "model": self.model,
             "query": {"text": query},
             "passages": [{"text": passage} for passage in documents],
         }
 
-        url = f"{endpoint}/v1/ranking"
+        url = f"{self.endpoint}/v1/ranking"
         response = requests.post(url, json=request)
         rankings = response.json()[
             "rankings"
         ]  # list of {"index": int, "score": float} with length equal to passages
-        idx = [rankings[i]["index"] for i in range(topN)]
-        score = [rankings[i]["score"] for i in range(topN)]
-        return idx, score
+        return [Ranking(**ranking) for ranking in rankings[: self.top_n]]
 
     def compress_documents(
         self,
@@ -56,11 +66,11 @@ class Reranker(BaseDocumentCompressor):
             return []
         doc_list = list(documents)
         _docs = [d.page_content for d in doc_list]
-        idx_ls, scores = self.fetch_reranking(query=query, documents=_docs, topN=3)
+        rankings = self._rank(query=query, documents=_docs)
         final_results = []
-        for idx, score in zip(idx_ls, scores):
-            doc = doc_list[idx]
-            doc.metadata["relevance_score"] = score
+        for ranking in rankings:
+            doc = doc_list[ranking.index]
+            doc.metadata["relevance_score"] = ranking.score
             final_results.append(doc)
         return final_results
 
