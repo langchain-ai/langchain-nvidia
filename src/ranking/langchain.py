@@ -8,7 +8,7 @@ from langchain.callbacks.manager import Callbacks
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
 from langchain_core.documents import Document
 
-nim_url = os.environ["NVReranker_URL"]
+endpoint = os.environ["NVIDIA_NEMO_RERANKING_ENDPOINT"]
 
 
 class Reranker(BaseDocumentCompressor):
@@ -26,15 +26,13 @@ class Reranker(BaseDocumentCompressor):
             "passages": [{"text": passage} for passage in documents],
         }
 
-        response = requests.post(nim_url, json=request)
-        # print(response.json())
+        url = f"{endpoint}/v1/ranking"
+        response = requests.post(url, json=request)
         rankings = response.json()[
             "rankings"
         ]  # list of {"index": int, "score": float} with length equal to passages
         idx = [rankings[i]["index"] for i in range(topN)]
         score = [rankings[i]["score"] for i in range(topN)]
-        # print(f"high scoring passage: {passages[rankings[0]['index']]}")
-        # print(f"low scoring passage: {passages[rankings[-1]['index']]}")
         return idx, score
 
     def compress_documents(
