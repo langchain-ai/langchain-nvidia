@@ -25,7 +25,7 @@ class Reranker(BaseDocumentCompressor):
     """The max number of documents to return."""
     model: str = "ignored"
     """The model to use for reranking."""
-    endpoint: str = os.environ["NVIDIA_NEMO_RERANKING_ENDPOINT"]
+    endpoint: str = os.environ.get("NVIDIA_NEMO_RERANKING_ENDPOINT", "http://localhost:1976")
     """The endpoint to use for reranking."""
 
     def __init__(self, top_k: Optional[int] = None) -> None:
