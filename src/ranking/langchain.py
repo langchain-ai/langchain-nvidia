@@ -41,6 +41,8 @@ class Reranker(BaseDocumentCompressor):
 
         url = f"{self.endpoint}/v1/ranking"
         response = requests.post(url, json=request)
+        if response.status_code != 200:
+            response.raise_for_status()
         # todo: handle errors
         rankings = response.json()["rankings"]
         return [Ranking(**ranking) for ranking in rankings[: self.top_n]]
