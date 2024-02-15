@@ -12,8 +12,7 @@ from pydantic import BaseModel
 
 class Ranking(BaseModel):
     index: int
-    score: float
-    logit: Optional[float] = None
+    logit: float
 
 
 class Reranker(BaseDocumentCompressor):
@@ -73,6 +72,6 @@ class Reranker(BaseDocumentCompressor):
         final_results = []
         for ranking in rankings:
             doc = doc_list[ranking.index]
-            doc.metadata["relevance_score"] = ranking.score
+            doc.metadata["relevance_score"] = ranking.logit
             final_results.append(doc)
         return final_results
