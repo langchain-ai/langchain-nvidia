@@ -22,7 +22,7 @@ class Reranker(BaseDocumentCompressor):
 
     top_n: int = 5
     """The max number of documents to return."""
-    model: str = "ignored"
+    model: str = "nv-rerank-qa-mistral-4b:1"
     """The model to use for reranking."""
     endpoint: str = os.environ.get("NVIDIA_NEMO_RERANKING_ENDPOINT", "http://localhost:1976")
     """The endpoint to use for reranking."""

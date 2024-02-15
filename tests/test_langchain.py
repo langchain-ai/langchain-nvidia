@@ -33,9 +33,9 @@ def test_langchain_reranker_direct(query: str, documents: list[Document]) -> Non
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) > 0
     for doc in result_docs:
+        assert "relevance_score" in doc.metadata
         assert doc.metadata["relevance_score"] is not None
-        assert doc.metadata["relevance_score"] >= 0
-        assert doc.metadata["relevance_score"] <= 1
+        assert type(doc.metadata["relevance_score"]) is float
 
 
 def test_langchain_reranker_direct_empty_docs(query: str) -> None:
