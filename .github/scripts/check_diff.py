@@ -1,15 +1,20 @@
 import json
 import sys
 import os
+from typing import Dict
 
-LANGCHAIN_DIRS = {
-    "libs/genai",
-    "libs/vertexai",
-}
+NVIDIA_DIRS = [
+    "libs/ai-endpoints",
+    "libs/trt",
+]
 
 if __name__ == "__main__":
     files = sys.argv[1:]
-    dirs_to_run = set()
+
+    dirs_to_run: Dict[str, set] = {
+        "lint": set(),
+        "test": set(),
+    }
 
     if len(files) == 300:
         # max diff length is 300 files - there are likely files missing
@@ -25,12 +30,30 @@ if __name__ == "__main__":
                 ".github/scripts/check_diff.py",
             )
         ):
-            dirs_to_run.update(LANGCHAIN_DIRS)
-        elif "libs/genai" in file:
-            dirs_to_run.update({"libs/genai"})
-        elif "libs/vertexai" in file:
-            dirs_to_run.update({"libs/vertexai"})
-        else:
-            pass
-    json_output = json.dumps(list(dirs_to_run))
-    print(f"dirs-to-run={json_output}")
+            # add all LANGCHAIN_DIRS for infra changes
+            dirs_to_run["extended-test"].update(NVIDIA_DIRS)
+            dirs_to_run["lint"].add(".")
+
+        if any(file.startswith(dir_) for dir_ in NVIDIA_DIRS):
+            for dir_ in NVIDIA_DIRS:
+                if file.startswith(dir_):
+                    # add that dir and all dirs after in LANGCHAIN_DIRS
+                    # for extended testing
+                    dirs_to_run["test"].add(dir_)
+        elif file.startswith("libs/"):
+            raise ValueError(
+                f"Unknown lib: {file}. check_diff.py likely needs "
+                "an update for this new library!"
+            )
+        elif any(file.startswith(p) for p in ["docs/", "templates/", "cookbook/"]):
+            dirs_to_run["lint"].add(".")
+
+    outputs = {
+        "dirs-to-lint": list(
+            dirs_to_run["lint"] | dirs_to_run["test"] | dirs_to_run["extended-test"]
+        ),
+        "dirs-to-test": list(dirs_to_run["test"] | dirs_to_run["extended-test"]),
+    }
+    for key, value in outputs.items():
+        json_output = json.dumps(value)
+        print(f"{key}={json_output}")  # noqa: T201
