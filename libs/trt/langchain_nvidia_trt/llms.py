@@ -5,7 +5,7 @@ import queue
 import random
 import time
 from functools import partial
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Union
 
 import google.protobuf.json_format
 import numpy as np
@@ -13,10 +13,18 @@ import tritonclient.grpc as grpcclient
 from langchain_core.callbacks import CallbackManagerForLLMRun
 from langchain_core.language_models import BaseLLM
 from langchain_core.outputs import Generation, GenerationChunk, LLMResult
-from langchain_core.pydantic_v1 import Field, root_validator
+from langchain_core.pydantic_v1 import Field, root_validator, PrivateAttr
 from tritonclient.grpc.service_pb2 import ModelInferResponse
 from tritonclient.utils import np_to_triton_dtype
 
+import gc
+import torch
+import tensorrt_llm
+import uuid
+from langchain_core.callbacks import CallbackManager
+from .utils import (DEFAULT_CONTEXT_WINDOW, DEFAULT_NUM_OUTPUTS, load_tokenizer, read_model_name)
+from tensorrt_llm.runtime import PYTHON_BINDINGS, ModelRunner, ModelRunnerCpp
+from tensorrt_llm.logger import logger
 
 class TritonTensorRTError(Exception):
     """Base exception for TritonTensorRT."""
@@ -405,3 +413,243 @@ class StreamingResponseGenerator(queue.Queue):
             )
             raise StopIteration()
         return val
+
+class TrtLlmAPI(BaseLLM):
+    model_path: Optional[str] = Field(
+        description="The path to the trt engine."
+    )
+    tokenizer_dir: Optional[str] = Field(
+        description="The path to the trt engine."
+    )
+    temperature: float = Field(
+        default=0.1, description="The temperature to use for sampling."
+    )
+    max_new_tokens: int = Field(
+        default=DEFAULT_NUM_OUTPUTS, description="The maximum number of tokens to generate."
+    )
+    context_window: int = Field(
+        default=DEFAULT_CONTEXT_WINDOW, description="The maximum number of context tokens for the model."
+    )
+    verbose: bool = Field(default=False, description="Whether to print verbose output.")
+
+    _model: Any = PrivateAttr()
+    _model_name = PrivateAttr()
+    _model_version = PrivateAttr()
+    _model_config: Any = PrivateAttr()
+    _tokenizer: Any = PrivateAttr()
+    _pad_id:Any = PrivateAttr()
+    _end_id: Any = PrivateAttr()
+    _max_new_tokens = PrivateAttr()
+    _max_input_tokens = PrivateAttr()
+    _sampling_config = PrivateAttr()
+    _debug_mode = PrivateAttr()
+    _add_special_tokens = PrivateAttr()
+    _verbose = PrivateAttr()
+
+    def _init_attr(
+            self,
+            model_path: Optional[str] = None,
+            tokenizer_dir: Optional[str] = None,
+            vocab_file: Optional[str] = None,
+            temperature: float = 0.1,
+            max_new_tokens: int = DEFAULT_NUM_OUTPUTS,
+            context_window: int = DEFAULT_CONTEXT_WINDOW,
+            callback_manager: Optional[CallbackManager] = None,
+            use_py_session = True,
+            add_special_tokens = False,
+            trtLlm_debug_mode = False,
+            verbose: bool = False
+    ) -> None:
+        runtime_rank = tensorrt_llm.mpi_rank()
+        self._model_name, self._model_version = read_model_name(model_path)
+        if tokenizer_dir is None:
+            logger.error(
+                "tokenizer_dir is not specified."
+            )
+
+        self._max_input_tokens=context_window
+        self._add_special_tokens=add_special_tokens
+        self._verbose = verbose
+
+        self._tokenizer, self._pad_id, self._end_id = load_tokenizer(
+            tokenizer_dir=tokenizer_dir,
+            vocab_file=vocab_file,
+            model_name=self._model_name,
+            model_version=self._model_version,
+        )
+
+        runner_cls = ModelRunner if use_py_session else ModelRunnerCpp
+        if verbose:
+            logger.info(f"Trt-llm mode debug mode: {trtLlm_debug_mode}")
+
+        runner_kwargs = dict(engine_dir=model_path,
+                             rank=runtime_rank,
+                             debug_mode=trtLlm_debug_mode,
+                             lora_ckpt_source='hf')
+
+        if not use_py_session:
+            runner_kwargs.update(free_gpu_memory_fraction = 0.5)
+
+        self._model = runner_cls.from_dir(**runner_kwargs)
+
+        self._max_new_tokens = max_new_tokens
+
+    @property
+    def _llm_type(self) -> str:
+        """Return type of LLM."""
+        return "nvidia-trt-llm-api"
+
+    def _generate(
+        self,
+        prompts: List[str],
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> LLMResult:
+        """Run the LLM on the given prompt and input."""
+        generations = []
+        for prompt in prompts:
+            text = (
+                self.complete_call(prompt, stop=stop, run_manager=run_manager, **kwargs)
+            )
+            generations.append([Generation(text=text)])
+        return LLMResult(generations=generations)
+
+    def complete_call(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> str:
+        self._init_attr(model_path=self.model_path,
+                        tokenizer_dir=self.tokenizer_dir,
+                        verbose=self.verbose,
+                        temperature=self.temperature)
+
+        if self._verbose:
+            logger.info(f"Context send to LLM \n: {prompt}")
+
+        input_text = [prompt]
+        batch_input_ids = self.parse_input(
+                                tokenizer=self._tokenizer,
+                                input_text=input_text,
+                                prompt_template=None,
+                                input_file=None,
+                                add_special_tokens=self._add_special_tokens,
+                                max_input_length=self._max_input_tokens,
+                                pad_id=self._pad_id,
+                                num_prepend_vtokens=None,
+                                model_name= self._model_name,
+                                model_version=self._model_version)
+        input_lengths = [x.size(0) for x in batch_input_ids]
+
+        if self._verbose:
+            logger.info(f"Number of token : {input_lengths[0]}")
+
+        with torch.no_grad():
+            outputs = self._model.generate(
+                batch_input_ids,
+                max_new_tokens=self._max_new_tokens,
+                max_attention_window_size=4096,
+                end_id=self._end_id,
+                pad_id=self._pad_id,
+                temperature=self.temperature,
+                top_k=1,
+                top_p=0,
+                num_beams=1,
+                length_penalty=1.0,
+                early_stopping=False,
+                repetition_penalty=1.0,
+                presence_penalty=0.0,
+                frequency_penalty=0.0,
+                stop_words_list=None,
+                bad_words_list=None,
+                lora_uids=None,
+                prompt_table_path=None,
+                prompt_tasks=None,
+                streaming=False,
+                output_sequence_lengths=True,
+                return_dict=True)
+            torch.cuda.synchronize()
+
+        output_ids = outputs['output_ids']
+        sequence_lengths = outputs['sequence_lengths']
+        output_txt, output_token_ids = self.print_output(self._tokenizer,
+                                                        output_ids,
+                                                        input_lengths,
+                                                        sequence_lengths)
+        # call garbage collected after inference
+        torch.cuda.empty_cache()
+        gc.collect()
+        return output_txt
+
+    def parse_input(self,
+                    tokenizer,
+                    input_text=None,
+                    prompt_template=None,
+                    input_file=None,
+                    add_special_tokens=False,
+                    max_input_length=4096,
+                    pad_id=None,
+                    num_prepend_vtokens=[],
+                    model_name=None,
+                    model_version=None):
+        if pad_id is None:
+            pad_id = tokenizer.pad_token_id
+
+        batch_input_ids = []
+        if input_file is None:
+            for curr_text in input_text:
+                if prompt_template is not None:
+                    curr_text = prompt_template.format(input_text=curr_text)
+                input_ids = tokenizer.encode(curr_text,
+                                             add_special_tokens=add_special_tokens,
+                                             truncation=True,
+                                             max_length=max_input_length)
+                batch_input_ids.append(input_ids)
+
+        if num_prepend_vtokens:
+            assert len(num_prepend_vtokens) == len(batch_input_ids)
+            base_vocab_size = tokenizer.vocab_size - len(
+                tokenizer.special_tokens_map.get('additional_special_tokens', []))
+            for i, length in enumerate(num_prepend_vtokens):
+                batch_input_ids[i] = list(
+                    range(base_vocab_size,
+                          base_vocab_size + length)) + batch_input_ids[i]
+
+        if model_name == 'ChatGLMForCausalLM' and model_version == 'glm':
+            for ids in batch_input_ids:
+                ids.append(tokenizer.sop_token_id)
+
+        batch_input_ids = [
+            torch.tensor(x, dtype=torch.int32) for x in batch_input_ids
+        ]
+
+        return batch_input_ids
+
+    def print_output(self,
+                     tokenizer,
+                     output_ids,
+                     input_lengths,
+                     sequence_lengths,
+                     output_csv=None,
+                     output_npy=None,
+                     context_logits=None,
+                     generation_logits=None,
+                     output_logits_npy=None):
+        output_text = ""
+        batch_size, num_beams, _ = output_ids.size()
+        if output_csv is None and output_npy is None:
+            for batch_idx in range(batch_size):
+                inputs = output_ids[batch_idx][0][:input_lengths[batch_idx]].tolist(
+                )
+                for beam in range(num_beams):
+                    output_begin = input_lengths[batch_idx]
+                    output_end = sequence_lengths[batch_idx][beam]
+                    outputs = output_ids[batch_idx][beam][
+                              output_begin:output_end].tolist()
+                    output_text = tokenizer.decode(outputs)
+
+        output_ids = output_ids.reshape((-1, output_ids.size(2)))
+        return output_text, output_ids
