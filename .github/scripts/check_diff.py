@@ -31,7 +31,6 @@ if __name__ == "__main__":
             )
         ):
             # add all LANGCHAIN_DIRS for infra changes
-            dirs_to_run["extended-test"].update(NVIDIA_DIRS)
             dirs_to_run["lint"].add(".")
 
         if any(file.startswith(dir_) for dir_ in NVIDIA_DIRS):
@@ -50,9 +49,9 @@ if __name__ == "__main__":
 
     outputs = {
         "dirs-to-lint": list(
-            dirs_to_run["lint"] | dirs_to_run["test"] | dirs_to_run["extended-test"]
+            dirs_to_run["lint"] | dirs_to_run["test"]
         ),
-        "dirs-to-test": list(dirs_to_run["test"] | dirs_to_run["extended-test"]),
+        "dirs-to-test": list(dirs_to_run["test"]),
     }
     for key, value in outputs.items():
         json_output = json.dumps(value)
