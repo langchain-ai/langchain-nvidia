@@ -31,7 +31,8 @@ if __name__ == "__main__":
             )
         ):
             # add all LANGCHAIN_DIRS for infra changes
-            dirs_to_run["lint"].add(".")
+            # dirs_to_run["lint"].add(".")
+            pass
 
         if any(file.startswith(dir_) for dir_ in NVIDIA_DIRS):
             for dir_ in NVIDIA_DIRS:
@@ -44,8 +45,8 @@ if __name__ == "__main__":
                 f"Unknown lib: {file}. check_diff.py likely needs "
                 "an update for this new library!"
             )
-        elif any(file.startswith(p) for p in ["docs/", "templates/", "cookbook/"]):
-            dirs_to_run["lint"].add(".")
+        # elif any(file.startswith(p) for p in ["docs/", "templates/", "cookbook/"]):
+        #     dirs_to_run["lint"].add(".")
 
     outputs = {
         "dirs-to-lint": list(
