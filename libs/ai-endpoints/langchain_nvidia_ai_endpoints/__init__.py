@@ -44,7 +44,6 @@ from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 from langchain_nvidia_ai_endpoints.embeddings import NVIDIAEmbeddings
 from langchain_nvidia_ai_endpoints.image_gen import ImageGenNVIDIA
 from langchain_nvidia_ai_endpoints.llm import NVIDIA
-from langchain_nvidia_ai_endpoints.tools import ServerToolsMixin
 
 __all__ = [
     "ChatNVIDIA",
@@ -52,5 +51,4 @@ __all__ = [
     "NVIDIA",
     "NVIDIAEmbeddings",
     "UsageCallbackHandler",
-    "ServerToolsMixin",
 ]

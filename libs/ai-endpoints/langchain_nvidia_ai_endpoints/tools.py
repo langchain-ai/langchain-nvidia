@@ -35,6 +35,116 @@ _BM = TypeVar("_BM", bound=BaseModel)
 ## Moved here for versioning/additional integration options.
 
 
+"""
+## Agentic Behavior
+
+```
+%pip install --upgrade --quiet langchain numexpr langchainhub
+```
+
+### Example Usage Within Conversation Chains
+
+Like any other integration, ChatNVIDIA is fine to support chat utilities like conversation buffers by default. Below, we show the [LangChain ConversationBufferMemory](https://python.langchain.com/docs/modules/memory/types/buffer) example applied to the `mixtral_8x7b` model.
+
+```
+from langchain.chains import ConversationChain
+from langchain.memory import ConversationBufferMemory
+
+chat = ChatNVIDIA(model="mixtral_8x7b", temperature=0.1, max_tokens=100, top_p=1.0)
+
+conversation = ConversationChain(llm=chat, memory=ConversationBufferMemory())
+
+messages = [
+    "Hi there!",
+    "I'm doing well! Just having a conversation with an AI.",
+    "Tell me about yourself.",
+]
+
+for message in messages:
+    conversation.invoke("Hi there!")["response"]
+```
+
+### Simple Usage With Tooled ReACT Agent
+
+You can also use some of the more powerful LLM models for agentic behavior as described in [HuggingFace's Open-source LLMs as LangChain Agents](https://huggingface.co/blog/open-source-llms-as-agents) blog.
+
+```
+from langchain import hub
+from langchain.agents import AgentExecutor, load_tools
+from langchain.agents.format_scratchpad import format_log_to_str
+from langchain.agents.output_parsers import (
+    ReActJsonSingleInputOutputParser,
+)
+from langchain.tools.render import render_text_description
+
+# setup tools
+llm = ChatNVIDIA(model="mixtral_8x7b", temperature=0.1)
+tools = load_tools(["wikipedia"], llm=llm)
+
+# setup ReAct style prompt
+prompt = hub.pull("hwchase17/react-json")
+prompt = prompt.partial(
+    tools=render_text_description(tools),
+    tool_names=", ".join([t.name for t in tools]),
+)
+
+## Add some light prompt engineering/llm guiding enforcement
+prompt[1].prompt.template += "\nThought: "
+chat_model_with_stop = llm.bind(stop=["\nObservation"])
+
+history = []
+
+def add_to_history(x, history, i=0):
+  history += [[i, x]]
+  return x
+
+# define the agent
+agent = (
+    {
+        "input": lambda x: x["input"],
+        "agent_scratchpad": lambda x: format_log_to_str(x["intermediate_steps"]),
+    }
+    | prompt
+    # | partial(add_to_history, history=history, i=1)
+    | chat_model_with_stop
+    # | partial(add_to_history, history=history, i=2)
+    | ReActJsonSingleInputOutputParser()
+    # | partial(add_to_history, history=history, i=3)
+)
+
+# instantiate AgentExecutor
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+
+agent_executor.invoke(
+    {
+        "input": "Are there any new LLM news from NVIDIA to be aware of in 2024?'"
+    }
+)
+```
+
+If an endpoint supports server-side function/tool calling (AKA the model API itself accepts a tooling message), then you can pull in the experimental `ServerToolsMixin` class as follows:
+
+```
+from langchain_nvidia_ai_endpoints import ChatNVIDIA, ServerToolsMixin
+
+class TooledChatNVIDIA(ServerToolsMixin, ChatNVIDIA):
+    pass
+
+try:
+    tools = load_tools(["wikipedia", "llm-math"], llm=llm)
+    llm = TooledChatNVIDIA(model="mixtral_8x7b")
+    tooled_llm = llm.bind_tools(tools)
+    tooled_llm.invoke("Hello world!!")
+except Exception as e:
+    print(e)
+
+llm.client.last_inputs["json"]
+```
+
+This feature is intended for experimental purposes to help users support and develop tool-calling interfaces. It's also a simple example of how to support and experiment with custom methods via Mixin incorporation.
+"""
+
+
 class ServerToolsMixin(Runnable):
     def bind_tools(
         self,
@@ -63,6 +173,25 @@ class ServerToolsMixin(Runnable):
         llm = TooledChatNVIDIA(model="mixtral_8x7b")
         tooled_llm = llm.bind_tools(tools)
         tooled_llm.invoke("Hello world!!")
+        ```
+
+        ```
+        from langchain_nvidia_ai_endpoints import ChatNVIDIA, ServerToolsMixin
+        from langchain_core.pydantic_v1 import BaseModel, Field
+
+        # Note that the docstrings here are crucial, as they will be passed along
+        # to the model along with the class name.
+        class Multiply(BaseModel):
+            "Multiply two integers together."
+            a: int = Field(..., description="First integer")
+            b: int = Field(..., description="Second integer")
+
+        class TooledChatNVIDIA(ServerToolsMixin, ChatNVIDIA):
+            pass
+
+        llm = TooledChatNVIDIA().mode("openai", model="gpt-3.5-turbo-0125")
+        llm.bind_tools([Multiply]).invoke("Multiply for me please?")
+        llm.client.last_response.json()
         ```
 
         See langchain-mistralal/openai's implementation for more documentation.
