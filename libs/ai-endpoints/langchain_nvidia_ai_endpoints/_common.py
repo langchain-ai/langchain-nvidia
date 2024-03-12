@@ -658,7 +658,7 @@ class _NVIDIAClient(BaseModel):
         if api_key:
             out.client.api_key = SecretStr(api_key)
 
-        catalog_base = "Not Implemented"
+        catalog_base = "https://integrate.api.nvidia.com/v1"
         openai_base = "https://api.openai.com/v1"  ## OpenAI Main URL
         nvcf_base = "https://api.nvcf.nvidia.com/v2/nvcf"  ## NVCF Main URL
         nvcf_infer = "{base_url}/pexec/functions/{model_id}"  ## Inference endpoints
