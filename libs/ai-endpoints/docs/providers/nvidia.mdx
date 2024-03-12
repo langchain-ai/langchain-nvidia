@@ -50,18 +50,6 @@ result = llm.invoke("Write a ballad about LangChain.")
 print(result.content)
 ```
 
-### LLM models
-
-See a [usage example](/docs/integrations/llm/nvidia_ai_endpoints).
-
-```python
-from langchain_nvidia_ai_endpoints import NVIDIA
-
-llm = NVIDIA(model="starcoder2_15b")
-result = llm.invoke("Here is my implementation of fizzbuzz:\n```python\n", stop="```")
-print(result)
-```
-
 ### Embedding models
 
 See a [usage example](/docs/integrations/text_embedding/nvidia_ai_endpoints).
