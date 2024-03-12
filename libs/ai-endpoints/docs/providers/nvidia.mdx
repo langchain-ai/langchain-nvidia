@@ -62,20 +62,6 @@ result = llm.invoke("Here is my implementation of fizzbuzz:\n```python\n", stop=
 print(result)
 ```
 
-### ImageGen models
-
-See a [usage example](/docs/integrations/llm/nvidia_ai_endpoints).
-
-```python
-from langchain_nvidia_ai_endpoints import ImageGenNVIDIA
-
-sdxl = ImageGenNVIDIA(
-    inference_steps = 100,
-    negative_prompt = "ugly,bad eyes,low-res,crooked nose, smudged, painted",
-)
-sdxl.as_pil().invoke("A picture of a big green dog, futuristic cyberpunk")
-```
-
 ### Embedding models
 
 See a [usage example](/docs/integrations/text_embedding/nvidia_ai_endpoints).
