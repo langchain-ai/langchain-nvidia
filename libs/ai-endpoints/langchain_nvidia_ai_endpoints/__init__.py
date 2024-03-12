@@ -39,7 +39,6 @@ embedding_output = embed_model.embed_query("Exploring AI capabilities.")
 ```
 """  # noqa: E501
 
-from langchain_nvidia_ai_endpoints.callbacks import UsageCallbackHandler
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 from langchain_nvidia_ai_endpoints.embeddings import NVIDIAEmbeddings
 from langchain_nvidia_ai_endpoints.image_gen import ImageGenNVIDIA
@@ -50,5 +49,4 @@ __all__ = [
     "ImageGenNVIDIA",
     "NVIDIA",
     "NVIDIAEmbeddings",
-    "UsageCallbackHandler",
 ]

@@ -16,6 +16,55 @@ logger = logging.getLogger(__name__)
 
 ## This module contains output parsers for OpenAI tools. Set here for version control
 
+"""
+### **Usage/Cost Tracking**
+
+For tracking model usage and , you can use the `get_usage_callback` context manager to track token information similar to `get_openai_callback`. Additionally, you can specify custom price mappings as necessary (`price_map` argument), or provide a custom callback manager for advanced use-cases (`callback` argument).
+
+**NOTE:** This feature is currently not supported in streaming modes, but works fine for non-streaming `invoke/ainvoke` queries.
+
+```
+from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings
+from langchain_nvidia_ai_endpoints.callbacks import get_usage_callback
+
+## Assume a price map per 1K tokens for a particular deployment plan
+price_map = {
+    "mixtral_8x7b": 0.00060,
+    "gemma_7b": 0.0002,
+    "nvolveqa_40k": 0.000016,
+}
+
+llm_large = ChatNVIDIA(model="mixtral_8x7b", temperature=0.1)
+llm_small = ChatNVIDIA(model="gemma_2b", temperature=0.1)
+embedding = NVIDIAEmbeddings(model="nvolveqa_40k")
+models = [llm_large, llm_small, embedding]
+
+with get_usage_callback(price_map=price_map) as cb:
+    ## Reset either at beginning or end. Statistics will run until cleared
+    cb.reset()
+
+    llm_large.invoke("Tell me a joke")
+    print(cb, end="\n\n")
+    # llm_large.invoke("Tell me a short joke")
+    # print(cb, end="\n\n")
+    # ## Tracking through streaming coming soon
+    # [_ for _ in llm_small.stream("Tell me a joke")]
+    # print(cb, end="\n[Should not change yet]\n\n")
+    ## Tracking for streaming supported
+    embedding.embed_query("What a nice day :D")
+    print(cb, end="\n\n")
+    # ## Sanity check. Should still be tracked fine
+    # llm_small.invoke("Tell me a long joke")
+    # print(cb, end="\n\n")
+
+## Out of scope. Will not be tracked
+llm_small.invoke("Tell me a short joke")
+print(cb, end="\n[Should not change ever]\n\n")
+cb.model_usage
+```
+"""
+
+
 DEFAULT_MODEL_COST_PER_1K_TOKENS: Dict[str, float] = {}
 
 
