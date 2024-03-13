@@ -114,6 +114,14 @@ def test_ai_endpoints_invoke(chat_model) -> None:
     assert isinstance(result.content, str)
 
 
+def test_chat_ai_endpoints_context_message(qa_model) -> None:
+    """Test wrapper with context message."""
+    chat = ChatNVIDIA(model=qa_model, max_tokens=36)
+    context_message = BaseMessage(content="Once upon a time there was a little langchainer", type="context")
+    human_message = HumanMessage(content="What was there once upon a time?")
+    response = chat([context_message, human_message])
+    assert isinstance(response, BaseMessage)
+    assert isinstance(response.content, str)
 
 
 def test_image_in_models(image_in_model) -> None:
