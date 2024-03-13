@@ -35,6 +35,13 @@ def test_chat_ai_endpoints_model() -> None:
 
 def test_chat_ai_endpoints_system_message(chat_model) -> None:
     """Test wrapper with system message."""
+    # mamba_chat only supports 'user' or 'assistant' messages -
+    #  Exception: [422] Unprocessable Entity
+    #  body -> messages -> 0 -> role
+    #    Input should be 'user' or 'assistant' (type=literal_error; expected='user' or 'assistant')
+    if chat_model == "mamba_chat":
+        pytest.skip(f"{chat_model} does not support system messages")
+
     chat = ChatNVIDIA(model=chat_model, max_tokens=36)
     system_message = SystemMessage(content="You are to chat with the user.")
     human_message = HumanMessage(content="Hello")
