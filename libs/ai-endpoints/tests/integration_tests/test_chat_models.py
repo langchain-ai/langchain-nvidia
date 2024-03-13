@@ -1,5 +1,6 @@
 """Test ChatNVIDIA chat model."""
 import pytest
+import warnings
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
@@ -99,7 +100,7 @@ def test_ai_endpoints_invoke() -> None:
 
 
 #
-# we setup an --all-models flag in conftest.py, when passed it configures chat_model to be all
+# we setup an --all-models flag in conftest.py, when passed it configures chat_model and image_in_model to be all
 # available models of type chat or image_in
 #
 # note: currently --all-models only works with the default mode because different modes may have different available models
@@ -110,3 +111,21 @@ def test_chat_models(chat_model) -> None:
     response = chat.invoke([HumanMessage(content="Hello")])
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
+
+
+def test_image_in_models(image_in_model) -> None:
+    try:
+        chat = ChatNVIDIA(model=image_in_model)
+        response = chat.invoke([
+            HumanMessage(
+                content=[
+                    {"type": "text", "text": "Describe this image:"},
+                    {"type": "image_url", "image_url": {"url": "tests/data/nvidia-picasso.jpg"}},
+                ]
+            )])
+        assert isinstance(response, BaseMessage)
+        assert isinstance(response.content, str)
+    except TimeoutError as e:
+        message = f"TimeoutError: {image_in_model} {e}"
+        warnings.warn(message)
+        pytest.skip(message)
