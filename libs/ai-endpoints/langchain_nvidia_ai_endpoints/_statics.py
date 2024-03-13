@@ -12,7 +12,7 @@ class Model(BaseModel):
 
 MODEL_SPECS = {
     "playground_smaug_72b": {"model_type": "chat"},
-    "playground_kosmos_2": {"model_type": "chat"},
+    "playground_kosmos_2": {"model_type": "image_in"},
     "playground_llama2_70b": {"model_type": "chat"},
     "playground_nvolveqa_40k": {"model_type": "embedding"},
     "playground_nemotron_qa_8b": {"model_type": "qa"},
