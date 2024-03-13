@@ -525,9 +525,19 @@ class _NVIDIAClient(BaseModel):
             values["client"] = NVEModel(**values)
         elif isinstance(values["client"], NVEModel):
             values["client"] = values["client"].__class__(**values["client"].dict())
-        elif not values.get("model"):
+        if not values.get("model"):
             values["model"] = cls._default_model
             assert values["model"], "No model given, with no default to fall back on."
+
+        # the only model that doesn't support a stream parameter is kosmos_2.
+        # to address this, we'll use the payload_fn to remove the stream parameter for kosmos_2.
+        # if a user tries to set their own payload_fn, this patch will be overwritten.
+        # todo: get kosmos_2 api updated to support stream parameter
+        if values["model"] == "kosmos_2":
+            def kosmos_patch(payload):
+                payload.pop("stream", None)
+                return payload
+            values["client"].payload_fn = kosmos_patch
 
         return values
 
