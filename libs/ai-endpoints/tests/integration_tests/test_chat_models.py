@@ -1,4 +1,6 @@
 """Test ChatNVIDIA chat model."""
+import pytest
+
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
@@ -94,3 +96,17 @@ def test_ai_endpoints_invoke() -> None:
 
     result = llm.invoke("I'm Pickle Rick", config=dict(tags=["foo"]))
     assert isinstance(result.content, str)
+
+
+#
+# we setup an --all-models flag in conftest.py, when passed it configures chat_model to be all
+# available models of type chat or image_in
+#
+# note: currently --all-models only works with the default mode because different modes may have different available models
+#
+
+def test_chat_models(chat_model) -> None:
+    chat = ChatNVIDIA(model=chat_model)
+    response = chat.invoke([HumanMessage(content="Hello")])
+    assert isinstance(response, BaseMessage)
+    assert isinstance(response.content, str)
