@@ -140,3 +140,111 @@ def test_image_in_models(image_in_model, mode) -> None:
         message = f"TimeoutError: {image_in_model} {e}"
         warnings.warn(message)
         pytest.skip(message)
+
+
+# todo: tests for parameters -
+#        bad: str - Bad words to avoid (cased)
+#        stop: str - Stop words (cased)
+
+
+# todo: max_tokens test for ainvoke, batch, abatch, stream, astream
+
+@pytest.mark.parametrize("max_tokens", [-100, 0, 2**31-1])
+def test_ai_endpoints_invoke_max_tokens_negative(chat_model, mode, max_tokens) -> None:
+    """Test invoke's max_tokens' bounds."""
+    with pytest.raises(Exception):
+        llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens).mode(**mode)
+        llm.invoke("Show me the tokens")
+        assert llm.client.last_response.status_code == 422
+
+
+def test_ai_endpoints_invoke_max_tokens_positive(chat_model, mode, max_tokens=21) -> None:
+    """Test invoke's max_tokens."""
+    llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens).mode(**mode)
+    result = llm.invoke("Show me the tokens")
+    assert isinstance(result.content, str)
+    assert "token_usage" in result.response_metadata
+    assert "completion_tokens" in result.response_metadata["token_usage"]
+    assert result.response_metadata["token_usage"]["completion_tokens"] <= max_tokens
+
+
+# todo: seed test for ainvoke, batch, abatch, stream, astream
+
+@pytest.mark.skip("seed does not consistently control determinism")
+def test_ai_endpoints_invoke_seed_default(chat_model, mode) -> None:
+    """Test invoke's seed (default)."""
+    llm0 = ChatNVIDIA(model=chat_model).mode(**mode)  # default seed should not repeat
+    result0 = llm0.invoke("What's in a seed?")
+    assert isinstance(result0.content, str)
+    llm1 = ChatNVIDIA(model=chat_model).mode(**mode)  # default seed should not repeat
+    result1 = llm1.invoke("What's in a seed?")
+    assert isinstance(result1.content, str)
+    # if this fails, consider setting a high temperature to avoid deterministic results
+    assert result0.content != result1.content
+
+
+def test_ai_endpoints_invoke_seed_negative(chat_model, mode) -> None:
+    """Test invoke's seed (negative)."""
+    with pytest.raises(Exception):
+        llm = ChatNVIDIA(model=chat_model, seed=-1000).mode(**mode)
+        result = llm.invoke("What's in a seed?")
+        assert llm.client.last_response.status_code == 422
+
+
+@pytest.mark.skip("seed does not consistently control determinism")
+def test_ai_endpoints_invoke_seed_positive(chat_model, mode, seed=413) -> None:
+    """Test invoke's seed (positive)."""
+    llm = ChatNVIDIA(model=chat_model, seed=seed).mode(**mode)
+    result0 = llm.invoke("What's in a seed?")
+    assert isinstance(result0.content, str)
+    result1 = llm.invoke("What's in a seed?")
+    assert isinstance(result1.content, str)
+    assert result0.content == result1.content
+
+
+# todo: temperature test for ainvoke, batch, abatch, stream, astream
+
+@pytest.mark.parametrize("temperature", [-0.1, 1.1])
+def test_ai_endpoints_invoke_temperature_negative(chat_model, mode, temperature) -> None:
+    """Test invoke's temperature (negative)."""
+    with pytest.raises(Exception):
+        llm = ChatNVIDIA(model=chat_model, temperature=temperature).mode(**mode)
+        result = llm.invoke("What's in a temperature?")
+        assert llm.client.last_response.status_code == 422
+
+
+@pytest.mark.skip("seed does not consistently control determinism")
+def test_ai_endpoints_invoke_temperature_positive(chat_model, mode) -> None:
+    """Test invoke's temperature (positive)."""
+    # idea is to have a fixed seed and vary temperature to get different results
+    llm0 = ChatNVIDIA(model=chat_model, seed=608, templerature=0).mode(**mode)
+    result0 = llm0.invoke("What's in a temperature?")
+    assert isinstance(result0.content, str)
+    llm1 = ChatNVIDIA(model=chat_model, seed=608, templerature=1).mode(**mode)
+    result1 = llm1.invoke("What's in a temperature?")
+    assert isinstance(result1.content, str)
+    assert result0.content != result1.content
+
+
+# todo: top_p test for ainvoke, batch, abatch, stream, astream
+
+@pytest.mark.parametrize("top_p", [-10, 0])
+def test_ai_endpoints_invoke_top_p_negative(chat_model, mode, top_p) -> None:
+    """Test invoke's top_p (negative)."""
+    with pytest.raises(Exception):
+        llm = ChatNVIDIA(model=chat_model, top_p=top_p).mode(**mode)
+        result = llm.invoke("What's in a top_p?")
+        assert llm.client.last_response.status_code == 422
+
+
+@pytest.mark.skip("seed does not consistently control determinism")
+def test_ai_endpoints_invoke_top_p_positive(chat_model, mode) -> None:
+    """Test invoke's top_p (positive)."""
+    # idea is to have a fixed seed and vary top_p to get different results
+    llm0 = ChatNVIDIA(model=chat_model, seed=608, top_p=1).mode(**mode)
+    result0 = llm0.invoke("What's in a top_p?")
+    assert isinstance(result0.content, str)
+    llm1 = ChatNVIDIA(model=chat_model, seed=608, top_p=100).mode(**mode)
+    result1 = llm1.invoke("What's in a top_p?")
+    assert isinstance(result1.content, str)
+    assert result0.content != result1.content
