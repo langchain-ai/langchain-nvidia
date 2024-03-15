@@ -43,6 +43,25 @@ MODEL_SPECS = {
 
 MODEL_SPECS.update(
     {
+        'ai-codellama-70b': {'model_type': 'chat'},
+        # 'ai-embedding-2b': {'model_type': 'embedding'},
+        'ai-fuyu-8b': {'model_type': 'image_in'},
+        'ai-gemma-7b': {'model_type': 'chat'},
+        'ai-google-deplot': {'model_type': 'image_in'},
+        'ai-llama2-70b': {'model_type': 'chat'},
+        'ai-microsoft-kosmos-2': {'model_type': 'image_in'},
+        'ai-mistral-7b-instruct-v2': {'model_type': 'chat'},
+        'ai-mixtral-8x7b-instruct': {'model_type': 'chat'},
+        'ai-neva-22b': {'model_type': 'image_in'},
+        # 'ai-reranking-4b': {'model_type': 'chat'},
+        # 'ai-sdxl-turbo': {'model_type': 'image_out'},
+        # 'ai-stable-diffusion-xl-base': {'model_type': 'iamge_out'},
+    }
+)
+
+
+MODEL_SPECS.update(
+    {
         "babbage-002": {"model_type": "completion"},
         "dall-e-2": {"model_type": "image_out"},
         "dall-e-3": {"model_type": "image_out"},
