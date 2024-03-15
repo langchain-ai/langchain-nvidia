@@ -45,7 +45,7 @@ def test_chat_ai_endpoints_system_message(chat_model, mode) -> None:
     chat = ChatNVIDIA(model=chat_model, max_tokens=36).mode(**mode)
     system_message = SystemMessage(content="You are to chat with the user.")
     human_message = HumanMessage(content="Hello")
-    response = chat([system_message, human_message])
+    response = chat.invoke([system_message, human_message])
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
 
@@ -119,7 +119,7 @@ def test_chat_ai_endpoints_context_message(qa_model, mode) -> None:
     chat = ChatNVIDIA(model=qa_model, max_tokens=36).mode(**mode)
     context_message = BaseMessage(content="Once upon a time there was a little langchainer", type="context")
     human_message = HumanMessage(content="What was there once upon a time?")
-    response = chat([context_message, human_message])
+    response = chat.invoke([context_message, human_message])
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
 
