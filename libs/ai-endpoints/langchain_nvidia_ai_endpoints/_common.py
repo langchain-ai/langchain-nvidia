@@ -49,6 +49,11 @@ class NVEModel(BaseModel):
     NOTE: Models in the playground does not currently support raw text continuation.
     """
 
+    # todo: add a validator for requests.Response (last_response attribute) and
+    #       remove arbitrary_types_allowed=True
+    class Config:
+        arbitrary_types_allowed = True
+
     ## Core defaults. These probably should not be changed
     _api_key_var = "NVIDIA_API_KEY"
     base_url: str = Field(
@@ -72,7 +77,8 @@ class NVEModel(BaseModel):
     timeout: float = Field(60, ge=0, description="Timeout for waiting on response (s)")
     interval: float = Field(0.02, ge=0, description="Interval for pulling response")
     last_inputs: dict = Field({}, description="Last inputs sent over to the server")
-    last_response: dict = Field({}, description="Last response sent from the server")
+    last_response: Response = Field(None,
+                                    description="Last response sent from the server")
     payload_fn: Callable = Field(lambda d: d, description="Function to process payload")
     headers_tmpl: dict = Field(
         ...,
