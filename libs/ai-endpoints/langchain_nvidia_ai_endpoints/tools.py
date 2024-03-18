@@ -44,7 +44,11 @@ _BM = TypeVar("_BM", bound=BaseModel)
 
 ### Example Usage Within Conversation Chains
 
-Like any other integration, ChatNVIDIA is fine to support chat utilities like conversation buffers by default. Below, we show the [LangChain ConversationBufferMemory](https://python.langchain.com/docs/modules/memory/types/buffer) example applied to the `mixtral_8x7b` model.
+Like any other integration, ChatNVIDIA is fine to support chat utilities like
+conversation buffers by default. Below, we show the
+[LangChain ConversationBufferMemory]
+(https://python.langchain.com/docs/modules/memory/types/buffer) example applied
+to the `mixtral_8x7b` model.
 
 ```
 from langchain-chains import ConversationChain
@@ -66,7 +70,9 @@ for message in messages:
 
 ### Simple Usage With Tooled ReACT Agent
 
-You can also use some of the more powerful LLM models for agentic behavior as described in [HuggingFace's Open-source LLMs as LangChain Agents](https://huggingface.co/blog/open-source-llms-as-agents) blog.
+You can also use some of the more powerful LLM models for agentic behavior as described
+in [HuggingFace's Open-source LLMs as LangChain Agents]
+(https://huggingface.co/blog/open-source-llms-as-agents) blog.
 
 ```
 from langchain- import hub
@@ -113,7 +119,8 @@ agent = (
 )
 
 # instantiate AgentExecutor
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+agent_executor = AgentExecutor(agent=agent, tools=tools,
+                               verbose=True, handle_parsing_errors=True)
 
 agent_executor.invoke(
     {
@@ -122,7 +129,9 @@ agent_executor.invoke(
 )
 ```
 
-If an endpoint supports server-side function/tool calling (AKA the model API itself accepts a tooling message), then you can pull in the experimental `ServerToolsMixin` class as follows:
+If an endpoint supports server-side function/tool calling (AKA the model API itself
+accepts a tooling message), then you can pull in the experimental `ServerToolsMixin`
+class as follows:
 
 ```
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, ServerToolsMixin
@@ -141,7 +150,9 @@ except Exception as e:
 llm.client.last_inputs["json"]
 ```
 
-This feature is intended for experimental purposes to help users support and develop tool-calling interfaces. It's also a simple example of how to support and experiment with custom methods via Mixin incorporation.
+This feature is intended for experimental purposes to help users support and develop
+tool-calling interfaces. It's also a simple example of how to support and experiment
+with custom methods via Mixin incorporation.
 """
 
 

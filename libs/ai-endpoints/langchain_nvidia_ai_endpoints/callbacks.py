@@ -19,9 +19,13 @@ logger = logging.getLogger(__name__)
 """
 ### **Usage/Cost Tracking**
 
-For tracking model usage and , you can use the `get_usage_callback` context manager to track token information similar to `get_openai_callback`. Additionally, you can specify custom price mappings as necessary (`price_map` argument), or provide a custom callback manager for advanced use-cases (`callback` argument).
+For tracking model usage and , you can use the `get_usage_callback` context manager to
+track token information similar to `get_openai_callback`. Additionally, you can specify
+custom price mappings as necessary (`price_map` argument), or provide a custom callback
+manager for advanced use-cases (`callback` argument).
 
-**NOTE:** This feature is currently not supported in streaming modes, but works fine for non-streaming `invoke/ainvoke` queries.
+**NOTE:** This feature is currently not supported in streaming modes, but works fine
+for non-streaming `invoke/ainvoke` queries.
 
 ```
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings

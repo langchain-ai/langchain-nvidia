@@ -27,14 +27,17 @@ _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun
 """
 ### Code Generation
 
-These models accept the same arguments and input structure as regular chat models, but they tend to perform better on code-genreation and structured code tasks. An example of this is `llama2_code_70b`.
+These models accept the same arguments and input structure as regular chat models, but
+they tend to perform better on code-genreation and structured code tasks. An example
+of this is `llama2_code_70b`.
 
 ```
 prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are an expert coding AI. Respond only in valid python; no narration whatsoever.",
+            "You are an expert coding AI. Respond only in valid python;
+            no narration whatsoever.",
         ),
         ("user", "{input}"),
     ]
@@ -45,7 +48,10 @@ for txt in chain.stream({"input": "How do I solve this fizz buzz problem?"}):
     print(txt, end="")
 ```
 
-In addition, the [**StarCoder2**](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/ai-foundation/models/starcoder2-15b) model also supports code generation, but subscribes to a regular completion API. For this, you should use the LLM-style `NVIDIA` class:
+In addition, the [**StarCoder2**]
+(https://catalog.ngc.nvidia.com/orgs/nvidia/teams/ai-foundation/models/starcoder2-15b)
+model also supports code generation, but subscribes to a regular completion API. For
+this, you should use the LLM-style `NVIDIA` class:
 
 ```
 from langchain_nvidia_ai_endpoints import NVIDIA

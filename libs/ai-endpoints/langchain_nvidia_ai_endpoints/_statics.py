@@ -51,8 +51,11 @@ MODEL_SPECS.update(
         'ai-google-deplot': {'model_type': 'image_in'},
         'ai-llama2-70b': {'model_type': 'chat', 'model_name': 'meta/llama2-70b'},
         'ai-microsoft-kosmos-2': {'model_type': 'image_in'},
-        'ai-mistral-7b-instruct-v2': {'model_type': 'chat', 'model_name': 'mistralai/mistral-7b-instruct-v0.2'},
-        'ai-mixtral-8x7b-instruct': {'model_type': 'chat', 'model_name': 'mistralai/mixtral-8x7b-instruct-v0.1'},
+        'ai-mistral-7b-instruct-v2':
+            {'model_type': 'chat', 'model_name': 'mistralai/mistral-7b-instruct-v0.2'},
+        'ai-mixtral-8x7b-instruct':
+            {'model_type': 'chat',
+             'model_name': 'mistralai/mixtral-8x7b-instruct-v0.1'},
         'ai-neva-22b': {'model_type': 'image_in'},
         # 'ai-reranking-4b': {'model_type': 'chat'},
         # 'ai-sdxl-turbo': {'model_type': 'image_out'},
