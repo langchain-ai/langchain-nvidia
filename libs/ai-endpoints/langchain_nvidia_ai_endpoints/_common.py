@@ -618,6 +618,12 @@ class _NVIDIAClient(BaseModel):
 
     def get_binding_model(self) -> Optional[str]:
         """Get the model to bind to the client as default payload argument"""
+        # if a model is configured with a model_name, always use that
+        # todo: move from search of available_models to a Model property
+        matches = [model for model in self.available_models if model.id == self.model]
+        if matches:
+            if matches[0].model_name:
+                return matches[0].model_name
         if self.curr_mode == "catalog":
             return f"playground_{self.model}"
         if self.curr_mode == "nvidia":

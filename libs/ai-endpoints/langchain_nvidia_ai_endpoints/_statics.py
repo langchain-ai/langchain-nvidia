@@ -6,6 +6,7 @@ from langchain_core.pydantic_v1 import BaseModel
 class Model(BaseModel):
     id: str
     model_type: Optional[str] = None
+    model_name: Optional[str] = None
     client: Optional[str] = None
     path: str
 
@@ -43,15 +44,15 @@ MODEL_SPECS = {
 
 MODEL_SPECS.update(
     {
-        'ai-codellama-70b': {'model_type': 'chat'},
+        'ai-codellama-70b': {'model_type': 'chat', 'model_name': 'meta/codellama-70b'},
         # 'ai-embedding-2b': {'model_type': 'embedding'},
         'ai-fuyu-8b': {'model_type': 'image_in'},
-        'ai-gemma-7b': {'model_type': 'chat'},
+        'ai-gemma-7b': {'model_type': 'chat', 'model_name': 'google/gemma-7b'},
         'ai-google-deplot': {'model_type': 'image_in'},
-        'ai-llama2-70b': {'model_type': 'chat'},
+        'ai-llama2-70b': {'model_type': 'chat', 'model_name': 'meta/llama2-70b'},
         'ai-microsoft-kosmos-2': {'model_type': 'image_in'},
-        'ai-mistral-7b-instruct-v2': {'model_type': 'chat'},
-        'ai-mixtral-8x7b-instruct': {'model_type': 'chat'},
+        'ai-mistral-7b-instruct-v2': {'model_type': 'chat', 'model_name': 'mistralai/mistral-7b-instruct-v0.2'},
+        'ai-mixtral-8x7b-instruct': {'model_type': 'chat', 'model_name': 'mistralai/mixtral-8x7b-instruct-v0.1'},
         'ai-neva-22b': {'model_type': 'image_in'},
         # 'ai-reranking-4b': {'model_type': 'chat'},
         # 'ai-sdxl-turbo': {'model_type': 'image_out'},

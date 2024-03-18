@@ -341,8 +341,8 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
             "stop": self.stop,
             "labels": self.labels,
         }
-        if self.get_binding_model():
-            attr_kwargs["model"] = self.get_binding_model()
+        if model_name := self.get_binding_model():
+            attr_kwargs["model"] = model_name
         attr_kwargs = {k: v for k, v in attr_kwargs.items() if v is not None}
         new_kwargs = {**attr_kwargs, **kwargs}
         return self.prep_payload(inputs=inputs, **new_kwargs)
