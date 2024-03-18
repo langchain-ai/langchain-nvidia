@@ -166,12 +166,12 @@ class NVEModel(BaseModel):
             query_res = self.query(invoke_url)
         except Exception as e:
             raise ValueError(f"Failed to query model endpoint {invoke_url}.\n{e}")
-        output: list = []
+        output = None
         if isinstance(query_res.get("functions"), list):
             output = query_res.get("functions")
         elif isinstance(query_res.get("data"), list):
             output = query_res.get("data")
-        else:
+        if type(output) is not list:
             raise ValueError(
                 f"Unexpected response when querying {invoke_url}\n{query_res}"
             )
