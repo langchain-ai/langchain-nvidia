@@ -10,6 +10,7 @@ def get_mode(config):
     return {}
 
 def pytest_addoption(parser):
+    parser.addoption("--chat-model-id", action="store", help="Run tests for a specific chat model",)
     parser.addoption("--all-models", action="store_true", help="Run tests across all models",)
     parser.addoption("--nim-endpoint", type=str, help="Run tests using NIM mode",)
 
@@ -19,7 +20,7 @@ def pytest_generate_tests(metafunc):
     available_models = ChatNVIDIA().mode(**mode).get_available_models(list_all=True, **mode)
 
     if "chat_model" in metafunc.fixturenames:
-        models = ["llama2_13b"]
+        models = [metafunc.config.getoption("chat_model_id", "llama2_13b")]
         if metafunc.config.getoption("all_models"):
             models = [model.id for model in available_models if model.model_type == "chat"]
         metafunc.parametrize("chat_model", models, ids=models)
