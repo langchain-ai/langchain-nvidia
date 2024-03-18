@@ -47,8 +47,8 @@ _BM = TypeVar("_BM", bound=BaseModel)
 Like any other integration, ChatNVIDIA is fine to support chat utilities like conversation buffers by default. Below, we show the [LangChain ConversationBufferMemory](https://python.langchain.com/docs/modules/memory/types/buffer) example applied to the `mixtral_8x7b` model.
 
 ```
-from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferMemory
+from langchain-chains import ConversationChain
+from langchain-memory import ConversationBufferMemory
 
 chat = ChatNVIDIA(model="mixtral_8x7b", temperature=0.1, max_tokens=100, top_p=1.0)
 
@@ -69,13 +69,13 @@ for message in messages:
 You can also use some of the more powerful LLM models for agentic behavior as described in [HuggingFace's Open-source LLMs as LangChain Agents](https://huggingface.co/blog/open-source-llms-as-agents) blog.
 
 ```
-from langchain import hub
-from langchain.agents import AgentExecutor, load_tools
-from langchain.agents.format_scratchpad import format_log_to_str
-from langchain.agents.output_parsers import (
+from langchain- import hub
+from langchain-agents import AgentExecutor, load_tools
+from langchain-agents.format_scratchpad import format_log_to_str
+from langchain-agents.output_parsers import (
     ReActJsonSingleInputOutputParser,
 )
-from langchain.tools.render import render_text_description
+from langchain-tools.render import render_text_description
 
 # setup tools
 llm = ChatNVIDIA(model="mixtral_8x7b", temperature=0.1)
