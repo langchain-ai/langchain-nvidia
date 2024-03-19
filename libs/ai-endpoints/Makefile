@@ -18,6 +18,12 @@ check_imports: $(shell find langchain_nvidia_ai_endpoints -name '*.py')
 integration_tests:
 	poetry run pytest tests/integration_tests
 
+setup-dev:
+	poetry install --with dev,test,test_integration,lint
+	poetry run pre-commit install
+
+run-pre-commit:
+	poetry run pre-commit run --files langchain_nvidia_ai_endpoints/** tests/** scripts/**
 
 ######################
 # LINTING AND FORMATTING
@@ -60,3 +66,5 @@ help:
 	@echo 'test                         - run unit tests'
 	@echo 'tests                        - run unit tests'
 	@echo 'test TEST_FILE=<test_file>   - run all tests in file'
+	@echo 'setup-dev                    - install development env deps'
+	@echo 'run-pre-commit               - run pre-commit checks'

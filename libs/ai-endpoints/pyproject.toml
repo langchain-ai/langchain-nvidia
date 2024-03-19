@@ -11,7 +11,7 @@ license = "MIT"
 "Source Code" = "https://github.com/langchain-ai/langchain/tree/master/libs/partners/nvidia-ai-endpoints"
 
 [tool.poetry.dependencies]
-python = ">=3.8.1,<4.0"
+python = ">=3.9,<4.0"
 langchain-core = "^0.1.5"
 aiohttp = "^3.9.1"
 pillow = ">=10.0.0,<11.0.0"
@@ -56,6 +56,7 @@ optional = true
 
 [tool.poetry.group.dev.dependencies]
 langchain-core = "^0.1.5"
+pre-commit = "^3.6.2"
 
 [tool.ruff.lint]
 select = [
@@ -95,3 +96,12 @@ markers = [
   "compile: mark placeholder test used to compile integration tests without running them",
 ]
 asyncio_mode = "auto"
+
+
+# line-length of 99? SPDX licenses headers are long.
+
+[tool.ruff]
+line-length = 99
+
+[tool.isort]
+line_length = 99
