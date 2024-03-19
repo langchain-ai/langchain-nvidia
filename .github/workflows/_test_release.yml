@@ -1,5 +1,5 @@
 name: test-release
-run-name: Test release ${{ inputs.working-directory }} by @${{ github.actor }}
+
 on:
   workflow_call:
     inputs:
@@ -7,12 +7,6 @@ on:
         required: true
         type: string
         description: "From which folder this pipeline executes"
-  workflow_dispatch:
-    inputs:
-      working-directory:
-        required: true
-        type: string
-        default: 'libs/ai-endpoints'
 
 env:
   POETRY_VERSION: "1.7.1"
