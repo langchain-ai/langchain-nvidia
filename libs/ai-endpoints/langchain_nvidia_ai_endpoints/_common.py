@@ -171,7 +171,7 @@ class NVEModel(BaseModel):
             output = query_res.get("functions")
         elif isinstance(query_res.get("data"), list):
             output = query_res.get("data")
-        if type(output) is not list:
+        if not isinstance(output, list):
             raise ValueError(
                 f"Unexpected response when querying {invoke_url}\n{query_res}"
             )
