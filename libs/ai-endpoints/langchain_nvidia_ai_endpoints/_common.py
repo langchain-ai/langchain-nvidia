@@ -77,8 +77,9 @@ class NVEModel(BaseModel):
     timeout: float = Field(60, ge=0, description="Timeout for waiting on response (s)")
     interval: float = Field(0.02, ge=0, description="Interval for pulling response")
     last_inputs: dict = Field({}, description="Last inputs sent over to the server")
-    last_response: Response = Field(None,
-                                    description="Last response sent from the server")
+    last_response: Response = Field(
+        None, description="Last response sent from the server"
+    )
     payload_fn: Callable = Field(lambda d: d, description="Function to process payload")
     headers_tmpl: dict = Field(
         ...,
@@ -541,9 +542,11 @@ class _NVIDIAClient(BaseModel):
         # overwritten.
         # todo: get kosmos_2 api updated to support stream parameter
         if values["model"] == "kosmos_2":
+
             def kosmos_patch(payload: dict) -> dict:
                 payload.pop("stream", None)
                 return payload
+
             values["client"].payload_fn = kosmos_patch
 
         return values

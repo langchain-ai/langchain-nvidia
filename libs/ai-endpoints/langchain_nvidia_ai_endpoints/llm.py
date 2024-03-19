@@ -64,6 +64,7 @@ for txt in starcoder.stream("Here is my implementation of fizzbuzz:\n```python\n
 ```
 """
 
+
 class NVIDIA(nvidia_ai_endpoints._NVIDIAClient, LLM):
     """NVIDIA chat model.
 

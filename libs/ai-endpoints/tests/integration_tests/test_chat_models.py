@@ -119,7 +119,8 @@ def test_chat_ai_endpoints_context_message(qa_model: str, mode: dict) -> None:
     """Test wrapper with context message."""
     chat = ChatNVIDIA(model=qa_model, max_tokens=36).mode(**mode)
     context_message = BaseMessage(
-        content="Once upon a time there was a little langchainer", type="context")
+        content="Once upon a time there was a little langchainer", type="context"
+    )
     human_message = HumanMessage(content="What was there once upon a time?")
     response = chat.invoke([context_message, human_message])
     assert isinstance(response, BaseMessage)
@@ -129,14 +130,19 @@ def test_chat_ai_endpoints_context_message(qa_model: str, mode: dict) -> None:
 def test_image_in_models(image_in_model: str, mode: dict) -> None:
     try:
         chat = ChatNVIDIA(model=image_in_model).mode(**mode)
-        response = chat.invoke([
-            HumanMessage(
-                content=[
-                    {"type": "text", "text": "Describe this image:"},
-                    {"type": "image_url", "image_url":
-                     {"url": "tests/data/nvidia-picasso.jpg"}},
-                ]
-            )])
+        response = chat.invoke(
+            [
+                HumanMessage(
+                    content=[
+                        {"type": "text", "text": "Describe this image:"},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": "tests/data/nvidia-picasso.jpg"},
+                        },
+                    ]
+                )
+            ]
+        )
         assert isinstance(response, BaseMessage)
         assert isinstance(response.content, str)
     except TimeoutError as e:
@@ -152,12 +158,13 @@ def test_image_in_models(image_in_model: str, mode: dict) -> None:
 
 # todo: max_tokens test for ainvoke, batch, abatch, stream, astream
 
-@pytest.mark.parametrize("max_tokens", [-100, 0, 2**31-1])
+
+@pytest.mark.parametrize("max_tokens", [-100, 0, 2**31 - 1])
 def test_ai_endpoints_invoke_max_tokens_negative(
-        chat_model: str,
-        mode: dict,
-        max_tokens: int,
-    ) -> None:
+    chat_model: str,
+    mode: dict,
+    max_tokens: int,
+) -> None:
     """Test invoke's max_tokens' bounds."""
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens).mode(**mode)
@@ -166,8 +173,8 @@ def test_ai_endpoints_invoke_max_tokens_negative(
 
 
 def test_ai_endpoints_invoke_max_tokens_positive(
-        chat_model: str, mode: dict, max_tokens: int=21
-    ) -> None:
+    chat_model: str, mode: dict, max_tokens: int = 21
+) -> None:
     """Test invoke's max_tokens."""
     llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens).mode(**mode)
     result = llm.invoke("Show me the tokens")
@@ -178,6 +185,7 @@ def test_ai_endpoints_invoke_max_tokens_positive(
 
 
 # todo: seed test for ainvoke, batch, abatch, stream, astream
+
 
 @pytest.mark.skip("seed does not consistently control determinism")
 def test_ai_endpoints_invoke_seed_default(chat_model: str, mode: dict) -> None:
@@ -202,8 +210,8 @@ def test_ai_endpoints_invoke_seed_negative(chat_model: str, mode: dict) -> None:
 
 @pytest.mark.skip("seed does not consistently control determinism")
 def test_ai_endpoints_invoke_seed_positive(
-        chat_model: str, mode: dict, seed: int=413
-    ) -> None:
+    chat_model: str, mode: dict, seed: int = 413
+) -> None:
     """Test invoke's seed (positive)."""
     llm = ChatNVIDIA(model=chat_model, seed=seed).mode(**mode)
     result0 = llm.invoke("What's in a seed?")
@@ -215,10 +223,11 @@ def test_ai_endpoints_invoke_seed_positive(
 
 # todo: temperature test for ainvoke, batch, abatch, stream, astream
 
+
 @pytest.mark.parametrize("temperature", [-0.1, 1.1])
 def test_ai_endpoints_invoke_temperature_negative(
-        chat_model: str, mode: dict, temperature: int
-    ) -> None:
+    chat_model: str, mode: dict, temperature: int
+) -> None:
     """Test invoke's temperature (negative)."""
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, temperature=temperature).mode(**mode)
@@ -241,10 +250,11 @@ def test_ai_endpoints_invoke_temperature_positive(chat_model: str, mode: dict) -
 
 # todo: top_p test for ainvoke, batch, abatch, stream, astream
 
+
 @pytest.mark.parametrize("top_p", [-10, 0])
 def test_ai_endpoints_invoke_top_p_negative(
-        chat_model: str, mode: dict, top_p: int
-    ) -> None:
+    chat_model: str, mode: dict, top_p: int
+) -> None:
     """Test invoke's top_p (negative)."""
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, top_p=top_p).mode(**mode)
