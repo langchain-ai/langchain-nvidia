@@ -11,12 +11,15 @@ import urllib.parse
 from typing import (
     Any,
     AsyncIterator,
+    Callable,
     Dict,
     Iterator,
     List,
+    Literal,
     Mapping,
     Optional,
     Sequence,
+    Type,
     Union,
 )
 
@@ -25,12 +28,27 @@ from langchain_core.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
 )
-from langchain_core.language_models.chat_models import SimpleChatModel
-from langchain_core.messages import BaseMessage, ChatMessage, ChatMessageChunk
-from langchain_core.outputs import ChatGenerationChunk
-from langchain_core.pydantic_v1 import Field
+from langchain_core.language_models import BaseChatModel, LanguageModelInput
+from langchain_core.messages import (
+    BaseMessage,
+    ChatMessage,
+    ChatMessageChunk,
+)
+from langchain_core.outputs import (
+    ChatGeneration,
+    ChatGenerationChunk,
+    ChatResult,
+)
+from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain_core.runnables import Runnable
+from langchain_core.runnables.config import run_in_executor
+from langchain_core.tools import BaseTool
 
 from langchain_nvidia_ai_endpoints import _common as nvidia_ai_endpoints
+
+_CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
+_DictOrPydanticClass = Union[Dict[str, Any], Type[BaseModel]]
+_DictOrPydantic = Union[Dict, BaseModel]
 
 try:
     import PIL.Image
@@ -42,10 +60,6 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _is_openai_parts_format(part: dict) -> bool:
-    return "type" in part
-
-
 def _is_url(s: str) -> bool:
     try:
         result = urllib.parse.urlparse(s)
@@ -53,10 +67,6 @@ def _is_url(s: str) -> bool:
     except Exception as e:
         logger.debug(f"Unable to parse URL: {e}")
         return False
-
-
-def _is_b64(s: str) -> bool:
-    return s.startswith("data:image")
 
 
 def _resize_image(img_data: bytes, max_dim: int = 1024) -> str:
@@ -91,7 +101,7 @@ def _url_to_b64_string(image_source: str) -> str:
                 ## (VK) Temporary fix. NVIDIA API has a limit of 250KB for the input.
                 encoded = _resize_image(response.content)
             return b64_template.format(b64_string=encoded)
-        elif _is_b64(image_source):
+        elif image_source.startswith("data:image"):
             return image_source
         elif os.path.exists(image_source):
             with open(image_source, "rb") as f:
@@ -105,7 +115,7 @@ def _url_to_b64_string(image_source: str) -> str:
         raise ValueError(f"Unable to process the provided image source: {e}")
 
 
-class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, SimpleChatModel):
+class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
     """NVIDIA chat model.
 
     Example:
@@ -118,6 +128,9 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, SimpleChatModel):
             response = model.invoke("Hello")
     """
 
+    _default_model: str = "mixtral_8x7b"
+    infer_endpoint: str = Field("{base_url}/chat/completions")
+    model: str = Field(_default_model, description="Name of the model to invoke")
     temperature: Optional[float] = Field(description="Sampling temperature in [0, 1]")
     max_tokens: Optional[int] = Field(description="Maximum # of tokens to generate")
     top_p: Optional[float] = Field(description="Top-p for distribution sampling")
@@ -125,11 +138,41 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, SimpleChatModel):
     bad: Optional[Sequence[str]] = Field(description="Bad words to avoid (cased)")
     stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
     labels: Optional[Dict[str, float]] = Field(description="Steering parameters")
+    streaming: bool = Field(True)
 
     @property
     def _llm_type(self) -> str:
         """Return type of NVIDIA AI Foundation Model Interface."""
         return "chat-nvidia-ai-playground"
+
+    def _generate(
+        self,
+        messages: List[BaseMessage],
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> ChatResult:
+        responses = self._call(messages, stop=stop, run_manager=run_manager, **kwargs)
+        self._set_callback_out(responses, run_manager)
+        message = ChatMessage(**self.custom_postprocess(responses))
+        generation = ChatGeneration(message=message)
+        return ChatResult(generations=[generation], llm_output=responses)
+
+    async def _agenerate(
+        self,
+        messages: List[BaseMessage],
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> ChatResult:
+        return await run_in_executor(
+            None,
+            self._generate,
+            messages,
+            stop=stop,
+            run_manager=run_manager.get_sync() if run_manager else None,
+            **kwargs,
+        )
 
     def _call(
         self,
@@ -137,18 +180,15 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, SimpleChatModel):
         stop: Optional[Sequence[str]] = None,
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
-    ) -> str:
+    ) -> dict:
         """Invoke on a single list of chat messages."""
         inputs = self.custom_preprocess(messages)
         responses = self.get_generation(inputs=inputs, stop=stop, **kwargs)
-        outputs = self.custom_postprocess(responses)
-        return outputs
+        return responses
 
-    def _get_filled_chunk(
-        self, text: str, role: Optional[str] = "assistant"
-    ) -> ChatGenerationChunk:
+    def _get_filled_chunk(self, **kwargs: Any) -> ChatGenerationChunk:
         """Fill the generation chunk."""
-        return ChatGenerationChunk(message=ChatMessageChunk(content=text, role=role))
+        return ChatGenerationChunk(message=ChatMessageChunk(**kwargs))
 
     def _stream(
         self,
@@ -160,10 +200,11 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, SimpleChatModel):
         """Allows streaming to model!"""
         inputs = self.custom_preprocess(messages)
         for response in self.get_stream(inputs=inputs, stop=stop, **kwargs):
-            chunk = self._get_filled_chunk(self.custom_postprocess(response))
-            yield chunk
+            self._set_callback_out(response, run_manager)
+            chunk = self._get_filled_chunk(**self.custom_postprocess(response))
             if run_manager:
                 run_manager.on_llm_new_token(chunk.text, chunk=chunk)
+            yield chunk
 
     async def _astream(
         self,
@@ -174,10 +215,22 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, SimpleChatModel):
     ) -> AsyncIterator[ChatGenerationChunk]:
         inputs = self.custom_preprocess(messages)
         async for response in self.get_astream(inputs=inputs, stop=stop, **kwargs):
-            chunk = self._get_filled_chunk(self.custom_postprocess(response))
-            yield chunk
+            self._set_callback_out(response, run_manager)
+            chunk = self._get_filled_chunk(**self.custom_postprocess(response))
             if run_manager:
                 await run_manager.on_llm_new_token(chunk.text, chunk=chunk)
+            yield chunk
+
+    def _set_callback_out(
+        self,
+        result: dict,
+        run_manager: Optional[_CallbackManager],
+    ) -> None:
+        result.update({"model_name": self.model})
+        if run_manager:
+            for cb in run_manager.handlers:
+                if hasattr(cb, "llm_output"):
+                    cb.llm_output = result
 
     def custom_preprocess(
         self, msg_list: Sequence[BaseMessage]
@@ -194,7 +247,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, SimpleChatModel):
                 string_array.append(part)
             elif isinstance(part, Mapping):
                 # OpenAI Format
-                if _is_openai_parts_format(part):
+                if "type" in part:
                     if part["type"] == "text":
                         string_array.append(str(part["text"]))
                     elif part["type"] == "image_url":
@@ -227,12 +280,21 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, SimpleChatModel):
             return {"role": role, "content": content}
         raise ValueError(f"Invalid message: {repr(msg)} of type {type(msg)}")
 
-    def custom_postprocess(self, msg: dict) -> str:
-        if "content" in msg:
-            return msg["content"]
-        elif "b64_json" in msg:
-            return msg["b64_json"]
-        return str(msg)
+    def custom_postprocess(self, msg: dict) -> dict:
+        kw_left = msg.copy()
+        out_dict = {
+            "role": kw_left.pop("role", "assistant") or "assistant",
+            "name": kw_left.pop("name", None),
+            "id": kw_left.pop("id", None),
+            "content": kw_left.pop("content", "") or "",
+            "additional_kwargs": {},
+            "response_metadata": {},
+        }
+        for k in list(kw_left.keys()):
+            if "tool" in k:
+                out_dict["additional_kwargs"][k] = kw_left.pop(k)
+        out_dict["response_metadata"] = kw_left
+        return out_dict
 
     ######################################################################################
     ## Core client-side interfaces
@@ -243,7 +305,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, SimpleChatModel):
         **kwargs: Any,
     ) -> dict:
         """Call to client generate method with call scope"""
-        stop = kwargs.get("stop", None)
+        stop = kwargs["stop"] = kwargs.get("stop") or self.stop
         payload = self.get_payload(inputs=inputs, stream=False, **kwargs)
         out = self.client.get_req_generation(self.model, stop=stop, payload=payload)
         return out
@@ -254,7 +316,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, SimpleChatModel):
         **kwargs: Any,
     ) -> Iterator:
         """Call to client stream method with call scope"""
-        stop = kwargs.get("stop", None)
+        stop = kwargs["stop"] = kwargs.get("stop") or self.stop
         payload = self.get_payload(inputs=inputs, stream=True, **kwargs)
         return self.client.get_req_stream(self.model, stop=stop, payload=payload)
 
@@ -264,7 +326,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, SimpleChatModel):
         **kwargs: Any,
     ) -> AsyncIterator:
         """Call to client astream methods with call scope"""
-        stop = kwargs.get("stop", None)
+        stop = kwargs["stop"] = kwargs.get("stop") or self.stop
         payload = self.get_payload(inputs=inputs, stream=True, **kwargs)
         return self.client.get_req_astream(self.model, stop=stop, payload=payload)
 
@@ -279,6 +341,8 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, SimpleChatModel):
             "stop": self.stop,
             "labels": self.labels,
         }
+        if model_name := self.get_binding_model():
+            attr_kwargs["model"] = model_name
         attr_kwargs = {k: v for k, v in attr_kwargs.items() if v is not None}
         new_kwargs = {**attr_kwargs, **kwargs}
         return self.prep_payload(inputs=inputs, **new_kwargs)
@@ -305,3 +369,42 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, SimpleChatModel):
                 raise ValueError(f"Message {msg} has no content")
             return msg
         raise ValueError(f"Unknown message received: {msg} of type {type(msg)}")
+
+    def bind_tools(
+        self,
+        tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]],
+        *,
+        tool_choice: Optional[Union[dict, str, Literal["auto", "none"], bool]] = None,
+        **kwargs: Any,
+    ) -> Runnable[LanguageModelInput, BaseMessage]:
+        raise NotImplementedError(
+            "Not implemented, awaiting server-side function-recieving API"
+            " Consider following open-source LLM agent spec techniques:"
+            " https://huggingface.co/blog/open-source-llms-as-agents"
+        )
+
+    def bind_functions(
+        self,
+        functions: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable]],
+        function_call: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Runnable[LanguageModelInput, BaseMessage]:
+        raise NotImplementedError(
+            "Not implemented, awaiting server-side function-recieving API"
+            " Consider following open-source LLM agent spec techniques:"
+            " https://huggingface.co/blog/open-source-llms-as-agents"
+        )
+
+    def with_structured_output(
+        self,
+        schema: _DictOrPydanticClass,
+        *,
+        method: Literal["function_calling", "json_mode"] = "function_calling",
+        return_type: Literal["parsed", "all"] = "parsed",
+        **kwargs: Any,
+    ) -> Runnable[LanguageModelInput, _DictOrPydantic]:
+        raise NotImplementedError(
+            "Not implemented, awaiting server-side function-recieving API"
+            " Consider following open-source LLM agent spec techniques:"
+            " https://huggingface.co/blog/open-source-llms-as-agents"
+        )
