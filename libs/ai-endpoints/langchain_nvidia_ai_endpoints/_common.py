@@ -648,7 +648,7 @@ class _NVIDIAClient(BaseModel):
         force_mode: bool = False,
         force_clone: bool = True,
         **kwargs: Any,
-    ) -> _NVIDIAClient:
+    ) -> Any:  # todo: in python 3.11+ this should be typing.Self
         """Return a client swapped to a different mode"""
         if isinstance(self, str):
             raise ValueError("Please construct the model before calling mode()")
