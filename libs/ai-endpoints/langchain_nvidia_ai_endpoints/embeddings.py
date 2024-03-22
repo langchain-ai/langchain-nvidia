@@ -1,4 +1,5 @@
 """Embeddings Components Derived from NVEModel/Embeddings"""
+
 from typing import List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
@@ -25,13 +26,27 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
         self, texts: List[str], model_type: Literal["passage", "query"]
     ) -> List[List[float]]:
         """Embed a single text entry to either passage or query type"""
+        # AI Foundation Model API -
+        #  unknown
+        # API Catalog API -
+        #  input: str | list[str]
+        #  model: str
+        #  encoding_format: str
+        #  input_type: "query" | "passage"
+        #  what about truncation?
+        payload = {
+            "input": texts,
+            "model": self.get_binding_model() or model_type,
+            "encoding_format": "float",
+        }
+        matches = [model for model in self.available_models if model.id == self.model]
+        if matches:
+            if matches[0].api_type != "aifm":
+                payload["input_type"] = model_type
+
         response = self.client.get_req(
             model_name=self.model,
-            payload={
-                "input": texts,
-                "model": self.get_binding_model() or model_type,
-                "encoding_format": "float",
-            },
+            payload=payload,
             endpoint="infer",
         )
         response.raise_for_status()
