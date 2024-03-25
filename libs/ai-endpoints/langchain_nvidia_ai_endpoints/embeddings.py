@@ -49,6 +49,11 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Input pathway for document embeddings."""
+        if not isinstance(texts, list) or not all(
+            isinstance(text, str) for text in texts
+        ):
+            raise ValueError(f"`texts` must be a list of strings, given: {repr(texts)}")
+
         # From https://catalog.ngc.nvidia.com/orgs/nvidia/teams/ai-foundation/models/nvolve-40k/documentation
         # The input must not exceed the 2048 max input characters and inputs above 512
         # model tokens will be truncated. The input array must not exceed 50 input
