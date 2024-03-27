@@ -102,6 +102,7 @@ class NVIDIARerank(BaseDocumentCompressor):
             base_url=base_url,
             model=model,
             api_key=api_key,
+            infer_path="{base_url}/ranking",
             **kwargs,
         )
         self.model = self._client.model

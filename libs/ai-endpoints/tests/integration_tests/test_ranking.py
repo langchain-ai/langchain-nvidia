@@ -39,8 +39,10 @@ def documents(text: str, splitter: CharacterTextSplitter) -> list[Document]:
     return splitter.create_documents(text)
 
 
-def test_langchain_reranker_direct(query: str, documents: list[Document]) -> None:
-    ranker = NVIDIARerank()
+def test_langchain_reranker_direct(
+    query: str, documents: list[Document], rerank_model: str, mode: dict
+) -> None:
+    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) > 0
     for doc in result_docs:
@@ -49,52 +51,54 @@ def test_langchain_reranker_direct(query: str, documents: list[Document]) -> Non
         assert isinstance(doc.metadata["relevance_score"], float)
 
 
-def test_langchain_reranker_direct_empty_docs(query: str) -> None:
-    ranker = NVIDIARerank()
+def test_langchain_reranker_direct_empty_docs(
+    query: str, rerank_model: str, mode: dict
+) -> None:
+    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     result_docs = ranker.compress_documents(documents=[], query=query)
     assert len(result_docs) == 0
 
 
 def test_langchain_reranker_direct_top_n_negative(
-    query: str, documents: list[Document]
+    query: str, documents: list[Document], rerank_model: str, mode: dict
 ) -> None:
-    ranker = NVIDIARerank()
+    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     ranker.top_n = -100
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) == 0
 
 
 def test_langchain_reranker_direct_top_n_zero(
-    query: str, documents: list[Document]
+    query: str, documents: list[Document], rerank_model: str, mode: dict
 ) -> None:
-    ranker = NVIDIARerank()
+    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     ranker.top_n = 0
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) == 0
 
 
 def test_langchain_reranker_direct_top_n_one(
-    query: str, documents: list[Document]
+    query: str, documents: list[Document], rerank_model: str, mode: dict
 ) -> None:
-    ranker = NVIDIARerank()
+    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     ranker.top_n = 1
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) == 1
 
 
 def test_langchain_reranker_direct_top_n_equal_len_docs(
-    query: str, documents: list[Document]
+    query: str, documents: list[Document], rerank_model: str, mode: dict
 ) -> None:
-    ranker = NVIDIARerank()
+    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     ranker.top_n = len(documents)
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) == len(documents)
 
 
 def test_langchain_reranker_direct_top_n_greater_len_docs(
-    query: str, documents: list[Document]
+    query: str, documents: list[Document], rerank_model: str, mode: dict
 ) -> None:
-    ranker = NVIDIARerank()
+    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     ranker.top_n = len(documents) * 2
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) == len(documents)
