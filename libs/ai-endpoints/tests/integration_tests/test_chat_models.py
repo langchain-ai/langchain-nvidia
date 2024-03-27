@@ -2,6 +2,8 @@
 import warnings
 
 import pytest
+from langchain_core.load.dump import dumps
+from langchain_core.load.load import loads
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
@@ -273,3 +275,11 @@ def test_ai_endpoints_invoke_top_p_positive(chat_model: str, mode: dict) -> None
     result1 = llm1.invoke("What's in a top_p?")
     assert isinstance(result1.content, str)
     assert result0.content != result1.content
+
+
+def test_serialize_chatnvidia() -> None:
+    model = loads(
+        dumps(ChatNVIDIA()), valid_namespaces=["langchain_nvidia_ai_endpoints"]
+    )
+    result = model.invoke("What is there if there is nothing?")
+    assert isinstance(result.content, str)
