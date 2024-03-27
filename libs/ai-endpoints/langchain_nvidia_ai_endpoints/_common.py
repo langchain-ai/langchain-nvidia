@@ -531,7 +531,7 @@ class _NVIDIAClient(BaseModel):
     client: NVEModel = Field(NVEModel)
 
     _default_model: str = ""
-    model: Optional[str] = Field(description="Name of the model to invoke")
+    model: str = Field(description="Name of the model to invoke")
     infer_endpoint: str = Field("{base_url}/chat/completions")
     curr_mode: _MODE_TYPE = Field("nvidia")
 
@@ -613,6 +613,7 @@ class _NVIDIAClient(BaseModel):
         mode: Optional[_MODE_TYPE] = None,
         client: Optional[_NVIDIAClient] = None,
         list_all: bool = False,
+        filter: Optional[str] = None,
         **kwargs: Any,
     ) -> List[Model]:
         """Map the available models that can be invoked. Callable from class"""
@@ -625,8 +626,10 @@ class _NVIDIAClient(BaseModel):
             ],
             key=lambda x: f"{x.client or 'Z'}{x.id}{cls}",
         )
+        if not filter:
+            filter = cls.__name__
         if not list_all:
-            out = [m for m in out if m.client == cls.__name__ or m.model_type is None]
+            out = [m for m in out if m.client == filter or m.model_type is None]
         return out
 
     def get_model_details(self, model: Optional[str] = None) -> dict:

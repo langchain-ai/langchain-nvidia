@@ -109,7 +109,10 @@ MODEL_SPECS.update(
             "model_name": "mistralai/mixtral-8x7b-instruct-v0.1",
         },
         "ai-neva-22b": {"model_type": "image_in"},
-        # 'ai-reranking-4b': {'model_type': 'chat'},
+        "ai-rerank-qa-mistral-4b": {
+            "model_type": "ranking",
+            "model_name": "nv-rerank-qa-mistral-4b:1",  # nvidia/rerank-qa-mistral-4b
+        },
         # 'ai-sdxl-turbo': {'model_type': 'image_out'},
         # 'ai-stable-diffusion-xl-base': {'model_type': 'iamge_out'},
         "ai-codegemma-7b": {"model_type": "chat", "model_name": "google/codegemma-7b"},
@@ -184,6 +187,7 @@ client_map = {
     "similarity": "None",
     "translation": "None",
     "tts": "None",
+    "ranking": "NVIDIARerank",
 }
 
 MODEL_SPECS = {
