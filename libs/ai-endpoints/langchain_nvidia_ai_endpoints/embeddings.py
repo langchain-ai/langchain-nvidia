@@ -8,6 +8,7 @@ from langchain_core.pydantic_v1 import Field
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints.callbacks import usage_callback_var
+
 from ._statics import MODEL_SPECS
 
 
@@ -39,14 +40,24 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
         #  user: str                           -- ignored
         #  truncate: "NONE" | "START" | "END"  -- default "NONE", error raised if
         #                                         an input is too long
-        payload = {
-            "input": texts,
-            "model": self.get_binding_model() or model_type,
-            "encoding_format": "float",
-        }
-        if self.model in MODEL_SPECS:
-            if MODEL_SPECS[self.model].get("api_type", None) != "aifm":
-                payload["input_type"] = model_type
+        # todo: remove the playground aliases
+        model_name = self.model
+        if model_name not in MODEL_SPECS:
+            if f"playground_{model_name}" in MODEL_SPECS:
+                model_name = f"playground_{model_name}"
+        if MODEL_SPECS.get(model_name, {}).get("api_type", None) == "aifm":
+            payload = {
+                "input": texts,
+                "model": model_type,
+                "encoding_format": "float",
+            }
+        else:  # default to the API Catalog API
+            payload = {
+                "input": texts,
+                "model": self.get_binding_model() or self.model,
+                "encoding_format": "float",
+                "input_type": model_type,
+            }
 
         response = self.client.get_req(
             model_name=self.model,
