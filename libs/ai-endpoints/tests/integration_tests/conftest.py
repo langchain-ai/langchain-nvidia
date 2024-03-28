@@ -17,6 +17,11 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run tests for a specific chat model",
     )
     parser.addoption(
+        "--embedding-model-id",
+        action="store",
+        help="Run tests for a specific embedding model",
+    )
+    parser.addoption(
         "--all-models",
         action="store_true",
         help="Run tests across all models",
@@ -60,6 +65,8 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
     if "embedding_model" in metafunc.fixturenames:
         models = ["nvolveqa_40k"]
+        if metafunc.config.getoption("embedding_model_id"):
+            models = [metafunc.config.getoption("embedding_model_id")]
         if metafunc.config.getoption("all_models"):
             models = [
                 model.id
