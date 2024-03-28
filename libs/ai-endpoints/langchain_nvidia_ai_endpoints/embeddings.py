@@ -28,13 +28,17 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
     ) -> List[List[float]]:
         """Embed a single text entry to either passage or query type"""
         # AI Foundation Model API -
-        #  unknown
+        #  input: str | list[str]              -- <= 2048 characters, <= 50 inputs
+        #  model: "query" | "passage"          -- type of input text to be embedded
+        #  encoding_format: "float" | "base64"
         # API Catalog API -
-        #  input: str | list[str]
-        #  model: str
-        #  encoding_format: str
+        #  input: str | list[str]              -- char limit depends on model
+        #  model: str                          -- model name, e.g. NV-Embed-QA
+        #  encoding_format: "float" | "base64"
         #  input_type: "query" | "passage"
-        #  what about truncation?
+        #  user: str                           -- ignored
+        #  truncate: "NONE" | "START" | "END"  -- default "NONE", error raised if
+        #                                         an input is too long
         payload = {
             "input": texts,
             "model": self.get_binding_model() or model_type,
