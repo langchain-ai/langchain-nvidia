@@ -8,6 +8,7 @@ from langchain_core.pydantic_v1 import Field
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints.callbacks import usage_callback_var
+from ._statics import MODEL_SPECS
 
 
 class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
@@ -39,9 +40,8 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
             "model": self.get_binding_model() or model_type,
             "encoding_format": "float",
         }
-        matches = [model for model in self.available_models if model.id == self.model]
-        if matches:
-            if matches[0].api_type != "aifm":
+        if self.model in MODEL_SPECS:
+            if MODEL_SPECS[self.model].get("api_type", None) != "aifm":
                 payload["input_type"] = model_type
 
         response = self.client.get_req(
