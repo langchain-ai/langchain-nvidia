@@ -10,7 +10,7 @@ def no_env_var(var: str) -> Generator[None, None, None]:
     try:
         if key := os.environ.get(var, None):
             del os.environ[var]
-            yield
+        yield
     finally:
         if key:
             os.environ[var] = key
