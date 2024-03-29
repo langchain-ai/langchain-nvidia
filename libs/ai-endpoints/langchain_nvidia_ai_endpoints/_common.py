@@ -115,6 +115,7 @@ class NVEModel(BaseModel):
             values.get(cls._api_key_var.lower())
             or values.get("api_key")
             or os.getenv(cls._api_key_var)
+            or ""
         )
         values["is_staging"] = "nvapi-stg-" in values["api_key"]
         if "headers_tmpl" not in values:
@@ -263,15 +264,20 @@ class NVEModel(BaseModel):
                     rd["detail"] = rd_buf
             except json.JSONDecodeError:
                 rd = response.__dict__
-                rd = rd.get("_content", rd)
-                if isinstance(rd, bytes):
-                    rd = rd.decode("utf-8")[5:]  ## remove "data:" prefix
-                try:
-                    rd = json.loads(rd)
-                except Exception:
-                    rd = {"detail": rd}
-            status = rd.get("status", "###")
-            title = rd.get("title", rd.get("error", "Unknown Error"))
+                if "status_code" in rd:
+                    if "headers" in rd and "WWW-Authenticate" in rd["headers"]:
+                        rd["detail"] = rd.get("headers").get("WWW-Authenticate")
+                        rd["detail"] = rd["detail"].replace(", ", "\n")
+                else:
+                    rd = rd.get("_content", rd)
+                    if isinstance(rd, bytes):
+                        rd = rd.decode("utf-8")[5:]  ## remove "data:" prefix
+                    try:
+                        rd = json.loads(rd)
+                    except Exception:
+                        rd = {"detail": rd}
+            status = rd.get("status") or rd.get("status_code") or "###"
+            title = rd.get("title") or rd.get("error") or rd.get("reason") or "Unknown Error"
             header = f"[{status}] {title}"
             body = ""
             if "requestId" in rd:
