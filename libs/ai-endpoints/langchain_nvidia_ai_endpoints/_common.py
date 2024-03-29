@@ -277,7 +277,12 @@ class NVEModel(BaseModel):
                     except Exception:
                         rd = {"detail": rd}
             status = rd.get("status") or rd.get("status_code") or "###"
-            title = rd.get("title") or rd.get("error") or rd.get("reason") or "Unknown Error"
+            title = (
+                rd.get("title")
+                or rd.get("error")
+                or rd.get("reason")
+                or "Unknown Error"
+            )
             header = f"[{status}] {title}"
             body = ""
             if "requestId" in rd:
