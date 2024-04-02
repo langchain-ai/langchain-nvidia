@@ -1,4 +1,5 @@
 """Test ChatNVIDIA chat model."""
+
 import warnings
 
 import pytest

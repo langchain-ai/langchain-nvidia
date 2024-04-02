@@ -6,46 +6,47 @@ from langchain_core.pydantic_v1 import BaseModel
 class Model(BaseModel):
     id: str
     model_type: Optional[str] = None
+    api_type: Optional[str] = None
     model_name: Optional[str] = None
     client: Optional[str] = None
     path: str
 
 
 MODEL_SPECS = {
-    "playground_smaug_72b": {"model_type": "chat"},
-    "playground_kosmos_2": {"model_type": "image_in"},
-    "playground_llama2_70b": {"model_type": "chat"},
-    "playground_nvolveqa_40k": {"model_type": "embedding"},
-    "playground_nemotron_qa_8b": {"model_type": "qa"},
-    "playground_gemma_7b": {"model_type": "chat"},
-    "playground_mistral_7b": {"model_type": "chat"},
-    "playground_mamba_chat": {"model_type": "chat"},
-    "playground_phi2": {"model_type": "chat"},
-    "playground_sdxl": {"model_type": "image_out"},
-    "playground_nv_llama2_rlhf_70b": {"model_type": "chat"},
-    "playground_neva_22b": {"model_type": "image_in"},
-    "playground_yi_34b": {"model_type": "chat"},
-    "playground_nemotron_steerlm_8b": {"model_type": "chat"},
-    "playground_cuopt": {"model_type": "cuopt"},
-    "playground_llama_guard": {"model_type": "classifier"},
-    "playground_starcoder2_15b": {"model_type": "completion"},
-    "playground_deplot": {"model_type": "image_in"},
-    "playground_llama2_code_70b": {"model_type": "chat"},
-    "playground_gemma_2b": {"model_type": "chat"},
-    "playground_seamless": {"model_type": "translation"},
-    "playground_mixtral_8x7b": {"model_type": "chat"},
-    "playground_fuyu_8b": {"model_type": "image_in"},
-    "playground_llama2_code_34b": {"model_type": "chat"},
-    "playground_llama2_code_13b": {"model_type": "chat"},
-    "playground_steerlm_llama_70b": {"model_type": "chat"},
-    "playground_clip": {"model_type": "similarity"},
-    "playground_llama2_13b": {"model_type": "chat"},
+    "playground_smaug_72b": {"model_type": "chat", "api_type": "aifm"},
+    "playground_kosmos_2": {"model_type": "image_in", "api_type": "aifm"},
+    "playground_llama2_70b": {"model_type": "chat", "api_type": "aifm"},
+    "playground_nvolveqa_40k": {"model_type": "embedding", "api_type": "aifm"},
+    "playground_nemotron_qa_8b": {"model_type": "qa", "api_type": "aifm"},
+    "playground_gemma_7b": {"model_type": "chat", "api_type": "aifm"},
+    "playground_mistral_7b": {"model_type": "chat", "api_type": "aifm"},
+    "playground_mamba_chat": {"model_type": "chat", "api_type": "aifm"},
+    "playground_phi2": {"model_type": "chat", "api_type": "aifm"},
+    "playground_sdxl": {"model_type": "image_out", "api_type": "aifm"},
+    "playground_nv_llama2_rlhf_70b": {"model_type": "chat", "api_type": "aifm"},
+    "playground_neva_22b": {"model_type": "image_in", "api_type": "aifm"},
+    "playground_yi_34b": {"model_type": "chat", "api_type": "aifm"},
+    "playground_nemotron_steerlm_8b": {"model_type": "chat", "api_type": "aifm"},
+    "playground_cuopt": {"model_type": "cuopt", "api_type": "aifm"},
+    "playground_llama_guard": {"model_type": "classifier", "api_type": "aifm"},
+    "playground_starcoder2_15b": {"model_type": "completion", "api_type": "aifm"},
+    "playground_deplot": {"model_type": "image_in", "api_type": "aifm"},
+    "playground_llama2_code_70b": {"model_type": "chat", "api_type": "aifm"},
+    "playground_gemma_2b": {"model_type": "chat", "api_type": "aifm"},
+    "playground_seamless": {"model_type": "translation", "api_type": "aifm"},
+    "playground_mixtral_8x7b": {"model_type": "chat", "api_type": "aifm"},
+    "playground_fuyu_8b": {"model_type": "image_in", "api_type": "aifm"},
+    "playground_llama2_code_34b": {"model_type": "chat", "api_type": "aifm"},
+    "playground_llama2_code_13b": {"model_type": "chat", "api_type": "aifm"},
+    "playground_steerlm_llama_70b": {"model_type": "chat", "api_type": "aifm"},
+    "playground_clip": {"model_type": "similarity", "api_type": "aifm"},
+    "playground_llama2_13b": {"model_type": "chat", "api_type": "aifm"},
 }
 
 MODEL_SPECS.update(
     {
         "ai-codellama-70b": {"model_type": "chat", "model_name": "meta/codellama-70b"},
-        # 'ai-embedding-2b': {'model_type': 'embedding'},
+        "ai-embed-qa-4": {"model_type": "embedding", "model_name": "NV-Embed-QA"},
         "ai-fuyu-8b": {"model_type": "image_in"},
         "ai-gemma-7b": {"model_type": "chat", "model_name": "google/gemma-7b"},
         "ai-google-deplot": {"model_type": "image_in"},

@@ -1,4 +1,5 @@
 """Embeddings Components Derived from NVEModel/Embeddings"""
+
 from typing import List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
@@ -7,6 +8,8 @@ from langchain_core.pydantic_v1 import Field
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints.callbacks import usage_callback_var
+
+from ._statics import MODEL_SPECS
 
 
 class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
@@ -25,13 +28,40 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
         self, texts: List[str], model_type: Literal["passage", "query"]
     ) -> List[List[float]]:
         """Embed a single text entry to either passage or query type"""
+        # AI Foundation Model API -
+        #  input: str | list[str]              -- <= 2048 characters, <= 50 inputs
+        #  model: "query" | "passage"          -- type of input text to be embedded
+        #  encoding_format: "float" | "base64"
+        # API Catalog API -
+        #  input: str | list[str]              -- char limit depends on model
+        #  model: str                          -- model name, e.g. NV-Embed-QA
+        #  encoding_format: "float" | "base64"
+        #  input_type: "query" | "passage"
+        #  user: str                           -- ignored
+        #  truncate: "NONE" | "START" | "END"  -- default "NONE", error raised if
+        #                                         an input is too long
+        # todo: remove the playground aliases
+        model_name = self.model
+        if model_name not in MODEL_SPECS:
+            if f"playground_{model_name}" in MODEL_SPECS:
+                model_name = f"playground_{model_name}"
+        if MODEL_SPECS.get(model_name, {}).get("api_type", None) == "aifm":
+            payload = {
+                "input": texts,
+                "model": model_type,
+                "encoding_format": "float",
+            }
+        else:  # default to the API Catalog API
+            payload = {
+                "input": texts,
+                "model": self.get_binding_model() or self.model,
+                "encoding_format": "float",
+                "input_type": model_type,
+            }
+
         response = self.client.get_req(
             model_name=self.model,
-            payload={
-                "input": texts,
-                "model": self.get_binding_model() or model_type,
-                "encoding_format": "float",
-            },
+            payload=payload,
             endpoint="infer",
         )
         response.raise_for_status()
