@@ -9,7 +9,23 @@ import requests_mock
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 
 
-def test_nvai_play_embedding_documents(embedding_model: str, mode: dict) -> None:
+def test_embed_query(embedding_model: str, mode: dict) -> None:
+    """Test NVIDIA embeddings for a single query."""
+    query = "foo bar"
+    embedding = NVIDIAEmbeddings(model=embedding_model).mode(**mode)
+    output = embedding.embed_query(query)
+    assert len(output) == 1024
+
+
+async def test_embed_query_async(embedding_model: str, mode: dict) -> None:
+    """Test NVIDIA async embeddings for a single query."""
+    query = "foo bar"
+    embedding = NVIDIAEmbeddings(model=embedding_model).mode(**mode)
+    output = await embedding.aembed_query(query)
+    assert len(output) == 1024
+
+
+def test_embed_documents_single(embedding_model: str, mode: dict) -> None:
     """Test NVIDIA embeddings for documents."""
     documents = ["foo bar"]
     embedding = NVIDIAEmbeddings(model=embedding_model).mode(**mode)
@@ -18,9 +34,7 @@ def test_nvai_play_embedding_documents(embedding_model: str, mode: dict) -> None
     assert len(output[0]) == 1024  # Assuming embedding size is 2048
 
 
-def test_nvai_play_embedding_documents_multiple(
-    embedding_model: str, mode: dict
-) -> None:
+def test_embed_documents_multiple(embedding_model: str, mode: dict) -> None:
     """Test NVIDIA embeddings for multiple documents."""
     documents = ["foo bar", "bar foo", "foo"]
     embedding = NVIDIAEmbeddings(model=embedding_model).mode(**mode)
@@ -29,27 +43,7 @@ def test_nvai_play_embedding_documents_multiple(
     assert all(len(doc) == 1024 for doc in output)
 
 
-def test_nvai_play_embedding_query(embedding_model: str, mode: dict) -> None:
-    """Test NVIDIA embeddings for a single query."""
-    query = "foo bar"
-    embedding = NVIDIAEmbeddings(model=embedding_model).mode(**mode)
-    output = embedding.embed_query(query)
-    assert len(output) == 1024
-
-
-async def test_nvai_play_embedding_async_query(
-    embedding_model: str, mode: dict
-) -> None:
-    """Test NVIDIA async embeddings for a single query."""
-    query = "foo bar"
-    embedding = NVIDIAEmbeddings(model=embedding_model).mode(**mode)
-    output = await embedding.aembed_query(query)
-    assert len(output) == 1024
-
-
-async def test_nvai_play_embedding_async_documents(
-    embedding_model: str, mode: dict
-) -> None:
+async def test_embed_documents_multiple_async(embedding_model: str, mode: dict) -> None:
     """Test NVIDIA async embeddings for multiple documents."""
     documents = ["foo bar", "bar foo", "foo"]
     embedding = NVIDIAEmbeddings(model=embedding_model).mode(**mode)
@@ -81,26 +75,34 @@ def test_embed_available_models_cached() -> None:
         assert mock.call_count == 1
 
 
-def test_embed_long_query_text(embedding_model: str, mode: dict) -> None:
+def test_embed_query_long_text(embedding_model: str, mode: dict) -> None:
     embedding = NVIDIAEmbeddings(model=embedding_model).mode(**mode)
     text = "nvidia " * 2048
     with pytest.raises(Exception):
         embedding.embed_query(text)
 
 
-def test_embed_many_texts(embedding_model: str, mode: dict) -> None:
+def test_embed_documents_batched_texts(embedding_model: str, mode: dict) -> None:
     embedding = NVIDIAEmbeddings(model=embedding_model).mode(**mode)
-    texts = ["nvidia " * 32] * 1000
+    count = NVIDIAEmbeddings._default_max_batch_size * 2 + 1
+    texts = ["nvidia " * 32] * count
     output = embedding.embed_documents(texts)
-    assert len(output) == 1000
+    assert len(output) == count
     assert all(len(embedding) == 1024 for embedding in output)
 
 
-def test_embed_mixed_long_texts(embedding_model: str, mode: dict) -> None:
+def test_embed_documents_mixed_long_texts(embedding_model: str, mode: dict) -> None:
     if embedding_model == "nvolveqa_40k":
         pytest.skip("AI Foundation Model trucates by default")
     embedding = NVIDIAEmbeddings(model=embedding_model).mode(**mode)
-    texts = ["nvidia " * 32] * 50
-    texts[42] = "nvidia " * 2048
+    count = NVIDIAEmbeddings._default_max_batch_size * 2 - 1
+    texts = ["nvidia " * 32] * count
+    texts[len(texts) // 2] = "nvidia " * 2048
     with pytest.raises(Exception):
         embedding.embed_documents(texts)
+
+
+# todo: test model_type ("passage" and embed_query,
+#                        "query" and embed_documents; compare results)
+# todo: test max_length > max length accepted by the model
+# todo: test max_batch_size > max batch size accepted by the model

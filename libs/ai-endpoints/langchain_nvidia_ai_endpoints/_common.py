@@ -293,6 +293,7 @@ class NVEModel(BaseModel):
                 body = rd.get("detail", rd)
             if str(status) == "401":
                 body += "\nPlease check or regenerate your API key."
+            # todo: raise as an HTTPError
             raise Exception(f"{header}\n{body}") from None
 
     ####################################################################################

@@ -16,10 +16,11 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
     """NVIDIA's AI Foundation Retriever Question-Answering Asymmetric Model."""
 
     _default_model: str = "ai-embed-qa-4"
+    _default_max_batch_size: int = 50
     infer_endpoint: str = Field("{base_url}/embeddings")
     model: str = Field(_default_model, description="Name of the model to invoke")
     max_length: int = Field(2048, ge=1, le=2048)
-    max_batch_size: int = Field(default=50)
+    max_batch_size: int = Field(default=_default_max_batch_size)
     model_type: Optional[Literal["passage", "query"]] = Field(
         None, description="The type of text to be embedded."
     )

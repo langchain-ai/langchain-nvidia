@@ -1,6 +1,6 @@
 import pytest
 
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings
 
 
 def get_mode(config: pytest.Config) -> dict:
@@ -40,7 +40,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     )
 
     if "chat_model" in metafunc.fixturenames:
-        models = [metafunc.config.getoption("chat_model_id", "llama2_13b")]
+        models = [metafunc.config.getoption("chat_model_id", ChatNVIDIA._default_model)]
         if metafunc.config.getoption("all_models"):
             models = [
                 model.id for model in available_models if model.model_type == "chat"
@@ -48,7 +48,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("chat_model", models, ids=models)
 
     if "image_in_model" in metafunc.fixturenames:
-        models = ["fuyu_8b"]
+        models = ["ai-fuyu-8b"]
         if metafunc.config.getoption("all_models"):
             models = [
                 model.id for model in available_models if model.model_type == "image_in"
@@ -64,7 +64,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("qa_model", models, ids=models)
 
     if "embedding_model" in metafunc.fixturenames:
-        models = ["nvolveqa_40k"]
+        models = [NVIDIAEmbeddings._default_model]
         if metafunc.config.getoption("embedding_model_id"):
             models = [metafunc.config.getoption("embedding_model_id")]
         if metafunc.config.getoption("all_models"):

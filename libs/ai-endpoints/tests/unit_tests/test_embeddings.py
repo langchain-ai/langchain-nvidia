@@ -80,3 +80,7 @@ def test_embed_documents_negative_input_list_mixed(embedding: NVIDIAEmbeddings) 
     documents = ["1", 2.0, 3]
     with pytest.raises(ValueError):
         embedding.embed_documents(documents)  # type: ignore
+
+
+# todo: test max_length (-100, 0, 100)
+# todo: test max_batch_size (-50, 0, 1, 50)
