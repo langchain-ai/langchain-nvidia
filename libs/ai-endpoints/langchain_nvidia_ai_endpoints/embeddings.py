@@ -15,7 +15,7 @@ from ._statics import MODEL_SPECS
 class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
     """NVIDIA's AI Foundation Retriever Question-Answering Asymmetric Model."""
 
-    _default_model: str = "nvolveqa_40k"
+    _default_model: str = "ai-embed-qa-4"
     infer_endpoint: str = Field("{base_url}/embeddings")
     model: str = Field(_default_model, description="Name of the model to invoke")
     max_length: int = Field(2048, ge=1, le=2048)
