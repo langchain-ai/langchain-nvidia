@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import Any, List, Optional, Sequence
 
 from langchain_core.callbacks.manager import Callbacks
@@ -24,14 +23,10 @@ class NVIDIARerank(BaseDocumentCompressor):
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
 
-    top_n: int = 5
-    """The max number of documents to return."""
+    top_n: int = Field(5, description="The number of documents to return.")
     model: str = Field(
         "ai-rerank-qa-mistral-4b", description="The model to use for reranking."
     )
-    """The model to use for reranking."""
-    _base_url: str = os.environ.get("NIM_ENDPOINT", "http://localhost:1976/v1")
-    """The endpoint to use for reranking."""
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
@@ -97,6 +92,9 @@ class NVIDIARerank(BaseDocumentCompressor):
         "https://localhost:9999/v1". Additionally, the "model" parameter must be set
         to the name of the model inside the NIM.
         """
+        # set a default base_url for nim mode
+        if not base_url and mode == "nim":
+            base_url = "http://localhost:1976/v1"
         self._client = self._client.mode(
             mode=mode,
             base_url=base_url,
