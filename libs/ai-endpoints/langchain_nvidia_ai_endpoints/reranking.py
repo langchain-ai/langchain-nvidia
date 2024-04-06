@@ -143,7 +143,6 @@ class NVIDIARerank(BaseDocumentCompressor):
         """
         if len(documents) == 0 or self.top_n < 1:
             return []
-        # todo: consider optimization for len(documents) == 1
         doc_list = list(documents)
         _docs = [d.page_content for d in doc_list]
         rankings = self._rank(query=query, documents=_docs)
