@@ -104,6 +104,12 @@ def test_langchain_reranker_direct_top_n_greater_len_docs(
     assert len(result_docs) == len(documents)
 
 
+def test_rerank_invalid_top_n(rerank_model: str, mode: dict) -> None:
+    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
+    with pytest.raises(ValueError):
+        ranker.top_n = -10
+
+
 def test_langchain_reranker_direct_endpoint_bogus(
     query: str, documents: list[Document]
 ) -> None:

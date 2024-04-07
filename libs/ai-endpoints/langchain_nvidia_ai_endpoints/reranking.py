@@ -21,9 +21,12 @@ class NVIDIARerank(BaseDocumentCompressor):
     LangChain Document Compressor that uses the NVIDIA NeMo Retriever Reranking API.
     """
 
+    class Config:
+        validate_assignment = True
+
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
 
-    top_n: int = Field(5, description="The number of documents to return.")
+    top_n: int = Field(5, ge=0, description="The number of documents to return.")
     model: str = Field(
         "ai-rerank-qa-mistral-4b", description="The model to use for reranking."
     )
