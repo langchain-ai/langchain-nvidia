@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional, Sequence
+from typing import Any, Generator, List, Optional, Sequence
 
 from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
@@ -26,9 +26,14 @@ class NVIDIARerank(BaseDocumentCompressor):
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
 
+    _default_batch_size: int = 32
+
     top_n: int = Field(5, ge=0, description="The number of documents to return.")
     model: str = Field(
         "ai-rerank-qa-mistral-4b", description="The model to use for reranking."
+    )
+    max_batch_size: int = Field(
+        _default_batch_size, ge=1, description="The maximum batch size."
     )
 
     def __init__(self, **kwargs: Any):
@@ -146,12 +151,24 @@ class NVIDIARerank(BaseDocumentCompressor):
         """
         if len(documents) == 0 or self.top_n < 1:
             return []
+
+        def batch(ls: list, size: int) -> Generator[list[Document], None, None]:
+            for i in range(0, len(ls), size):
+                yield ls[i : i + size]
+
         doc_list = list(documents)
-        _docs = [d.page_content for d in doc_list]
-        rankings = self._rank(query=query, documents=_docs)
-        final_results = []
-        for ranking in rankings:
-            doc = doc_list[ranking.index]
-            doc.metadata["relevance_score"] = ranking.logit
-            final_results.append(doc)
-        return final_results
+        results = []
+        for doc_batch in batch(doc_list, self.max_batch_size):
+            rankings = self._rank(
+                query=query, documents=[d.page_content for d in doc_batch]
+            )
+            for ranking in rankings:
+                doc = doc_batch[ranking.index]
+                doc.metadata["relevance_score"] = ranking.logit
+                results.append(doc)
+
+        # if we batched, we need to sort the results
+        if len(doc_list) > self.max_batch_size:
+            results.sort(key=lambda x: x.metadata["relevance_score"], reverse=True)
+
+        return results[: self.top_n]
