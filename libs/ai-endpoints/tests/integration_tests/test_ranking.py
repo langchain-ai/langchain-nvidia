@@ -66,8 +66,11 @@ def test_langchain_reranker_direct_empty_docs(
 def test_langchain_reranker_direct_top_n_negative(
     query: str, documents: list[Document], rerank_model: str, mode: dict
 ) -> None:
+    orig = NVIDIARerank.Config.validate_assignment
+    NVIDIARerank.Config.validate_assignment = False
     ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     ranker.top_n = -100
+    NVIDIARerank.Config.validate_assignment = orig
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) == 0
 
