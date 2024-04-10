@@ -64,6 +64,12 @@ MODEL_SPECS.update(
         # 'ai-reranking-4b': {'model_type': 'chat'},
         # 'ai-sdxl-turbo': {'model_type': 'image_out'},
         # 'ai-stable-diffusion-xl-base': {'model_type': 'iamge_out'},
+        "ai-codegemma-7b": {"model_type": "chat", "model_name": "google/codegemma-7b"},
+        "ai-recurrentgemma-2b": {
+            "model_type": "chat",
+            "model_name": "google/recurrentgemma-2b",
+        },
+        "ai-gemma-2b": {"model_type": "chat", "model_name": "google/gemma-2b"},
     }
 )
 
