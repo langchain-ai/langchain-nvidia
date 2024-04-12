@@ -41,7 +41,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         self._client = _NVIDIAClient(model=self.model)
 
     @property
-    def available_models(self) -> list[Model]:
+    def available_models(self) -> List[Model]:
         """
         Get a list of available models that work with ChatNVIDIA.
         """
@@ -115,7 +115,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         return self
 
     # todo: batching when len(documents) > endpoint's max batch size
-    def _rank(self, documents: list[str], query: str) -> List[Ranking]:
+    def _rank(self, documents: List[str], query: str) -> List[Ranking]:
         response = self._client.client.get_req(
             model_name=self.model,
             payload={
@@ -152,7 +152,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         if len(documents) == 0 or self.top_n < 1:
             return []
 
-        def batch(ls: list, size: int) -> Generator[list[Document], None, None]:
+        def batch(ls: list, size: int) -> Generator[List[Document], None, None]:
             for i in range(0, len(ls), size):
                 yield ls[i : i + size]
 

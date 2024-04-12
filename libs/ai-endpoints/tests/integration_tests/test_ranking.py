@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 import faker
 import pytest
@@ -12,7 +13,7 @@ class CharacterTextSplitter:
     def __init__(self, chunk_size: int):
         self.chunk_size = chunk_size
 
-    def create_documents(self, text: str) -> list[Document]:
+    def create_documents(self, text: str) -> List[Document]:
         words = text.split()
         chunks = []
         for i in range(0, len(words), self.chunk_size):
@@ -39,12 +40,12 @@ def splitter() -> CharacterTextSplitter:
 
 
 @pytest.fixture
-def documents(text: str, splitter: CharacterTextSplitter) -> list[Document]:
+def documents(text: str, splitter: CharacterTextSplitter) -> List[Document]:
     return splitter.create_documents(text)
 
 
 def test_langchain_reranker_direct(
-    query: str, documents: list[Document], rerank_model: str, mode: dict
+    query: str, documents: List[Document], rerank_model: str, mode: dict
 ) -> None:
     ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     result_docs = ranker.compress_documents(documents=documents, query=query)
@@ -64,7 +65,7 @@ def test_langchain_reranker_direct_empty_docs(
 
 
 def test_langchain_reranker_direct_top_n_negative(
-    query: str, documents: list[Document], rerank_model: str, mode: dict
+    query: str, documents: List[Document], rerank_model: str, mode: dict
 ) -> None:
     orig = NVIDIARerank.Config.validate_assignment
     NVIDIARerank.Config.validate_assignment = False
@@ -76,7 +77,7 @@ def test_langchain_reranker_direct_top_n_negative(
 
 
 def test_langchain_reranker_direct_top_n_zero(
-    query: str, documents: list[Document], rerank_model: str, mode: dict
+    query: str, documents: List[Document], rerank_model: str, mode: dict
 ) -> None:
     ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     ranker.top_n = 0
@@ -85,7 +86,7 @@ def test_langchain_reranker_direct_top_n_zero(
 
 
 def test_langchain_reranker_direct_top_n_one(
-    query: str, documents: list[Document], rerank_model: str, mode: dict
+    query: str, documents: List[Document], rerank_model: str, mode: dict
 ) -> None:
     ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     ranker.top_n = 1
@@ -94,7 +95,7 @@ def test_langchain_reranker_direct_top_n_one(
 
 
 def test_langchain_reranker_direct_top_n_equal_len_docs(
-    query: str, documents: list[Document], rerank_model: str, mode: dict
+    query: str, documents: List[Document], rerank_model: str, mode: dict
 ) -> None:
     ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     ranker.top_n = len(documents)
@@ -103,7 +104,7 @@ def test_langchain_reranker_direct_top_n_equal_len_docs(
 
 
 def test_langchain_reranker_direct_top_n_greater_len_docs(
-    query: str, documents: list[Document], rerank_model: str, mode: dict
+    query: str, documents: List[Document], rerank_model: str, mode: dict
 ) -> None:
     ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     ranker.top_n = len(documents) * 2
@@ -139,7 +140,7 @@ def test_rerank_invalid_top_n(rerank_model: str, mode: dict) -> None:
 )
 def test_rerank_batching(
     query: str,
-    documents: list[Document],
+    documents: List[Document],
     rerank_model: str,
     mode: dict,
     batch_size: int,
@@ -182,7 +183,7 @@ def test_rerank_batching(
 
 
 def test_langchain_reranker_direct_endpoint_bogus(
-    query: str, documents: list[Document]
+    query: str, documents: List[Document]
 ) -> None:
     ranker = NVIDIARerank().mode(mode="nim", base_url="bogus")
     with pytest.raises(MissingSchema):
@@ -190,7 +191,7 @@ def test_langchain_reranker_direct_endpoint_bogus(
 
 
 def test_langchain_reranker_direct_endpoint_unavailable(
-    query: str, documents: list[Document]
+    query: str, documents: List[Document]
 ) -> None:
     ranker = NVIDIARerank().mode(mode="nim", base_url="http://localhost:12321")
     with pytest.raises(ConnectionError):
