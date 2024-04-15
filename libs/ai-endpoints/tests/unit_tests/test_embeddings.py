@@ -1,3 +1,4 @@
+import warnings
 from typing import Generator
 
 import pytest
@@ -80,6 +81,16 @@ def test_embed_documents_negative_input_list_mixed(embedding: NVIDIAEmbeddings) 
     documents = ["1", 2.0, 3]
     with pytest.raises(ValueError):
         embedding.embed_documents(documents)  # type: ignore
+
+
+def test_embed_deprecated_nvolvqa_40k() -> None:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        NVIDIAEmbeddings()
+    with pytest.deprecated_call():
+        NVIDIAEmbeddings(model="nvolveqa_40k")
+    with pytest.deprecated_call():
+        NVIDIAEmbeddings(model="playground_nvolveqa_40k")
 
 
 # todo: test max_length (-100, 0, 100)

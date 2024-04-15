@@ -1,10 +1,11 @@
 """Embeddings Components Derived from NVEModel/Embeddings"""
 
+import warnings
 from typing import List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.outputs.llm_result import LLMResult
-from langchain_core.pydantic_v1 import Field
+from langchain_core.pydantic_v1 import Field, validator
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints.callbacks import usage_callback_var
@@ -24,6 +25,17 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
     model_type: Optional[Literal["passage", "query"]] = Field(
         None, description="The type of text to be embedded."
     )
+
+    # todo: fix _NVIDIAClient.validate_client and enable Config.validate_assignment
+    @validator("model")
+    def deprecated_nvolveqa_40k(cls, value: str) -> str:
+        """Deprecate the nvolveqa_40k model."""
+        if value == "nvolveqa_40k" or value == "playground_nvolveqa_40k":
+            warnings.warn(
+                "nvolveqa_40k is deprecated. Use ai-embed-qa-4 instead.",
+                DeprecationWarning,
+            )
+        return value
 
     def _embed(
         self, texts: List[str], model_type: Literal["passage", "query"]
