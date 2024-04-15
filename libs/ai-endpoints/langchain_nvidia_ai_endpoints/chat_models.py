@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 import urllib.parse
+import warnings
 from typing import (
     Any,
     AsyncIterator,
@@ -39,12 +40,13 @@ from langchain_core.outputs import (
     ChatGenerationChunk,
     ChatResult,
 )
-from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain_core.pydantic_v1 import BaseModel, Field, validator
 from langchain_core.runnables import Runnable
 from langchain_core.runnables.config import run_in_executor
 from langchain_core.tools import BaseTool
 
 from langchain_nvidia_ai_endpoints import _common as nvidia_ai_endpoints
+from langchain_nvidia_ai_endpoints._statics import MODEL_SPECS
 
 _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
 _DictOrPydanticClass = Union[Dict[str, Any], Type[BaseModel]]
@@ -139,6 +141,20 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
     stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
     labels: Optional[Dict[str, float]] = Field(description="Steering parameters")
     streaming: bool = Field(True)
+
+    @validator("model")
+    def aifm_deprecated(cls, value: str) -> str:
+        """All AI Foundataion Models are deprecate, use API Catalog models instead."""
+        for model in [value, f"playground_{value}"]:
+            if model in MODEL_SPECS and MODEL_SPECS[model].get("api_type") == "aifm":
+                alternative = MODEL_SPECS[model].get(
+                    "alternative", ChatNVIDIA._default_model
+                )
+                warnings.warn(
+                    f"{value} is deprecated. Try {alternative} instead.",
+                    DeprecationWarning,
+                )
+        return value
 
     @property
     def _llm_type(self) -> str:
