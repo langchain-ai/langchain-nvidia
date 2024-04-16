@@ -27,11 +27,11 @@ class NVIDIARerank(BaseDocumentCompressor):
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
 
     _default_batch_size: int = 32
+    _default_model: str = "ai-rerank-qa-mistral-4b"
+    _default_model_name: str = "nv-rerank-qa-mistral-4b:1"
 
     top_n: int = Field(5, ge=0, description="The number of documents to return.")
-    model: str = Field(
-        "ai-rerank-qa-mistral-4b", description="The model to use for reranking."
-    )
+    model: str = Field(_default_model, description="The model to use for reranking.")
     max_batch_size: int = Field(
         _default_batch_size, ge=1, description="The maximum batch size."
     )
@@ -56,12 +56,25 @@ class NVIDIARerank(BaseDocumentCompressor):
     @property
     def available_models(self) -> List[Model]:
         """
-        Get a list of available models that work with ChatNVIDIA.
+        Get a list of available models that work with NVIDIARerank.
         """
-        return self._client.get_available_models(
-            client=self._client,
-            filter=self.__class__.__name__,
-        )
+        if self._client.curr_mode in ["nim", "open"]:
+            # local NIM supports a single model and no /models endpoint
+            models = [
+                Model(
+                    id=NVIDIARerank._default_model,
+                    model_name=NVIDIARerank._default_model_name,
+                    model_type="ranking",
+                    client="NVIDIARerank",
+                    path="magic",
+                )
+            ]
+        else:
+            models = self._client.get_available_models(
+                client=self._client,
+                filter=self.__class__.__name__,
+            )
+        return models
 
     @classmethod
     def get_available_models(
@@ -71,7 +84,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         **kwargs: Any,
     ) -> List[Model]:
         """
-        Get a list of available models. These models will work with the ChatNVIDIA
+        Get a list of available models. These models will work with the NVIDIARerank
         interface.
 
         Use the mode parameter to specify the mode to use. See the docs for mode()
@@ -81,13 +94,18 @@ class NVIDIARerank(BaseDocumentCompressor):
         chat models, by setting the list_all parameter to True.
         """
         self = cls(**kwargs).mode(mode=mode, **kwargs)
-        return self._client.get_available_models(
-            mode=mode,
-            list_all=list_all,
-            client=self._client,
-            filter=cls.__name__,
-            **kwargs,
-        )
+        if mode in ["nim", "open"]:
+            # ignoring list_all because there is one
+            models = self.available_models
+        else:
+            models = self._client.get_available_models(
+                mode=mode,
+                list_all=list_all,
+                client=self._client,
+                filter=cls.__name__,
+                **kwargs,
+            )
+        return models
 
     def mode(
         self,
