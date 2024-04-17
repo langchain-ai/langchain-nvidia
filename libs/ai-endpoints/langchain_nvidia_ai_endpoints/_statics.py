@@ -118,6 +118,14 @@ MODEL_SPECS.update(
             "model_name": "google/recurrentgemma-2b",
         },
         "ai-gemma-2b": {"model_type": "chat", "model_name": "google/gemma-2b"},
+        "ai-mistral-large": {
+            "model_type": "chat",
+            "model_name": "mistralai/mistral-large",
+        },
+        "ai-mixtral-8x22b": {
+            "model_type": "completion",
+            "model_name": "mistralai/mixtral-8x22b-v0.1",
+        },
     }
 )
 
