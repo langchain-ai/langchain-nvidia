@@ -126,6 +126,15 @@ MODEL_SPECS.update(
             "model_type": "completion",
             "model_name": "mistralai/mixtral-8x22b-v0.1",
         },
+        "ai-mixtral-8x22b-instruct": {
+            "model_type": "chat",
+            "model_name": "mistralai/mixtral-8x22b-instruct-v0.1",
+        },
+        "ai-llama3-8b": {"model_type": "chat", "model_name": "meta/llama3-8b"},
+        "ai-llama3-70b": {
+            "model_type": "chat",
+            "model_name": "meta/llama3-70b",
+        },
     }
 )
 
