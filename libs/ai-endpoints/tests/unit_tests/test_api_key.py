@@ -1,7 +1,7 @@
 import inspect
 import os
 from contextlib import contextmanager
-from typing import Generator
+from typing import Any, Generator
 
 import pytest
 
@@ -39,12 +39,17 @@ def test_create_with_api_key(cls: type, param: str) -> None:
 
 @pytest.mark.parametrize("cls", public_classes)
 def test_api_key_priority(cls: type) -> None:
+    # ChatNVIDIA and NVIDIAEmbeddings currently expose a client attribute
+    def get_api_key(instance: Any) -> str:
+        if isinstance(instance, langchain_nvidia_ai_endpoints.ChatNVIDIA) or isinstance(
+            instance, langchain_nvidia_ai_endpoints.NVIDIAEmbeddings
+        ):
+            return instance.client.api_key.get_secret_value()
+        return instance._client.client.api_key.get_secret_value()
+
     with no_env_var("NVIDIA_API_KEY"):
         os.environ["NVIDIA_API_KEY"] = "ENV"
-        assert cls().client.api_key.get_secret_value() == "ENV"
-        assert cls(nvidia_api_key="PARAM").client.api_key.get_secret_value() == "PARAM"
-        assert cls(api_key="PARAM").client.api_key.get_secret_value() == "PARAM"
-        assert (
-            cls(api_key="LOW", nvidia_api_key="HIGH").client.api_key.get_secret_value()
-            == "HIGH"
-        )
+        assert get_api_key(cls()) == "ENV"
+        assert get_api_key(cls(nvidia_api_key="PARAM")) == "PARAM"
+        assert get_api_key(cls(api_key="PARAM")) == "PARAM"
+        assert get_api_key(cls(api_key="LOW", nvidia_api_key="HIGH")) == "HIGH"

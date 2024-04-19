@@ -37,8 +37,21 @@ class NVIDIARerank(BaseDocumentCompressor):
     )
 
     def __init__(self, **kwargs: Any):
+        """
+        Create a new NVIDIARerank document compressor.
+
+        Unless you plan to use the "nim" mode, you need to provide an API key. Your
+        options are -
+         0. Pass the key as the nvidia_api_key parameter.
+         1. Pass the key as the api_key parameter.
+         2. Set the NVIDIA_API_KEY environment variable, recommended.
+        Precedence is in the order listed above.
+        """
         super().__init__(**kwargs)
-        self._client = _NVIDIAClient(model=self.model)
+        self._client = _NVIDIAClient(
+            model=self.model,
+            api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
+        )
 
     @property
     def available_models(self) -> List[Model]:
