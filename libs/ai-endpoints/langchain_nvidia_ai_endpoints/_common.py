@@ -39,6 +39,10 @@ logger = logging.getLogger(__name__)
 _MODE_TYPE = Literal["catalog", "nvidia", "nim", "open", "openai"]
 
 
+def default_payload_fn(payload: dict) -> dict:
+    return payload
+
+
 class NVEModel(BaseModel):
 
     """
@@ -80,7 +84,9 @@ class NVEModel(BaseModel):
     last_response: Response = Field(
         None, description="Last response sent from the server"
     )
-    payload_fn: Callable = Field(lambda d: d, description="Function to process payload")
+    payload_fn: Callable = Field(
+        default_payload_fn, description="Function to process payload"
+    )
     headers_tmpl: dict = Field(
         ...,
         description="Headers template for API calls."

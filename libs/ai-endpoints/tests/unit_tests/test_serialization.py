@@ -1,7 +1,9 @@
+import pickle
+
 from langchain_core.load.dump import dumps
 from langchain_core.load.load import loads
 
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings
 
 
 def test_serialize_chatnvidia() -> None:
@@ -14,3 +16,11 @@ def test_serialize_chatnvidia() -> None:
     )
     assert x == y
     assert isinstance(y, ChatNVIDIA)
+
+
+def test_pickle_embeddings() -> None:
+    x = NVIDIAEmbeddings()
+    y = pickle.loads(pickle.dumps(x))
+    assert x.model == y.model
+    assert x.max_batch_size == y.max_batch_size
+    assert isinstance(y, NVIDIAEmbeddings)
