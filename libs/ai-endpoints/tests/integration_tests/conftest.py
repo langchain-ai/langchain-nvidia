@@ -1,6 +1,10 @@
+import warnings
+from typing import List
+
 import pytest
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings
+from langchain_nvidia_ai_endpoints._common import Model
 
 
 def get_mode(config: pytest.Config) -> dict:
@@ -22,6 +26,11 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run tests for a specific embedding model",
     )
     parser.addoption(
+        "--rerank-model-id",
+        action="store",
+        help="Run tests for a specific rerank model",
+    )
+    parser.addoption(
         "--all-models",
         action="store_true",
         help="Run tests across all models",
@@ -35,23 +44,42 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     mode = get_mode(metafunc.config)
-    available_models = (
-        ChatNVIDIA().mode(**mode).get_available_models(list_all=True, **mode)
-    )
+
+    def get_all_models() -> List[Model]:
+        return ChatNVIDIA().mode(**mode).get_available_models(list_all=True, **mode)
 
     if "chat_model" in metafunc.fixturenames:
         models = [metafunc.config.getoption("chat_model_id", ChatNVIDIA._default_model)]
         if metafunc.config.getoption("all_models"):
             models = [
-                model.id for model in available_models if model.model_type == "chat"
+                model.id for model in get_all_models() if model.model_type == "chat"
             ]
         metafunc.parametrize("chat_model", models, ids=models)
+
+    if "rerank_model" in metafunc.fixturenames:
+        models = ["ai-rerank-qa-mistral-4b"]
+        if model := metafunc.config.getoption("rerank_model_id"):
+            models = [model]
+        # nim-mode reranking does not support model listing
+        if metafunc.config.getoption("all_models"):
+            if mode.get("mode", None) == "nim":
+                warnings.warn(
+                    "Skipping model listing for Rerank "
+                    "with --nim-endpoint, not supported"
+                )
+            else:
+                models = [
+                    model.id
+                    for model in get_all_models()
+                    if model.model_type == "ranking"
+                ]
+        metafunc.parametrize("rerank_model", models, ids=models)
 
     if "image_in_model" in metafunc.fixturenames:
         models = ["ai-fuyu-8b"]
         if metafunc.config.getoption("all_models"):
             models = [
-                model.id for model in available_models if model.model_type == "image_in"
+                model.id for model in get_all_models() if model.model_type == "image_in"
             ]
         metafunc.parametrize("image_in_model", models, ids=models)
 
@@ -59,7 +87,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         models = ["nemotron_qa_8b"]
         if metafunc.config.getoption("all_models"):
             models = [
-                model.id for model in available_models if model.model_type == "qa"
+                model.id for model in get_all_models() if model.model_type == "qa"
             ]
         metafunc.parametrize("qa_model", models, ids=models)
 
@@ -71,11 +99,11 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             if mode.get("mode", None) == "nim":
                 # there is no guarantee the NIM will return a known model name,
                 # so we just grab all models and assume they are embeddings
-                models = [model.id for model in available_models]
+                models = [model.id for model in get_all_models()]
             else:
                 models = [
                     model.id
-                    for model in available_models
+                    for model in get_all_models()
                     if model.model_type == "embedding"
                 ]
         metafunc.parametrize("embedding_model", models, ids=models)
