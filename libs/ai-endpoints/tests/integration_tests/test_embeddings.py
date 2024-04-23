@@ -102,6 +102,28 @@ def test_embed_documents_mixed_long_texts(embedding_model: str, mode: dict) -> N
         embedding.embed_documents(texts)
 
 
+@pytest.mark.parametrize("truncate", ["START", "END"])
+def test_embed_query_truncate(embedding_model: str, mode: dict, truncate: str) -> None:
+    if embedding_model == "nvolveqa_40k":
+        pytest.skip("AI Foundation Model does not support truncate option")
+    embedding = NVIDIAEmbeddings(model=embedding_model, truncate=truncate).mode(**mode)
+    text = "nvidia " * 2048
+    output = embedding.embed_query(text)
+    assert len(output) == 1024
+
+
+@pytest.mark.parametrize("truncate", ["START", "END"])
+def test_embed_documents_truncate(
+    embedding_model: str, mode: dict, truncate: str
+) -> None:
+    embedding = NVIDIAEmbeddings(model=embedding_model, truncate=truncate).mode(**mode)
+    count = 10
+    texts = ["nvidia " * 32] * count
+    texts[len(texts) // 2] = "nvidia " * 2048
+    output = embedding.embed_documents(texts)
+    assert len(output) == count
+
+
 # todo: test model_type ("passage" and embed_query,
 #                        "query" and embed_documents; compare results)
 # todo: test max_length > max length accepted by the model

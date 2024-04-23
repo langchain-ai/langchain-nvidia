@@ -1,5 +1,5 @@
 import warnings
-from typing import Generator
+from typing import Any, Generator
 
 import pytest
 from requests_mock import Mocker
@@ -93,5 +93,18 @@ def test_embed_deprecated_nvolvqa_40k() -> None:
         NVIDIAEmbeddings(model="playground_nvolveqa_40k")
 
 
-# todo: test max_length (-100, 0, 100)
+def test_embed_max_length_deprecated() -> None:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        NVIDIAEmbeddings()
+    with pytest.deprecated_call():
+        NVIDIAEmbeddings(max_length=43)
+
+
+@pytest.mark.parametrize("truncate", [True, False, 1, 0, 1.0, "BOGUS"])
+def test_embed_query_truncate_invalid(truncate: Any) -> None:
+    with pytest.raises(ValueError):
+        NVIDIAEmbeddings(truncate=truncate)
+
+
 # todo: test max_batch_size (-50, 0, 1, 50)

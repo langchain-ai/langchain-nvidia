@@ -14,17 +14,45 @@ from ._statics import MODEL_SPECS
 
 
 class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
-    """NVIDIA's AI Foundation Retriever Question-Answering Asymmetric Model."""
+    """
+    Client to NVIDIA embeddings models.
+
+    Fields:
+    - model: str, the name of the model to use
+    - truncate: "NONE", "START", "END", truncate input text if it exceeds the model's
+        maximum token length. Default is "NONE", which raises an error if an input is
+        too long.
+    """
 
     _default_model: str = "ai-embed-qa-4"
     _default_max_batch_size: int = 50
     infer_endpoint: str = Field("{base_url}/embeddings")
     model: str = Field(_default_model, description="Name of the model to invoke")
+    truncate: Literal["NONE", "START", "END"] = Field(
+        default="NONE",
+        description=(
+            "Truncate input text if it exceeds the model's maximum token length. "
+            "Default is 'NONE', which raises an error if an input is too long."
+        ),
+    )
     max_length: int = Field(2048, ge=1, le=2048)
     max_batch_size: int = Field(default=_default_max_batch_size)
     model_type: Optional[Literal["passage", "query"]] = Field(
         None, description="The type of text to be embedded."
     )
+
+    # indicate to user that max_length is deprecated when passed as an argument to
+    # NVIDIAEmbeddings' constructor, e.g. NVIDIAEmbeddings(max_length=...). this
+    # does not warning on assignment, e.g. embedder.max_length = ...
+    # todo: fix _NVIDIAClient.validate_client and enable Config.validate_assignment
+    @validator("max_length")
+    def deprecated_max_length(cls, value: int) -> int:
+        """Deprecate the max_length field."""
+        warnings.warn(
+            "The max_length field is deprecated. Use the 'truncate' instead.",
+            DeprecationWarning,
+        )
+        return value
 
     # todo: fix _NVIDIAClient.validate_client and enable Config.validate_assignment
     @validator("model")
@@ -71,6 +99,8 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
                 "encoding_format": "float",
                 "input_type": model_type,
             }
+            if self.truncate:
+                payload["truncate"] = self.truncate
 
         response = self.client.get_req(
             model_name=self.model,
