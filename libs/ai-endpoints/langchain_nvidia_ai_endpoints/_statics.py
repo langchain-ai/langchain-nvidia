@@ -139,6 +139,7 @@ MODEL_SPECS.update(
             "model_name": "meta/llama3-70b",
         },
         "ai-phi-3-mini": {"model_type": "chat", "model_name": "microsoft/phi-3-mini"},
+        "ai-arctic": {"model_type": "chat", "model_name": "snowflake/arctic"},
     }
 )
 
