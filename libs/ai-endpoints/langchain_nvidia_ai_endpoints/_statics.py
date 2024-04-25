@@ -133,12 +133,15 @@ MODEL_SPECS.update(
             "model_type": "chat",
             "model_name": "mistralai/mixtral-8x22b-instruct-v0.1",
         },
-        "ai-llama3-8b": {"model_type": "chat", "model_name": "meta/llama3-8b"},
+        "ai-llama3-8b": {"model_type": "chat", "model_name": "meta/llama3-8b-instruct"},
         "ai-llama3-70b": {
             "model_type": "chat",
-            "model_name": "meta/llama3-70b",
+            "model_name": "meta/llama3-70b-instruct",
         },
-        "ai-phi-3-mini": {"model_type": "chat", "model_name": "microsoft/phi-3-mini"},
+        "ai-phi-3-mini": {
+            "model_type": "chat",
+            "model_name": "microsoft/phi-3-mini-128k-instruct",
+        },
         "ai-arctic": {"model_type": "chat", "model_name": "snowflake/arctic"},
     }
 )
