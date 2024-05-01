@@ -143,6 +143,10 @@ MODEL_SPECS.update(
             "model_name": "microsoft/phi-3-mini-128k-instruct",
         },
         "ai-arctic": {"model_type": "chat", "model_name": "snowflake/arctic"},
+        "ai-dbrx-instruct": {
+            "model_type": "chat",
+            "model_name": "databricks/dbrx-instruct",
+        },
     }
 )
 
