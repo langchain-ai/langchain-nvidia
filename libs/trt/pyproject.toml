@@ -30,6 +30,7 @@ pytest-watcher = "^0.3.4"
 pytest-asyncio = "^0.21.1"
 langchain-core = "^0.1.30"
 
+
 [tool.poetry.group.codespell]
 optional = true
 
@@ -51,11 +52,13 @@ ruff = "^0.1.5"
 mypy = "^0.991"
 langchain-core = "^0.1.30"
 
+
 [tool.poetry.group.dev]
 optional = true
 
 [tool.poetry.group.dev.dependencies]
 langchain-core = "^0.1.30"
+
 
 [tool.ruff.lint]
 select = [
