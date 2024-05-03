@@ -147,6 +147,10 @@ MODEL_SPECS.update(
             "model_type": "chat",
             "model_name": "databricks/dbrx-instruct",
         },
+        "ai-phi-3-mini-4k": {
+            "model_type": "chat",
+            "model_name": "microsoft/phi-3-mini-4k-instruct",
+        },
     }
 )
 
