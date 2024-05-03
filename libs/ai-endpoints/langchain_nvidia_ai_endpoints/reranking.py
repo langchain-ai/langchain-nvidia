@@ -27,11 +27,13 @@ class NVIDIARerank(BaseDocumentCompressor):
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
 
     _default_batch_size: int = 32
-    _default_model: str = "ai-rerank-qa-mistral-4b"
+    _deprecated_model: str = "ai-rerank-qa-mistral-4b"
     _default_model_name: str = "nv-rerank-qa-mistral-4b:1"
 
     top_n: int = Field(5, ge=0, description="The number of documents to return.")
-    model: str = Field(_default_model, description="The model to use for reranking.")
+    model: str = Field(
+        _default_model_name, description="The model to use for reranking."
+    )
     max_batch_size: int = Field(
         _default_batch_size, ge=1, description="The maximum batch size."
     )
@@ -62,12 +64,19 @@ class NVIDIARerank(BaseDocumentCompressor):
             # local NIM supports a single model and no /models endpoint
             models = [
                 Model(
-                    id=NVIDIARerank._default_model,
+                    id=NVIDIARerank._default_model_name,
                     model_name=NVIDIARerank._default_model_name,
                     model_type="ranking",
                     client="NVIDIARerank",
                     path="magic",
-                )
+                ),
+                Model(
+                    id=NVIDIARerank._deprecated_model,
+                    model_name=NVIDIARerank._default_model_name,
+                    model_type="ranking",
+                    client="NVIDIARerank",
+                    path="magic",
+                ),
             ]
         else:
             models = self._client.get_available_models(

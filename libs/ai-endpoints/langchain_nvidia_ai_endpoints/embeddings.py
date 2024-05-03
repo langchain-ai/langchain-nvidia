@@ -24,7 +24,7 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
         too long.
     """
 
-    _default_model: str = "ai-embed-qa-4"
+    _default_model: str = "NV-Embed-QA"
     _default_max_batch_size: int = 50
     infer_endpoint: str = Field("{base_url}/embeddings")
     model: str = Field(_default_model, description="Name of the model to invoke")
