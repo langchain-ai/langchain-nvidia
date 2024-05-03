@@ -33,7 +33,11 @@ MODEL_SPECS = {
         "alternative": "mistralai/mistral-7b-instruct-v0.2",
     },
     "playground_mamba_chat": {"model_type": "chat", "api_type": "aifm"},
-    "playground_phi2": {"model_type": "chat", "api_type": "aifm"},
+    "playground_phi2": {
+        "model_type": "chat",
+        "api_type": "aifm",
+        "alternative": "microsoft/phi-3-mini-128k-instruct",
+    },
     "playground_sdxl": {"model_type": "image_out", "api_type": "aifm"},
     "playground_nv_llama2_rlhf_70b": {"model_type": "chat", "api_type": "aifm"},
     "playground_neva_22b": {
