@@ -34,7 +34,7 @@ if not os.environ.get("NVIDIA_API_KEY", "").startswith("nvapi-"):
 ## Core LC Chat Interface
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-llm = ChatNVIDIA(model="ai-llama3-70b", max_tokens=419)
+llm = ChatNVIDIA(model="meta/llama3-70b-instruct", max_tokens=419)
 result = llm.invoke("Write a ballad about LangChain.")
 print(result.content)
 ```
@@ -67,23 +67,25 @@ Querying `available_models` will still give you all of the other models offered 
 ```python
 [model.id for model in llm.available_models if model.model_type]
 
-#['ai-codegemma-7b',
-# 'ai-codellama-70b',
-# 'ai-fuyu-8b',
-# 'ai-gemma-2b',
-# 'ai-gemma-7b',
-# 'ai-google-deplot',
-# 'ai-llama2-70b',
-# 'ai-llama3-70b',
-# 'ai-llama3-8b',
-# 'ai-microsoft-kosmos-2',
-# 'ai-mistral-7b-instruct-v2',
-# 'ai-mistral-large',
-# 'ai-mixtral-8x22b-instruct',
-# 'ai-mixtral-8x7b-instruct',
-# 'ai-neva-22b',
-# 'ai-recurrentgemma-2b',
-# ]
+#[
+# ...
+# 'databricks/dbrx-instruct',
+# 'google/codegemma-7b',
+# 'google/gemma-2b',
+# 'google/gemma-7b',
+# 'google/recurrentgemma-2b',
+# 'meta/codellama-70b',
+# 'meta/llama2-70b',
+# 'meta/llama3-70b-instruct',
+# 'meta/llama3-8b-instruct',
+# 'microsoft/phi-3-mini-128k-instruct',
+# 'mistralai/mistral-7b-instruct-v0.2',
+# 'mistralai/mistral-large',
+# 'mistralai/mixtral-8x22b-instruct-v0.1',
+# 'mistralai/mixtral-8x7b-instruct-v0.1',
+# 'snowflake/arctic',
+# ...
+#]
 ```
 
 ## Model types
@@ -96,7 +98,7 @@ Some model types support unique prompting techniques and chat messages. We will 
 
 ### General Chat
 
-Models such as `ai-llama3-70b` and `ai-mixtral-8x22b-instruct` are good all-around models that you can use for with any LangChain chat messages. Example below.
+Models such as `meta/llama3-8b-instruct` and `mistralai/mixtral-8x22b-instruct-v0.1` are good all-around models that you can use for with any LangChain chat messages. Example below.
 
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
@@ -111,7 +113,7 @@ prompt = ChatPromptTemplate.from_messages(
 )
 chain = (
     prompt
-    | ChatNVIDIA(model="ai-llama3-70b")
+    | ChatNVIDIA(model="meta/llama3-8b-instruct")
     | StrOutputParser()
 )
 
@@ -121,7 +123,7 @@ for txt in chain.stream({"input": "What's your name?"}):
 
 ### Code Generation
 
-These models accept the same arguments and input structure as regular chat models, but they tend to perform better on code-genreation and structured code tasks. An example of this is `ai-codellama-70b` and `ai-codegemma-7b`.
+These models accept the same arguments and input structure as regular chat models, but they tend to perform better on code-genreation and structured code tasks. An example of this is `meta/codellama-70b` and `google/codegemma-7b`.
 
 ```python
 prompt = ChatPromptTemplate.from_messages(
@@ -132,7 +134,7 @@ prompt = ChatPromptTemplate.from_messages(
 )
 chain = (
     prompt
-    | ChatNVIDIA(model="ai-codellama-70b", max_tokens=419)
+    | ChatNVIDIA(model="meta/codellama-70b", max_tokens=419)
     | StrOutputParser()
 )
 
