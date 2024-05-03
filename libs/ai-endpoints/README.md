@@ -2,7 +2,7 @@
 
 The `langchain-nvidia-ai-endpoints` package contains LangChain integrations for chat models and embeddings powered by the [NVIDIA AI Foundation Model](https://www.nvidia.com/en-us/ai-data-science/foundation-models/) playground environment. 
 
-> [NVIDIA AI Foundation Endpoints](https://www.nvidia.com/en-us/ai-data-science/foundation-models/) give users easy access to hosted endpoints for generative AI models like Llama-2, SteerLM, Mistral, etc. Using the API, you can query live endpoints available on the [NVIDIA GPU Cloud (NGC)](https://catalog.ngc.nvidia.com/ai-foundation-models) to get quick results from a DGX-hosted cloud compute environment. All models are source-accessible and can be deployed on your own compute cluster.
+> [NVIDIA AI Foundation Endpoints](https://www.nvidia.com/en-us/ai-data-science/foundation-models/) give users easy access to hosted endpoints for generative AI models like Llama-2, SteerLM, Mistral, etc. Using the API, you can query live endpoints available on the [NVIDIA API Catalog](https://build.nvidia.com/) to get quick results from a DGX-hosted cloud compute environment. All models are source-accessible and can be deployed on your own compute cluster.
 
 Below is an example on how to use some common functionality surrounding text-generative and embedding models
 
@@ -15,17 +15,17 @@ Below is an example on how to use some common functionality surrounding text-gen
 ## Setup
 
 **To get started:**
-1. Create a free account with the [NVIDIA GPU Cloud](https://catalog.ngc.nvidia.com/) service, which hosts AI solution catalogs, containers, models, etc.
-2. Navigate to `Catalog > AI Foundation Models > (Model with API endpoint)`.
-3. Select the `API` option and click `Generate Key`.
-4. Save the generated key as `NVIDIA_API_KEY`. From there, you should have access to the endpoints.
+1. Create a free account with [NVIDIA](https://build.nvidia.com/), which hosts NVIDIA AI Foundation models
+2. Click on your model of choice
+3. Under Input select the Python tab, and click Get API Key. Then click Generate Key
+4. Copy and save the generated key as NVIDIA_API_KEY. From there, you should have access to the endpoints.
 
 ```python
 import getpass
 import os
 
 if not os.environ.get("NVIDIA_API_KEY", "").startswith("nvapi-"):
-    nvidia_api_key = getpass.getpass("Enter your NVIDIA AIPLAY API key: ")
+    nvidia_api_key = getpass.getpass("Enter your NVIDIA API key: ")
     assert nvidia_api_key.startswith("nvapi-"), f"{nvidia_api_key[:5]}... is not a valid key"
     os.environ["NVIDIA_API_KEY"] = nvidia_api_key
 ```
