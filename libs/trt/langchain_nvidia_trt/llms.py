@@ -20,10 +20,14 @@ from tritonclient.utils import np_to_triton_dtype
 import gc
 import torch
 import tensorrt_llm
-import uuid
 from langchain_core.callbacks import CallbackManager
-from .utils import (DEFAULT_CONTEXT_WINDOW, DEFAULT_NUM_OUTPUTS, load_tokenizer, read_model_name)
-from tensorrt_llm.runtime import PYTHON_BINDINGS, ModelRunner, ModelRunnerCpp
+from .utils import (
+    DEFAULT_CONTEXT_WINDOW,
+    DEFAULT_NUM_OUTPUTS,
+    load_tokenizer,
+    read_model_name
+    )
+from tensorrt_llm.runtime import ModelRunner, ModelRunnerCpp
 from tensorrt_llm.logger import logger
 
 class TritonTensorRTError(Exception):
@@ -425,12 +429,17 @@ class TrtLlmAPI(BaseLLM):
         default=0.1, description="The temperature to use for sampling."
     )
     max_new_tokens: int = Field(
-        default=DEFAULT_NUM_OUTPUTS, description="The maximum number of tokens to generate."
+        default=DEFAULT_NUM_OUTPUTS,
+        description="The maximum number of tokens to generate."
     )
     context_window: int = Field(
-        default=DEFAULT_CONTEXT_WINDOW, description="The maximum number of context tokens for the model."
+        default=DEFAULT_CONTEXT_WINDOW,
+        description="The maximum number of context tokens for the model."
     )
-    verbose: bool = Field(default=False, description="Whether to print verbose output.")
+    verbose: bool = Field(
+        default=False,
+        description="Whether to print verbose output."
+    )
 
     _model: Any = PrivateAttr()
     _model_name = PrivateAttr()
@@ -642,8 +651,6 @@ class TrtLlmAPI(BaseLLM):
         batch_size, num_beams, _ = output_ids.size()
         if output_csv is None and output_npy is None:
             for batch_idx in range(batch_size):
-                inputs = output_ids[batch_idx][0][:input_lengths[batch_idx]].tolist(
-                )
                 for beam in range(num_beams):
                     output_begin = input_lengths[batch_idx]
                     output_end = sequence_lengths[batch_idx][beam]
