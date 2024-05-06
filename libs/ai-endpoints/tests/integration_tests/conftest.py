@@ -1,4 +1,3 @@
-import warnings
 from typing import List
 
 import pytest
@@ -64,8 +63,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         if metafunc.config.getoption("all_models"):
             if mode.get("mode", None) == "nim":
                 models = [
-                    model.id
-                    for model in NVIDIARerank().mode(**mode).available_models
+                    model.id for model in NVIDIARerank().mode(**mode).available_models
                 ]
             else:
                 models = [
