@@ -3,7 +3,7 @@ from typing import List
 
 import pytest
 
-from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings
+from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
 from langchain_nvidia_ai_endpoints._common import Model
 
 
@@ -60,13 +60,13 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         models = ["ai-rerank-qa-mistral-4b"]
         if model := metafunc.config.getoption("rerank_model_id"):
             models = [model]
-        # nim-mode reranking does not support model listing
+        # nim-mode reranking does not support model listing via /v1/models endpoint
         if metafunc.config.getoption("all_models"):
             if mode.get("mode", None) == "nim":
-                warnings.warn(
-                    "Skipping model listing for Rerank "
-                    "with --nim-endpoint, not supported"
-                )
+                models = [
+                    model.id
+                    for model in NVIDIARerank().mode(**mode).available_models
+                ]
             else:
                 models = [
                     model.id
