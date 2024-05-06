@@ -5,7 +5,7 @@ import queue
 import random
 import time
 from functools import partial
-from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Union
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Union
 
 import google.protobuf.json_format
 import numpy as np
