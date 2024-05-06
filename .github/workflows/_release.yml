@@ -12,7 +12,7 @@ on:
       working-directory:
         required: true
         type: string
-        default: 'libs/vertexai'
+        default: 'libs/ai-endpoints'
 
 env:
   PYTHON_VERSION: "3.11"
