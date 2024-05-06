@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
 from typing import Optional
-from transformers import AutoTokenizer, T5Tokenizer
+
 import tensorrt_llm
+from transformers import AutoTokenizer, T5Tokenizer
 
 DEFAULT_CONTEXT_WINDOW = 2048
 DEFAULT_NUM_OUTPUTS = 256

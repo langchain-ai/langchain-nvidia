@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import json
 import queue
 import random
@@ -9,26 +10,25 @@ from typing import Any, Dict, Iterator, List, Optional, Sequence, Union
 
 import google.protobuf.json_format
 import numpy as np
+import tensorrt_llm
+import torch
 import tritonclient.grpc as grpcclient
-from langchain_core.callbacks import CallbackManagerForLLMRun
+from langchain_core.callbacks import CallbackManager, CallbackManagerForLLMRun
 from langchain_core.language_models import BaseLLM
 from langchain_core.outputs import Generation, GenerationChunk, LLMResult
-from langchain_core.pydantic_v1 import Field, root_validator, PrivateAttr
+from langchain_core.pydantic_v1 import Field, PrivateAttr, root_validator
+from tensorrt_llm.logger import logger
+from tensorrt_llm.runtime import ModelRunner, ModelRunnerCpp
 from tritonclient.grpc.service_pb2 import ModelInferResponse
 from tritonclient.utils import np_to_triton_dtype
 
-import gc
-import torch
-import tensorrt_llm
-from langchain_core.callbacks import CallbackManager
 from .utils import (
     DEFAULT_CONTEXT_WINDOW,
     DEFAULT_NUM_OUTPUTS,
     load_tokenizer,
-    read_model_name
-    )
-from tensorrt_llm.runtime import ModelRunner, ModelRunnerCpp
-from tensorrt_llm.logger import logger
+    read_model_name,
+)
+
 
 class TritonTensorRTError(Exception):
     """Base exception for TritonTensorRT."""
