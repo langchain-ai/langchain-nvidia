@@ -151,6 +151,7 @@ MODEL_SPECS.update(
             "model_type": "chat",
             "model_name": "microsoft/phi-3-mini-4k-instruct",
         },
+        "ai-seallm-7b": {"model_type": "chat", "model_name": "seallms/seallm-7b-v2.5"},
     }
 )
 
