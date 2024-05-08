@@ -169,6 +169,17 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
             )
         return value
 
+    @validator("labels")
+    def aifm_labels_deprecated(
+        cls, value: Optional[Sequence[str]]
+    ) -> Optional[Sequence[str]]:
+        if value:
+            warnings.warn(
+                "Labels are deprecated and not supported by API Catalog models.",
+                DeprecationWarning,
+            )
+        return value
+
     @property
     def _llm_type(self) -> str:
         """Return type of NVIDIA AI Foundation Model Interface."""
