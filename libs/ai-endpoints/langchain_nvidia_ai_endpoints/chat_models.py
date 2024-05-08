@@ -134,7 +134,9 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
     infer_endpoint: str = Field("{base_url}/chat/completions")
     model: str = Field(_default_model, description="Name of the model to invoke")
     temperature: Optional[float] = Field(description="Sampling temperature in [0, 1]")
-    max_tokens: Optional[int] = Field(description="Maximum # of tokens to generate")
+    max_tokens: Optional[int] = Field(
+        1024, description="Maximum # of tokens to generate"
+    )
     top_p: Optional[float] = Field(description="Top-p for distribution sampling")
     seed: Optional[int] = Field(description="The seed for deterministic results")
     bad: Optional[Sequence[str]] = Field(description="Bad words to avoid (cased)")
