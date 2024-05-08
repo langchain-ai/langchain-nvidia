@@ -183,6 +183,16 @@ class NVEModel(BaseModel):
             raise ValueError(
                 f"Unexpected response when querying {invoke_url}\n{query_res}"
             )
+        # if there's an alias / model name for the function, add it as well
+        # this lets users work with ai-gemma-2b and google/gemma-2b
+        aliases = []
+        for function in output:
+            name = function["name"]
+            if name in MODEL_SPECS and "model_name" in MODEL_SPECS[name]:
+                alias = function.copy()
+                alias.update(name=MODEL_SPECS[name]["model_name"])
+                aliases.append(alias)
+        output.extend(aliases)
         self._available_functions = output
         return self._available_functions
 

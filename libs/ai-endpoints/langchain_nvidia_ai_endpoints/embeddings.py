@@ -24,7 +24,7 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
         too long.
     """
 
-    _default_model: str = "ai-embed-qa-4"
+    _default_model: str = "NV-Embed-QA"
     _default_max_batch_size: int = 50
     infer_endpoint: str = Field("{base_url}/embeddings")
     model: str = Field(_default_model, description="Name of the model to invoke")
@@ -56,13 +56,17 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
 
     # todo: fix _NVIDIAClient.validate_client and enable Config.validate_assignment
     @validator("model")
-    def deprecated_nvolveqa_40k(cls, value: str) -> str:
-        """Deprecate the nvolveqa_40k model."""
-        if value == "nvolveqa_40k" or value == "playground_nvolveqa_40k":
-            warnings.warn(
-                "nvolveqa_40k is deprecated. Use ai-embed-qa-4 instead.",
-                DeprecationWarning,
-            )
+    def aifm_deprecated(cls, value: str) -> str:
+        """All AI Foundataion Models are deprecate, use API Catalog models instead."""
+        for model in [value, f"playground_{value}"]:
+            if model in MODEL_SPECS and MODEL_SPECS[model].get("api_type") == "aifm":
+                alternative = MODEL_SPECS[model].get(
+                    "alternative", NVIDIAEmbeddings._default_model
+                )
+                warnings.warn(
+                    f"{value} is deprecated. Try {alternative} instead.",
+                    DeprecationWarning,
+                )
         return value
 
     def _embed(

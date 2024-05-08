@@ -18,22 +18,30 @@ MODEL_SPECS = {
     "playground_llama2_70b": {
         "model_type": "chat",
         "api_type": "aifm",
-        "alternative": "ai-llama2-70b",
+        "alternative": "meta/llama2-70b",
     },
-    "playground_nvolveqa_40k": {"model_type": "embedding", "api_type": "aifm"},
+    "playground_nvolveqa_40k": {
+        "model_type": "embedding",
+        "api_type": "aifm",
+        "alternative": "NV-Embed-QA",
+    },
     "playground_nemotron_qa_8b": {"model_type": "qa", "api_type": "aifm"},
     "playground_gemma_7b": {
         "model_type": "chat",
         "api_type": "aifm",
-        "alternative": "ai-gemma-7b",
+        "alternative": "google/gemma-7b",
     },
     "playground_mistral_7b": {
         "model_type": "chat",
         "api_type": "aifm",
-        "alternative": "ai-mistral-7b-instruct-v2",
+        "alternative": "mistralai/mistral-7b-instruct-v0.2",
     },
     "playground_mamba_chat": {"model_type": "chat", "api_type": "aifm"},
-    "playground_phi2": {"model_type": "chat", "api_type": "aifm"},
+    "playground_phi2": {
+        "model_type": "chat",
+        "api_type": "aifm",
+        "alternative": "microsoft/phi-3-mini-128k-instruct",
+    },
     "playground_sdxl": {"model_type": "image_out", "api_type": "aifm"},
     "playground_nv_llama2_rlhf_70b": {"model_type": "chat", "api_type": "aifm"},
     "playground_neva_22b": {
@@ -54,18 +62,18 @@ MODEL_SPECS = {
     "playground_llama2_code_70b": {
         "model_type": "chat",
         "api_type": "aifm",
-        "alternative": "ai-codellama-70b",
+        "alternative": "meta/codelama-70b",
     },
     "playground_gemma_2b": {
         "model_type": "chat",
         "api_type": "aifm",
-        "alternative": "ai-gemma-2b",
+        "alternative": "google/gemma-2b",
     },
     "playground_seamless": {"model_type": "translation", "api_type": "aifm"},
     "playground_mixtral_8x7b": {
         "model_type": "chat",
         "api_type": "aifm",
-        "alternative": "ai-mixtral-8x7b-instruct",
+        "alternative": "mistralai/mixtral-8x7b-instruct-v0.1",
     },
     "playground_fuyu_8b": {
         "model_type": "image_in",
@@ -75,19 +83,19 @@ MODEL_SPECS = {
     "playground_llama2_code_34b": {
         "model_type": "chat",
         "api_type": "aifm",
-        "alternative": "ai-codellama-70b",
+        "alternative": "meta/codellama-70b",
     },
     "playground_llama2_code_13b": {
         "model_type": "chat",
         "api_type": "aifm",
-        "alternative": "ai-codellama-70b",
+        "alternative": "meta/codellama-70b",
     },
     "playground_steerlm_llama_70b": {"model_type": "chat", "api_type": "aifm"},
     "playground_clip": {"model_type": "similarity", "api_type": "aifm"},
     "playground_llama2_13b": {
         "model_type": "chat",
         "api_type": "aifm",
-        "alternative": "ai-llama2-70b",
+        "alternative": "meta/llama2-70b",
     },
 }
 
@@ -147,6 +155,11 @@ MODEL_SPECS.update(
             "model_type": "chat",
             "model_name": "databricks/dbrx-instruct",
         },
+        "ai-phi-3-mini-4k": {
+            "model_type": "chat",
+            "model_name": "microsoft/phi-3-mini-4k-instruct",
+        },
+        "ai-seallm-7b": {"model_type": "chat", "model_name": "seallms/seallm-7b-v2.5"},
     }
 )
 
@@ -202,3 +215,7 @@ client_map = {
 MODEL_SPECS = {
     k: {**v, "client": client_map[v["model_type"]]} for k, v in MODEL_SPECS.items()
 }
+# MODEL_SPEC database should have both function and model names
+MODEL_SPECS.update(
+    {v["model_name"]: v for v in MODEL_SPECS.values() if "model_name" in v}
+)

@@ -31,7 +31,7 @@ export NVIDIA_API_KEY=nvapi-XXXXXXXXXXXXXXXXXXXXXXXXXX
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-llm = ChatNVIDIA(model="mixtral_8x7b")
+llm = ChatNVIDIA(model="mistralai/mixtral-8x22b-instruct-v0.1")
 result = llm.invoke("Write a ballad about LangChain.")
 print(result.content)
 ```

@@ -130,7 +130,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
             response = model.invoke("Hello")
     """
 
-    _default_model: str = "ai-mixtral-8x7b-instruct"
+    _default_model: str = "mistralai/mixtral-8x7b-instruct-v0.1"
     infer_endpoint: str = Field("{base_url}/chat/completions")
     model: str = Field(_default_model, description="Name of the model to invoke")
     temperature: Optional[float] = Field(description="Sampling temperature in [0, 1]")
