@@ -39,3 +39,11 @@ def test_aifm_deprecated(model: str) -> None:
         ChatNVIDIA()
     with pytest.deprecated_call():
         ChatNVIDIA(model=model)
+
+
+def test_param_bad_deprecated() -> None:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        ChatNVIDIA()
+    with pytest.deprecated_call():
+        ChatNVIDIA(bad=["bad"])
