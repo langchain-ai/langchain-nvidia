@@ -48,7 +48,9 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         return ChatNVIDIA().mode(**mode).get_available_models(list_all=True, **mode)
 
     if "chat_model" in metafunc.fixturenames:
-        models = [metafunc.config.getoption("chat_model_id", ChatNVIDIA._default_model)]
+        models = [ChatNVIDIA._default_model]
+        if model := metafunc.config.getoption("chat_model_id"):
+            models = [model]
         if metafunc.config.getoption("all_models"):
             models = [
                 model.id for model in get_all_models() if model.model_type == "chat"

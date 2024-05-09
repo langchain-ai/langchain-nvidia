@@ -60,6 +60,7 @@ def test_embed_available_models(mode: dict) -> None:
     assert len(models) >= 2  # nvolveqa_40k and ai-embed-qa-4
     assert "nvolveqa_40k" in [model.id for model in models]
     assert "ai-embed-qa-4" in [model.id for model in models]
+    assert all(model.model_type is not None for model in models)
 
 
 def test_embed_available_models_cached() -> None:
