@@ -126,7 +126,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
             from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
 
-            model = ChatNVIDIA(model="llama2_13b")
+            model = ChatNVIDIA(model="meta/llama2-70b")
             response = model.invoke("Hello")
     """
 

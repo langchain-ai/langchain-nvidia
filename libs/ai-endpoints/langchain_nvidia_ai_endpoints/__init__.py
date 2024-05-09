@@ -23,7 +23,7 @@ After setting up the environment, interact with NVIDIA AI Foundation models:
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-ai_chat_model = ChatNVIDIA(model="llama2_13b")
+ai_chat_model = ChatNVIDIA(model="meta/llama2-70b")
 response = ai_chat_model.invoke("Tell me about the LangChain integration.")
 ```
 
