@@ -23,6 +23,7 @@ from typing import (
 
 import aiohttp
 import requests
+from langchain_core._api import deprecated
 from langchain_core.pydantic_v1 import (
     BaseModel,
     Field,
@@ -602,6 +603,7 @@ class _NVIDIAClient(BaseModel):
         return attributes
 
     @property
+    @deprecated(since="0.0.15", removal="0.1.0", alternative="available_models")
     def available_functions(self) -> List[dict]:
         """Map the available functions that can be invoked."""
         return self.__class__.get_available_functions(client=self)
@@ -612,6 +614,7 @@ class _NVIDIAClient(BaseModel):
         return self.__class__.get_available_models(client=self)
 
     @classmethod
+    @deprecated(since="0.0.15", removal="0.1.0", alternative="get_available_models")
     def get_available_functions(
         cls,
         mode: Optional[_MODE_TYPE] = None,
@@ -648,6 +651,7 @@ class _NVIDIAClient(BaseModel):
             out = [m for m in out if m.client == filter]
         return out
 
+    @deprecated(since="0.0.15", removal="0.1.0")
     def get_model_details(self, model: Optional[str] = None) -> dict:
         """Get more meta-details about a model retrieved by a given name"""
         if model is None:
@@ -657,6 +661,7 @@ class _NVIDIAClient(BaseModel):
         fn_spec = [f for f in known_fns if f.get("id") == model_key][0]
         return fn_spec
 
+    @deprecated(since="0.0.15", removal="0.1.0")
     def get_binding_model(self) -> Optional[str]:
         """Get the model to bind to the client as default payload argument"""
         # if a model is configured with a model_name, always use that
