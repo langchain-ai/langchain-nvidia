@@ -5,7 +5,6 @@ import logging
 import os
 import time
 from copy import deepcopy
-from functools import partial
 from typing import (
     Any,
     AsyncIterator,
@@ -76,7 +75,6 @@ class NVEModel(BaseModel):
     )
 
     api_key: SecretStr = Field(..., description="API Key for service of choice")
-    is_staging: bool = Field(False, description="Whether to use staging API")
 
     ## Generation arguments
     timeout: float = Field(60, ge=0, description="Timeout for waiting on response (s)")
@@ -124,7 +122,6 @@ class NVEModel(BaseModel):
             or os.getenv(cls._api_key_var)
             or ""
         )
-        values["is_staging"] = "nvapi-stg-" in values["api_key"]
         if "headers_tmpl" not in values:
             call_kvs = {
                 "Accept": "application/json",
@@ -141,13 +138,6 @@ class NVEModel(BaseModel):
                 "call": {**call_kvs, **shared_kvs},
                 "stream": {**stream_kvs, **shared_kvs},
             }
-        return values
-
-    @root_validator(pre=False)
-    def validate_model_post(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Additional validation after default values have been put in"""
-        values["stagify"] = partial(cls._stagify, is_staging=values["is_staging"])
-        values["base_url"] = values["stagify"](values.get("base_url"))
         return values
 
     @property
@@ -201,15 +191,6 @@ class NVEModel(BaseModel):
         """Reset method cache to force re-fetch of available functions"""
         self._available_functions = None
         self._available_models = None
-
-    @staticmethod
-    def _stagify(path: str, is_staging: bool) -> str:
-        """Helper method to switch between staging and production endpoints"""
-        if is_staging and "stg.api" not in path:
-            return path.replace("api.", "stg.api.")
-        if not is_staging and "stg.api" in path:
-            return path.replace("stg.api.", "api.")
-        return path
 
     ####################################################################################
     ## Core utilities for posting and getting from NV Endpoints
