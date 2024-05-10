@@ -37,7 +37,7 @@ from langchain_nvidia_ai_endpoints._statics import MODEL_SPECS, Model
 
 logger = logging.getLogger(__name__)
 
-_MODE_TYPE = Literal["catalog", "nvidia", "nim", "open", "openai"]
+_MODE_TYPE = Literal["nvidia", "nim"]
 
 
 def default_payload_fn(payload: dict) -> dict:
@@ -670,8 +670,6 @@ class _NVIDIAClient(BaseModel):
         if matches:
             if matches[0].model_name:
                 return matches[0].model_name
-        if self.curr_mode == "catalog":
-            return f"playground_{self.model}"
         if self.curr_mode == "nvidia":
             return ""
         return self.model
@@ -700,28 +698,19 @@ class _NVIDIAClient(BaseModel):
 
         if base_url and not force_mode:
             ## If a user tries to set base_url, assume custom openapi unless forced
-            mode = "open"
+            mode = "nim"
 
-        if mode in ["nvidia", "catalog"]:
+        if mode == "nvidia":
             key_var = "NVIDIA_API_KEY"
             if not api_key or not api_key.startswith("nvapi-"):
                 api_key = os.getenv(key_var) or out.client.api_key.get_secret_value()
             if not api_key.startswith("nvapi-"):
                 raise ValueError(f"No {key_var} in env/fed as api_key. (nvapi-...)")
 
-        if mode in ["openai"]:
-            key_var = "OPENAI_API_KEY"
-            if not api_key or not api_key.startswith("sk-"):
-                api_key = os.getenv(key_var) or out.client.api_key.get_secret_value()
-            if not api_key.startswith("sk-"):
-                raise ValueError(f"No {key_var} in env/fed as api_key. (sk-...)")
-
         out.curr_mode = mode
         if api_key:
             out.client.api_key = SecretStr(api_key)
 
-        catalog_base = "https://integrate.api.nvidia.com/v1"
-        openai_base = "https://api.openai.com/v1"  ## OpenAI Main URL
         nvcf_base = "https://api.nvcf.nvidia.com/v2/nvcf"  ## NVCF Main URL
         nvcf_infer = "{base_url}/pexec/functions/{model_id}"  ## Inference endpoints
         nvcf_status = "{base_url}/pexec/status/{request_id}"  ## 202 wait handle
@@ -736,29 +725,16 @@ class _NVIDIAClient(BaseModel):
                 "models": nvcf_models,  ## Model listing
             }
 
-        elif mode == "catalog":
-            ## NVIDIA API Catalog Integration: OpenAPI-spec gateway over NVCF endpoints
-            out.client.base_url = base_url or catalog_base
-            out.client.endpoints["infer"] = infer_path or out.infer_endpoint
-            ## API Catalog is early, so no models list yet. Undercut to nvcf for now.
-            out.client.endpoints["models"] = nvcf_models.format(base_url=nvcf_base)
-
-        elif mode == "open" or mode == "nim":
+        elif mode == "nim":
             ## OpenAPI-style specs to connect to NeMo Inference Microservices etc.
             ## Most generic option, requires specifying base_url
-            assert base_url, "Base URL must be specified for open/nim mode"
+            assert base_url, "Base URL must be specified for nim mode"
             out.client.base_url = base_url
             out.client.endpoints["infer"] = infer_path or out.infer_endpoint
             out.client.endpoints["models"] = models_path or "{base_url}/models"
 
-        elif mode == "openai":
-            ## OpenAI-style specification to connect to OpenAI endpoints
-            out.client.base_url = base_url or openai_base
-            out.client.endpoints["infer"] = infer_path or out.infer_endpoint
-            out.client.endpoints["models"] = models_path or "{base_url}/models"
-
         else:
-            options = ["catalog", "nvidia", "nim", "open", "openai"]
+            options = ["nvidia", "nim"]
             raise ValueError(f"Unknown mode: `{mode}`. Expected one of {options}.")
 
         out.client.reset_method_cache()

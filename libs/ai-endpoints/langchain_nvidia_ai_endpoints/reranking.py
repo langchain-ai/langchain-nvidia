@@ -60,7 +60,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         """
         Get a list of available models that work with NVIDIARerank.
         """
-        if self._client.curr_mode in ["nim", "open"]:
+        if self._client.curr_mode == "nim":
             # local NIM supports a single model and no /models endpoint
             models = [
                 Model(
@@ -103,7 +103,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         chat models, by setting the list_all parameter to True.
         """
         self = cls(**kwargs).mode(mode=mode, **kwargs)
-        if mode in ["nim", "open"]:
+        if mode == "nim":
             # ignoring list_all because there is one
             models = self.available_models
         else:

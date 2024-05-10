@@ -174,39 +174,6 @@ MODEL_SPECS.update(
     }
 )
 
-
-MODEL_SPECS.update(
-    {
-        "babbage-002": {"model_type": "completion"},
-        "dall-e-2": {"model_type": "image_out"},
-        "dall-e-3": {"model_type": "image_out"},
-        "davinci-002": {"model_type": "completion"},
-        "gpt-3.5-turbo-0125": {"model_type": "chat"},
-        "gpt-3.5-turbo-0301": {"model_type": "chat"},
-        "gpt-3.5-turbo-0613": {"model_type": "chat"},
-        "gpt-3.5-turbo-1106": {"model_type": "chat"},
-        "gpt-3.5-turbo-16k-0613": {"model_type": "chat"},
-        "gpt-3.5-turbo-16k": {"model_type": "chat"},
-        "gpt-3.5-turbo-instruct-0914": {"model_type": "completion"},
-        "gpt-3.5-turbo-instruct": {"model_type": "completion"},
-        "gpt-3.5-turbo": {"model_type": "chat"},
-        "gpt-4-0125-preview": {"model_type": "chat"},
-        "gpt-4-0613": {"model_type": "chat"},
-        "gpt-4-1106-preview": {"model_type": "chat"},
-        "gpt-4-turbo-preview": {"model_type": "chat"},
-        "gpt-4-vision-preview": {"model_type": "chat"},
-        "gpt-4": {"model_type": "chat"},
-        "text-embedding-3-large": {"model_type": "embedding"},
-        "text-embedding-3-small": {"model_type": "embedding"},
-        "text-embedding-ada-002": {"model_type": "embedding"},
-        "tts-1-1106": {"model_type": "tts"},
-        "tts-1-hd-1106": {"model_type": "tts"},
-        "tts-1-hd": {"model_type": "tts"},
-        "tts-1": {"model_type": "tts"},
-        "whisper-1": {"model_type": "asr"},
-    }
-)
-
 client_map = {
     "asr": "None",
     "chat": "ChatNVIDIA",
