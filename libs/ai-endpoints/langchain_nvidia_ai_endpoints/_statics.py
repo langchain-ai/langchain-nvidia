@@ -14,7 +14,11 @@ class Model(BaseModel):
 
 MODEL_SPECS = {
     "playground_smaug_72b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_kosmos_2": {"model_type": "image_in", "api_type": "aifm"},
+    "playground_kosmos_2": {
+        "model_type": "image_in",
+        "api_type": "aifm",
+        "alternative": "microsoft/kosmos-2",
+    },
     "playground_llama2_70b": {
         "model_type": "chat",
         "api_type": "aifm",
@@ -47,7 +51,7 @@ MODEL_SPECS = {
     "playground_neva_22b": {
         "model_type": "image_in",
         "api_type": "aifm",
-        "alternative": "ai-neva-22b",
+        "alternative": "nvidia/neva-22b",
     },
     "playground_yi_34b": {"model_type": "chat", "api_type": "aifm"},
     "playground_nemotron_steerlm_8b": {"model_type": "chat", "api_type": "aifm"},
@@ -57,7 +61,7 @@ MODEL_SPECS = {
     "playground_deplot": {
         "model_type": "image_in",
         "api_type": "aifm",
-        "alternative": "ai-google-deplot",
+        "alternative": "google/deplot",
     },
     "playground_llama2_code_70b": {
         "model_type": "chat",
@@ -78,7 +82,7 @@ MODEL_SPECS = {
     "playground_fuyu_8b": {
         "model_type": "image_in",
         "api_type": "aifm",
-        "alternative": "ai-fuyu-8b",
+        "alternative": "adept/fuyu-8b",
     },
     "playground_llama2_code_34b": {
         "model_type": "chat",
@@ -103,11 +107,14 @@ MODEL_SPECS.update(
     {
         "ai-codellama-70b": {"model_type": "chat", "model_name": "meta/codellama-70b"},
         "ai-embed-qa-4": {"model_type": "embedding", "model_name": "NV-Embed-QA"},
-        "ai-fuyu-8b": {"model_type": "image_in"},
+        "ai-fuyu-8b": {"model_type": "image_in", "model_name": "adept/fuyu-8b"},
         "ai-gemma-7b": {"model_type": "chat", "model_name": "google/gemma-7b"},
-        "ai-google-deplot": {"model_type": "image_in"},
+        "ai-google-deplot": {"model_type": "image_in", "model_name": "google/deplot"},
         "ai-llama2-70b": {"model_type": "chat", "model_name": "meta/llama2-70b"},
-        "ai-microsoft-kosmos-2": {"model_type": "image_in"},
+        "ai-microsoft-kosmos-2": {
+            "model_type": "image_in",
+            "model_name": "microsoft/kosmos-2",
+        },
         "ai-mistral-7b-instruct-v2": {
             "model_type": "chat",
             "model_name": "mistralai/mistral-7b-instruct-v0.2",
@@ -116,7 +123,7 @@ MODEL_SPECS.update(
             "model_type": "chat",
             "model_name": "mistralai/mixtral-8x7b-instruct-v0.1",
         },
-        "ai-neva-22b": {"model_type": "image_in"},
+        "ai-neva-22b": {"model_type": "image_in", "model_name": "nvidia/neva-22b"},
         "ai-rerank-qa-mistral-4b": {
             "model_type": "ranking",
             "model_name": "nv-rerank-qa-mistral-4b:1",  # nvidia/rerank-qa-mistral-4b
