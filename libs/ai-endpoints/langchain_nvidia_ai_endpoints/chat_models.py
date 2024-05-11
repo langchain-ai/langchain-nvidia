@@ -25,6 +25,7 @@ from typing import (
 )
 
 import requests
+from langchain_core._api import deprecated
 from langchain_core.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
@@ -272,6 +273,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
                 if hasattr(cb, "llm_output"):
                     cb.llm_output = result
 
+    @deprecated(since="0.0.15", removal="0.1.0")
     def custom_preprocess(
         self, msg_list: Sequence[BaseMessage]
     ) -> List[Dict[str, str]]:
@@ -308,6 +310,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
                     raise ValueError(f"Unrecognized message part format: {part}")
         return "".join(string_array)
 
+    @deprecated(since="0.0.15", removal="0.1.0")
     def preprocess_msg(self, msg: BaseMessage) -> Dict[str, str]:
         if isinstance(msg, BaseMessage):
             role_convert = {"ai": "assistant", "human": "user"}
@@ -320,6 +323,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
             return {"role": role, "content": content}
         raise ValueError(f"Invalid message: {repr(msg)} of type {type(msg)}")
 
+    @deprecated(since="0.0.15", removal="0.1.0")
     def custom_postprocess(self, msg: dict) -> dict:
         kw_left = msg.copy()
         out_dict = {
@@ -339,6 +343,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
     ######################################################################################
     ## Core client-side interfaces
 
+    @deprecated(since="0.0.15", removal="0.1.0")
     def get_generation(
         self,
         inputs: Sequence[Dict],
@@ -350,6 +355,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         out = self.client.get_req_generation(self.model, stop=stop, payload=payload)
         return out
 
+    @deprecated(since="0.0.15", removal="0.1.0")
     def get_stream(
         self,
         inputs: Sequence[Dict],
@@ -360,6 +366,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         payload = self.get_payload(inputs=inputs, stream=True, **kwargs)
         return self.client.get_req_stream(self.model, stop=stop, payload=payload)
 
+    @deprecated(since="0.0.15", removal="0.1.0")
     def get_astream(
         self,
         inputs: Sequence[Dict],
@@ -370,6 +377,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         payload = self.get_payload(inputs=inputs, stream=True, **kwargs)
         return self.client.get_req_astream(self.model, stop=stop, payload=payload)
 
+    @deprecated(since="0.0.15", removal="0.1.0")
     def get_payload(self, inputs: Sequence[Dict], **kwargs: Any) -> dict:
         """Generates payload for the _NVIDIAClient API to send to service."""
         attr_kwargs = {
@@ -387,6 +395,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         new_kwargs = {**attr_kwargs, **kwargs}
         return self.prep_payload(inputs=inputs, **new_kwargs)
 
+    @deprecated(since="0.0.15", removal="0.1.0")
     def prep_payload(self, inputs: Sequence[Dict], **kwargs: Any) -> dict:
         """Prepares a message or list of messages for the payload"""
         messages = [self.prep_msg(m) for m in inputs]
@@ -398,6 +407,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
             kwargs.pop("stop")
         return {"messages": messages, **kwargs}
 
+    @deprecated(since="0.0.15", removal="0.1.0")
     def prep_msg(self, msg: Union[str, dict, BaseMessage]) -> dict:
         """Helper Method: Ensures a message is a dictionary with a role and content."""
         if isinstance(msg, str):
