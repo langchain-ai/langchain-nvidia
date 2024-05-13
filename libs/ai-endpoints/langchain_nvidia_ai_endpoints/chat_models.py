@@ -219,6 +219,8 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
                 run_manager.on_llm_new_token(chunk.text, chunk=chunk)
             yield chunk
 
+    # todo: remove when get_astream is removed
+    @deprecated(since="0.0.15", removal="0.1.0")
     async def _astream(
         self,
         messages: List[BaseMessage],
