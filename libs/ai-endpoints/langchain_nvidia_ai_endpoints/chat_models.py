@@ -43,7 +43,6 @@ from langchain_core.outputs import (
 )
 from langchain_core.pydantic_v1 import BaseModel, Field, validator
 from langchain_core.runnables import Runnable
-from langchain_core.runnables.config import run_in_executor
 from langchain_core.tools import BaseTool
 
 from langchain_nvidia_ai_endpoints import _common as nvidia_ai_endpoints
@@ -198,22 +197,6 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         message = ChatMessage(**self.custom_postprocess(responses))
         generation = ChatGeneration(message=message)
         return ChatResult(generations=[generation], llm_output=responses)
-
-    async def _agenerate(
-        self,
-        messages: List[BaseMessage],
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
-        **kwargs: Any,
-    ) -> ChatResult:
-        return await run_in_executor(
-            None,
-            self._generate,
-            messages,
-            stop=stop,
-            run_manager=run_manager.get_sync() if run_manager else None,
-            **kwargs,
-        )
 
     def _call(
         self,
