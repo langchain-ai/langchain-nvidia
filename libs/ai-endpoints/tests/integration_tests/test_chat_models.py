@@ -61,16 +61,22 @@ def test_ai_endpoints_streaming(chat_model: str, mode: dict) -> None:
     """Test streaming tokens from ai endpoints."""
     llm = ChatNVIDIA(model=chat_model, max_tokens=36).mode(**mode)
 
+    cnt = 0
     for token in llm.stream("I'm Pickle Rick"):
         assert isinstance(token.content, str)
+        cnt += 1
+    assert cnt > 1
 
 
 async def test_ai_endpoints_astream(chat_model: str, mode: dict) -> None:
     """Test streaming tokens from ai endpoints."""
     llm = ChatNVIDIA(model=chat_model, max_tokens=35).mode(**mode)
 
+    cnt = 0
     async for token in llm.astream("I'm Pickle Rick"):
         assert isinstance(token.content, str)
+        cnt += 1
+    assert cnt > 1
 
 
 async def test_ai_endpoints_abatch(chat_model: str, mode: dict) -> None:
