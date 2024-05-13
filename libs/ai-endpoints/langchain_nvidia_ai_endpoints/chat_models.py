@@ -192,23 +192,12 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> ChatResult:
-        responses = self._call(messages, stop=stop, run_manager=run_manager, **kwargs)
+        inputs = self.custom_preprocess(messages)
+        responses = self.get_generation(inputs=inputs, stop=stop, **kwargs)
         self._set_callback_out(responses, run_manager)
         message = ChatMessage(**self.custom_postprocess(responses))
         generation = ChatGeneration(message=message)
         return ChatResult(generations=[generation], llm_output=responses)
-
-    def _call(
-        self,
-        messages: List[BaseMessage],
-        stop: Optional[Sequence[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
-        **kwargs: Any,
-    ) -> dict:
-        """Invoke on a single list of chat messages."""
-        inputs = self.custom_preprocess(messages)
-        responses = self.get_generation(inputs=inputs, stop=stop, **kwargs)
-        return responses
 
     def _get_filled_chunk(self, **kwargs: Any) -> ChatGenerationChunk:
         """Fill the generation chunk."""
