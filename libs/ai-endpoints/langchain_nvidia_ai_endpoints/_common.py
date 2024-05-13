@@ -645,7 +645,7 @@ class _NVIDIAClient(BaseModel):
         if not filter:
             filter = cls.__name__
         if not list_all:
-            out = [m for m in out if m.client == filter or m.model_type is None]
+            out = [m for m in out if m.client == filter]
         return out
 
     def get_model_details(self, model: Optional[str] = None) -> dict:

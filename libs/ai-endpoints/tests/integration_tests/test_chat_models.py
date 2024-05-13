@@ -284,3 +284,10 @@ def test_serialize_chatnvidia() -> None:
     )
     result = model.invoke("What is there if there is nothing?")
     assert isinstance(result.content, str)
+
+
+def test_chat_available_models(mode: dict) -> None:
+    llm = ChatNVIDIA().mode(**mode)
+    models = llm.available_models
+    assert len(models) >= 1
+    assert all(model.model_type is not None for model in models)
