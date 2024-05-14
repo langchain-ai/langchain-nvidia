@@ -370,7 +370,7 @@ files = [
 
 [[package]]
 name = "langchain-core"
-version = "0.2.0rc1"
+version = "0.1.41"
 description = "Building applications with LLMs through composability"
 optional = false
 python-versions = ">=3.8.1,<4.0"
@@ -392,7 +392,7 @@ extended-testing = ["jinja2 (>=3,<4)"]
 type = "git"
 url = "https://github.com/langchain-ai/langchain.git"
 reference = "HEAD"
-resolved_reference = "cd1879f5e75fc9e6a8c04ac839909e0d6f2fb541"
+resolved_reference = "2d83505be979fb947e976ae7c48be87e49f41a27"
 subdirectory = "libs/core"
 
 [[package]]
@@ -1250,4 +1250,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<4.0"
-content-hash = "4f65a3e0079e1e538c05720fdc3841b24d3200d19dea3bb212c4c76e955320a9"
+content-hash = "d14b1042ad36b15bd75f28f734d22007eca8e1d3e0e859a4a29e91c1626f1b07"
