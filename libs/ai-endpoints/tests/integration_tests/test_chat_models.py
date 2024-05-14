@@ -332,4 +332,6 @@ def test_chat_available_models(mode: dict) -> None:
     llm = ChatNVIDIA().mode(**mode)
     models = llm.available_models
     assert len(models) >= 1
-    assert all(model.model_type is not None for model in models)
+    # we don't have type information for local nim endpoints
+    if mode.get("mode", None) != "nim":
+        assert all(model.model_type is not None for model in models)
