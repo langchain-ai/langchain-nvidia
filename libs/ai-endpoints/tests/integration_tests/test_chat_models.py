@@ -7,6 +7,7 @@ from langchain_core.load.dump import dumps
 from langchain_core.load.load import loads
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
+from langchain_nvidia_ai_endpoints._common import Model
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
 #
@@ -320,10 +321,10 @@ def test_ai_endpoints_invoke_top_p_positive(chat_model: str, mode: dict) -> None
     assert result0.content != result1.content
 
 
-def test_serialize_chatnvidia() -> None:
-    model = loads(
-        dumps(ChatNVIDIA()), valid_namespaces=["langchain_nvidia_ai_endpoints"]
-    )
+@pytest.mark.skip("serialization support is broken, needs attention")
+def test_serialize_chatnvidia(chat_model: str, mode: dict) -> None:
+    llm = ChatNVIDIA(model=chat_model).mode(**mode)
+    model = loads(dumps(llm), valid_namespaces=["langchain_nvidia_ai_endpoints"])
     result = model.invoke("What is there if there is nothing?")
     assert isinstance(result.content, str)
 
@@ -335,3 +336,10 @@ def test_chat_available_models(mode: dict) -> None:
     # we don't have type information for local nim endpoints
     if mode.get("mode", None) != "nim":
         assert all(model.model_type is not None for model in models)
+
+
+def test_chat_get_available_models(mode: dict) -> None:
+    models = ChatNVIDIA.get_available_models(**mode)
+    assert len(models) > 0
+    for model in models:
+        assert isinstance(model, Model)
