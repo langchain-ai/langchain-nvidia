@@ -120,6 +120,8 @@ def test_messages(
 ) -> None:
     if not system and not exchange:
         pytest.skip("No messages to test")
+    if len(exchange) == 2 and type(exchange[0]) == type(exchange[1]):
+        pytest.skip("Known issue, messages types must alternate")
     chat = ChatNVIDIA(model=chat_model, max_tokens=36).mode(**mode)
     response = chat.invoke(system + exchange)
     assert isinstance(response, BaseMessage)
