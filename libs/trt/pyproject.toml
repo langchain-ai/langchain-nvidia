@@ -12,7 +12,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
-langchain-core = "^0.1"
+langchain-core = ">=0.1.50,<0.3"
 tritonclient = { extras = ["grpc"], version = "^2.42.0" }
 lint = "^1.2.1"
 types-protobuf = "^4.24.0.4"
