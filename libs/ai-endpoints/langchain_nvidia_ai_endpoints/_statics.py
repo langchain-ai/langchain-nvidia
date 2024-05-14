@@ -171,6 +171,10 @@ MODEL_SPECS.update(
             "model_type": "chat",
             "model_name": "aisingapore/sea-lion-7b-instruct",
         },
+        "ai-google-paligemma": {
+            "model_type": "image_in",
+            "model_name": "google/paligemma",
+        },
     }
 )
 
