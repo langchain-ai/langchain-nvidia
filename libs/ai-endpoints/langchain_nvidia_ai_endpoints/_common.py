@@ -529,7 +529,7 @@ class _NVIDIAClient(BaseModel):
     Is subclassed by ChatNVIDIA to provide a simple LangChain interface.
     """
 
-    client: NVEModel = Field(NVEModel)
+    client: NVEModel = Field(NVEModel, exclude=True)
 
     _default_model: str = ""
     model: str = Field(description="Name of the model to invoke")
