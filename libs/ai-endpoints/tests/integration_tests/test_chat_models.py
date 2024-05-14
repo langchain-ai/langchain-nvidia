@@ -1,11 +1,12 @@
 """Test ChatNVIDIA chat model."""
 
 import warnings
+from typing import List
 
 import pytest
 from langchain_core.load.dump import dumps
 from langchain_core.load.load import loads
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
@@ -51,6 +52,78 @@ def test_chat_ai_endpoints_system_message(chat_model: str, mode: dict) -> None:
     human_message = HumanMessage(content="Hello")
     response = chat.invoke([system_message, human_message])
     assert isinstance(response, BaseMessage)
+    assert isinstance(response.content, str)
+
+
+@pytest.mark.parametrize(
+    "exchange",
+    [
+        pytest.param([], id="no_message"),
+        pytest.param([HumanMessage(content="Hello")], id="single_human_message"),
+        pytest.param([AIMessage(content="Hi")], id="single_ai_message"),
+        pytest.param(
+            [HumanMessage(content="Hello"), HumanMessage(content="Hello")],
+            id="double_human_message",
+        ),
+        pytest.param(
+            [AIMessage(content="Hi"), AIMessage(content="Hi")], id="double_ai_message"
+        ),
+        pytest.param(
+            [HumanMessage(content="Hello"), AIMessage(content="Hi")],
+            id="human_ai_message",
+        ),
+        pytest.param(
+            [AIMessage(content="Hi"), HumanMessage(content="Hello")],
+            id="ai_human_message",
+        ),
+        pytest.param(
+            [
+                HumanMessage(content="Hello"),
+                AIMessage(content="Hi"),
+                HumanMessage(content="There"),
+            ],
+            id="human_ai_human_message",
+        ),
+        pytest.param(
+            [
+                HumanMessage(content="Hello"),
+                AIMessage(content="Hi"),
+                HumanMessage(content="There"),
+                AIMessage(content="Ok"),
+            ],
+            id="human_ai_human_ai_message",
+        ),
+        pytest.param(
+            [
+                HumanMessage(content="Hello"),
+                AIMessage(content="Hi"),
+                HumanMessage(content="There"),
+                AIMessage(content="Ok"),
+                HumanMessage(content="Now what?"),
+            ],
+            id="human_ai_human_ai_human_message",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "system",
+    [
+        pytest.param([], id="no_system_message"),  # no system message
+        pytest.param(
+            [SystemMessage(content="You are to chat with the user.")],
+            id="single_system_message",
+        ),
+    ],
+)
+def test_messages(
+    chat_model: str, mode: dict, system: List, exchange: List[BaseMessage]
+) -> None:
+    if not system and not exchange:
+        pytest.skip("No messages to test")
+    chat = ChatNVIDIA(model=chat_model, max_tokens=36).mode(**mode)
+    response = chat.invoke(system + exchange)
+    assert isinstance(response, BaseMessage)
+    assert response.response_metadata["role"] == "assistant"
     assert isinstance(response.content, str)
 
 
