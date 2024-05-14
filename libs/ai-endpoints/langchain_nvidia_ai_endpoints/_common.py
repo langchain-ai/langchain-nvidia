@@ -178,7 +178,10 @@ class NVEModel(BaseModel):
         # this lets users work with ai-gemma-2b and google/gemma-2b
         aliases = []
         for function in output:
-            name = function["name"]
+            assert (
+                "name" in function or "id" in function
+            ), f"No name or id in function: {function}"
+            name = function["name"] if "name" in function else function["id"]
             if name in MODEL_SPECS and "model_name" in MODEL_SPECS[name]:
                 alias = function.copy()
                 alias.update(name=MODEL_SPECS[name]["model_name"])
@@ -592,7 +595,12 @@ class _NVIDIAClient(BaseModel):
     @property
     def available_models(self) -> List[Model]:
         """Map the available models that can be invoked."""
-        return self.__class__.get_available_models(client=self)
+        if self.curr_mode == "nim":
+            return self.__class__.get_available_models(
+                client=self, mode="nim", base_url=self.client.base_url
+            )
+        else:
+            return self.__class__.get_available_models(client=self)
 
     @classmethod
     @deprecated(since="0.0.15", removal="0.1.0", alternative="get_available_models")
@@ -626,6 +634,11 @@ class _NVIDIAClient(BaseModel):
             ],
             key=lambda x: f"{x.client or 'Z'}{x.id}{cls}",
         )
+        # nim model listing does not provide the type and we cannot know
+        # the model name ahead of time to guess the type.
+        # so we need to list all models.
+        if mode == "nim":
+            list_all = True
         if not filter:
             filter = cls.__name__
         if not list_all:
