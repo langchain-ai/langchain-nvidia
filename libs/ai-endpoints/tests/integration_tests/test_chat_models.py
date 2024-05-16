@@ -64,9 +64,14 @@ def test_chat_ai_endpoints_system_message(chat_model: str, mode: dict) -> None:
         pytest.param(
             [HumanMessage(content="Hello"), HumanMessage(content="Hello")],
             id="double_human_message",
+            marks=pytest.mark.xfail(
+                reason="Known issue, messages types must alternate"
+            ),
         ),
         pytest.param(
-            [AIMessage(content="Hi"), AIMessage(content="Hi")], id="double_ai_message"
+            [AIMessage(content="Hi"), AIMessage(content="Hi")],
+            id="double_ai_message",
+            marks=pytest.mark.xfail(reason="Known issue, message types must alternate"),
         ),
         pytest.param(
             [HumanMessage(content="Hello"), AIMessage(content="Hi")],
@@ -120,8 +125,6 @@ def test_messages(
 ) -> None:
     if not system and not exchange:
         pytest.skip("No messages to test")
-    if len(exchange) == 2 and isinstance(exchange[0], type(exchange[1])):
-        pytest.skip("Known issue, messages types must alternate")
     chat = ChatNVIDIA(model=chat_model, max_tokens=36).mode(**mode)
     response = chat.invoke(system + exchange)
     assert isinstance(response, BaseMessage)
@@ -235,7 +238,7 @@ def test_ai_endpoints_invoke_max_tokens_positive(
 # todo: seed test for ainvoke, batch, abatch, stream, astream
 
 
-@pytest.mark.skip("seed does not consistently control determinism")
+@pytest.mark.xfail(reason="seed does not consistently control determinism")
 def test_ai_endpoints_invoke_seed_default(chat_model: str, mode: dict) -> None:
     """Test invoke's seed (default)."""
     llm0 = ChatNVIDIA(model=chat_model).mode(**mode)  # default seed should not repeat
@@ -248,19 +251,27 @@ def test_ai_endpoints_invoke_seed_default(chat_model: str, mode: dict) -> None:
     assert result0.content != result1.content
 
 
-def test_ai_endpoints_invoke_seed_negative(chat_model: str, mode: dict) -> None:
-    """Test invoke's seed (negative)."""
-    with pytest.raises(Exception):
-        llm = ChatNVIDIA(model=chat_model, seed=-1000).mode(**mode)
-        llm.invoke("What's in a seed?")
-        assert llm.client.last_response.status_code == 422
+@pytest.mark.parametrize(
+    "seed",
+    [
+        pytest.param(
+            -1000,
+            marks=pytest.mark.xfail(reason="Known issue, negative seed not supported"),
+        ),
+        0,
+        1000,
+    ],
+)
+def test_ai_endpoints_invoke_seed_range(chat_model: str, mode: dict, seed: int) -> None:
+    llm = ChatNVIDIA(model=chat_model, seed=seed).mode(**mode)
+    llm.invoke("What's in a seed?")
+    assert llm.client.last_response.status_code == 200
 
 
-@pytest.mark.skip("seed does not consistently control determinism")
-def test_ai_endpoints_invoke_seed_positive(
+@pytest.mark.xfail(reason="seed does not consistently control determinism")
+def test_ai_endpoints_invoke_seed_functional(
     chat_model: str, mode: dict, seed: int = 413
 ) -> None:
-    """Test invoke's seed (positive)."""
     llm = ChatNVIDIA(model=chat_model, seed=seed).mode(**mode)
     result0 = llm.invoke("What's in a seed?")
     assert isinstance(result0.content, str)
@@ -272,7 +283,7 @@ def test_ai_endpoints_invoke_seed_positive(
 # todo: temperature test for ainvoke, batch, abatch, stream, astream
 
 
-@pytest.mark.parametrize("temperature", [-0.1, 1.1])
+@pytest.mark.parametrize("temperature", [-0.1, 2.1])
 def test_ai_endpoints_invoke_temperature_negative(
     chat_model: str, mode: dict, temperature: int
 ) -> None:
@@ -283,7 +294,7 @@ def test_ai_endpoints_invoke_temperature_negative(
         assert llm.client.last_response.status_code == 422
 
 
-@pytest.mark.skip("seed does not consistently control determinism")
+@pytest.mark.xfail(reason="temperature not consistently implemented")
 def test_ai_endpoints_invoke_temperature_positive(chat_model: str, mode: dict) -> None:
     """Test invoke's temperature (positive)."""
     # idea is to have a fixed seed and vary temperature to get different results
@@ -299,7 +310,7 @@ def test_ai_endpoints_invoke_temperature_positive(chat_model: str, mode: dict) -
 # todo: top_p test for ainvoke, batch, abatch, stream, astream
 
 
-@pytest.mark.parametrize("top_p", [-10, 0])
+@pytest.mark.parametrize("top_p", [-10, 10])
 def test_ai_endpoints_invoke_top_p_negative(
     chat_model: str, mode: dict, top_p: int
 ) -> None:
@@ -310,14 +321,14 @@ def test_ai_endpoints_invoke_top_p_negative(
         assert llm.client.last_response.status_code == 422
 
 
-@pytest.mark.skip("seed does not consistently control determinism")
+@pytest.mark.xfail(reason="seed does not consistently control determinism")
 def test_ai_endpoints_invoke_top_p_positive(chat_model: str, mode: dict) -> None:
     """Test invoke's top_p (positive)."""
     # idea is to have a fixed seed and vary top_p to get different results
-    llm0 = ChatNVIDIA(model=chat_model, seed=608, top_p=1).mode(**mode)
+    llm0 = ChatNVIDIA(model=chat_model, seed=608, top_p=0.1).mode(**mode)
     result0 = llm0.invoke("What's in a top_p?")
     assert isinstance(result0.content, str)
-    llm1 = ChatNVIDIA(model=chat_model, seed=608, top_p=100).mode(**mode)
+    llm1 = ChatNVIDIA(model=chat_model, seed=608, top_p=1).mode(**mode)
     result1 = llm1.invoke("What's in a top_p?")
     assert isinstance(result1.content, str)
     assert result0.content != result1.content
