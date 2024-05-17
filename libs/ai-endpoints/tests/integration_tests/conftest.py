@@ -56,7 +56,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("chat_model", models, ids=models)
 
     if "rerank_model" in metafunc.fixturenames:
-        models = ["ai-rerank-qa-mistral-4b"]
+        models = ["nv-rerank-qa-mistral-4b:1"]
         if model := metafunc.config.getoption("rerank_model_id"):
             models = [model]
         # nim-mode reranking does not support model listing via /v1/models endpoint
@@ -74,7 +74,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("rerank_model", models, ids=models)
 
     if "image_in_model" in metafunc.fixturenames:
-        models = ["ai-fuyu-8b"]
+        models = ["adept/fuyu-8b"]
         if metafunc.config.getoption("all_models"):
             models = [
                 model.id for model in get_all_models() if model.model_type == "image_in"
