@@ -175,6 +175,10 @@ MODEL_SPECS.update(
             "model_type": "image_in",
             "model_name": "google/paligemma",
         },
+        "ai-arctic-embed-l": {
+            "model_type": "embedding",
+            "model_name": "snowflake/arctic-embed-l",
+        },
     }
 )
 
