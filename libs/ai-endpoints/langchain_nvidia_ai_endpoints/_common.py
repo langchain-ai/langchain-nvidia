@@ -22,7 +22,7 @@ from typing import (
 
 import aiohttp
 import requests
-from langchain_core._api import deprecated
+from langchain_core._api import deprecated, warn_deprecated
 from langchain_core.pydantic_v1 import (
     BaseModel,
     Field,
@@ -534,7 +534,17 @@ class _NVIDIAClient(BaseModel):
     _default_model: str = ""
     model: str = Field(description="Name of the model to invoke")
     infer_endpoint: str = Field("{base_url}/chat/completions")
-    curr_mode: _MODE_TYPE = Field("nvidia")
+    curr_mode: _MODE_TYPE = Field("nvidia")  # todo: remove this in 0.1
+    is_hosted: bool = Field(True)
+
+    def __init__(self, base_url: Optional[str] = None, **kwargs: Any):
+        super().__init__(**kwargs)
+        if base_url:
+            self.is_hosted = False
+            self.curr_mode = "nim"
+            self.client.base_url = base_url
+            self.client.endpoints["infer"] = self.infer_endpoint
+            self.client.endpoints["models"] = "{base_url}/models"
 
     ####################################################################################
 
@@ -595,9 +605,9 @@ class _NVIDIAClient(BaseModel):
     @property
     def available_models(self) -> List[Model]:
         """Map the available models that can be invoked."""
-        if self.curr_mode == "nim":
+        if self.curr_mode == "nim" or not self.is_hosted:
             return self.__class__.get_available_models(
-                client=self, mode="nim", base_url=self.client.base_url
+                client=self, base_url=self.client.base_url
             )
         else:
             return self.__class__.get_available_models(client=self)
@@ -625,7 +635,12 @@ class _NVIDIAClient(BaseModel):
         **kwargs: Any,
     ) -> List[Model]:
         """Map the available models that can be invoked. Callable from class"""
-        nveclient = (client or cls(**kwargs)).mode(mode, **kwargs).client
+        if mode is not None:
+            warn_deprecated(
+                name="mode", since="0.0.17", removal="0.1.0", alternative="`base_url`"
+            )
+        self = client or cls(**kwargs)
+        nveclient = self.client
         nveclient.reset_method_cache()
         out = sorted(
             [
@@ -637,7 +652,7 @@ class _NVIDIAClient(BaseModel):
         # nim model listing does not provide the type and we cannot know
         # the model name ahead of time to guess the type.
         # so we need to list all models.
-        if mode == "nim":
+        if mode == "nim" or not self.is_hosted:
             list_all = True
         if not filter:
             filter = cls.__name__
@@ -668,6 +683,11 @@ class _NVIDIAClient(BaseModel):
             return ""
         return self.model
 
+    @deprecated(
+        since="0.0.17",
+        removal="0.1.0",
+        alternative="`base_url` in constructor",
+    )
     def mode(
         self,
         mode: Optional[_MODE_TYPE] = "nvidia",
@@ -680,7 +700,7 @@ class _NVIDIAClient(BaseModel):
         force_clone: bool = True,
         **kwargs: Any,
     ) -> Any:  # todo: in python 3.11+ this should be typing.Self
-        """Return a client swapped to a different mode"""
+        """Deprecated: pass `base_url=...` to constructor instead."""
         if isinstance(self, str):
             raise ValueError("Please construct the model before calling mode()")
         out = self if not force_clone else deepcopy(self)

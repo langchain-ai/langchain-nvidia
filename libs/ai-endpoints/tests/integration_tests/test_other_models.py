@@ -10,7 +10,7 @@ from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
 def test_chat_ai_endpoints_context_message(qa_model: str, mode: dict) -> None:
     """Test wrapper with context message."""
-    chat = ChatNVIDIA(model=qa_model, max_tokens=36).mode(**mode)
+    chat = ChatNVIDIA(model=qa_model, max_tokens=36, **mode)
     context_message = BaseMessage(
         content="Once upon a time there was a little langchainer", type="context"
     )
@@ -22,7 +22,7 @@ def test_chat_ai_endpoints_context_message(qa_model: str, mode: dict) -> None:
 
 def test_image_in_models(image_in_model: str, mode: dict) -> None:
     try:
-        chat = ChatNVIDIA(model=image_in_model).mode(**mode)
+        chat = ChatNVIDIA(model=image_in_model, **mode)
         response = chat.invoke(
             [
                 HumanMessage(

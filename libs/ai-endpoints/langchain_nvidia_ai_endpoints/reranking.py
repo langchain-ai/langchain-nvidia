@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Generator, List, Optional, Sequence
 
+from langchain_core._api import deprecated, warn_deprecated
 from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
 from langchain_core.documents.compressor import BaseDocumentCompressor
@@ -37,30 +38,50 @@ class NVIDIARerank(BaseDocumentCompressor):
     max_batch_size: int = Field(
         _default_batch_size, ge=1, description="The maximum batch size."
     )
+    _is_hosted: bool = PrivateAttr(True)
 
     def __init__(self, **kwargs: Any):
         """
         Create a new NVIDIARerank document compressor.
 
-        Unless you plan to use the "nim" mode, you need to provide an API key. Your
-        options are -
-         0. Pass the key as the nvidia_api_key parameter.
-         1. Pass the key as the api_key parameter.
-         2. Set the NVIDIA_API_KEY environment variable, recommended.
-        Precedence is in the order listed above.
+        This class provides access to a NVIDIA NIM for reranking. By default, it
+        connects to a hosted NIM, but can be configured to connect to a local NIM
+        using the `base_url` parameter. An API key is required to connect to the
+        hosted NIM.
+
+        Args:
+            model (str): The model to use for reranking.
+            nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
+            api_key (str): Alternative to nvidia_api_key.
+            base_url (str): The base URL of the NIM to connect to.
+
+        API Key:
+        - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
+            environment variable.
         """
         super().__init__(**kwargs)
         self._client = _NVIDIAClient(
             model=self.model,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
         )
+        if base_url := kwargs.get("base_url", None):
+            # todo: detect if the base_url points to hosted NIM, this depends on
+            #       moving from NVCF inference to API Catalog inference
+            self._is_hosted = False
+            self._client.client.base_url = base_url
+            self._client.client.endpoints["infer"] = "{base_url}/ranking"
+            self._client.client.endpoints = {
+                "infer": "{base_url}/ranking",
+                "status": None,
+                "models": None,
+            }
 
     @property
     def available_models(self) -> List[Model]:
         """
         Get a list of available models that work with NVIDIARerank.
         """
-        if self._client.curr_mode == "nim":
+        if self._client.curr_mode == "nim" or not self._is_hosted:
             # local NIM supports a single model and no /models endpoint
             models = [
                 Model(
@@ -102,8 +123,10 @@ class NVIDIARerank(BaseDocumentCompressor):
         It is possible to get a list of all models, including those that are not
         chat models, by setting the list_all parameter to True.
         """
+        if mode is not None:
+            warn_deprecated(since="0.0.17", removal="0.1.0", alternative="`base_url`")
         self = cls(**kwargs).mode(mode=mode, **kwargs)
-        if mode == "nim":
+        if mode == "nim" or not self._is_hosted:
             # ignoring list_all because there is one
             models = self.available_models
         else:
@@ -116,6 +139,11 @@ class NVIDIARerank(BaseDocumentCompressor):
             )
         return models
 
+    @deprecated(
+        since="0.0.17",
+        removal="0.1.0",
+        alternative="pas `base_url` to constructor",
+    )
     def mode(
         self,
         mode: Optional[_MODE_TYPE] = "nvidia",
@@ -125,20 +153,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         **kwargs: Any,
     ) -> NVIDIARerank:
         """
-        Change the mode.
-
-        There are two modes, "nvidia" and "nim". The "nvidia" mode is the default mode
-        and is used to interact with hosted NVIDIA AI endpoints. The "nim" mode is
-        used to interact with NVIDIA NIM endpoints, which are typically hosted
-        on-premises.
-
-        For the "nvidia" mode, the "api_key" parameter is available to specify your
-        API key. If not specified, the NVIDIA_API_KEY environment variable will be used.
-
-        For the "nim" mode, the "base_url" and "model" parameters are required. Set
-        base_url to the url of your NVIDIA NIM endpoint. For instance,
-        "https://localhost:9999/v1". Additionally, the "model" parameter must be set
-        to the name of the model inside the NIM.
+        Deprecated: use NVIDIARerank(base_url=...) instead.
         """
         # set a default base_url for nim mode
         if not base_url and mode == "nim":
