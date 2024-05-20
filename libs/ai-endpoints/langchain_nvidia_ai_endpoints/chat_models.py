@@ -25,7 +25,6 @@ from typing import (
 )
 
 import requests
-from langchain_core._api import deprecated
 from langchain_core.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
@@ -46,7 +45,6 @@ from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 
 from langchain_nvidia_ai_endpoints import _common as nvidia_ai_endpoints
-from langchain_nvidia_ai_endpoints._statics import MODEL_SPECS
 
 _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
 _DictOrPydanticClass = Union[Dict[str, Any], Type[BaseModel]]
@@ -143,20 +141,6 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
     stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
     labels: Optional[Dict[str, float]] = Field(description="Steering parameters")
     streaming: bool = Field(True)
-
-    @validator("model")
-    def aifm_deprecated(cls, value: str) -> str:
-        """All AI Foundataion Models are deprecate, use API Catalog models instead."""
-        for model in [value, f"playground_{value}"]:
-            if model in MODEL_SPECS and MODEL_SPECS[model].get("api_type") == "aifm":
-                alternative = MODEL_SPECS[model].get(
-                    "alternative", ChatNVIDIA._default_model
-                )
-                warnings.warn(
-                    f"{value} is deprecated. Try {alternative} instead.",
-                    DeprecationWarning,
-                )
-        return value
 
     @validator("bad")
     def aifm_bad_deprecated(
@@ -303,9 +287,9 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         **kwargs: Any,
     ) -> dict:
         """Call to client generate method with call scope"""
-        stop = kwargs["stop"] = kwargs.get("stop") or self.stop
+        kwargs["stop"] = kwargs.get("stop") or self.stop
         payload = self._get_payload(inputs=inputs, stream=False, **kwargs)
-        out = self.client.get_req_generation(self.model, stop=stop, payload=payload)
+        out = self.client.get_req_generation(payload=payload)
         return out
 
     def _get_stream(  # todo: remove
@@ -314,9 +298,9 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         **kwargs: Any,
     ) -> Iterator:
         """Call to client stream method with call scope"""
-        stop = kwargs["stop"] = kwargs.get("stop") or self.stop
+        kwargs["stop"] = kwargs.get("stop") or self.stop
         payload = self._get_payload(inputs=inputs, stream=True, **kwargs)
-        return self.client.get_req_stream(self.model, stop=stop, payload=payload)
+        return self.client.get_req_stream(payload=payload)
 
     def _get_astream(  # todo: remove
         self,
@@ -324,15 +308,16 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         **kwargs: Any,
     ) -> AsyncIterator:
         """Call to client astream methods with call scope"""
-        stop = kwargs["stop"] = kwargs.get("stop") or self.stop
+        kwargs["stop"] = kwargs.get("stop") or self.stop
         payload = self._get_payload(inputs=inputs, stream=True, **kwargs)
-        return self.client.get_req_astream(self.model, stop=stop, payload=payload)
+        return self.client.get_req_astream(payload=payload)
 
     def _get_payload(
         self, inputs: Sequence[Dict], **kwargs: Any
     ) -> dict:  # todo: remove
         """Generates payload for the _NVIDIAClient API to send to service."""
         attr_kwargs = {
+            "model": self.model,
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
             "top_p": self.top_p,
@@ -341,8 +326,8 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
             "stop": self.stop,
             "labels": self.labels,
         }
-        if model_name := self._get_binding_model():
-            attr_kwargs["model"] = model_name
+        # if model_name := self._get_binding_model():
+        #     attr_kwargs["model"] = model_name
         attr_kwargs = {k: v for k, v in attr_kwargs.items() if v is not None}
         new_kwargs = {**attr_kwargs, **kwargs}
         return self._prep_payload(inputs=inputs, **new_kwargs)

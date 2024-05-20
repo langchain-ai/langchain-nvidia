@@ -3,7 +3,6 @@ from typing import List
 
 import faker
 import pytest
-from langchain_core._api import LangChainDeprecationWarning
 from langchain_core.documents import Document
 from requests.exceptions import ConnectionError, MissingSchema
 

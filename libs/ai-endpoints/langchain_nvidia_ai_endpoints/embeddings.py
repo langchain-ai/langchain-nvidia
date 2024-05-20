@@ -10,8 +10,6 @@ from langchain_core.pydantic_v1 import Field, validator
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints.callbacks import usage_callback_var
 
-from ._statics import MODEL_SPECS
-
 
 class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
     """
@@ -54,21 +52,6 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
         )
         return value
 
-    # todo: fix _NVIDIAClient.validate_client and enable Config.validate_assignment
-    @validator("model")
-    def aifm_deprecated(cls, value: str) -> str:
-        """All AI Foundataion Models are deprecate, use API Catalog models instead."""
-        for model in [value, f"playground_{value}"]:
-            if model in MODEL_SPECS and MODEL_SPECS[model].get("api_type") == "aifm":
-                alternative = MODEL_SPECS[model].get(
-                    "alternative", NVIDIAEmbeddings._default_model
-                )
-                warnings.warn(
-                    f"{value} is deprecated. Try {alternative} instead.",
-                    DeprecationWarning,
-                )
-        return value
-
     def _embed(
         self, texts: List[str], model_type: Literal["passage", "query"]
     ) -> List[List[float]]:
@@ -87,29 +70,26 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
         #                                         an input is too long
         # todo: remove the playground aliases
         model_name = self.model
-        if model_name not in MODEL_SPECS:
-            if f"playground_{model_name}" in MODEL_SPECS:
-                model_name = f"playground_{model_name}"
-        if MODEL_SPECS.get(model_name, {}).get("api_type", None) == "aifm":
+        payload = {
+            "input": texts,
+            "model": self.model,
+            "encoding_format": "float",
+            "input_type": model_type,
+        }
+        if self.truncate:
+            payload["truncate"] = self.truncate
+
+        # todo: remove this
+        # special handling for ai foundation model, there's only one
+        if "nvolveqa_40k" in model_name:
             payload = {
                 "input": texts,
                 "model": model_type,
                 "encoding_format": "float",
             }
-        else:  # default to the API Catalog API
-            payload = {
-                "input": texts,
-                "model": self._get_binding_model() or self.model,
-                "encoding_format": "float",
-                "input_type": model_type,
-            }
-            if self.truncate:
-                payload["truncate"] = self.truncate
 
         response = self.client.get_req(
-            model_name=self.model,
             payload=payload,
-            endpoint="infer",
         )
         response.raise_for_status()
         result = response.json()

@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import time
-from copy import deepcopy
+import warnings
 from typing import (
     Any,
     AsyncIterator,
@@ -23,7 +23,6 @@ from urllib.parse import urlparse
 
 import aiohttp
 import requests
-from langchain_core._api import deprecated, warn_deprecated
 from langchain_core.pydantic_v1 import (
     BaseModel,
     Field,
@@ -34,7 +33,7 @@ from langchain_core.pydantic_v1 import (
 )
 from requests.models import Response
 
-from langchain_nvidia_ai_endpoints._statics import MODEL_SPECS, Model
+from langchain_nvidia_ai_endpoints._statics import Model, determine_model
 
 logger = logging.getLogger(__name__)
 
@@ -63,18 +62,23 @@ class NVEModel(BaseModel):
     ## Core defaults. These probably should not be changed
     _api_key_var = "NVIDIA_API_KEY"
     base_url: str = Field(
-        "https://api.nvcf.nvidia.com/v2/nvcf",
+        "https://integrate.api.nvidia.com/v1",
         description="Base URL for standard inference",
+    )
+    infer_path: str = Field(
+        "{base_url}/chat/completions",
+        description="Path for inference",
+    )
+    listing_path: str = Field(
+        "{base_url}/models",
+        description="Path for listing available models",
+    )
+    polling_endpoint: str = Field(
+        "https://api.nvcf.nvidia.com/v2/nvcf/pexec/status/{request_id}",
+        description="Path for polling after HTTP 202 responses",
     )
     get_session_fn: Callable = Field(requests.Session)
     get_asession_fn: Callable = Field(aiohttp.ClientSession)
-    endpoints: dict = Field(
-        {
-            "infer": "{base_url}/pexec/functions/{model_id}",
-            "status": "{base_url}/pexec/status/{request_id}",
-            "models": "{base_url}/functions",
-        }
-    )
 
     api_key: SecretStr = Field(..., description="API Key for service of choice")
 
@@ -89,12 +93,22 @@ class NVEModel(BaseModel):
         default_payload_fn, description="Function to process payload"
     )
     headers_tmpl: dict = Field(
-        ...,
-        description="Headers template for API calls."
-        " Should contain `call` and `stream` keys.",
+        {
+            "call": {
+                "Accept": "application/json",
+                "Authorization": "Bearer {api_key}",
+                "User-Agent": "langchain-nvidia-ai-endpoints",
+            },
+            "stream": {
+                "Accept": "text/event-stream",
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {api_key}",
+                "User-Agent": "langchain-nvidia-ai-endpoints",
+            },
+        },
+        description="Headers template must contain `call` and `stream` keys.",
     )
-    _available_functions: Optional[List[dict]] = PrivateAttr(default=None)
-    _available_models: Optional[dict] = PrivateAttr(default=None)
+    _available_models: Optional[List[Model]] = PrivateAttr(default=None)
 
     @classmethod
     def is_lc_serializable(cls) -> bool:
@@ -116,7 +130,7 @@ class NVEModel(BaseModel):
         return headers_
 
     @validator("base_url")
-    def validate_base_url(cls, v: str) -> str:
+    def _validate_base_url(cls, v: str) -> str:
         if v is not None:
             result = urlparse(v)
             # Ensure scheme and netloc (domain name) are present
@@ -127,7 +141,7 @@ class NVEModel(BaseModel):
         return v
 
     @root_validator(pre=True)
-    def validate_model(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_model(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate and update model arguments, including API key and formatting"""
         values["api_key"] = (
             values.get(cls._api_key_var.lower())
@@ -135,77 +149,43 @@ class NVEModel(BaseModel):
             or os.getenv(cls._api_key_var)
             or ""
         )
-        if "headers_tmpl" not in values:
-            call_kvs = {
-                "Accept": "application/json",
-            }
-            stream_kvs = {
-                "Accept": "text/event-stream",
-                "content-type": "application/json",
-            }
-            shared_kvs = {
-                "Authorization": "Bearer {api_key}",
-                "User-Agent": "langchain-nvidia-ai-endpoints",
-            }
-            values["headers_tmpl"] = {
-                "call": {**call_kvs, **shared_kvs},
-                "stream": {**stream_kvs, **shared_kvs},
-            }
         return values
 
     @property
-    def available_models(self) -> dict:
+    def available_models(self) -> list[Model]:
         """List the available models that can be invoked."""
         if self._available_models is not None:
             return self._available_models
-        live_fns = self.available_functions
-        if "status" in live_fns[0]:
-            live_fns = [v for v in live_fns if v.get("status") == "ACTIVE"]
-            self._available_models = {v["name"]: v["id"] for v in live_fns}
-        else:
-            self._available_models = {v.get("id"): v.get("owned_by") for v in live_fns}
+
+        response, _ = self._get(self.listing_path.format(base_url=self.base_url))
+        # expecting -
+        # {"object": "list",
+        #  "data": [
+        #   {
+        #     "id": "{name of model}",
+        #     "object": "model",
+        #     "created": {some int},
+        #     "owned_by": "{some owner}"
+        #   },
+        #   ...
+        #  ]
+        # }
+        assert response.status_code == 200, "Failed to get models"
+        assert "data" in response.json(), "No data found in response"
+        self._available_models = []
+        for element in response.json()["data"]:
+            assert "id" in element, f"No id found in {element}"
+            if not (model := determine_model(element["id"])):
+                # model is not in table of known models, but it exists
+                # so we'll let it through. use of this model will be
+                # accompanied by a warning.
+                model = Model(id=element["id"])
+            self._available_models.append(model)
+
         return self._available_models
 
-    @property
-    def available_functions(self) -> list:
-        """List the available functions that can be invoked."""
-        if self._available_functions and isinstance(self._available_functions, list):
-            return self._available_functions
-        if not self.endpoints.get("models"):
-            raise ValueError("No models endpoint found, so cannot retrieve model list.")
-        try:
-            invoke_url = self.endpoints.get("models", "").format(base_url=self.base_url)
-            query_res = self.query(invoke_url)
-        except Exception as e:
-            raise ValueError(f"Failed to query model endpoint {invoke_url}.\n{e}")
-        output = None
-        if isinstance(query_res.get("functions"), list):
-            output = query_res.get("functions")
-        elif isinstance(query_res.get("data"), list):
-            output = query_res.get("data")
-        if not isinstance(output, list):
-            raise ValueError(
-                f"Unexpected response when querying {invoke_url}\n{query_res}"
-            )
-        # if there's an alias / model name for the function, add it as well
-        # this lets users work with ai-gemma-2b and google/gemma-2b
-        aliases = []
-        for function in output:
-            assert (
-                "name" in function or "id" in function
-            ), f"No name or id in function: {function}"
-            name = function["name"] if "name" in function else function["id"]
-            if name in MODEL_SPECS and "model_name" in MODEL_SPECS[name]:
-                alias = function.copy()
-                alias.update(name=MODEL_SPECS[name]["model_name"])
-                aliases.append(alias)
-        output.extend(aliases)
-        self._available_functions = output
-        return self._available_functions
-
-    def reset_method_cache(self) -> None:
+    def _reset_method_cache(self) -> None:
         """Reset method cache to force re-fetch of available functions"""
-        self._available_functions = None
         self._available_models = None
 
     ####################################################################################
@@ -247,19 +227,30 @@ class NVEModel(BaseModel):
         return response, session
 
     def _wait(self, response: Response, session: Any) -> Response:
-        """Wait for a response from API after an initial response is made"""
+        """
+        Any request may return a 202 status code, which means the request is still
+        processing. This method will wait for a response using the request id.
+
+        see https://docs.nvidia.com/cloud-functions/user-guide/latest/cloud-function/api.html#http-polling
+        """
         start_time = time.time()
-        while response.status_code == 202:
+        # note: the local NIM does not return a 202 status code
+        #       (per RL 22may2024 circa 24.05)
+        while (
+            response.status_code == 202
+        ):  # todo: there are no tests that reach this point
             time.sleep(self.interval)
             if (time.time() - start_time) > self.timeout:
                 raise TimeoutError(
                     f"Timeout reached without a successful response."
                     f"\nLast response: {str(response)}"
                 )
-            request_id = response.headers.get("NVCF-REQID", "")
-            endpoint_args = {"base_url": self.base_url, "request_id": request_id}
+            assert (
+                "NVCF-REQID" in response.headers
+            ), "Received 202 response with no request id to follow"
+            request_id = response.headers.get("NVCF-REQID")
             self.last_response = response = session.get(
-                self.endpoints["status"].format(**endpoint_args),
+                self.polling_endpoint.format(request_id=request_id),
                 headers=self.headers["call"],
             )
         self._try_raise(response)
@@ -346,39 +337,11 @@ class NVEModel(BaseModel):
 
     def _get_invoke_url(
         self,
-        model_name: Optional[str] = None,
         invoke_url: Optional[str] = None,
-        endpoint: str = "",
     ) -> str:
         """Helper method to get invoke URL from a model name, URL, or endpoint stub"""
         if not invoke_url:
-            endpoint_str = self.endpoints.get(endpoint, "")
-            if not endpoint_str:
-                raise ValueError(f"Unknown endpoint referenced {endpoint} provided")
-            if "{model_id}" in endpoint_str:
-                if not model_name:
-                    raise ValueError("URL or model name must be specified to invoke")
-                if model_name in self.available_models:
-                    model_id = self.available_models[model_name]
-                elif f"playground_{model_name}" in self.available_models:
-                    model_id = self.available_models[f"playground_{model_name}"]
-                else:
-                    available_models_str = "\n".join(
-                        [f"{k} - {v}" for k, v in self.available_models.items()]
-                    )
-                    raise ValueError(
-                        f"Unknown model name {model_name} specified."
-                        "\nAvailable models are:\n"
-                        f"{available_models_str}"
-                    )
-            else:
-                model_id = ""
-
-            endpoint_args = {"base_url": self.base_url, "model_id": model_id}
-            invoke_url = endpoint_str.format(**endpoint_args)
-
-        if not invoke_url:
-            raise ValueError("URL or model name must be specified to invoke")
+            invoke_url = self.infer_path.format(base_url=self.base_url)
 
         return invoke_url
 
@@ -387,14 +350,11 @@ class NVEModel(BaseModel):
 
     def get_req(
         self,
-        model_name: Optional[str] = None,
         payload: dict = {},
         invoke_url: Optional[str] = None,
-        stop: Optional[Sequence[str]] = None,
-        endpoint: str = "",
     ) -> Response:
         """Post to the API."""
-        invoke_url = self._get_invoke_url(model_name, invoke_url, endpoint=endpoint)
+        invoke_url = self._get_invoke_url(invoke_url)
         if payload.get("stream", False) is True:
             payload = {**payload, "stream": False}
         response, session = self._post(invoke_url, payload)
@@ -402,15 +362,13 @@ class NVEModel(BaseModel):
 
     def get_req_generation(
         self,
-        model_name: Optional[str] = None,
         payload: dict = {},
         invoke_url: Optional[str] = None,
         stop: Optional[Sequence[str]] = None,
-        endpoint: str = "infer",
     ) -> dict:
         """Method for an end-to-end post query with NVE post-processing."""
-        invoke_url = self._get_invoke_url(model_name, invoke_url, endpoint=endpoint)
-        response = self.get_req(model_name, payload, invoke_url)
+        invoke_url = self._get_invoke_url(invoke_url)
+        response = self.get_req(payload, invoke_url)
         output, _ = self.postprocess(response, stop=stop)
         return output
 
@@ -473,13 +431,11 @@ class NVEModel(BaseModel):
 
     def get_req_stream(
         self,
-        model: Optional[str] = None,
         payload: dict = {},
         invoke_url: Optional[str] = None,
         stop: Optional[Sequence[str]] = None,
-        endpoint: str = "infer",
     ) -> Iterator:
-        invoke_url = self._get_invoke_url(model, invoke_url, endpoint=endpoint)
+        invoke_url = self._get_invoke_url(invoke_url)
         if payload.get("stream", True) is False:
             payload = {**payload, "stream": True}
         self.last_inputs = {
@@ -510,13 +466,11 @@ class NVEModel(BaseModel):
 
     async def get_req_astream(
         self,
-        model: Optional[str] = None,
         payload: dict = {},
         invoke_url: Optional[str] = None,
         stop: Optional[Sequence[str]] = None,
-        endpoint: str = "infer",
     ) -> AsyncIterator:
-        invoke_url = self._get_invoke_url(model, invoke_url, endpoint=endpoint)
+        invoke_url = self._get_invoke_url(invoke_url)
         if payload.get("stream", True) is False:
             payload = {**payload, "stream": True}
         self.last_inputs = {
@@ -546,23 +500,12 @@ class _NVIDIAClient(BaseModel):
 
     _default_model: str = ""
     model: str = Field(description="Name of the model to invoke")
-    infer_endpoint: str = Field("{base_url}/chat/completions")
-    curr_mode: _MODE_TYPE = Field("nvidia")  # todo: remove this in 0.1
     is_hosted: bool = Field(True)
-
-    def __init__(self, **kwargs: Any):
-        super().__init__(**kwargs)
-        if "base_url" in kwargs:
-            self.is_hosted = False
-            self.curr_mode = "nim"
-            self.client.endpoints["infer"] = self.infer_endpoint
-            self.client.endpoints["models"] = "{base_url}/models"
 
     ####################################################################################
 
     @root_validator(pre=True)
-    def validate_client(cls, values: Any) -> Any:
-        """Validate and update client arguments, including API key and formatting"""
+    def _preprocess_args(cls, values: Any) -> Any:
         if not values.get("client"):
             values["client"] = NVEModel(**values)
         elif isinstance(values["client"], NVEModel):
@@ -584,6 +527,36 @@ class _NVIDIAClient(BaseModel):
 
             values["client"].payload_fn = kosmos_patch
 
+        # todo: check for known urls
+        if "base_url" in values:
+            # todo: detect if the base_url points to hosted NIM, this depends on
+            #       moving from NVCF inference to API Catalog inference
+            values["is_hosted"] = False
+
+        return values
+
+    @root_validator
+    def _postprocess_args(cls, values: Any) -> Any:
+        # if talking to a local NIM, we assume the user knows what they're doing
+        if "is_hosted" in values and not values["is_hosted"]:
+            pass
+        else:
+            name = values.get("model")
+            if model := determine_model(name):
+                values["model"] = model.id
+            else:
+                if not (client := values.get("client")):
+                    warnings.warn(f"Unable to determine validity of {name}")
+                else:
+                    if any(model.id == name for model in client.available_models):
+                        warnings.warn(
+                            f"Found {name} in available_models, but type is "
+                            "unknown and inference may fail."
+                        )
+                    else:
+                        raise ValueError(
+                            f"Model {name} is unknown, check `available_models`"
+                        )
         return values
 
     @classmethod
@@ -603,63 +576,22 @@ class _NVIDIAClient(BaseModel):
         if self.model:
             attributes["model"] = self.model
 
-        if getattr(self.client, "endpoints"):
-            attributes["endpoints"] = self.client.endpoints
-
         return attributes
 
     @property
     def available_models(self) -> List[Model]:
-        """Map the available models that can be invoked."""
-        if not self.is_hosted:
-            return self.__class__.get_available_models(
-                client=self, base_url=self.client.base_url
-            )
-        else:
-            return self.__class__.get_available_models(client=self)
+        """Retrieve a list of available models."""
+        self.client._reset_method_cache()
+        return [
+            model
+            for model in self.client.available_models
+            if model.client == self.__class__.__name__
+        ]
 
     @classmethod
     def get_available_models(
         cls,
-        client: Optional[_NVIDIAClient] = None,
-        list_all: bool = False,
-        filter: Optional[str] = None,
         **kwargs: Any,
     ) -> List[Model]:
         """Map the available models that can be invoked. Callable from class"""
-        if mode is not None:
-            warn_deprecated(
-                name="mode", since="0.0.17", removal="0.1.0", alternative="`base_url`"
-            )
-        self = client or cls(**kwargs)
-        nveclient = self.client
-        nveclient.reset_method_cache()
-        out = sorted(
-            [
-                Model(id=k.replace("playground_", ""), path=v, **MODEL_SPECS.get(k, {}))
-                for k, v in nveclient.available_models.items()
-            ],
-            key=lambda x: f"{x.client or 'Z'}{x.id}{cls}",
-        )
-        # nim model listing does not provide the type and we cannot know
-        # the model name ahead of time to guess the type.
-        # so we need to list all models.
-        if mode == "nim" or not self.is_hosted:
-            list_all = True
-        if not filter:
-            filter = cls.__name__
-        if not list_all:
-            out = [m for m in out if m.client == filter]
-        return out
-
-    def _get_binding_model(self) -> Optional[str]:
-        """Get the model to bind to the client as default payload argument"""
-        # if a model is configured with a model_name, always use that
-        # todo: move from search of available_models to a Model property
-        matches = [model for model in self.available_models if model.id == self.model]
-        if matches:
-            if matches[0].model_name:
-                return matches[0].model_name
-        if self._is_hosted:
-            return ""
-        return self.model
+        return cls(**kwargs).available_models

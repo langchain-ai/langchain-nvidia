@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from typing import Any, Generator, List, Optional, Sequence
 
-from langchain_core._api import deprecated, warn_deprecated
 from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
 from langchain_core.documents.compressor import BaseDocumentCompressor
 from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
 
-from ._common import _MODE_TYPE, _NVIDIAClient
-from ._statics import Model
+from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._statics import Model
 
 
 class Ranking(BaseModel):
@@ -38,7 +37,6 @@ class NVIDIARerank(BaseDocumentCompressor):
     max_batch_size: int = Field(
         _default_batch_size, ge=1, description="The maximum batch size."
     )
-    _is_hosted: bool = PrivateAttr(True)
 
     def __init__(self, **kwargs: Any):
         """
@@ -63,25 +61,15 @@ class NVIDIARerank(BaseDocumentCompressor):
         self._client = _NVIDIAClient(
             model=self.model,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
+            infer_path="{base_url}/ranking",
         )
-        if base_url := kwargs.get("base_url", None):
-            # todo: detect if the base_url points to hosted NIM, this depends on
-            #       moving from NVCF inference to API Catalog inference
-            self._is_hosted = False
-            self._client.client.base_url = base_url
-            self._client.client.endpoints["infer"] = "{base_url}/ranking"
-            self._client.client.endpoints = {
-                "infer": "{base_url}/ranking",
-                "status": None,
-                "models": None,
-            }
 
     @property
     def available_models(self) -> List[Model]:
         """
         Get a list of available models that work with NVIDIARerank.
         """
-        if not self._is_hosted:
+        if not self._client.is_hosted:
             # local NIM supports a single model and no /models endpoint
             models = [
                 Model(
@@ -89,14 +77,14 @@ class NVIDIARerank(BaseDocumentCompressor):
                     model_name=NVIDIARerank._default_model_name,
                     model_type="ranking",
                     client="NVIDIARerank",
-                    path="magic",
+                    endpoint="magic",
                 ),
                 Model(
                     id=NVIDIARerank._deprecated_model,
                     model_name=NVIDIARerank._default_model_name,
                     model_type="ranking",
                     client="NVIDIARerank",
-                    path="magic",
+                    endpoint="magic",
                 ),
             ]
         else:
@@ -123,7 +111,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         chat models, by setting the list_all parameter to True.
         """
         self = cls(**kwargs)
-        if not self._is_hosted:
+        if not self._client.is_hosted:
             # ignoring list_all because there is one
             models = self.available_models
         else:
@@ -138,13 +126,11 @@ class NVIDIARerank(BaseDocumentCompressor):
     # todo: batching when len(documents) > endpoint's max batch size
     def _rank(self, documents: List[str], query: str) -> List[Ranking]:
         response = self._client.client.get_req(
-            model_name=self.model,
             payload={
                 "model": "nv-rerank-qa-mistral-4b:1",
                 "query": {"text": query},
                 "passages": [{"text": passage} for passage in documents],
             },
-            endpoint="infer",
         )
         if response.status_code != 200:
             response.raise_for_status()

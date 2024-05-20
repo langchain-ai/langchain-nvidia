@@ -5,7 +5,7 @@ import warnings
 
 import pytest
 
-from langchain_nvidia_ai_endpoints._statics import MODEL_SPECS
+from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
 
@@ -18,26 +18,43 @@ def test_integration_initialization() -> None:
         top_p=0.9,
         max_tokens=50,
     )
-    ChatNVIDIA(model="mistral", nvidia_api_key="nvapi-...")
+    ChatNVIDIA(model="meta/llama2-70b", nvidia_api_key="nvapi-...")
 
 
 @pytest.mark.parametrize(
     "model",
     [
         name
-        for pair in [
-            (model, model.replace("playground_", ""))
-            for model, config in MODEL_SPECS.items()
-            if "api_type" in config and config["api_type"] == "aifm"
+        for ls in [
+            [model.id] + (model.aliases or [])  # alises can be None
+            for model in MODEL_TABLE.values()
+            if model.deprecated and model.model_name
         ]
-        for name in pair
+        for name in ls
     ],
 )
-def test_aifm_deprecated(model: str) -> None:
+def test_deprecated(model: str) -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         ChatNVIDIA()
-    with pytest.deprecated_call():
+    with pytest.warns(UserWarning):
+        ChatNVIDIA(model=model)
+
+
+@pytest.mark.parametrize(
+    "model",
+    [
+        name
+        for ls in [
+            [model.id] + (model.aliases or [])  # alises can be None
+            for model in MODEL_TABLE.values()
+            if model.deprecated and not model.model_name
+        ]
+        for name in ls
+    ],
+)
+def test_unavailable(model: str) -> None:
+    with pytest.raises(ValueError):
         ChatNVIDIA(model=model)
 
 

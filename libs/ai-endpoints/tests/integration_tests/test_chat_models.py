@@ -3,7 +3,6 @@
 from typing import List
 
 import pytest
-from langchain_core._api import LangChainDeprecationWarning
 from langchain_core.load.dump import dumps
 from langchain_core.load.load import loads
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
@@ -29,10 +28,14 @@ def test_chat_ai_endpoints(chat_model: str, mode: dict) -> None:
     assert isinstance(response.content, str)
 
 
-def test_chat_ai_endpoints_model() -> None:
-    """Test wrapper handles model."""
-    chat = ChatNVIDIA(model="mistral")
-    assert chat.model == "mistral"
+def test_unknown_model() -> None:
+    with pytest.raises(ValueError):
+        ChatNVIDIA(model="unknown_model")
+
+
+def test_base_url_unknown_model() -> None:
+    llm = ChatNVIDIA(model="unknown_model", base_url="http://localhost:88888/v1")
+    assert llm.model == "unknown_model"
 
 
 def test_chat_ai_endpoints_system_message(chat_model: str, mode: dict) -> None:

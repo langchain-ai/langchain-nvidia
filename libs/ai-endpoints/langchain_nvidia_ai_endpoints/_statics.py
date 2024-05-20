@@ -1,3 +1,4 @@
+import warnings
 from typing import Optional
 
 from langchain_core.pydantic_v1 import BaseModel
@@ -565,3 +566,40 @@ MODEL_TABLE = {
     **EMBEDDING_MODEL_TABLE,
     **RANKING_MODEL_TABLE,
 }
+
+
+def lookup_model(name: str) -> Optional[Model]:
+    model = None
+    if name in MODEL_TABLE:
+        model = MODEL_TABLE[name]
+    for mdl in MODEL_TABLE.values():
+        if mdl.aliases and name in mdl.aliases:
+            model = mdl
+    return model
+
+
+def determine_model(name: str) -> Optional[Model]:
+    if model := lookup_model(name):
+        if model.deprecated:
+            if model.model_name:
+                alt_model = lookup_model(model.model_name)
+                if not alt_model:
+                    raise Exception(
+                        "Internal error in MODEL_TABLE - "
+                        f"Model {name} is deprecated and "
+                        f"has model_name {model.model_name} "
+                        f"but {model.model_name} is not in the table. "
+                        "Please report this to "
+                        "https://github.com/langchain-ai/langchain-nvidia/issues"
+                    )
+                warnings.warn(
+                    f"Model {name} is deprecated. Using {alt_model.id} instead.",
+                    UserWarning,
+                )
+                model = alt_model
+            else:
+                if model.endpoint:
+                    warnings.warn(f"Model {name} is deprecated.", UserWarning)
+                else:
+                    model = None
+    return model
