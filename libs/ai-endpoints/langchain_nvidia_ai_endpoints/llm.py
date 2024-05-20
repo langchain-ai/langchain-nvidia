@@ -201,8 +201,8 @@ class NVIDIA(nvidia_ai_endpoints._NVIDIAClient, LLM):
             "stop": self.stop,
             "labels": self.labels,
         }
-        if self.get_binding_model():
-            attr_kwargs["model"] = self.get_binding_model()
+        if self._get_binding_model():
+            attr_kwargs["model"] = self._get_binding_model()
         attr_kwargs = {k: v for k, v in attr_kwargs.items() if v is not None}
         new_kwargs = {**attr_kwargs, **kwargs}
         return self.prep_payload(prompt=prompt, **new_kwargs)

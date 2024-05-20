@@ -99,7 +99,7 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
         else:  # default to the API Catalog API
             payload = {
                 "input": texts,
-                "model": self.get_binding_model() or self.model,
+                "model": self._get_binding_model() or self.model,
                 "encoding_format": "float",
                 "input_type": model_type,
             }

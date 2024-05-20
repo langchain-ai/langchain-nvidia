@@ -29,19 +29,6 @@ def test_chat_ai_endpoints(chat_model: str, mode: dict) -> None:
     assert isinstance(response.content, str)
 
 
-def test_chat_ai_endpoints_deprecated(chat_model: str, mode: dict) -> None:
-    """Test ChatNVIDIA wrapper."""
-    with pytest.warns(LangChainDeprecationWarning):
-        chat = ChatNVIDIA(
-            model=chat_model,
-            temperature=0.7,
-        ).mode(**mode)
-    message = HumanMessage(content="Hello")
-    response = chat.invoke([message])
-    assert isinstance(response, BaseMessage)
-    assert isinstance(response.content, str)
-
-
 def test_chat_ai_endpoints_model() -> None:
     """Test wrapper handles model."""
     chat = ChatNVIDIA(model="mistral")

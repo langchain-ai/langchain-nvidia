@@ -81,7 +81,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         """
         Get a list of available models that work with NVIDIARerank.
         """
-        if self._client.curr_mode == "nim" or not self._is_hosted:
+        if not self._is_hosted:
             # local NIM supports a single model and no /models endpoint
             models = [
                 Model(
@@ -109,7 +109,6 @@ class NVIDIARerank(BaseDocumentCompressor):
     @classmethod
     def get_available_models(
         cls,
-        mode: Optional[_MODE_TYPE] = None,
         list_all: bool = False,
         **kwargs: Any,
     ) -> List[Model]:
@@ -123,51 +122,18 @@ class NVIDIARerank(BaseDocumentCompressor):
         It is possible to get a list of all models, including those that are not
         chat models, by setting the list_all parameter to True.
         """
-        if mode is not None:
-            warn_deprecated(since="0.0.17", removal="0.1.0", alternative="`base_url`")
-        self = cls(**kwargs).mode(mode=mode, **kwargs)
-        if mode == "nim" or not self._is_hosted:
+        self = cls(**kwargs)
+        if not self._is_hosted:
             # ignoring list_all because there is one
             models = self.available_models
         else:
             models = self._client.get_available_models(
-                mode=mode,
                 list_all=list_all,
                 client=self._client,
                 filter=cls.__name__,
                 **kwargs,
             )
         return models
-
-    @deprecated(
-        since="0.0.17",
-        removal="0.1.0",
-        alternative="`base_url` to constructor",
-    )
-    def mode(
-        self,
-        mode: Optional[_MODE_TYPE] = "nvidia",
-        base_url: Optional[str] = None,
-        model: Optional[str] = None,
-        api_key: Optional[str] = None,
-        **kwargs: Any,
-    ) -> NVIDIARerank:
-        """
-        Deprecated: use NVIDIARerank(base_url=...) instead.
-        """
-        # set a default base_url for nim mode
-        if not base_url and mode == "nim":
-            base_url = "http://localhost:1976/v1"
-        self._client = self._client.mode(
-            mode=mode,
-            base_url=base_url,
-            model=model,
-            api_key=api_key,
-            infer_path="{base_url}/ranking",
-            **kwargs,
-        )
-        self.model = self._client.model
-        return self
 
     # todo: batching when len(documents) > endpoint's max batch size
     def _rank(self, documents: List[str], query: str) -> List[Ranking]:

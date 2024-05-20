@@ -609,15 +609,9 @@ class _NVIDIAClient(BaseModel):
         return attributes
 
     @property
-    @deprecated(since="0.0.15", removal="0.1.0", alternative="available_models")
-    def available_functions(self) -> List[dict]:
-        """Map the available functions that can be invoked."""
-        return self.__class__.get_available_functions(client=self)
-
-    @property
     def available_models(self) -> List[Model]:
         """Map the available models that can be invoked."""
-        if self.curr_mode == "nim" or not self.is_hosted:
+        if not self.is_hosted:
             return self.__class__.get_available_models(
                 client=self, base_url=self.client.base_url
             )
@@ -625,22 +619,8 @@ class _NVIDIAClient(BaseModel):
             return self.__class__.get_available_models(client=self)
 
     @classmethod
-    @deprecated(since="0.0.15", removal="0.1.0", alternative="get_available_models")
-    def get_available_functions(
-        cls,
-        mode: Optional[_MODE_TYPE] = None,
-        client: Optional[_NVIDIAClient] = None,
-        **kwargs: Any,
-    ) -> List[dict]:
-        """Map the available functions that can be invoked. Callable from class"""
-        nveclient = (client or cls(**kwargs)).mode(mode, **kwargs).client
-        nveclient.reset_method_cache()
-        return nveclient.available_functions
-
-    @classmethod
     def get_available_models(
         cls,
-        mode: Optional[_MODE_TYPE] = None,
         client: Optional[_NVIDIAClient] = None,
         list_all: bool = False,
         filter: Optional[str] = None,
@@ -672,18 +652,7 @@ class _NVIDIAClient(BaseModel):
             out = [m for m in out if m.client == filter]
         return out
 
-    @deprecated(since="0.0.15", removal="0.1.0")
-    def get_model_details(self, model: Optional[str] = None) -> dict:
-        """Get more meta-details about a model retrieved by a given name"""
-        if model is None:
-            model = self.model
-        model_key = self.client._get_invoke_url(model).split("/")[-1]
-        known_fns = self.client.available_functions
-        fn_spec = [f for f in known_fns if f.get("id") == model_key][0]
-        return fn_spec
-
-    @deprecated(since="0.0.15", removal="0.1.0")
-    def get_binding_model(self) -> Optional[str]:
+    def _get_binding_model(self) -> Optional[str]:
         """Get the model to bind to the client as default payload argument"""
         # if a model is configured with a model_name, always use that
         # todo: move from search of available_models to a Model property
@@ -691,78 +660,6 @@ class _NVIDIAClient(BaseModel):
         if matches:
             if matches[0].model_name:
                 return matches[0].model_name
-        if self.curr_mode == "nvidia":
+        if self._is_hosted:
             return ""
         return self.model
-
-    @deprecated(
-        since="0.0.17",
-        removal="0.1.0",
-        alternative="`base_url` in constructor",
-    )
-    def mode(
-        self,
-        mode: Optional[_MODE_TYPE] = "nvidia",
-        base_url: Optional[str] = None,
-        model: Optional[str] = None,
-        api_key: Optional[str] = None,
-        infer_path: Optional[str] = None,
-        models_path: Optional[str] = "{base_url}/models",
-        force_mode: bool = False,
-        force_clone: bool = True,
-        **kwargs: Any,
-    ) -> Any:  # todo: in python 3.11+ this should be typing.Self
-        """Deprecated: pass `base_url=...` to constructor instead."""
-        if isinstance(self, str):
-            raise ValueError("Please construct the model before calling mode()")
-        out = self if not force_clone else deepcopy(self)
-
-        if mode is None:
-            return out
-
-        out.model = model or out.model
-
-        if base_url and not force_mode:
-            ## If a user tries to set base_url, assume custom openapi unless forced
-            mode = "nim"
-
-        if mode == "nvidia":
-            key_var = "NVIDIA_API_KEY"
-            if not api_key or not api_key.startswith("nvapi-"):
-                api_key = os.getenv(key_var) or out.client.api_key.get_secret_value()
-            if not api_key.startswith("nvapi-"):
-                raise ValueError(f"No {key_var} in env/fed as api_key. (nvapi-...)")
-
-        out.curr_mode = mode
-        if api_key:
-            out.client.api_key = SecretStr(api_key)
-
-        nvcf_base = "https://api.nvcf.nvidia.com/v2/nvcf"  ## NVCF Main URL
-        nvcf_infer = "{base_url}/pexec/functions/{model_id}"  ## Inference endpoints
-        nvcf_status = "{base_url}/pexec/status/{request_id}"  ## 202 wait handle
-        nvcf_models = "{base_url}/functions"  ## Model listing
-
-        if mode == "nvidia":
-            ## Classic support for nvcf-backed foundation model endpoints.
-            out.client.base_url = base_url or nvcf_base
-            out.client.endpoints = {
-                "infer": nvcf_infer,  ## Per-model inference
-                "status": nvcf_status,  ## 202 wait handle
-                "models": nvcf_models,  ## Model listing
-            }
-
-        elif mode == "nim":
-            ## OpenAPI-style specs to connect to NeMo Inference Microservices etc.
-            ## Most generic option, requires specifying base_url
-            assert base_url, "Base URL must be specified for nim mode"
-            out.client.base_url = base_url
-            out.client.endpoints["infer"] = infer_path or out.infer_endpoint
-            out.client.endpoints["models"] = models_path or "{base_url}/models"
-
-        else:
-            options = ["nvidia", "nim"]
-            raise ValueError(f"Unknown mode: `{mode}`. Expected one of {options}.")
-
-        out.client.reset_method_cache()
-
-        return out

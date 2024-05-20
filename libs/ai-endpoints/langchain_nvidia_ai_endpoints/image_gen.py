@@ -143,8 +143,8 @@ class ImageGenNVIDIA(_NVIDIAClient, LLM):
             "guidance_scale": kwargs.get("guidance_scale", self.guidance_scale),
             "seed": kwargs.get("seed", self.seed),
         }
-        if self.get_binding_model():
-            payload["model"] = self.get_binding_model()
+        if self._get_binding_model():
+            payload["model"] = self._get_binding_model()
         response = self.client.get_req(
             model_name=self.model, payload=payload, endpoint="infer"
         )
