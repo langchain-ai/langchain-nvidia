@@ -374,6 +374,33 @@ CHAT_MODEL_TABLE = {
         deprecated=False,
         aliases=["ai-sea-lion-7b-instruct"],
     ),
+    "microsoft/phi-3-small-8k-instruct": Model(
+        id="microsoft/phi-3-small-8k-instruct",
+        model_type="chat",
+        model_name="microsoft/phi-3-small-8k-instruct",
+        client="ChatNVIDIA",
+        endpoint="https://integrate.api.nvidia.com/v1",
+        deprecated=False,
+        aliases=["ai-phi-3-small-8k-instruct"],
+    ),
+    "microsoft/phi-3-small-128k-instruct": Model(
+        id="microsoft/phi-3-small-128k-instruct",
+        model_type="chat",
+        model_name="microsoft/phi-3-small-128k-instruct",
+        client="ChatNVIDIA",
+        endpoint="https://integrate.api.nvidia.com/v1",
+        deprecated=False,
+        aliases=["ai-phi-3-small-128k-instruct"],
+    ),
+    "microsoft/phi-3-medium-4k-instruct": Model(
+        id="microsoft/phi-3-medium-4k-instruct",
+        model_type="chat",
+        model_name="microsoft/phi-3-medium-4k-instruct",
+        client="ChatNVIDIA",
+        endpoint="https://integrate.api.nvidia.com/v1",
+        deprecated=False,
+        aliases=["ai-phi-3-medium-4k-instruct"],
+    ),
 }
 
 VLM_MODEL_TABLE = {
@@ -457,6 +484,15 @@ VLM_MODEL_TABLE = {
         endpoint="https://ai.api.nvidia.com/v1/vlm/google/paligemma",
         deprecated=False,
         aliases=["ai-google-paligemma"],
+    ),
+    "microsoft/phi-3-vision-128k-instruct": Model(
+        id="microsoft/phi-3-vision-128k-instruct",
+        model_type="vlm",
+        model_name="microsoft/phi-3-vision-128k-instruct",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/vlm/microsoft/phi-3-vision-128k-instruct",
+        deprecated=False,
+        aliases=["ai-phi-3-vision-128k-instruct"],
     ),
 }
 
