@@ -179,6 +179,22 @@ MODEL_SPECS.update(
             "model_type": "embedding",
             "model_name": "snowflake/arctic-embed-l",
         },
+        "ai-phi-3-small-8k-instruct": {
+            "model_type": "chat",
+            "model_name": "microsoft/phi-3-small-8k-instruct",
+        },
+        "ai-phi-3-small-128k-instruct": {
+            "model_type": "chat",
+            "model_name": "microsoft/phi-3-small-128k-instruct",
+        },
+        "ai-phi-3-medium-4k-instruct": {
+            "model_type": "chat",
+            "model_name": "microsoft/phi-3-medium-4k-instruct",
+        },
+        "ai-phi-3-vision-128k-instruct": {
+            "model_type": "image_in",
+            "model_name": "microsoft/phi-3-vision-128k-instruct",
+        },
     }
 )
 

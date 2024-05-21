@@ -30,6 +30,11 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run tests for a specific rerank model",
     )
     parser.addoption(
+        "--vlm-model-id",
+        action="store",
+        help="Run tests for a specific vlm model",
+    )
+    parser.addoption(
         "--all-models",
         action="store_true",
         help="Run tests across all models",
@@ -75,6 +80,8 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
     if "image_in_model" in metafunc.fixturenames:
         models = ["adept/fuyu-8b"]
+        if model := metafunc.config.getoption("vlm_model_id"):
+            models = [model]
         if metafunc.config.getoption("all_models"):
             models = [
                 model.id for model in get_all_models() if model.model_type == "image_in"
