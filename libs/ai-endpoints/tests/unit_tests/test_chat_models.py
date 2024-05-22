@@ -55,3 +55,17 @@ def test_param_labels_deprecated() -> None:
         ChatNVIDIA()
     with pytest.deprecated_call():
         ChatNVIDIA(labels={"label": 1.0})
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "bogus",
+        "http:/",
+        "http://",
+        "http:/oops",
+    ],
+)
+def test_param_base_url_negative(base_url: str) -> None:
+    with pytest.raises(ValueError):
+        ChatNVIDIA(base_url=base_url)

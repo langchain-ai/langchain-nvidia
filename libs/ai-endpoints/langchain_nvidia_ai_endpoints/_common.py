@@ -19,6 +19,7 @@ from typing import (
     Tuple,
     Union,
 )
+from urllib.parse import urlparse
 
 import aiohttp
 import requests
@@ -29,6 +30,7 @@ from langchain_core.pydantic_v1 import (
     PrivateAttr,
     SecretStr,
     root_validator,
+    validator,
 )
 from requests.models import Response
 
@@ -112,6 +114,17 @@ class NVEModel(BaseModel):
                     api_key=self.api_key.get_secret_value(),
                 )
         return headers_
+
+    @validator("base_url")
+    def validate_base_url(cls, v: str) -> str:
+        if v is not None:
+            result = urlparse(v)
+            # Ensure scheme and netloc (domain name) are present
+            if not (result.scheme and result.netloc):
+                raise ValueError(
+                    f"Invalid base_url, minimally needs scheme and netloc: {v}"
+                )
+        return v
 
     @root_validator(pre=True)
     def validate_model(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -537,12 +550,11 @@ class _NVIDIAClient(BaseModel):
     curr_mode: _MODE_TYPE = Field("nvidia")  # todo: remove this in 0.1
     is_hosted: bool = Field(True)
 
-    def __init__(self, base_url: Optional[str] = None, **kwargs: Any):
+    def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
-        if base_url:
+        if "base_url" in kwargs:
             self.is_hosted = False
             self.curr_mode = "nim"
-            self.client.base_url = base_url
             self.client.endpoints["infer"] = self.infer_endpoint
             self.client.endpoints["models"] = "{base_url}/models"
 
