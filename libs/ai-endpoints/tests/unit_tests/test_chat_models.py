@@ -58,22 +58,6 @@ def test_unavailable(model: str) -> None:
         ChatNVIDIA(model=model)
 
 
-def test_param_bad_deprecated() -> None:
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        ChatNVIDIA()
-    with pytest.deprecated_call():
-        ChatNVIDIA(bad=["bad"])
-
-
-def test_param_labels_deprecated() -> None:
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        ChatNVIDIA()
-    with pytest.deprecated_call():
-        ChatNVIDIA(labels={"label": 1.0})
-
-
 @pytest.mark.parametrize(
     "base_url",
     [

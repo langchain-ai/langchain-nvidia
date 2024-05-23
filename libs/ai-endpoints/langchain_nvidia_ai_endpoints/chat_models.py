@@ -8,7 +8,6 @@ import logging
 import os
 import sys
 import urllib.parse
-import warnings
 from typing import (
     Any,
     AsyncIterator,
@@ -40,7 +39,7 @@ from langchain_core.outputs import (
     ChatGenerationChunk,
     ChatResult,
 )
-from langchain_core.pydantic_v1 import BaseModel, Field, validator
+from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 
@@ -137,32 +136,8 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
     )
     top_p: Optional[float] = Field(description="Top-p for distribution sampling")
     seed: Optional[int] = Field(description="The seed for deterministic results")
-    bad: Optional[Sequence[str]] = Field(description="Bad words to avoid (cased)")
     stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
-    labels: Optional[Dict[str, float]] = Field(description="Steering parameters")
     streaming: bool = Field(True)
-
-    @validator("bad")
-    def aifm_bad_deprecated(
-        cls, value: Optional[Sequence[str]]
-    ) -> Optional[Sequence[str]]:
-        if value:
-            warnings.warn(
-                "Bad words are deprecated and not supported by API Catalog models.",
-                DeprecationWarning,
-            )
-        return value
-
-    @validator("labels")
-    def aifm_labels_deprecated(
-        cls, value: Optional[Sequence[str]]
-    ) -> Optional[Sequence[str]]:
-        if value:
-            warnings.warn(
-                "Labels are deprecated and not supported by API Catalog models.",
-                DeprecationWarning,
-            )
-        return value
 
     @property
     def _llm_type(self) -> str:
@@ -322,9 +297,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
             "max_tokens": self.max_tokens,
             "top_p": self.top_p,
             "seed": self.seed,
-            "bad": self.bad,
             "stop": self.stop,
-            "labels": self.labels,
         }
         # if model_name := self._get_binding_model():
         #     attr_kwargs["model"] = model_name
