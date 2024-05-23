@@ -501,7 +501,7 @@ EMBEDDING_MODEL_TABLE = {
     "playground_nvolveqa_40k": Model(
         id="playground_nvolveqa_40k",
         model_type="embedding",
-        model_name=None,
+        model_name="NV-Embed-QA",
         client="NVIDIAEmbeddings",
         endpoint=None,
         deprecated=True,
