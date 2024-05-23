@@ -1,4 +1,3 @@
-import warnings
 from typing import Any, Generator
 
 import pytest
@@ -77,14 +76,6 @@ def test_embed_documents_negative_input_list_mixed(embedding: NVIDIAEmbeddings) 
     documents = ["1", 2.0, 3]
     with pytest.raises(ValueError):
         embedding.embed_documents(documents)  # type: ignore
-
-
-def test_embed_max_length_deprecated() -> None:
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        NVIDIAEmbeddings()
-    with pytest.deprecated_call():
-        NVIDIAEmbeddings(max_length=43)
 
 
 @pytest.mark.parametrize("truncate", [True, False, 1, 0, 1.0, "BOGUS"])

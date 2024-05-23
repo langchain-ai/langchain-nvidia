@@ -1,11 +1,10 @@
 """Embeddings Components Derived from NVEModel/Embeddings"""
 
-import warnings
 from typing import List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.outputs.llm_result import LLMResult
-from langchain_core.pydantic_v1 import Field, validator
+from langchain_core.pydantic_v1 import Field
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints.callbacks import usage_callback_var
@@ -33,24 +32,10 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
             "Default is 'NONE', which raises an error if an input is too long."
         ),
     )
-    max_length: int = Field(2048, ge=1, le=2048)
     max_batch_size: int = Field(default=_default_max_batch_size)
     model_type: Optional[Literal["passage", "query"]] = Field(
         None, description="The type of text to be embedded."
     )
-
-    # indicate to user that max_length is deprecated when passed as an argument to
-    # NVIDIAEmbeddings' constructor, e.g. NVIDIAEmbeddings(max_length=...). this
-    # does not warning on assignment, e.g. embedder.max_length = ...
-    # todo: fix _NVIDIAClient.validate_client and enable Config.validate_assignment
-    @validator("max_length")
-    def deprecated_max_length(cls, value: int) -> int:
-        """Deprecate the max_length field."""
-        warnings.warn(
-            "The max_length field is deprecated. Use the 'truncate' instead.",
-            DeprecationWarning,
-        )
-        return value
 
     def _embed(
         self, texts: List[str], model_type: Literal["passage", "query"]
@@ -111,19 +96,11 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
         ):
             raise ValueError(f"`texts` must be a list of strings, given: {repr(texts)}")
 
-        # From https://catalog.ngc.nvidia.com/orgs/nvidia/teams/ai-foundation/models/nvolve-40k/documentation
-        # The input must not exceed the 2048 max input characters and inputs above 512
-        # model tokens will be truncated. The input array must not exceed 50 input
-        #  strings.
         all_embeddings = []
         for i in range(0, len(texts), self.max_batch_size):
             batch = texts[i : i + self.max_batch_size]
-            truncated = [
-                text[: self.max_length] if len(text) > self.max_length else text
-                for text in batch
-            ]
             all_embeddings.extend(
-                self._embed(truncated, model_type=self.model_type or "passage")
+                self._embed(batch, model_type=self.model_type or "passage")
             )
         return all_embeddings
 
