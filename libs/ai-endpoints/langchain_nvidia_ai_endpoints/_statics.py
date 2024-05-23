@@ -525,6 +525,14 @@ EMBEDDING_MODEL_TABLE = {
         deprecated=False,
         aliases=["ai-arctic-embed-l"],
     ),
+    "nvidia/embed-qa-4": Model(
+        id="nvidia/embed-qa-4",
+        model_type="embedding",
+        model_name="nvidia/embed-qa-4",
+        client="NVIDIAEmbeddings",
+        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/embed-qa-4",
+        deprecated=False,
+    ),
 }
 
 RANKING_MODEL_TABLE = {
