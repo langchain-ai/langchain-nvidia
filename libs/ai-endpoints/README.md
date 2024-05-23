@@ -1,10 +1,12 @@
 # langchain-nvidia-ai-endpoints
 
-The `langchain-nvidia-ai-endpoints` package contains LangChain integrations for chat models and embeddings powered by the [NVIDIA AI Foundation Model](https://www.nvidia.com/en-us/ai-data-science/foundation-models/) playground environment. 
+The `langchain-nvidia-ai-endpoints` package contains LangChain integrations for chat models and embeddings powered by [NVIDIA AI Foundation Models](https://www.nvidia.com/en-us/ai-data-science/foundation-models/), and hosted on [NVIDIA API Catalog.](https://build.nvidia.com/)
 
-> [NVIDIA AI Foundation Endpoints](https://www.nvidia.com/en-us/ai-data-science/foundation-models/) give users easy access to hosted endpoints for generative AI models like Llama-2, SteerLM, Mistral, etc. Using the API, you can query live endpoints available on the [NVIDIA API Catalog](https://build.nvidia.com/) to get quick results from a DGX-hosted cloud compute environment. All models are source-accessible and can be deployed on your own compute cluster.
+NVIDIA AI Foundation models are community and NVIDIA-built models and are NVIDIA-optimized to deliver the best performance on NVIDIA accelerated infrastructure.  Using the API, you can query live endpoints available on the NVIDIA API Catalog to get quick results from a DGX-hosted cloud compute environment. All models are source-accessible and can be deployed on your own compute cluster using NVIDIA NIM which is part of NVIDIA AI Enterprise.
 
-Below is an example on how to use some common functionality surrounding text-generative and embedding models
+Models can be exported from NVIDIA’s API catalog with NVIDIA NIM, which is included with the NVIDIA AI Enterprise license, and run them on-premises, giving Enterprises ownership of their customizations and full control of their IP and AI application. NIMs are packaged as container images on a per model/model family basis and are distributed as NGC container images through the NVIDIA NGC Catalog. At their core, NIMs are containers that provide interactive APIs for running inference on an AI Model. 
+
+Below is an example on how to use some common functionality surrounding text-generative and embedding models.
 
 ## Installation
 
@@ -15,9 +17,9 @@ Below is an example on how to use some common functionality surrounding text-gen
 ## Setup
 
 **To get started:**
-1. Create a free account with [NVIDIA](https://build.nvidia.com/), which hosts NVIDIA AI Foundation models
-2. Click on your model of choice
-3. Under Input select the Python tab, and click Get API Key. Then click Generate Key
+1. Create a free account with [NVIDIA](https://build.nvidia.com/), which hosts NVIDIA AI Foundation models.
+2. Click on your model of choice.
+3. Under Input select the Python tab, and click `Get API Key`. Then click `Generate Key`.
 4. Copy and save the generated key as NVIDIA_API_KEY. From there, you should have access to the endpoints.
 
 ```python
@@ -37,6 +39,26 @@ from langchain_nvidia_ai_endpoints import ChatNVIDIA
 llm = ChatNVIDIA(model="meta/llama3-70b-instruct", max_tokens=419)
 result = llm.invoke("Write a ballad about LangChain.")
 print(result.content)
+```
+
+## Working with NVIDIA NIMs
+When ready to deploy, you can self-host models with NVIDIA NIM—which is included with the NVIDIA AI Enterprise software license—and run them anywhere, giving you ownership of your customizations and full control of your intellectual property (IP) and AI applications.
+
+[Learn more about NIMs](https://developer.nvidia.com/blog/nvidia-nim-offers-optimized-inference-microservices-for-deploying-ai-models-at-scale/)
+
+See how here [how to download and launch a NIM in your environment]()
+
+```python
+from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
+
+# connect to an chat NIM running at localhost:8000
+llm = ChatNVIDIA(base_url="http://localhost:8000/v1")
+
+# connect to an embedding NIM running at localhost:2016
+embedder = NVIDIAEmbeddings(base_url="http://localhost:2016/v1")
+
+# connect to a reranking NIM running at localhost:1976
+ranker = NVIDIARerank(base_url="http://localhost:1976/v1")
 ```
 
 ## Stream, Batch, and Async

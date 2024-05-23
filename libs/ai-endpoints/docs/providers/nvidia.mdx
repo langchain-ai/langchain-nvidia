@@ -1,31 +1,39 @@
 # NVIDIA
 
-> [NVIDIA AI Foundation Endpoints](https://www.nvidia.com/en-us/ai-data-science/foundation-models/) give users easy access to NVIDIA hosted API endpoints for NVIDIA AI Foundation Models like Mixtral 8x7B, Llama 2, Stable Diffusion, etc. These models, hosted on the [NVIDIA API Catalog](https://build.nvidia.com/), are optimized, tested, and hosted on the NVIDIA AI platform, making them fast and easy to evaluate, further customize, and seamlessly run at peak performance on any accelerated stack.
-> 
-> With [NVIDIA AI Foundation Endpoints](https://www.nvidia.com/en-us/ai-data-science/foundation-models/), you can get quick results from a fully accelerated stack running on [NVIDIA DGX Cloud](https://www.nvidia.com/en-us/data-center/dgx-cloud/). Once customized, these models can be deployed anywhere with enterprise-grade security, stability, and support using [NVIDIA AI Enterprise](https://www.nvidia.com/en-us/data-center/products/ai-enterprise/).
-> 
-> These models can be easily accessed via the [`langchain-nvidia-ai-endpoints`](https://pypi.org/project/langchain-nvidia-ai-endpoints/) package, as shown below.
+The `langchain-nvidia-ai-endpoints` package contains LangChain integrations for chat models and embeddings powered by [NVIDIA AI Foundation Models](https://www.nvidia.com/en-us/ai-data-science/foundation-models/), and hosted on [NVIDIA API Catalog.](https://build.nvidia.com/)
+
+NVIDIA AI Foundation models are community and NVIDIA-built models and are NVIDIA-optimized to deliver the best performance on NVIDIA accelerated infrastructure.  Using the API, you can query live endpoints available on the NVIDIA API Catalog to get quick results from a DGX-hosted cloud compute environment. All models are source-accessible and can be deployed on your own compute cluster using NVIDIA NIM which is part of NVIDIA AI Enterprise.
+
+Models can be exported from NVIDIA’s API catalog with NVIDIA NIM, which is included with the NVIDIA AI Enterprise license, and run them on-premises, giving Enterprises ownership of their customizations and full control of their IP and AI application. NIMs are packaged as container images on a per model/model family basis and are distributed as NGC container images through the NVIDIA NGC Catalog. At their core, NIMs are containers that provide interactive APIs for running inference on an AI Model. 
+
+Below is an example on how to use some common functionality surrounding text-generative and embedding models.
 
 ## Installation
 
-```bash
-pip install -U langchain-nvidia-ai-endpoints
+```python
+pip install -U --quiet langchain-nvidia-ai-endpoints
 ```
 
 ## Setup
 
 **To get started:**
 
-1. Create a free account with [NVIDIA](https://build.nvidia.com/), which hosts NVIDIA AI Foundation models
+1. Create a free account with [NVIDIA](https://build.nvidia.com/), which hosts NVIDIA AI Foundation models.
 
-2. Click on your model of choice
+2. Click on your model of choice.
 
-3. Under `Input` select the `Python` tab, and click `Get API Key`. Then click `Generate Key`.
+3. Under Input select the Python tab, and click `Get API Key`. Then click `Generate Key`.
 
-4. Copy and save the generated key as `NVIDIA_API_KEY`. From there, you should have access to the endpoints.
+4. Copy and save the generated key as NVIDIA_API_KEY. From there, you should have access to the endpoints.
 
-```bash
-export NVIDIA_API_KEY=nvapi-XXXXXXXXXXXXXXXXXXXXXXXXXX
+```python
+import getpass
+import os
+
+if not os.environ.get("NVIDIA_API_KEY", "").startswith("nvapi-"):
+    nvidia_api_key = getpass.getpass("Enter your NVIDIA API key: ")
+    assert nvidia_api_key.startswith("nvapi-"), f"{nvidia_api_key[:5]}... is not a valid key"
+    os.environ["NVIDIA_API_KEY"] = nvidia_api_key
 ```
 
 ```python
@@ -34,6 +42,26 @@ from langchain_nvidia_ai_endpoints import ChatNVIDIA
 llm = ChatNVIDIA(model="mistralai/mixtral-8x22b-instruct-v0.1")
 result = llm.invoke("Write a ballad about LangChain.")
 print(result.content)
+```
+
+## Working with NVIDIA NIMs
+When ready to deploy, you can self-host models with NVIDIA NIM—which is included with the NVIDIA AI Enterprise software license—and run them anywhere, giving you ownership of your customizations and full control of your intellectual property (IP) and AI applications.
+
+See how here [how to download and launch a NIM in your environment]()
+
+[Learn more about NIMs](https://developer.nvidia.com/blog/nvidia-nim-offers-optimized-inference-microservices-for-deploying-ai-models-at-scale/)
+
+```python
+from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
+
+# connect to an chat NIM running at localhost:8000
+llm = ChatNVIDIA(base_url="http://localhost:8000/v1")
+
+# connect to an embedding NIM running at localhost:2016
+embedder = NVIDIAEmbeddings(base_url="http://localhost:2016/v1")
+
+# connect to a reranking NIM running at localhost:1976
+ranker = NVIDIARerank(base_url="http://localhost:1976/v1")
 ```
 
 ## Using NVIDIA AI Foundation Endpoints
