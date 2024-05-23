@@ -10,28 +10,22 @@ def entry(request: Any) -> str:
     return request.param
 
 
+@pytest.fixture(
+    params=[
+        alias
+        for ls in [model.aliases for model in MODEL_TABLE.values() if model.aliases]
+        for alias in ls
+    ]
+)
+def alias(request: Any) -> str:
+    return request.param
+
+
 def test_model_table_integrity_name_id(entry: str) -> None:
     model = MODEL_TABLE[entry]
     assert model.id == entry
 
 
-def test_model_table_integrity_deprecated_alternative(entry: str) -> None:
-    model = MODEL_TABLE[entry]
-    if model.deprecated:
-        # model_name is an optional alternative
-        if model.model_name:
-            assert model.model_name in MODEL_TABLE
-
-
-def test_model_table_integrity_playground_aliases(entry: str) -> None:
-    model = MODEL_TABLE[entry]
-    if "playground_" in model.id:
-        assert model.aliases
-        assert model.id.replace("playground_", "") in model.aliases
-
-
-def test_determine_model_deprecated_alternative_warns(entry: str) -> None:
-    model = MODEL_TABLE[entry]
-    if model.deprecated and model.model_name:
-        with pytest.warns(UserWarning):
-            determine_model(model.id)
+def test_determine_model_deprecated_alternative_warns(alias: str) -> None:
+    with pytest.warns(UserWarning):
+        determine_model(alias)

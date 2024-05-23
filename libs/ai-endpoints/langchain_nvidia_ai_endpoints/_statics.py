@@ -6,9 +6,8 @@ from langchain_core.pydantic_v1 import BaseModel
 
 #
 # Model information
-#  - id: unique identifier for the model
+#  - id: unique identifier for the model, passed as model parameter for requests
 #  - model_type: API type (chat, vlm, embedding, ranking, completion)
-#  - model_name: name passed as model parameter for requests
 #  - client: client name
 #  - endpoint: API endpoint
 #  - aliases: list of aliases for the model
@@ -18,7 +17,6 @@ from langchain_core.pydantic_v1 import BaseModel
 class Model(BaseModel):
     id: str
     model_type: Optional[str] = None
-    model_name: Optional[str] = None
     client: Optional[str] = None
     endpoint: Optional[str] = None
     aliases: Optional[list] = None
@@ -28,7 +26,6 @@ CHAT_MODEL_TABLE = {
     "meta/codellama-70b": Model(
         id="meta/codellama-70b",
         model_type="chat",
-        model_name="meta/codellama-70b",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -45,7 +42,6 @@ CHAT_MODEL_TABLE = {
     "google/gemma-7b": Model(
         id="google/gemma-7b",
         model_type="chat",
-        model_name="google/gemma-7b",
         client="ChatNVIDIA",
         endpoint="https://integrations.api.nvidia.com/v1",
         deprecated=False,
@@ -54,7 +50,6 @@ CHAT_MODEL_TABLE = {
     "meta/llama2-70b": Model(
         id="meta/llama2-70b",
         model_type="chat",
-        model_name="meta/llama2-70b",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -69,7 +64,6 @@ CHAT_MODEL_TABLE = {
     "mistralai/mistral-7b-instruct-v0.2": Model(
         id="mistralai/mistral-7b-instruct-v0.2",
         model_type="chat",
-        model_name="mistralai/mistral-7b-instruct-v0.2",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -78,7 +72,6 @@ CHAT_MODEL_TABLE = {
     "mistralai/mixtral-8x7b-instruct-v0.1": Model(
         id="mistralai/mixtral-8x7b-instruct-v0.1",
         model_type="chat",
-        model_name="mistralai/mixtral-8x7b-instruct-v0.1",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -87,7 +80,6 @@ CHAT_MODEL_TABLE = {
     "google/codegemma-7b": Model(
         id="google/codegemma-7b",
         model_type="chat",
-        model_name="google/codegemma-7b",
         client="ChatNVIDIA",
         endpoint="https://integrations.api.nvidia.com/v1",
         deprecated=False,
@@ -96,7 +88,6 @@ CHAT_MODEL_TABLE = {
     "google/gemma-2b": Model(
         id="google/gemma-2b",
         model_type="chat",
-        model_name="google/gemma-2b",
         client="ChatNVIDIA",
         endpoint="https://integrations.api.nvidia.com/v1",
         deprecated=False,
@@ -105,7 +96,6 @@ CHAT_MODEL_TABLE = {
     "google/recurrentgemma-2b": Model(
         id="google/recurrentgemma-2b",
         model_type="chat",
-        model_name="google/recurrentgemma-2b",
         client="ChatNVIDIA",
         endpoint="https://integrations.api.nvidia.com/v1",
         deprecated=False,
@@ -114,7 +104,6 @@ CHAT_MODEL_TABLE = {
     "mistralai/mistral-large": Model(
         id="mistralai/mistral-large",
         model_type="chat",
-        model_name="mistralai/mistral-large",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -123,7 +112,6 @@ CHAT_MODEL_TABLE = {
     "mistralai/mixtral-8x22b-instruct-v0.1": Model(
         id="mistralai/mixtral-8x22b-instruct-v0.1",
         model_type="chat",
-        model_name="mistralai/mixtral-8x22b-instruct-v0.1",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -132,7 +120,6 @@ CHAT_MODEL_TABLE = {
     "meta/llama3-8b-instruct": Model(
         id="meta/llama3-8b-instruct",
         model_type="chat",
-        model_name="meta/llama3-8b-instruct",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -141,7 +128,6 @@ CHAT_MODEL_TABLE = {
     "meta/llama3-70b-instruct": Model(
         id="meta/llama3-70b-instruct",
         model_type="chat",
-        model_name="meta/llama3-70b-instruct",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -150,7 +136,6 @@ CHAT_MODEL_TABLE = {
     "microsoft/phi-3-mini-128k-instruct": Model(
         id="microsoft/phi-3-mini-128k-instruct",
         model_type="chat",
-        model_name="microsoft/phi-3-mini-128k-instruct",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -159,7 +144,6 @@ CHAT_MODEL_TABLE = {
     "snowflake/arctic": Model(
         id="snowflake/arctic",
         model_type="chat",
-        model_name="snowflake/arctic",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -168,7 +152,6 @@ CHAT_MODEL_TABLE = {
     "databricks/dbrx-instruct": Model(
         id="databricks/dbrx-instruct",
         model_type="chat",
-        model_name="databricks/dbrx-instruct",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -177,7 +160,6 @@ CHAT_MODEL_TABLE = {
     "microsoft/phi-3-mini-4k-instruct": Model(
         id="microsoft/phi-3-mini-4k-instruct",
         model_type="chat",
-        model_name="microsoft/phi-3-mini-4k-instruct",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -186,7 +168,6 @@ CHAT_MODEL_TABLE = {
     "seallms/seallm-7b-v2.5": Model(
         id="seallms/seallm-7b-v2.5",
         model_type="chat",
-        model_name="seallms/seallm-7b-v2.5",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -195,7 +176,6 @@ CHAT_MODEL_TABLE = {
     "aisingapore/sea-lion-7b-instruct": Model(
         id="aisingapore/sea-lion-7b-instruct",
         model_type="chat",
-        model_name="aisingapore/sea-lion-7b-instruct",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -204,7 +184,6 @@ CHAT_MODEL_TABLE = {
     "microsoft/phi-3-small-8k-instruct": Model(
         id="microsoft/phi-3-small-8k-instruct",
         model_type="chat",
-        model_name="microsoft/phi-3-small-8k-instruct",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -213,7 +192,6 @@ CHAT_MODEL_TABLE = {
     "microsoft/phi-3-small-128k-instruct": Model(
         id="microsoft/phi-3-small-128k-instruct",
         model_type="chat",
-        model_name="microsoft/phi-3-small-128k-instruct",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -222,7 +200,6 @@ CHAT_MODEL_TABLE = {
     "microsoft/phi-3-medium-4k-instruct": Model(
         id="microsoft/phi-3-medium-4k-instruct",
         model_type="chat",
-        model_name="microsoft/phi-3-medium-4k-instruct",
         client="ChatNVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -234,7 +211,6 @@ VLM_MODEL_TABLE = {
     "adept/fuyu-8b": Model(
         id="adept/fuyu-8b",
         model_type="vlm",
-        model_name="adept/fuyu-8b",
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/vlm/adept/fuyu-8b",
         deprecated=False,
@@ -243,7 +219,6 @@ VLM_MODEL_TABLE = {
     "google/deplot": Model(
         id="google/deplot",
         model_type="vlm",
-        model_name="google/deplot",
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/vlm/google/deplot",
         deprecated=False,
@@ -252,7 +227,6 @@ VLM_MODEL_TABLE = {
     "microsoft/kosmos-2": Model(
         id="microsoft/kosmos-2",
         model_type="vlm",
-        model_name="microsoft/kosmos-2",
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/vlm/microsoft/kosmos-2",
         deprecated=False,
@@ -261,7 +235,6 @@ VLM_MODEL_TABLE = {
     "nvidia/neva-22b": Model(
         id="nvidia/neva-22b",
         model_type="vlm",
-        model_name="nvidia/neva-22b",
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/vlm/nvidia/neva-22b",
         deprecated=False,
@@ -270,7 +243,6 @@ VLM_MODEL_TABLE = {
     "google/paligemma": Model(
         id="google/paligemma",
         model_type="vlm",
-        model_name="google/paligemma",
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/vlm/google/paligemma",
         deprecated=False,
@@ -279,7 +251,6 @@ VLM_MODEL_TABLE = {
     "microsoft/phi-3-vision-128k-instruct": Model(
         id="microsoft/phi-3-vision-128k-instruct",
         model_type="vlm",
-        model_name="microsoft/phi-3-vision-128k-instruct",
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/vlm/microsoft/phi-3-vision-128k-instruct",
         deprecated=False,
@@ -291,7 +262,6 @@ EMBEDDING_MODEL_TABLE = {
     "snowflake/arctic-embed-l": Model(
         id="snowflake/arctic-embed-l",
         model_type="embedding",
-        model_name="snowflake/arctic-embed-l",
         client="NVIDIAEmbeddings",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -300,7 +270,6 @@ EMBEDDING_MODEL_TABLE = {
     "nvidia/embed-qa-4": Model(
         id="nvidia/embed-qa-4",
         model_type="embedding",
-        model_name="nvidia/embed-qa-4",
         client="NVIDIAEmbeddings",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
@@ -317,7 +286,6 @@ RANKING_MODEL_TABLE = {
     "nv-rerank-qa-mistral-4b:1": Model(
         id="nv-rerank-qa-mistral-4b:1",
         model_type="ranking",
-        model_name="nv-rerank-qa-mistral-4b:1",
         client="NVIDIARerank",
         endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia",
         deprecated=False,
@@ -329,7 +297,6 @@ COMPLETION_MODEL_TABLE = {
     "mistralai/mixtral-8x22b-v0.1": Model(
         id="mistralai/mixtral-8x22b-v0.1",
         model_type="completion",
-        model_name="mistralai/mixtral-8x22b-v0.1",
         client="NVIDIA",
         endpoint="https://integrate.api.nvidia.com/v1",
         deprecated=False,
