@@ -46,7 +46,7 @@ When ready to deploy, you can self-host models with NVIDIA NIM—which is includ
 
 [Learn more about NIMs](https://developer.nvidia.com/blog/nvidia-nim-offers-optimized-inference-microservices-for-deploying-ai-models-at-scale/)
 
-See how here [how to download and launch a NIM in your environment]()
+See here [how to download and launch a NIM in your environment]()
 
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
