@@ -32,6 +32,7 @@ if not os.environ.get("NVIDIA_API_KEY", "").startswith("nvapi-"):
     os.environ["NVIDIA_API_KEY"] = nvidia_api_key
 ```
 
+## Working with NVIDIA API Catalog
 ```python
 ## Core LC Chat Interface
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
