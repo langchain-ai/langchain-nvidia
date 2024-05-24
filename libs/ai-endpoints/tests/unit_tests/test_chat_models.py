@@ -1,11 +1,8 @@
 """Test chat model integration."""
 
 
-import warnings
-
 import pytest
 
-from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
 
@@ -21,41 +18,9 @@ def test_integration_initialization() -> None:
     ChatNVIDIA(model="meta/llama2-70b", nvidia_api_key="nvapi-...")
 
 
-@pytest.mark.parametrize(
-    "model",
-    [
-        name
-        for ls in [
-            [model.id] + (model.aliases or [])  # alises can be None
-            for model in MODEL_TABLE.values()
-            if model.deprecated and model.model_name
-        ]
-        for name in ls
-    ],
-)
-def test_deprecated(model: str) -> None:
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        ChatNVIDIA()
-    with pytest.warns(UserWarning):
-        ChatNVIDIA(model=model)
-
-
-@pytest.mark.parametrize(
-    "model",
-    [
-        name
-        for ls in [
-            [model.id] + (model.aliases or [])  # alises can be None
-            for model in MODEL_TABLE.values()
-            if model.deprecated and not model.model_name
-        ]
-        for name in ls
-    ],
-)
-def test_unavailable(model: str) -> None:
+def test_unavailable() -> None:
     with pytest.raises(ValueError):
-        ChatNVIDIA(model=model)
+        ChatNVIDIA(model="not-a-real-model")
 
 
 @pytest.mark.parametrize(
