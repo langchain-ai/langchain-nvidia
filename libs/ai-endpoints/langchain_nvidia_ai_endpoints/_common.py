@@ -569,10 +569,14 @@ class _NVIDIAClient(BaseModel):
     def available_models(self) -> List[Model]:
         """Retrieve a list of available models."""
         self.client._reset_method_cache()
+        # filter by client name unless it's the base client
+        filter = lambda model: model.client == self.__class__.__name__
+        if self.__class__.__name__ == "_NVIDIAClient":
+            filter = lambda model: True
         return [
             model
             for model in self.client.available_models
-            if model.client == self.__class__.__name__
+            if filter(model)
         ]
 
     @classmethod

@@ -99,16 +99,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         if metafunc.config.getoption("embedding_model_id"):
             models = [metafunc.config.getoption("embedding_model_id")]
         if metafunc.config.getoption("all_models"):
-            if mode.get("mode", None) == "nim":
-                # there is no guarantee the NIM will return a known model name,
-                # so we just grab all models and assume they are embeddings
-                models = [model.id for model in get_all_models()]
-            else:
-                models = [
-                    model.id
-                    for model in get_all_models()
-                    if model.model_type == "embedding"
-                ]
+            models = [model.id for model in NVIDIAEmbeddings(**mode).available_models]
         metafunc.parametrize("embedding_model", models, ids=models)
 
 

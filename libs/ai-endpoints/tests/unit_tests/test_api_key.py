@@ -41,9 +41,7 @@ def test_create_with_api_key(cls: type, param: str) -> None:
 def test_api_key_priority(cls: type) -> None:
     # ChatNVIDIA and NVIDIAEmbeddings currently expose a client attribute
     def get_api_key(instance: Any) -> str:
-        if isinstance(instance, langchain_nvidia_ai_endpoints.ChatNVIDIA) or isinstance(
-            instance, langchain_nvidia_ai_endpoints.NVIDIAEmbeddings
-        ):
+        if isinstance(instance, langchain_nvidia_ai_endpoints.ChatNVIDIA):
             return instance.client.api_key.get_secret_value()
         return instance._client.client.api_key.get_secret_value()
 

@@ -1,16 +1,17 @@
 """Embeddings Components Derived from NVEModel/Embeddings"""
 
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.outputs.llm_result import LLMResult
-from langchain_core.pydantic_v1 import Field
+from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._statics import Model
 from langchain_nvidia_ai_endpoints.callbacks import usage_callback_var
 
 
-class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
+class NVIDIAEmbeddings(BaseModel, Embeddings):
     """
     Client to NVIDIA embeddings models.
 
@@ -21,9 +22,9 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
         too long.
     """
 
+    _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model: str = "nvidia/embed-qa-4"
     _default_max_batch_size: int = 50
-    infer_endpoint: str = Field("{base_url}/embeddings")
     model: str = Field(_default_model, description="Name of the model to invoke")
     truncate: Literal["NONE", "START", "END"] = Field(
         default="NONE",
@@ -36,6 +37,30 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
     model_type: Optional[Literal["passage", "query"]] = Field(
         None, description="The type of text to be embedded."
     )
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+        self._client = _NVIDIAClient(
+            model=self.model,
+            api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
+            infer_path="{base_url}/embeddings",
+        )
+
+    @property
+    def available_models(self) -> List[Model]:
+        return [
+            model
+            for model in self._client.available_models
+            if model.client == self.__class__.__name__
+        ]
+
+    @classmethod
+    def get_available_models(
+        cls,
+        **kwargs: Any,
+    ) -> List[Model]:
+        self = cls(**kwargs)
+        return self.available_models
 
     def _embed(
         self, texts: List[str], model_type: Literal["passage", "query"]
@@ -73,7 +98,7 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
                 "encoding_format": "float",
             }
 
-        response = self.client.get_req(
+        response = self._client.client.get_req(
             payload=payload,
         )
         response.raise_for_status()
