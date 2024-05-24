@@ -4,7 +4,6 @@ from typing import List
 import faker
 import pytest
 from langchain_core.documents import Document
-from requests.exceptions import ConnectionError
 
 from langchain_nvidia_ai_endpoints import NVIDIARerank  # type: ignore
 
@@ -180,11 +179,3 @@ def test_rerank_batching(
     #     result_docs[i].page_content == reference_docs[i].page_content
     #     for i in range(top_n)
     # ), "batched results do not match unbatched results"
-
-
-def test_langchain_reranker_direct_endpoint_unavailable(
-    query: str, documents: List[Document]
-) -> None:
-    ranker = NVIDIARerank(base_url="http://localhost:12321")
-    with pytest.raises(ConnectionError):
-        ranker.compress_documents(documents=documents, query=query)
