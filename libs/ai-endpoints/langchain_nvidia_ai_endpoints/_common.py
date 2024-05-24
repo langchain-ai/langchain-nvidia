@@ -507,11 +507,11 @@ class _NVIDIAClient(BaseModel):
     def _preprocess_args(cls, values: Any) -> Any:
         values["client"] = NVEModel(**values)
 
-        # todo: check for known urls
         if "base_url" in values:
-            # todo: detect if the base_url points to hosted NIM, this depends on
-            #       moving from NVCF inference to API Catalog inference
-            values["is_hosted"] = False
+            values["is_hosted"] = urlparse(values["base_url"]).netloc in [
+                "integrate.api.nvidia.com",
+                "ai.api.nvidia.com",
+            ]
 
         return values
 
