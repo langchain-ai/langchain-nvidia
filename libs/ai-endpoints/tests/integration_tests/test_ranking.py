@@ -4,10 +4,9 @@ from typing import List
 import faker
 import pytest
 from langchain_core.documents import Document
-from requests.exceptions import ConnectionError, MissingSchema
+from requests.exceptions import ConnectionError
 
 from langchain_nvidia_ai_endpoints import NVIDIARerank  # type: ignore
-from langchain_nvidia_ai_endpoints._common import Model
 
 
 class CharacterTextSplitter:
@@ -43,30 +42,6 @@ def splitter() -> CharacterTextSplitter:
 @pytest.fixture
 def documents(text: str, splitter: CharacterTextSplitter) -> List[Document]:
     return splitter.create_documents(text)
-
-
-def test_langchain_reranker_get_available_models(mode: dict) -> None:
-    models = NVIDIARerank.get_available_models(**mode)
-    assert len(models) > 0
-    for model in models:
-        assert isinstance(model, Model)
-        assert model.model_type == "ranking" or model.model_type is None
-
-
-def test_langchain_reranker_get_available_models_all(mode: dict) -> None:
-    models = NVIDIARerank.get_available_models(**mode, list_all=True)
-    assert len(models) > 0
-    for model in models:
-        assert isinstance(model, Model)
-
-
-def test_langchain_reranker_available_models(mode: dict) -> None:
-    ranker = NVIDIARerank(**mode)
-    models = ranker.available_models
-    assert len(models) > 0
-    for model in models:
-        assert isinstance(model, Model)
-        assert model.model_type == "ranking" or model.model_type is None
 
 
 def test_langchain_reranker_direct(

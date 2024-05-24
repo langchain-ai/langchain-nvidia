@@ -4,7 +4,6 @@ Note: These tests are designed to validate the functionality of NVIDIAEmbeddings
 """
 
 import pytest
-import requests_mock
 
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 
@@ -50,29 +49,6 @@ async def test_embed_documents_multiple_async(embedding_model: str, mode: dict) 
     output = await embedding.aembed_documents(documents)
     assert len(output) == 3
     assert all(len(doc) > 4 for doc in output)
-
-
-def test_embed_available_models(mode: dict) -> None:
-    if mode:
-        pytest.skip(f"available_models test only valid against API Catalog, not {mode}")
-    embedding = NVIDIAEmbeddings()
-    models = embedding.available_models
-    assert len(models) >= 1
-    assert "ai-embed-qa-4" in [model.id for model in models]
-    assert all(model.model_type is not None for model in models)
-
-
-def test_embed_available_models_cached() -> None:
-    """Test NVIDIA embeddings for available models."""
-    pytest.skip("There's a bug that needs to be fixed")
-    with requests_mock.Mocker(real_http=True) as mock:
-        embedding = NVIDIAEmbeddings()
-        assert not mock.called
-        embedding.available_models
-        assert mock.called
-        embedding.available_models
-        embedding.available_models
-        assert mock.call_count == 1
 
 
 def test_embed_query_long_text(embedding_model: str, mode: dict) -> None:

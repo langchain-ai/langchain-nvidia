@@ -184,10 +184,6 @@ class NVEModel(BaseModel):
 
         return self._available_models
 
-    def _reset_method_cache(self) -> None:
-        """Reset method cache to force re-fetch of available functions"""
-        self._available_models = None
-
     ####################################################################################
     ## Core utilities for posting and getting from NV Endpoints
 
@@ -565,7 +561,6 @@ class _NVIDIAClient(BaseModel):
     @property
     def available_models(self) -> List[Model]:
         """Retrieve a list of available models."""
-        self.client._reset_method_cache()
         return self.client.available_models
 
     @classmethod

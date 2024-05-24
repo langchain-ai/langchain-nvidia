@@ -8,7 +8,7 @@ from langchain_core.documents.compressor import BaseDocumentCompressor
 from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
-from langchain_nvidia_ai_endpoints._statics import Model
+from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model
 
 
 class Ranking(BaseModel):
@@ -80,59 +80,27 @@ class NVIDIARerank(BaseDocumentCompressor):
         """
         Get a list of available models that work with NVIDIARerank.
         """
-        if not self._client.is_hosted:
-            # local NIM supports a single model and no /models endpoint
+        if self._client.is_hosted:
+            # model listing is not available for hosted NIMs
             models = [
-                Model(
-                    id=NVIDIARerank._default_model_name,
-                    model_name=NVIDIARerank._default_model_name,
-                    model_type="ranking",
-                    client="NVIDIARerank",
-                    endpoint="magic",
-                ),
-                Model(
-                    id=NVIDIARerank._deprecated_model,
-                    model_name=NVIDIARerank._default_model_name,
-                    model_type="ranking",
-                    client="NVIDIARerank",
-                    endpoint="magic",
-                ),
+                model
+                for model in MODEL_TABLE.values()
+                if model.client == self.__class__.__name__
             ]
         else:
-            models = self._client.get_available_models(
-                client=self._client,
-                filter=self.__class__.__name__,
-            )
+            models = [
+                model
+                for model in self._client.available_models
+                if model.client == self.__class__.__name__
+            ]
         return models
 
     @classmethod
     def get_available_models(
         cls,
-        list_all: bool = False,
         **kwargs: Any,
     ) -> List[Model]:
-        """
-        Get a list of available models. These models will work with the NVIDIARerank
-        interface.
-
-        Use the mode parameter to specify the mode to use. See the docs for mode()
-        to understand additional keyword arguments required when setting mode.
-
-        It is possible to get a list of all models, including those that are not
-        chat models, by setting the list_all parameter to True.
-        """
-        self = cls(**kwargs)
-        if not self._client.is_hosted:
-            # ignoring list_all because there is one
-            models = self.available_models
-        else:
-            models = self._client.get_available_models(
-                list_all=list_all,
-                client=self._client,
-                filter=cls.__name__,
-                **kwargs,
-            )
-        return models
+        return cls(**kwargs).available_models
 
     # todo: batching when len(documents) > endpoint's max batch size
     def _rank(self, documents: List[str], query: str) -> List[Ranking]:
