@@ -3,6 +3,7 @@ from typing import List
 
 import faker
 import pytest
+from langchain_core._api import LangChainDeprecationWarning
 from langchain_core.documents import Document
 from requests.exceptions import ConnectionError, MissingSchema
 
@@ -61,7 +62,7 @@ def test_langchain_reranker_get_available_models_all(mode: dict) -> None:
 
 
 def test_langchain_reranker_available_models(mode: dict) -> None:
-    ranker = NVIDIARerank().mode(**mode)
+    ranker = NVIDIARerank(**mode)
     models = ranker.available_models
     assert len(models) > 0
     for model in models:
@@ -72,7 +73,20 @@ def test_langchain_reranker_available_models(mode: dict) -> None:
 def test_langchain_reranker_direct(
     query: str, documents: List[Document], rerank_model: str, mode: dict
 ) -> None:
-    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
+    ranker = NVIDIARerank(model=rerank_model, **mode)
+    result_docs = ranker.compress_documents(documents=documents, query=query)
+    assert len(result_docs) > 0
+    for doc in result_docs:
+        assert "relevance_score" in doc.metadata
+        assert doc.metadata["relevance_score"] is not None
+        assert isinstance(doc.metadata["relevance_score"], float)
+
+
+def test_langchain_reranker_direct_deprecated(
+    query: str, documents: List[Document], rerank_model: str, mode: dict
+) -> None:
+    with pytest.warns(LangChainDeprecationWarning):
+        ranker = NVIDIARerank(model=rerank_model).mode(**mode)
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) > 0
     for doc in result_docs:
@@ -84,7 +98,7 @@ def test_langchain_reranker_direct(
 def test_langchain_reranker_direct_empty_docs(
     query: str, rerank_model: str, mode: dict
 ) -> None:
-    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
+    ranker = NVIDIARerank(model=rerank_model, **mode)
     result_docs = ranker.compress_documents(documents=[], query=query)
     assert len(result_docs) == 0
 
@@ -94,7 +108,7 @@ def test_langchain_reranker_direct_top_n_negative(
 ) -> None:
     orig = NVIDIARerank.Config.validate_assignment
     NVIDIARerank.Config.validate_assignment = False
-    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
+    ranker = NVIDIARerank(model=rerank_model, **mode)
     ranker.top_n = -100
     NVIDIARerank.Config.validate_assignment = orig
     result_docs = ranker.compress_documents(documents=documents, query=query)
@@ -104,7 +118,7 @@ def test_langchain_reranker_direct_top_n_negative(
 def test_langchain_reranker_direct_top_n_zero(
     query: str, documents: List[Document], rerank_model: str, mode: dict
 ) -> None:
-    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
+    ranker = NVIDIARerank(model=rerank_model, **mode)
     ranker.top_n = 0
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) == 0
@@ -113,7 +127,7 @@ def test_langchain_reranker_direct_top_n_zero(
 def test_langchain_reranker_direct_top_n_one(
     query: str, documents: List[Document], rerank_model: str, mode: dict
 ) -> None:
-    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
+    ranker = NVIDIARerank(model=rerank_model, **mode)
     ranker.top_n = 1
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) == 1
@@ -122,7 +136,7 @@ def test_langchain_reranker_direct_top_n_one(
 def test_langchain_reranker_direct_top_n_equal_len_docs(
     query: str, documents: List[Document], rerank_model: str, mode: dict
 ) -> None:
-    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
+    ranker = NVIDIARerank(model=rerank_model, **mode)
     ranker.top_n = len(documents)
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) == len(documents)
@@ -131,7 +145,7 @@ def test_langchain_reranker_direct_top_n_equal_len_docs(
 def test_langchain_reranker_direct_top_n_greater_len_docs(
     query: str, documents: List[Document], rerank_model: str, mode: dict
 ) -> None:
-    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
+    ranker = NVIDIARerank(model=rerank_model, **mode)
     ranker.top_n = len(documents) * 2
     result_docs = ranker.compress_documents(documents=documents, query=query)
     assert len(result_docs) == len(documents)
@@ -141,13 +155,13 @@ def test_langchain_reranker_direct_top_n_greater_len_docs(
 def test_rerank_invalid_max_batch_size(
     rerank_model: str, mode: dict, batch_size: int
 ) -> None:
-    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
+    ranker = NVIDIARerank(model=rerank_model, **mode)
     with pytest.raises(ValueError):
         ranker.max_batch_size = batch_size
 
 
 def test_rerank_invalid_top_n(rerank_model: str, mode: dict) -> None:
-    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
+    ranker = NVIDIARerank(model=rerank_model, **mode)
     with pytest.raises(ValueError):
         ranker.top_n = -10
 
@@ -173,7 +187,7 @@ def test_rerank_batching(
 ) -> None:
     assert len(documents) > batch_size, "test requires more documents"
 
-    ranker = NVIDIARerank(model=rerank_model).mode(**mode)
+    ranker = NVIDIARerank(model=rerank_model, **mode)
     ranker.top_n = top_n
     ranker.max_batch_size = batch_size
     result_docs = ranker.compress_documents(documents=documents, query=query)
@@ -210,12 +224,28 @@ def test_rerank_batching(
 def test_langchain_reranker_direct_endpoint_bogus(
     query: str, documents: List[Document]
 ) -> None:
-    ranker = NVIDIARerank().mode(mode="nim", base_url="bogus")
+    ranker = NVIDIARerank(base_url="bogus")
     with pytest.raises(MissingSchema):
         ranker.compress_documents(documents=documents, query=query)
 
 
 def test_langchain_reranker_direct_endpoint_unavailable(
+    query: str, documents: List[Document]
+) -> None:
+    ranker = NVIDIARerank(base_url="http://localhost:12321")
+    with pytest.raises(ConnectionError):
+        ranker.compress_documents(documents=documents, query=query)
+
+
+def test_langchain_reranker_direct_endpoint_bogus_deprecated(
+    query: str, documents: List[Document]
+) -> None:
+    ranker = NVIDIARerank().mode(mode="nim", base_url="bogus")
+    with pytest.raises(MissingSchema):
+        ranker.compress_documents(documents=documents, query=query)
+
+
+def test_langchain_reranker_direct_endpoint_unavailable_deprecated(
     query: str, documents: List[Document]
 ) -> None:
     ranker = NVIDIARerank().mode(mode="nim", base_url="http://localhost:12321")

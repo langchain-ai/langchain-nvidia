@@ -9,7 +9,7 @@ from langchain_nvidia_ai_endpoints._common import Model
 def get_mode(config: pytest.Config) -> dict:
     nim_endpoint = config.getoption("--nim-endpoint")
     if nim_endpoint:
-        return dict(mode="nim", base_url=nim_endpoint)
+        return dict(base_url=nim_endpoint)
     return {}
 
 
@@ -50,14 +50,14 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     mode = get_mode(metafunc.config)
 
     def get_all_models() -> List[Model]:
-        return ChatNVIDIA().mode(**mode).get_available_models(list_all=True, **mode)
+        return ChatNVIDIA.get_available_models(list_all=True, **mode)
 
     if "chat_model" in metafunc.fixturenames:
         models = [ChatNVIDIA._default_model]
         if model := metafunc.config.getoption("chat_model_id"):
             models = [model]
         if metafunc.config.getoption("all_models"):
-            models = [model.id for model in ChatNVIDIA().mode(**mode).available_models]
+            models = [model.id for model in ChatNVIDIA(**mode).available_models]
         metafunc.parametrize("chat_model", models, ids=models)
 
     if "rerank_model" in metafunc.fixturenames:
@@ -67,9 +67,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         # nim-mode reranking does not support model listing via /v1/models endpoint
         if metafunc.config.getoption("all_models"):
             if mode.get("mode", None) == "nim":
-                models = [
-                    model.id for model in NVIDIARerank().mode(**mode).available_models
-                ]
+                models = [model.id for model in NVIDIARerank(**mode).available_models]
             else:
                 models = [
                     model.id
