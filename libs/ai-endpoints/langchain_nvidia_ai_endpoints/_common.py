@@ -62,11 +62,11 @@ class NVEModel(BaseModel):
     ## Core defaults. These probably should not be changed
     _api_key_var = "NVIDIA_API_KEY"
     base_url: str = Field(
-        "https://integrate.api.nvidia.com/v1",
+        ...,
         description="Base URL for standard inference",
     )
     infer_path: str = Field(
-        "{base_url}/chat/completions",
+        ...,
         description="Path for inference",
     )
     listing_path: str = Field(
@@ -498,21 +498,14 @@ class _NVIDIAClient(BaseModel):
 
     client: NVEModel = Field(NVEModel)
 
-    _default_model: str = ""
-    model: str = Field(description="Name of the model to invoke")
+    model: str = Field(..., description="Name of the model to invoke")
     is_hosted: bool = Field(True)
 
     ####################################################################################
 
     @root_validator(pre=True)
     def _preprocess_args(cls, values: Any) -> Any:
-        if not values.get("client"):
-            values["client"] = NVEModel(**values)
-        elif isinstance(values["client"], NVEModel):
-            values["client"] = values["client"].__class__(**values["client"].dict())
-        if not values.get("model"):
-            values["model"] = cls._default_model
-            assert values["model"], "No model given, with no default to fall back on."
+        values["client"] = NVEModel(**values)
 
         # todo: check for known urls
         if "base_url" in values:
@@ -569,15 +562,7 @@ class _NVIDIAClient(BaseModel):
     def available_models(self) -> List[Model]:
         """Retrieve a list of available models."""
         self.client._reset_method_cache()
-        # filter by client name unless it's the base client
-        filter = lambda model: model.client == self.__class__.__name__
-        if self.__class__.__name__ == "_NVIDIAClient":
-            filter = lambda model: True
-        return [
-            model
-            for model in self.client.available_models
-            if filter(model)
-        ]
+        return self.client.available_models
 
     @classmethod
     def get_available_models(

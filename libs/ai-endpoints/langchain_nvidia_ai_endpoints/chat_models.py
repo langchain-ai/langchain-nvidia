@@ -39,11 +39,12 @@ from langchain_core.outputs import (
     ChatGenerationChunk,
     ChatResult,
 )
-from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 
-from langchain_nvidia_ai_endpoints import _common as nvidia_ai_endpoints
+from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._statics import Model
 
 _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
 _DictOrPydanticClass = Union[Dict[str, Any], Type[BaseModel]]
@@ -114,7 +115,7 @@ def _url_to_b64_string(image_source: str) -> str:
         raise ValueError(f"Unable to process the provided image source: {e}")
 
 
-class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
+class ChatNVIDIA(BaseChatModel):
     """NVIDIA chat model.
 
     Example:
@@ -127,8 +128,12 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
             response = model.invoke("Hello")
     """
 
+    _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model: str = "mistralai/mixtral-8x7b-instruct-v0.1"
-    infer_endpoint: str = Field("{base_url}/chat/completions")
+    base_url: str = Field(
+        "https://integrate.api.nvidia.com/v1",
+        description="Base url for model listing an invocation",
+    )
     model: str = Field(_default_model, description="Name of the model to invoke")
     temperature: Optional[float] = Field(description="Sampling temperature in [0, 1]")
     max_tokens: Optional[int] = Field(
@@ -138,6 +143,31 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
     seed: Optional[int] = Field(description="The seed for deterministic results")
     stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
     streaming: bool = Field(True)
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+        self._client = _NVIDIAClient(
+            base_url=self.base_url,
+            model=self.model,
+            api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
+            infer_path="{base_url}/chat/completions",
+        )
+
+    @property
+    def available_models(self) -> List[Model]:
+        return [
+            model
+            for model in self._client.available_models
+            if model.client == self.__class__.__name__
+        ]
+
+    @classmethod
+    def get_available_models(
+        cls,
+        **kwargs: Any,
+    ) -> List[Model]:
+        self = cls(**kwargs)
+        return self.available_models
 
     @property
     def _llm_type(self) -> str:
@@ -264,7 +294,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         """Call to client generate method with call scope"""
         kwargs["stop"] = kwargs.get("stop") or self.stop
         payload = self._get_payload(inputs=inputs, stream=False, **kwargs)
-        out = self.client.get_req_generation(payload=payload)
+        out = self._client.client.get_req_generation(payload=payload)
         return out
 
     def _get_stream(  # todo: remove
@@ -275,7 +305,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         """Call to client stream method with call scope"""
         kwargs["stop"] = kwargs.get("stop") or self.stop
         payload = self._get_payload(inputs=inputs, stream=True, **kwargs)
-        return self.client.get_req_stream(payload=payload)
+        return self._client.client.get_req_stream(payload=payload)
 
     def _get_astream(  # todo: remove
         self,
@@ -285,7 +315,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         """Call to client astream methods with call scope"""
         kwargs["stop"] = kwargs.get("stop") or self.stop
         payload = self._get_payload(inputs=inputs, stream=True, **kwargs)
-        return self.client.get_req_astream(payload=payload)
+        return self._client.client.get_req_astream(payload=payload)
 
     def _get_payload(
         self, inputs: Sequence[Dict], **kwargs: Any

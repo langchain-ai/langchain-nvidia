@@ -221,7 +221,7 @@ def test_ai_endpoints_invoke_max_tokens_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
         llm.invoke("Show me the tokens")
-        assert llm.client.last_response.status_code == 422
+        assert llm._client.client.last_response.status_code == 422
 
 
 def test_ai_endpoints_invoke_max_tokens_positive(
@@ -266,7 +266,7 @@ def test_ai_endpoints_invoke_seed_default(chat_model: str, mode: dict) -> None:
 def test_ai_endpoints_invoke_seed_range(chat_model: str, mode: dict, seed: int) -> None:
     llm = ChatNVIDIA(model=chat_model, seed=seed, **mode)
     llm.invoke("What's in a seed?")
-    assert llm.client.last_response.status_code == 200
+    assert llm._client.client.last_response.status_code == 200
 
 
 @pytest.mark.xfail(reason="seed does not consistently control determinism")
@@ -292,7 +292,7 @@ def test_ai_endpoints_invoke_temperature_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, temperature=temperature, **mode)
         llm.invoke("What's in a temperature?")
-        assert llm.client.last_response.status_code == 422
+        assert llm._client.client.last_response.status_code == 422
 
 
 @pytest.mark.xfail(reason="temperature not consistently implemented")
@@ -319,7 +319,7 @@ def test_ai_endpoints_invoke_top_p_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, top_p=top_p, **mode)
         llm.invoke("What's in a top_p?")
-        assert llm.client.last_response.status_code == 422
+        assert llm._client.client.last_response.status_code == 422
 
 
 @pytest.mark.xfail(reason="seed does not consistently control determinism")
