@@ -24,7 +24,6 @@ MODEL_SPECS = {
         "api_type": "aifm",
         "alternative": "meta/llama2-70b",
     },
-    "playground_nemotron_qa_8b": {"model_type": "qa", "api_type": "aifm"},
     "playground_gemma_7b": {
         "model_type": "chat",
         "api_type": "aifm",

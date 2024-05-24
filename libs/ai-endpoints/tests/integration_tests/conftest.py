@@ -87,7 +87,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("image_in_model", models, ids=models)
 
     if "qa_model" in metafunc.fixturenames:
-        models = ["nemotron_qa_8b"]
+        models = []
         if metafunc.config.getoption("all_models"):
             models = [
                 model.id for model in get_all_models() if model.model_type == "qa"
