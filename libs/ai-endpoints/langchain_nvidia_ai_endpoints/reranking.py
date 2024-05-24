@@ -74,6 +74,9 @@ class NVIDIARerank(BaseDocumentCompressor):
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
             infer_path=infer_path,
         )
+        # todo: only store the model in one place
+        # the model may be updated to a newer name during initialization
+        self.model = self._client.model
 
     @property
     def available_models(self) -> List[Model]:
