@@ -517,10 +517,14 @@ class _NVIDIAClient(BaseModel):
 
     @root_validator
     def _postprocess_args(cls, values: Any) -> Any:
-        # if talking to a local NIM, we assume the user knows what they're doing
-        if "is_hosted" in values and not values["is_hosted"]:
-            pass
-        else:
+        if values["is_hosted"]:
+            if "api_key" not in values or not values["api_key"]:
+                warnings.warn(
+                    "An API key is required for the hosted NIM. "
+                    "This will become an error in the future.",
+                    UserWarning,
+                )
+
             name = values.get("model")
             if model := determine_model(name):
                 values["model"] = model.id

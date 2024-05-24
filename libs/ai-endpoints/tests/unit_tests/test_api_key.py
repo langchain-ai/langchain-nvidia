@@ -18,7 +18,13 @@ def no_env_var(var: str) -> Generator[None, None, None]:
 
 def test_create_without_api_key(public_class: type) -> None:
     with no_env_var("NVIDIA_API_KEY"):
-        public_class()
+        with pytest.warns(UserWarning):
+            public_class()
+
+
+def test_create_unknown_url_no_api_key(public_class: type) -> None:
+    with no_env_var("NVIDIA_API_KEY"):
+        public_class(base_url="https://test_url/v1")
 
 
 @pytest.mark.parametrize("param", ["nvidia_api_key", "api_key"])
