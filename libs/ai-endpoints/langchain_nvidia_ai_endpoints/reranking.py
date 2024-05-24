@@ -142,7 +142,7 @@ class NVIDIARerank(BaseDocumentCompressor):
     @deprecated(
         since="0.0.17",
         removal="0.1.0",
-        alternative="pas `base_url` to constructor",
+        alternative="`base_url` to constructor",
     )
     def mode(
         self,
