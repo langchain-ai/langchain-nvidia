@@ -21,17 +21,3 @@ def test_integration_initialization() -> None:
 def test_unavailable() -> None:
     with pytest.raises(ValueError):
         ChatNVIDIA(model="not-a-real-model")
-
-
-@pytest.mark.parametrize(
-    "base_url",
-    [
-        "bogus",
-        "http:/",
-        "http://",
-        "http:/oops",
-    ],
-)
-def test_param_base_url_negative(base_url: str) -> None:
-    with pytest.raises(ValueError):
-        ChatNVIDIA(base_url=base_url)

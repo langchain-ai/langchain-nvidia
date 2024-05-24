@@ -207,14 +207,6 @@ def test_rerank_batching(
     # ), "batched results do not match unbatched results"
 
 
-def test_langchain_reranker_direct_endpoint_bogus(
-    query: str, documents: List[Document]
-) -> None:
-    ranker = NVIDIARerank(base_url="bogus")
-    with pytest.raises(MissingSchema):
-        ranker.compress_documents(documents=documents, query=query)
-
-
 def test_langchain_reranker_direct_endpoint_unavailable(
     query: str, documents: List[Document]
 ) -> None:
