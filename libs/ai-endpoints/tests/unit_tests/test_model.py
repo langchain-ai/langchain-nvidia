@@ -16,3 +16,8 @@ def test_aliases(public_class: type, alias: str) -> None:
     with pytest.warns(UserWarning):
         x = public_class(model=alias)
         assert x.model == x._client.model
+
+
+def test_unavailable(public_class: type) -> None:
+    with pytest.raises(ValueError):
+        public_class(model="not-a-real-model")

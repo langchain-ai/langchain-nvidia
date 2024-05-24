@@ -264,7 +264,7 @@ RANKING_MODEL_TABLE = {
         id="nv-rerank-qa-mistral-4b:1",
         model_type="ranking",
         client="NVIDIARerank",
-        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia",
+        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/reranking",
         deprecated=False,
         aliases=["ai-rerank-qa-mistral-4b"],
     ),

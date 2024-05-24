@@ -146,30 +146,18 @@ class ChatNVIDIA(BaseChatModel):
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
-        # ChatNVIDIA supports chat and vlm models. the chat models are served from
-        # base_url=https://integrate.api.nvidia.com/v1 while the vlm models are served
-        # from https://ai.api.nvidia.com/v1 with custom paths, e.g. google/deploy is at
-        # https://ai.api.nvidia.com/v1/vlm/google/deploy
-        # todo: work out vlm support for local NIM, when they are supported
+        infer_path = "{base_url}/chat/completions"
+        # not all chat models are on https://integrate.api.nvidia.com/v1,
+        # those that are not are served from their own endpoints
         if model := determine_model(self.model):
-            if model.model_type == "vlm":
-                self._client = _NVIDIAClient(
-                    # we don't use https://ai.api.nvidia.com because it does not
-                    # support /v1/models. we will list from the base_url and serve
-                    # from the model's endpoint. this means the model listing likely
-                    # won't list the vml model.
-                    base_url=self.base_url,
-                    model=model.id,
-                    api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
-                    infer_path=model.endpoint,
-                )
-            else:
-                self._client = _NVIDIAClient(
-                    base_url=self.base_url,
-                    model=self.model,
-                    api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
-                    infer_path="{base_url}/chat/completions",
-                )
+            if model.endpoint:  # some models have custom endpoints
+                infer_path = model.endpoint
+        self._client = _NVIDIAClient(
+            base_url=self.base_url,
+            model=self.model,
+            api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
+            infer_path=infer_path,
+        )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
         self.model = self._client.model

@@ -8,7 +8,7 @@ from langchain_core.documents.compressor import BaseDocumentCompressor
 from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
-from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model
+from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, determine_model
 
 
 class Ranking(BaseModel):
@@ -31,7 +31,7 @@ class NVIDIARerank(BaseDocumentCompressor):
     _default_model_name: str = "nv-rerank-qa-mistral-4b:1"
 
     base_url: str = Field(
-        "https://ai.api.nvidia.com/v1",
+        "https://integrate.api.nvidia.com/v1",
         description="Base url for model listing an invocation",
     )
     top_n: int = Field(5, ge=0, description="The number of documents to return.")
@@ -62,12 +62,12 @@ class NVIDIARerank(BaseDocumentCompressor):
             environment variable.
         """
         super().__init__(**kwargs)
-        # inference paths differ between hosted and local NIMs
-        if "base_url" in kwargs:  # local NIM
-            default_infer_path = "{base_url}/ranking"
-        else:  # hosted NIM
-            default_infer_path = "{base_url}/retrieval/nvidia/reranking"
-        infer_path = kwargs.get("infer_path", default_infer_path)
+        infer_path = "{base_url}/ranking"
+        # not all models are on https://integrate.api.nvidia.com/v1,
+        # those that are not are served from their own endpoints
+        if model := determine_model(self.model):
+            if model.endpoint:  # some models have custom endpoints
+                infer_path = model.endpoint
         self._client = _NVIDIAClient(
             base_url=self.base_url,
             model=self.model,
