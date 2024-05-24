@@ -5,7 +5,6 @@ Note: These tests are designed to validate the functionality of NVIDIAEmbeddings
 
 import pytest
 import requests_mock
-from langchain_core._api import LangChainDeprecationWarning
 
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 
@@ -14,15 +13,6 @@ def test_embed_query(embedding_model: str, mode: dict) -> None:
     """Test NVIDIA embeddings for a single query."""
     query = "foo bar"
     embedding = NVIDIAEmbeddings(model=embedding_model, **mode)
-    output = embedding.embed_query(query)
-    assert len(output) > 3
-
-
-def test_embed_query_deprecated(embedding_model: str, mode: dict) -> None:
-    """Test NVIDIA embeddings for a single query."""
-    query = "foo bar"
-    with pytest.warns(LangChainDeprecationWarning):
-        embedding = NVIDIAEmbeddings(model=embedding_model).mode(**mode)
     output = embedding.embed_query(query)
     assert len(output) > 3
 
