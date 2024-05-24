@@ -80,7 +80,7 @@ class NVEModel(BaseModel):
     get_session_fn: Callable = Field(requests.Session)
     get_asession_fn: Callable = Field(aiohttp.ClientSession)
 
-    api_key: SecretStr = Field(..., description="API Key for service of choice")
+    api_key: Optional[SecretStr] = Field(description="API Key for service of choice")
 
     ## Generation arguments
     timeout: float = Field(60, ge=0, description="Timeout for waiting on response (s)")
@@ -123,7 +123,7 @@ class NVEModel(BaseModel):
         """Return headers with API key injected"""
         headers_ = self.headers_tmpl.copy()
         for header in headers_.values():
-            if "{api_key}" in header["Authorization"]:
+            if "{api_key}" in header["Authorization"] and self.api_key:
                 header["Authorization"] = header["Authorization"].format(
                     api_key=self.api_key.get_secret_value(),
                 )
@@ -147,7 +147,7 @@ class NVEModel(BaseModel):
             values.get(cls._api_key_var.lower())
             or values.get("api_key")
             or os.getenv(cls._api_key_var)
-            or ""
+            or None
         )
         return values
 
@@ -518,7 +518,7 @@ class _NVIDIAClient(BaseModel):
     @root_validator
     def _postprocess_args(cls, values: Any) -> Any:
         if values["is_hosted"]:
-            if "api_key" not in values or not values["api_key"]:
+            if not values["client"].api_key:
                 warnings.warn(
                     "An API key is required for the hosted NIM. "
                     "This will become an error in the future.",

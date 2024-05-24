@@ -1,7 +1,9 @@
+import inspect
 from typing import List
 
 import pytest
 
+import langchain_nvidia_ai_endpoints
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
 from langchain_nvidia_ai_endpoints._common import Model
 
@@ -106,3 +108,13 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 @pytest.fixture
 def mode(request: pytest.FixtureRequest) -> dict:
     return get_mode(request.config)
+
+
+@pytest.fixture(
+    params=[
+        member[1]
+        for member in inspect.getmembers(langchain_nvidia_ai_endpoints, inspect.isclass)
+    ]
+)
+def public_class(request: pytest.FixtureRequest) -> type:
+    return request.param

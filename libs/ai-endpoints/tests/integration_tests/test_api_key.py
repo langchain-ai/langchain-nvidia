@@ -1,46 +1,51 @@
-import inspect
 import os
+from typing import Any
 
 import pytest
+from langchain_core.documents import Document
 
-import langchain_nvidia_ai_endpoints
+from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
 
 from ..unit_tests.test_api_key import no_env_var
 
-public_classes = [
-    member[1]
-    for member in inspect.getmembers(langchain_nvidia_ai_endpoints, inspect.isclass)
-]
+
+def contact_service(instance: Any) -> None:
+    if isinstance(instance, ChatNVIDIA):
+        instance.invoke("Hello")
+    elif isinstance(instance, NVIDIAEmbeddings):
+        instance.embed_documents(["Hello"])
+    elif isinstance(instance, NVIDIARerank):
+        instance.compress_documents(
+            documents=[Document(page_content="World")], query="Hello"
+        )
 
 
-@pytest.mark.parametrize("cls", public_classes)
-def test_missing_api_key_error(cls: type) -> None:
+def test_missing_api_key_error(public_class: type) -> None:
     with no_env_var("NVIDIA_API_KEY"):
-        client = cls()
-        with pytest.raises(ValueError) as exc_info:
-            client.available_models
+        with pytest.warns(UserWarning):
+            client = public_class()
+        with pytest.raises(Exception) as exc_info:
+            contact_service(client)
         message = str(exc_info.value)
         assert "401" in message
         assert "Unauthorized" in message
         assert "API key" in message
 
 
-@pytest.mark.parametrize("cls", public_classes)
-def test_bogus_api_key_error(cls: type) -> None:
+def test_bogus_api_key_error(public_class: type) -> None:
     with no_env_var("NVIDIA_API_KEY"):
-        client = cls(nvidia_api_key="BOGUS")
-        with pytest.raises(ValueError) as exc_info:
-            client.available_models
+        client = public_class(nvidia_api_key="BOGUS")
+        with pytest.raises(Exception) as exc_info:
+            contact_service(client)
         message = str(exc_info.value)
         assert "401" in message
         assert "Unauthorized" in message
         assert "API key" in message
 
 
-@pytest.mark.parametrize("cls", public_classes)
 @pytest.mark.parametrize("param", ["nvidia_api_key", "api_key"])
-def test_api_key(cls: type, param: str) -> None:
+def test_api_key(public_class: type, param: str) -> None:
     api_key = os.environ.get("NVIDIA_API_KEY")
     with no_env_var("NVIDIA_API_KEY"):
-        client = cls(**{param: api_key})
-        assert client.available_models
+        client = public_class(**{param: api_key})
+        contact_service(client)
