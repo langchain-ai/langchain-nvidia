@@ -67,8 +67,7 @@ def test_embed_available_models(mode: dict) -> None:
         pytest.skip(f"available_models test only valid against API Catalog, not {mode}")
     embedding = NVIDIAEmbeddings()
     models = embedding.available_models
-    assert len(models) >= 2  # nvolveqa_40k and ai-embed-qa-4
-    assert "nvolveqa_40k" in [model.id for model in models]
+    assert len(models) >= 1
     assert "ai-embed-qa-4" in [model.id for model in models]
     assert all(model.model_type is not None for model in models)
 
@@ -103,8 +102,6 @@ def test_embed_documents_batched_texts(embedding_model: str, mode: dict) -> None
 
 
 def test_embed_documents_mixed_long_texts(embedding_model: str, mode: dict) -> None:
-    if embedding_model == "nvolveqa_40k":
-        pytest.xfail("AI Foundation Model trucates by default")
     embedding = NVIDIAEmbeddings(model=embedding_model, **mode)
     count = NVIDIAEmbeddings._default_max_batch_size * 2 - 1
     texts = ["nvidia " * 32] * count
@@ -115,8 +112,6 @@ def test_embed_documents_mixed_long_texts(embedding_model: str, mode: dict) -> N
 
 @pytest.mark.parametrize("truncate", ["START", "END"])
 def test_embed_query_truncate(embedding_model: str, mode: dict, truncate: str) -> None:
-    if embedding_model == "nvolveqa_40k":
-        pytest.xfail("AI Foundation Model does not support truncate option")
     embedding = NVIDIAEmbeddings(model=embedding_model, truncate=truncate, **mode)
     text = "nvidia " * 2048
     output = embedding.embed_query(text)
