@@ -25,6 +25,10 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model: str = "nvidia/embed-qa-4"
     _default_max_batch_size: int = 50
+    base_url: str = Field(
+        "https://integrate.api.nvidia.com/v1",
+        description="Base url for model listing an invocation",
+    )
     model: str = Field(_default_model, description="Name of the model to invoke")
     truncate: Literal["NONE", "START", "END"] = Field(
         default="NONE",
@@ -41,6 +45,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
         self._client = _NVIDIAClient(
+            base_url=self.base_url,
             model=self.model,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
             infer_path="{base_url}/embeddings",

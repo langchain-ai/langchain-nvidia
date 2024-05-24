@@ -30,6 +30,10 @@ class NVIDIARerank(BaseDocumentCompressor):
     _deprecated_model: str = "ai-rerank-qa-mistral-4b"
     _default_model_name: str = "nv-rerank-qa-mistral-4b:1"
 
+    base_url: str = Field(
+        "https://ai.api.nvidia.com/v1",
+        description="Base url for model listing an invocation",
+    )
     top_n: int = Field(5, ge=0, description="The number of documents to return.")
     model: str = Field(
         _default_model_name, description="The model to use for reranking."
@@ -58,10 +62,17 @@ class NVIDIARerank(BaseDocumentCompressor):
             environment variable.
         """
         super().__init__(**kwargs)
+        # inference paths differ between hosted and local NIMs
+        if "base_url" in kwargs:  # local NIM
+            default_infer_path = "{base_url}/ranking"
+        else:  # hosted NIM
+            default_infer_path = "{base_url}/retrieval/nvidia/reranking"
+        infer_path = kwargs.get("infer_path", default_infer_path)
         self._client = _NVIDIAClient(
+            base_url=self.base_url,
             model=self.model,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
-            infer_path="{base_url}/ranking",
+            infer_path=infer_path,
         )
 
     @property
