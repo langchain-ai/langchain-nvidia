@@ -7,7 +7,7 @@ from langchain_core.outputs.llm_result import LLMResult
 from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
-from langchain_nvidia_ai_endpoints._statics import Model
+from langchain_nvidia_ai_endpoints._statics import Model, determine_model
 from langchain_nvidia_ai_endpoints.callbacks import usage_callback_var
 
 
@@ -23,7 +23,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     """
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
-    _default_model: str = "nvidia/embed-qa-4"
+    _default_model: str = "NV-Embed-QA"
     _default_max_batch_size: int = 50
     base_url: str = Field(
         "https://integrate.api.nvidia.com/v1",
@@ -44,11 +44,17 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
+        infer_path = "{base_url}/embeddings"
+        # not all embedding models are on https://integrate.api.nvidia.com/v1,
+        # those that are not are served from their own endpoints
+        if model := determine_model(self.model):
+            if model.endpoint:  # some models have custom endpoints
+                infer_path = model.endpoint
         self._client = _NVIDIAClient(
             base_url=self.base_url,
             model=self.model,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
-            infer_path="{base_url}/embeddings",
+            infer_path=infer_path,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
