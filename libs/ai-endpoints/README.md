@@ -314,7 +314,7 @@ You can also connect to embeddings models through this package. Below is an exam
 ```python
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 
-embedder = NVIDIAEmbeddings(model="ai-embed-qa-4")
+embedder = NVIDIAEmbeddings(model="NV-Embed-QA")
 embedder.embed_query("What's the temperature today?")
 embedder.embed_documents([
     "The temperature is 42 degrees.",
