@@ -101,13 +101,13 @@ CHAT_MODEL_TABLE = {
         id="meta/llama3-8b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
-        aliases=["ai-llama3-8b-instruct"],
+        aliases=["ai-llama3-8b"],
     ),
     "meta/llama3-70b-instruct": Model(
         id="meta/llama3-70b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
-        aliases=["ai-llama3-70b-instruct"],
+        aliases=["ai-llama3-70b"],
     ),
     "microsoft/phi-3-mini-128k-instruct": Model(
         id="microsoft/phi-3-mini-128k-instruct",
