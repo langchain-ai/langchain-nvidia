@@ -279,34 +279,6 @@ llm.invoke(
 )
 ```
 
-## RAG: Context models
-
-NVIDIA also has Q&A models that support a special "context" chat message containing retrieved context (such as documents within a RAG chain). This is useful to avoid prompt-injecting the model.
-
-**Note:** Only "user" (human) and "context" chat messages are supported for these models, not system or AI messages useful in conversational flows.
-
-The `_qa_` models like `nemotron_qa_8b` support this.
-
-```python
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import ChatMessage
-prompt = ChatPromptTemplate.from_messages(
-    [
-        ChatMessage(role="context", content="Parrots and Cats have signed the peace accord."),
-        ("user", "{input}")
-    ]
-)
-llm = ChatNVIDIA(model="nemotron_qa_8b")
-chain = (
-    prompt
-    | llm
-    | StrOutputParser()
-)
-chain.invoke({"input": "What was signed?"})
-```
-
 ## Embeddings
 
 You can also connect to embeddings models through this package. Below is an example:
