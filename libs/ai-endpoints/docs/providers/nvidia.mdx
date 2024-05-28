@@ -61,14 +61,14 @@ When ready to deploy, you can self-host models with NVIDIA NIM—which is includ
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
 
-# connect to an chat NIM running at localhost:8000
-llm = ChatNVIDIA(base_url="http://localhost:8000/v1")
+# connect to an chat NIM running at localhost:8000, specifyig a specific model
+llm = ChatNVIDIA(base_url="http://localhost:8000/v1", model="meta-llama3-8b-instruct")
 
-# connect to an embedding NIM running at localhost:2016
-embedder = NVIDIAEmbeddings(base_url="http://localhost:2016/v1")
+# connect to an embedding NIM running at localhost:8080
+embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")
 
-# connect to a reranking NIM running at localhost:1976
-ranker = NVIDIARerank(base_url="http://localhost:1976/v1")
+# connect to a reranking NIM running at localhost:2016
+ranker = NVIDIARerank(base_url="http://localhost:2016/v1")
 ```
 
 ## Using NVIDIA AI Foundation Endpoints
