@@ -189,6 +189,14 @@ MODEL_SPECS.update(
             "model_type": "image_in",
             "model_name": "microsoft/phi-3-vision-128k-instruct",
         },
+        "ai-granite-8b-code-instruct": {
+            "model_type": "chat",
+            "model_name": "ibm/granite-8b-code-instruct",
+        },
+        "ai-granite-34b-code-instruct": {
+            "model_type": "chat",
+            "model_name": "ibm/granite-34b-code-instruct",
+        },
     }
 )
 
