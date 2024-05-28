@@ -83,16 +83,6 @@ def test_embed_documents_negative_input_list_mixed(embedding: NVIDIAEmbeddings) 
         embedding.embed_documents(documents)  # type: ignore
 
 
-def test_embed_deprecated_nvolvqa_40k() -> None:
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        NVIDIAEmbeddings()
-    with pytest.deprecated_call():
-        NVIDIAEmbeddings(model="nvolveqa_40k")
-    with pytest.deprecated_call():
-        NVIDIAEmbeddings(model="playground_nvolveqa_40k")
-
-
 def test_embed_max_length_deprecated() -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("error")
