@@ -96,10 +96,6 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         self, texts: List[str], model_type: Literal["passage", "query"]
     ) -> List[List[float]]:
         """Embed a single text entry to either passage or query type"""
-        # AI Foundation Model API -
-        #  input: str | list[str]              -- <= 2048 characters, <= 50 inputs
-        #  model: "query" | "passage"          -- type of input text to be embedded
-        #  encoding_format: "float" | "base64"
         # API Catalog API -
         #  input: str | list[str]              -- char limit depends on model
         #  model: str                          -- model name, e.g. NV-Embed-QA
@@ -108,8 +104,6 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         #  user: str                           -- ignored
         #  truncate: "NONE" | "START" | "END"  -- default "NONE", error raised if
         #                                         an input is too long
-        # todo: remove the playground aliases
-        model_name = self.model
         payload = {
             "input": texts,
             "model": self.model,
@@ -118,15 +112,6 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         }
         if self.truncate:
             payload["truncate"] = self.truncate
-
-        # todo: remove this
-        # special handling for ai foundation model, there's only one
-        if "nvolveqa_40k" in model_name:
-            payload = {
-                "input": texts,
-                "model": model_type,
-                "encoding_format": "float",
-            }
 
         response = self._client.client.get_req(
             payload=payload,
