@@ -1,10 +1,11 @@
 """Embeddings Components Derived from NVEModel/Embeddings"""
 
+import warnings
 from typing import Any, List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.outputs.llm_result import LLMResult
-from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
+from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr, validator
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model, determine_model
@@ -21,6 +22,9 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         maximum token length. Default is "NONE", which raises an error if an input is
         too long.
     """
+
+    class Config:
+        validate_assignment = True
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model: str = "NV-Embed-QA"
@@ -39,7 +43,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     )
     max_batch_size: int = Field(default=_default_max_batch_size)
     model_type: Optional[Literal["passage", "query"]] = Field(
-        None, description="The type of text to be embedded."
+        None, description="(DEPRECATED) The type of text to be embedded."
     )
 
     def __init__(self, **kwargs: Any):
@@ -59,6 +63,18 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
         self.model = self._client.model
+
+    @validator("model_type")
+    def _validate_model_type(
+        cls, v: Optional[Literal["passage", "query"]]
+    ) -> Optional[Literal["passage", "query"]]:
+        if v:
+            warnings.warn(
+                "Warning: `model_type` is deprecated and will be removed "
+                "in a future release. Please use `embed_query` or "
+                "`embed_documents` appropriately."
+            )
+        return v
 
     @property
     def available_models(self) -> List[Model]:

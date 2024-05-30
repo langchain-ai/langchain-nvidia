@@ -1,4 +1,4 @@
-from typing import Any, Generator
+from typing import Any, Generator, Literal
 
 import pytest
 from requests_mock import Mocker
@@ -82,6 +82,15 @@ def test_embed_documents_negative_input_list_mixed(embedding: NVIDIAEmbeddings) 
 def test_embed_query_truncate_invalid(truncate: Any) -> None:
     with pytest.raises(ValueError):
         NVIDIAEmbeddings(truncate=truncate)
+
+
+@pytest.mark.parametrize("model_type", ["query", "passage"])
+def test_embed_model_type_deprecated(model_type: Literal["query", "passage"]) -> None:
+    with pytest.warns(UserWarning):
+        NVIDIAEmbeddings(model_type=model_type)
+    x = NVIDIAEmbeddings()
+    with pytest.warns(UserWarning):
+        x.model_type = model_type
 
 
 # todo: test max_batch_size (-50, 0, 1, 50)
