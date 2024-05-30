@@ -221,7 +221,7 @@ for txt in chain.stream({"input": "Why is a PB&J?"}):
 
 NVIDIA also supports multimodal inputs, meaning you can provide both images and text for the model to reason over.
 
-An example model supporting multimodal inputs is `ai-neva-22b`.
+An example model supporting multimodal inputs is `nvidia/neva-22b`.
 
 These models accept LangChain's standard image formats. Below are examples.
 
@@ -237,7 +237,7 @@ Initialize the model like so:
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-llm = ChatNVIDIA(model="ai-neva-22b")
+llm = ChatNVIDIA(model="nvidia/neva-22b")
 ```
 
 #### Passing an image as a URL
