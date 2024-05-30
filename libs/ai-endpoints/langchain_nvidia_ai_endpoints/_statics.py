@@ -197,6 +197,10 @@ MODEL_SPECS.update(
             "model_type": "chat",
             "model_name": "ibm/granite-34b-code-instruct",
         },
+        "ai-codegemma-1-1-7b": {
+            "model_type": "chat",
+            "model_name": "google/codegemma-1.1-7b",
+        },
     }
 )
 
