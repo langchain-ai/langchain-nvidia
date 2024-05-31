@@ -3,6 +3,8 @@ from typing import Any
 import pytest
 import requests_mock
 
+from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE
+
 
 def test_available_models(public_class: type, mode: dict) -> None:
     models = public_class(**mode).available_models
@@ -34,3 +36,17 @@ def test_available_models_cached(public_class: type, mode: dict) -> None:
         assert mock.called
         client.available_models
         assert mock.call_count == 1
+
+
+def test_known_models_are_available(public_class: type, mode: dict) -> None:
+    known_models = set(
+        model.id
+        for model in MODEL_TABLE.values()
+        if model.client == public_class.__name__
+    )
+    available_models = set(
+        model.id
+        for model in public_class.get_available_models(**mode)  # type: ignore
+    )
+
+    assert known_models - available_models == set()

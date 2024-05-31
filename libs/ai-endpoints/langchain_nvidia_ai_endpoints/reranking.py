@@ -8,7 +8,7 @@ from langchain_core.documents.compressor import BaseDocumentCompressor
 from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
-from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, determine_model
+from langchain_nvidia_ai_endpoints._statics import Model, determine_model
 
 
 class Ranking(BaseModel):
@@ -83,20 +83,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         """
         Get a list of available models that work with NVIDIARerank.
         """
-        if self._client.is_hosted:
-            # model listing is not available for hosted NIMs
-            models = [
-                model
-                for model in MODEL_TABLE.values()
-                if model.client == self.__class__.__name__
-            ]
-        else:
-            models = [
-                model
-                for model in self._client.available_models
-                if model.client == self.__class__.__name__
-            ]
-        return models
+        return self._client.get_available_models(self.__class__.__name__)
 
     @classmethod
     def get_available_models(

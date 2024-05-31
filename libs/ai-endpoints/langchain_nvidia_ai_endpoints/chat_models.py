@@ -164,11 +164,7 @@ class ChatNVIDIA(BaseChatModel):
 
     @property
     def available_models(self) -> List[Model]:
-        return [
-            model
-            for model in self._client.available_models
-            if model.client == self.__class__.__name__
-        ]
+        return self._client.get_available_models(self.__class__.__name__)
 
     @classmethod
     def get_available_models(

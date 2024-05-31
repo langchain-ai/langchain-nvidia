@@ -33,7 +33,7 @@ from langchain_core.pydantic_v1 import (
 )
 from requests.models import Response
 
-from langchain_nvidia_ai_endpoints._statics import Model, determine_model
+from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, determine_model
 
 logger = logging.getLogger(__name__)
 
@@ -558,15 +558,24 @@ class _NVIDIAClient(BaseModel):
 
         return attributes
 
-    @property
-    def available_models(self) -> List[Model]:
-        """Retrieve a list of available models."""
-        return self.client.available_models
-
-    @classmethod
     def get_available_models(
-        cls,
+        self,
+        filter: str,
         **kwargs: Any,
     ) -> List[Model]:
-        """Map the available models that can be invoked. Callable from class"""
-        return cls(**kwargs).available_models
+        """Retrieve a list of available models."""
+        available = [
+            model for model in self.client.available_models if model.client == filter
+        ]
+
+        # if we're talking to a hosted endpoint, we mix in the known models
+        # because they are not all discoverable by listing. for instance,
+        # the NV-Embed-QA and VLM models are hosted on ai.api.nvidia.com
+        # instead of integrate.api.nvidia.com.
+        if self.is_hosted:
+            known = set(
+                model for model in MODEL_TABLE.values() if model.client == filter
+            )
+            available = list(set(available) | known)
+
+        return available

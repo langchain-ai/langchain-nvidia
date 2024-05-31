@@ -21,6 +21,9 @@ class Model(BaseModel):
     endpoint: Optional[str] = None
     aliases: Optional[list] = None
 
+    def __hash__(self) -> int:
+        return hash(self.id)
+
 
 CHAT_MODEL_TABLE = {
     "meta/codellama-70b": Model(
