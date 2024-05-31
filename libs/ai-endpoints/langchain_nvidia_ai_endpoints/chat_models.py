@@ -142,7 +142,6 @@ class ChatNVIDIA(BaseChatModel):
     top_p: Optional[float] = Field(description="Top-p for distribution sampling")
     seed: Optional[int] = Field(description="The seed for deterministic results")
     stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
-    streaming: bool = Field(True)
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
