@@ -279,12 +279,21 @@ MODEL_TABLE = {
 
 
 def lookup_model(name: str) -> Optional[Model]:
+    """
+    Lookup a model by name, using only the table of known models.
+    The name is either:
+        - directly in the table
+        - an alias in the table
+        - not found (None)
+    Callers can check to see if the name was an alias by
+    comparing the result's id field to the name they provided.
+    """
     model = None
-    if name in MODEL_TABLE:
-        model = MODEL_TABLE[name]
-    for mdl in MODEL_TABLE.values():
-        if mdl.aliases and name in mdl.aliases:
-            model = mdl
+    if not (model := MODEL_TABLE.get(name)):
+        for mdl in MODEL_TABLE.values():
+            if mdl.aliases and name in mdl.aliases:
+                model = mdl
+                break
     return model
 
 
