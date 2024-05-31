@@ -298,6 +298,15 @@ def lookup_model(name: str) -> Optional[Model]:
 
 
 def determine_model(name: str) -> Optional[Model]:
+    """
+    Determine the model to use based on a name, using
+    only the table of known models.
+
+    Raise a warning if the model is found to be
+    an alias of a known model.
+
+    If the model is not found, return None.
+    """
     if model := lookup_model(name):
         # all aliases are deprecated
         if model.id != name:
