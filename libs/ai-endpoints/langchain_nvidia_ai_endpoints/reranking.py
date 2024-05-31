@@ -90,6 +90,9 @@ class NVIDIARerank(BaseDocumentCompressor):
         cls,
         **kwargs: Any,
     ) -> List[Model]:
+        """
+        Get a list of available models that work with NVIDIARerank.
+        """
         return cls(**kwargs).available_models
 
     # todo: batching when len(documents) > endpoint's max batch size

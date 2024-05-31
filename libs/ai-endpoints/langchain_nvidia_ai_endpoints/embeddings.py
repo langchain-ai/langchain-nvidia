@@ -47,6 +47,27 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     )
 
     def __init__(self, **kwargs: Any):
+        """
+        Create a new NVIDIAEmbeddings embedder.
+
+        This class provides access to a NVIDIA NIM for embedding. By default, it
+        connects to a hosted NIM, but can be configured to connect to a local NIM
+        using the `base_url` parameter. An API key is required to connect to the
+        hosted NIM.
+
+        Args:
+            model (str): The model to use for embedding.
+            nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
+            api_key (str): Alternative to nvidia_api_key.
+            base_url (str): The base URL of the NIM to connect to.
+            trucate (str): "NONE", "START", "END", truncate input text if it exceeds
+                            the model's context length. Default is "NONE", which raises
+                            an error if an input is too long.
+
+        API Key:
+        - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
+            environment variable.
+        """
         super().__init__(**kwargs)
         infer_path = "{base_url}/embeddings"
         # not all embedding models are on https://integrate.api.nvidia.com/v1,
@@ -88,6 +109,9 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
 
     @property
     def available_models(self) -> List[Model]:
+        """
+        Get a list of available models that work with NVIDIAEmbeddings.
+        """
         return self._client.get_available_models(self.__class__.__name__)
 
     @classmethod
@@ -95,8 +119,10 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         cls,
         **kwargs: Any,
     ) -> List[Model]:
-        self = cls(**kwargs)
-        return self.available_models
+        """
+        Get a list of available models that work with NVIDIAEmbeddings.
+        """
+        return cls(**kwargs).available_models
 
     def _embed(
         self, texts: List[str], model_type: Literal["passage", "query"]

@@ -144,6 +144,29 @@ class ChatNVIDIA(BaseChatModel):
     stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
 
     def __init__(self, **kwargs: Any):
+        """
+        Create a new NVIDIAChat chat model.
+
+        This class provides access to a NVIDIA NIM for chat. By default, it
+        connects to a hosted NIM, but can be configured to connect to a local NIM
+        using the `base_url` parameter. An API key is required to connect to the
+        hosted NIM.
+
+        Args:
+            model (str): The model to use for chat.
+            nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
+            api_key (str): Alternative to nvidia_api_key.
+            base_url (str): The base URL of the NIM to connect to.
+            temperature (float): Sampling temperature in [0, 1].
+            max_tokens (int): Maximum number of tokens to generate.
+            top_p (float): Top-p for distribution sampling.
+            seed (int): A seed for deterministic results.
+            stop (list[str]): A list of cased stop words.
+
+        API Key:
+        - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
+            environment variable.
+        """
         super().__init__(**kwargs)
         infer_path = "{base_url}/chat/completions"
         # not all chat models are on https://integrate.api.nvidia.com/v1,
@@ -163,6 +186,9 @@ class ChatNVIDIA(BaseChatModel):
 
     @property
     def available_models(self) -> List[Model]:
+        """
+        Get a list of available models that work with ChatNVIDIA.
+        """
         return self._client.get_available_models(self.__class__.__name__)
 
     @classmethod
@@ -170,8 +196,10 @@ class ChatNVIDIA(BaseChatModel):
         cls,
         **kwargs: Any,
     ) -> List[Model]:
-        self = cls(**kwargs)
-        return self.available_models
+        """
+        Get a list of available models that work with ChatNVIDIA.
+        """
+        return cls(**kwargs).available_models
 
     @property
     def _llm_type(self) -> str:
