@@ -297,7 +297,7 @@ class ChatNVIDIA(BaseChatModel):
         **kwargs: Any,
     ) -> dict:
         """Call to client generate method with call scope"""
-        kwargs["stop"] = kwargs.get("stop") or self.stop
+        kwargs["stop"] = kwargs.get("stop", self.stop)
         payload = self._get_payload(inputs=inputs, stream=False, **kwargs)
         out = self._client.client.get_req_generation(payload=payload)
         return out
