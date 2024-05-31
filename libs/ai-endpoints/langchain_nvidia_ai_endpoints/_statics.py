@@ -166,6 +166,24 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-phi-3-medium-4k-instruct"],
     ),
+    "ibm/granite-8b-code-instruct": Model(
+        id="ibm/granite-8b-code-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-granite-8b-code-instruct"],
+    ),
+    "ibm/granite-34b-code-instruct": Model(
+        id="ibm/granite-34b-code-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-granite-34b-code-instruct"],
+    ),
+    "google/codegemma-1.1-7b": Model(
+        id="google/codegemma-1.1-7b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-codegemma-1.1-7b"],
+    ),
 }
 
 VLM_MODEL_TABLE = {
