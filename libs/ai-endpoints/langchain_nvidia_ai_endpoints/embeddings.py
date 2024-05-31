@@ -1,19 +1,18 @@
 """Embeddings Components Derived from NVEModel/Embeddings"""
 
 import warnings
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.outputs.llm_result import LLMResult
-from langchain_core.pydantic_v1 import Field, validator
+from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr, validator
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._statics import Model, determine_model
 from langchain_nvidia_ai_endpoints.callbacks import usage_callback_var
 
-from ._statics import MODEL_SPECS
 
-
-class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
+class NVIDIAEmbeddings(BaseModel, Embeddings):
     """
     Client to NVIDIA embeddings models.
 
@@ -24,9 +23,16 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
         too long.
     """
 
+    class Config:
+        validate_assignment = True
+
+    _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model: str = "NV-Embed-QA"
     _default_max_batch_size: int = 50
-    infer_endpoint: str = Field("{base_url}/embeddings")
+    base_url: str = Field(
+        "https://integrate.api.nvidia.com/v1",
+        description="Base url for model listing an invocation",
+    )
     model: str = Field(_default_model, description="Name of the model to invoke")
     truncate: Literal["NONE", "START", "END"] = Field(
         default="NONE",
@@ -35,48 +41,93 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
             "Default is 'NONE', which raises an error if an input is too long."
         ),
     )
-    max_length: int = Field(2048, ge=1, le=2048)
     max_batch_size: int = Field(default=_default_max_batch_size)
     model_type: Optional[Literal["passage", "query"]] = Field(
-        None, description="The type of text to be embedded."
+        None, description="(DEPRECATED) The type of text to be embedded."
     )
 
-    # indicate to user that max_length is deprecated when passed as an argument to
-    # NVIDIAEmbeddings' constructor, e.g. NVIDIAEmbeddings(max_length=...). this
-    # does not warning on assignment, e.g. embedder.max_length = ...
-    # todo: fix _NVIDIAClient.validate_client and enable Config.validate_assignment
-    @validator("max_length")
-    def deprecated_max_length(cls, value: int) -> int:
-        """Deprecate the max_length field."""
-        warnings.warn(
-            "The max_length field is deprecated. Use the 'truncate' instead.",
-            DeprecationWarning,
-        )
-        return value
+    def __init__(self, **kwargs: Any):
+        """
+        Create a new NVIDIAEmbeddings embedder.
 
-    # todo: fix _NVIDIAClient.validate_client and enable Config.validate_assignment
-    @validator("model")
-    def aifm_deprecated(cls, value: str) -> str:
-        """All AI Foundataion Models are deprecate, use API Catalog models instead."""
-        for model in [value, f"playground_{value}"]:
-            if model in MODEL_SPECS and MODEL_SPECS[model].get("api_type") == "aifm":
-                alternative = MODEL_SPECS[model].get(
-                    "alternative", NVIDIAEmbeddings._default_model
-                )
-                warnings.warn(
-                    f"{value} is deprecated. Try {alternative} instead.",
-                    DeprecationWarning,
-                )
-        return value
+        This class provides access to a NVIDIA NIM for embedding. By default, it
+        connects to a hosted NIM, but can be configured to connect to a local NIM
+        using the `base_url` parameter. An API key is required to connect to the
+        hosted NIM.
+
+        Args:
+            model (str): The model to use for embedding.
+            nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
+            api_key (str): Alternative to nvidia_api_key.
+            base_url (str): The base URL of the NIM to connect to.
+            trucate (str): "NONE", "START", "END", truncate input text if it exceeds
+                            the model's context length. Default is "NONE", which raises
+                            an error if an input is too long.
+
+        API Key:
+        - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
+            environment variable.
+        """
+        super().__init__(**kwargs)
+        infer_path = "{base_url}/embeddings"
+        # not all embedding models are on https://integrate.api.nvidia.com/v1,
+        # those that are not are served from their own endpoints
+        if model := determine_model(self.model):
+            if model.endpoint:  # some models have custom endpoints
+                infer_path = model.endpoint
+        self._client = _NVIDIAClient(
+            base_url=self.base_url,
+            model=self.model,
+            api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
+            infer_path=infer_path,
+        )
+        # todo: only store the model in one place
+        # the model may be updated to a newer name during initialization
+        self.model = self._client.model
+
+        # todo: remove when nvolveqa_40k is removed from MODEL_TABLE
+        if "model" in kwargs and kwargs["model"] in [
+            "playground_nvolveqa_40k",
+            "nvolveqa_40k",
+        ]:
+            warnings.warn(
+                'Setting truncate="END" for nvolveqa_40k backward compatibility'
+            )
+            self.truncate = "END"
+
+    @validator("model_type")
+    def _validate_model_type(
+        cls, v: Optional[Literal["passage", "query"]]
+    ) -> Optional[Literal["passage", "query"]]:
+        if v:
+            warnings.warn(
+                "Warning: `model_type` is deprecated and will be removed "
+                "in a future release. Please use `embed_query` or "
+                "`embed_documents` appropriately."
+            )
+        return v
+
+    @property
+    def available_models(self) -> List[Model]:
+        """
+        Get a list of available models that work with NVIDIAEmbeddings.
+        """
+        return self._client.get_available_models(self.__class__.__name__)
+
+    @classmethod
+    def get_available_models(
+        cls,
+        **kwargs: Any,
+    ) -> List[Model]:
+        """
+        Get a list of available models that work with NVIDIAEmbeddings.
+        """
+        return cls(**kwargs).available_models
 
     def _embed(
         self, texts: List[str], model_type: Literal["passage", "query"]
     ) -> List[List[float]]:
         """Embed a single text entry to either passage or query type"""
-        # AI Foundation Model API -
-        #  input: str | list[str]              -- <= 2048 characters, <= 50 inputs
-        #  model: "query" | "passage"          -- type of input text to be embedded
-        #  encoding_format: "float" | "base64"
         # API Catalog API -
         #  input: str | list[str]              -- char limit depends on model
         #  model: str                          -- model name, e.g. NV-Embed-QA
@@ -85,31 +136,17 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
         #  user: str                           -- ignored
         #  truncate: "NONE" | "START" | "END"  -- default "NONE", error raised if
         #                                         an input is too long
-        # todo: remove the playground aliases
-        model_name = self.model
-        if model_name not in MODEL_SPECS:
-            if f"playground_{model_name}" in MODEL_SPECS:
-                model_name = f"playground_{model_name}"
-        if MODEL_SPECS.get(model_name, {}).get("api_type", None) == "aifm":
-            payload = {
-                "input": texts,
-                "model": model_type,
-                "encoding_format": "float",
-            }
-        else:  # default to the API Catalog API
-            payload = {
-                "input": texts,
-                "model": self.get_binding_model() or self.model,
-                "encoding_format": "float",
-                "input_type": model_type,
-            }
-            if self.truncate:
-                payload["truncate"] = self.truncate
+        payload = {
+            "input": texts,
+            "model": self.model,
+            "encoding_format": "float",
+            "input_type": model_type,
+        }
+        if self.truncate:
+            payload["truncate"] = self.truncate
 
-        response = self.client.get_req(
-            model_name=self.model,
+        response = self._client.client.get_req(
             payload=payload,
-            endpoint="infer",
         )
         response.raise_for_status()
         result = response.json()
@@ -131,19 +168,11 @@ class NVIDIAEmbeddings(_NVIDIAClient, Embeddings):
         ):
             raise ValueError(f"`texts` must be a list of strings, given: {repr(texts)}")
 
-        # From https://catalog.ngc.nvidia.com/orgs/nvidia/teams/ai-foundation/models/nvolve-40k/documentation
-        # The input must not exceed the 2048 max input characters and inputs above 512
-        # model tokens will be truncated. The input array must not exceed 50 input
-        #  strings.
         all_embeddings = []
         for i in range(0, len(texts), self.max_batch_size):
             batch = texts[i : i + self.max_batch_size]
-            truncated = [
-                text[: self.max_length] if len(text) > self.max_length else text
-                for text in batch
-            ]
             all_embeddings.extend(
-                self._embed(truncated, model_type=self.model_type or "passage")
+                self._embed(batch, model_type=self.model_type or "passage")
             )
         return all_embeddings
 

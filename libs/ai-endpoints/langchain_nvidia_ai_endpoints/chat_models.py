@@ -8,7 +8,6 @@ import logging
 import os
 import sys
 import urllib.parse
-import warnings
 from typing import (
     Any,
     AsyncIterator,
@@ -25,7 +24,6 @@ from typing import (
 )
 
 import requests
-from langchain_core._api import deprecated
 from langchain_core.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
@@ -41,12 +39,12 @@ from langchain_core.outputs import (
     ChatGenerationChunk,
     ChatResult,
 )
-from langchain_core.pydantic_v1 import BaseModel, Field, validator
+from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 
-from langchain_nvidia_ai_endpoints import _common as nvidia_ai_endpoints
-from langchain_nvidia_ai_endpoints._statics import MODEL_SPECS
+from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._statics import Model, determine_model
 
 _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
 _DictOrPydanticClass = Union[Dict[str, Any], Type[BaseModel]]
@@ -117,7 +115,7 @@ def _url_to_b64_string(image_source: str) -> str:
         raise ValueError(f"Unable to process the provided image source: {e}")
 
 
-class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
+class ChatNVIDIA(BaseChatModel):
     """NVIDIA chat model.
 
     Example:
@@ -130,8 +128,12 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
             response = model.invoke("Hello")
     """
 
+    _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model: str = "mistralai/mixtral-8x7b-instruct-v0.1"
-    infer_endpoint: str = Field("{base_url}/chat/completions")
+    base_url: str = Field(
+        "https://integrate.api.nvidia.com/v1",
+        description="Base url for model listing an invocation",
+    )
     model: str = Field(_default_model, description="Name of the model to invoke")
     temperature: Optional[float] = Field(description="Sampling temperature in [0, 1]")
     max_tokens: Optional[int] = Field(
@@ -139,46 +141,65 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
     )
     top_p: Optional[float] = Field(description="Top-p for distribution sampling")
     seed: Optional[int] = Field(description="The seed for deterministic results")
-    bad: Optional[Sequence[str]] = Field(description="Bad words to avoid (cased)")
     stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
-    labels: Optional[Dict[str, float]] = Field(description="Steering parameters")
-    streaming: bool = Field(True)
 
-    @validator("model")
-    def aifm_deprecated(cls, value: str) -> str:
-        """All AI Foundataion Models are deprecate, use API Catalog models instead."""
-        for model in [value, f"playground_{value}"]:
-            if model in MODEL_SPECS and MODEL_SPECS[model].get("api_type") == "aifm":
-                alternative = MODEL_SPECS[model].get(
-                    "alternative", ChatNVIDIA._default_model
-                )
-                warnings.warn(
-                    f"{value} is deprecated. Try {alternative} instead.",
-                    DeprecationWarning,
-                )
-        return value
+    def __init__(self, **kwargs: Any):
+        """
+        Create a new NVIDIAChat chat model.
 
-    @validator("bad")
-    def aifm_bad_deprecated(
-        cls, value: Optional[Sequence[str]]
-    ) -> Optional[Sequence[str]]:
-        if value:
-            warnings.warn(
-                "Bad words are deprecated and not supported by API Catalog models.",
-                DeprecationWarning,
-            )
-        return value
+        This class provides access to a NVIDIA NIM for chat. By default, it
+        connects to a hosted NIM, but can be configured to connect to a local NIM
+        using the `base_url` parameter. An API key is required to connect to the
+        hosted NIM.
 
-    @validator("labels")
-    def aifm_labels_deprecated(
-        cls, value: Optional[Sequence[str]]
-    ) -> Optional[Sequence[str]]:
-        if value:
-            warnings.warn(
-                "Labels are deprecated and not supported by API Catalog models.",
-                DeprecationWarning,
-            )
-        return value
+        Args:
+            model (str): The model to use for chat.
+            nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
+            api_key (str): Alternative to nvidia_api_key.
+            base_url (str): The base URL of the NIM to connect to.
+            temperature (float): Sampling temperature in [0, 1].
+            max_tokens (int): Maximum number of tokens to generate.
+            top_p (float): Top-p for distribution sampling.
+            seed (int): A seed for deterministic results.
+            stop (list[str]): A list of cased stop words.
+
+        API Key:
+        - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
+            environment variable.
+        """
+        super().__init__(**kwargs)
+        infer_path = "{base_url}/chat/completions"
+        # not all chat models are on https://integrate.api.nvidia.com/v1,
+        # those that are not are served from their own endpoints
+        if model := determine_model(self.model):
+            if model.endpoint:  # some models have custom endpoints
+                infer_path = model.endpoint
+        self._client = _NVIDIAClient(
+            base_url=self.base_url,
+            model=self.model,
+            api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
+            infer_path=infer_path,
+        )
+        # todo: only store the model in one place
+        # the model may be updated to a newer name during initialization
+        self.model = self._client.model
+
+    @property
+    def available_models(self) -> List[Model]:
+        """
+        Get a list of available models that work with ChatNVIDIA.
+        """
+        return self._client.get_available_models(self.__class__.__name__)
+
+    @classmethod
+    def get_available_models(
+        cls,
+        **kwargs: Any,
+    ) -> List[Model]:
+        """
+        Get a list of available models that work with ChatNVIDIA.
+        """
+        return cls(**kwargs).available_models
 
     @property
     def _llm_type(self) -> str:
@@ -192,10 +213,10 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> ChatResult:
-        inputs = self.custom_preprocess(messages)
-        responses = self.get_generation(inputs=inputs, stop=stop, **kwargs)
+        inputs = self._custom_preprocess(messages)
+        responses = self._get_generation(inputs=inputs, stop=stop, **kwargs)
         self._set_callback_out(responses, run_manager)
-        message = ChatMessage(**self.custom_postprocess(responses))
+        message = ChatMessage(**self._custom_postprocess(responses))
         generation = ChatGeneration(message=message)
         return ChatResult(generations=[generation], llm_output=responses)
 
@@ -211,29 +232,12 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
         **kwargs: Any,
     ) -> Iterator[ChatGenerationChunk]:
         """Allows streaming to model!"""
-        inputs = self.custom_preprocess(messages)
-        for response in self.get_stream(inputs=inputs, stop=stop, **kwargs):
+        inputs = self._custom_preprocess(messages)
+        for response in self._get_stream(inputs=inputs, stop=stop, **kwargs):
             self._set_callback_out(response, run_manager)
-            chunk = self._get_filled_chunk(**self.custom_postprocess(response))
+            chunk = self._get_filled_chunk(**self._custom_postprocess(response))
             if run_manager:
                 run_manager.on_llm_new_token(chunk.text, chunk=chunk)
-            yield chunk
-
-    # todo: remove when get_astream is removed
-    @deprecated(since="0.0.15", removal="0.1.0")
-    async def _astream(
-        self,
-        messages: List[BaseMessage],
-        stop: Optional[Sequence[str]] = None,
-        run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
-        **kwargs: Any,
-    ) -> AsyncIterator[ChatGenerationChunk]:
-        inputs = self.custom_preprocess(messages)
-        async for response in self.get_astream(inputs=inputs, stop=stop, **kwargs):
-            self._set_callback_out(response, run_manager)
-            chunk = self._get_filled_chunk(**self.custom_postprocess(response))
-            if run_manager:
-                await run_manager.on_llm_new_token(chunk.text, chunk=chunk)
             yield chunk
 
     def _set_callback_out(
@@ -247,11 +251,10 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
                 if hasattr(cb, "llm_output"):
                     cb.llm_output = result
 
-    @deprecated(since="0.0.15", removal="0.1.0")
-    def custom_preprocess(
+    def _custom_preprocess(  # todo: remove
         self, msg_list: Sequence[BaseMessage]
     ) -> List[Dict[str, str]]:
-        return [self.preprocess_msg(m) for m in msg_list]
+        return [self._preprocess_msg(m) for m in msg_list]
 
     def _process_content(self, content: Union[str, List[Union[dict, str]]]) -> str:
         if isinstance(content, str):
@@ -284,8 +287,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
                     raise ValueError(f"Unrecognized message part format: {part}")
         return "".join(string_array)
 
-    @deprecated(since="0.0.15", removal="0.1.0")
-    def preprocess_msg(self, msg: BaseMessage) -> Dict[str, str]:
+    def _preprocess_msg(self, msg: BaseMessage) -> Dict[str, str]:  # todo: remove
         if isinstance(msg, BaseMessage):
             role_convert = {"ai": "assistant", "human": "user"}
             if isinstance(msg, ChatMessage):
@@ -297,8 +299,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
             return {"role": role, "content": content}
         raise ValueError(f"Invalid message: {repr(msg)} of type {type(msg)}")
 
-    @deprecated(since="0.0.15", removal="0.1.0")
-    def custom_postprocess(self, msg: dict) -> dict:
+    def _custom_postprocess(self, msg: dict) -> dict:  # todo: remove
         kw_left = msg.copy()
         out_dict = {
             "role": kw_left.pop("role", "assistant") or "assistant",
@@ -317,62 +318,60 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
     ######################################################################################
     ## Core client-side interfaces
 
-    @deprecated(since="0.0.15", removal="0.1.0")
-    def get_generation(
+    def _get_generation(
         self,
         inputs: Sequence[Dict],
         **kwargs: Any,
     ) -> dict:
         """Call to client generate method with call scope"""
-        stop = kwargs["stop"] = kwargs.get("stop") or self.stop
-        payload = self.get_payload(inputs=inputs, stream=False, **kwargs)
-        out = self.client.get_req_generation(self.model, stop=stop, payload=payload)
+        kwargs["stop"] = kwargs.get("stop", self.stop)
+        payload = self._get_payload(inputs=inputs, stream=False, **kwargs)
+        out = self._client.client.get_req_generation(payload=payload)
         return out
 
-    @deprecated(since="0.0.15", removal="0.1.0")
-    def get_stream(
+    def _get_stream(  # todo: remove
         self,
         inputs: Sequence[Dict],
         **kwargs: Any,
     ) -> Iterator:
         """Call to client stream method with call scope"""
-        stop = kwargs["stop"] = kwargs.get("stop") or self.stop
-        payload = self.get_payload(inputs=inputs, stream=True, **kwargs)
-        return self.client.get_req_stream(self.model, stop=stop, payload=payload)
+        kwargs["stop"] = kwargs.get("stop") or self.stop
+        payload = self._get_payload(inputs=inputs, stream=True, **kwargs)
+        return self._client.client.get_req_stream(payload=payload)
 
-    @deprecated(since="0.0.15", removal="0.1.0")
-    def get_astream(
+    def _get_astream(  # todo: remove
         self,
         inputs: Sequence[Dict],
         **kwargs: Any,
     ) -> AsyncIterator:
         """Call to client astream methods with call scope"""
-        stop = kwargs["stop"] = kwargs.get("stop") or self.stop
-        payload = self.get_payload(inputs=inputs, stream=True, **kwargs)
-        return self.client.get_req_astream(self.model, stop=stop, payload=payload)
+        kwargs["stop"] = kwargs.get("stop") or self.stop
+        payload = self._get_payload(inputs=inputs, stream=True, **kwargs)
+        return self._client.client.get_req_astream(payload=payload)
 
-    @deprecated(since="0.0.15", removal="0.1.0")
-    def get_payload(self, inputs: Sequence[Dict], **kwargs: Any) -> dict:
+    def _get_payload(
+        self, inputs: Sequence[Dict], **kwargs: Any
+    ) -> dict:  # todo: remove
         """Generates payload for the _NVIDIAClient API to send to service."""
         attr_kwargs = {
+            "model": self.model,
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
             "top_p": self.top_p,
             "seed": self.seed,
-            "bad": self.bad,
             "stop": self.stop,
-            "labels": self.labels,
         }
-        if model_name := self.get_binding_model():
-            attr_kwargs["model"] = model_name
+        # if model_name := self._get_binding_model():
+        #     attr_kwargs["model"] = model_name
         attr_kwargs = {k: v for k, v in attr_kwargs.items() if v is not None}
         new_kwargs = {**attr_kwargs, **kwargs}
-        return self.prep_payload(inputs=inputs, **new_kwargs)
+        return self._prep_payload(inputs=inputs, **new_kwargs)
 
-    @deprecated(since="0.0.15", removal="0.1.0")
-    def prep_payload(self, inputs: Sequence[Dict], **kwargs: Any) -> dict:
+    def _prep_payload(
+        self, inputs: Sequence[Dict], **kwargs: Any
+    ) -> dict:  # todo: remove
         """Prepares a message or list of messages for the payload"""
-        messages = [self.prep_msg(m) for m in inputs]
+        messages = [self._prep_msg(m) for m in inputs]
         if kwargs.get("labels"):
             # (WFH) Labels are currently (?) always passed as an assistant
             # suffix message, but this API seems less stable.
@@ -381,8 +380,7 @@ class ChatNVIDIA(nvidia_ai_endpoints._NVIDIAClient, BaseChatModel):
             kwargs.pop("stop")
         return {"messages": messages, **kwargs}
 
-    @deprecated(since="0.0.15", removal="0.1.0")
-    def prep_msg(self, msg: Union[str, dict, BaseMessage]) -> dict:
+    def _prep_msg(self, msg: Union[str, dict, BaseMessage]) -> dict:  # todo: remove
         """Helper Method: Ensures a message is a dictionary with a role and content."""
         if isinstance(msg, str):
             # (WFH) this shouldn't ever be reached but leaving this here bcs

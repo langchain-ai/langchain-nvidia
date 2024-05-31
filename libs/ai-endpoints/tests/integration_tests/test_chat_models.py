@@ -3,12 +3,10 @@
 from typing import List
 
 import pytest
-from langchain_core._api import LangChainDeprecationWarning
 from langchain_core.load.dump import dumps
 from langchain_core.load.load import loads
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
-from langchain_nvidia_ai_endpoints._common import Model
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
 #
@@ -29,23 +27,14 @@ def test_chat_ai_endpoints(chat_model: str, mode: dict) -> None:
     assert isinstance(response.content, str)
 
 
-def test_chat_ai_endpoints_deprecated(chat_model: str, mode: dict) -> None:
-    """Test ChatNVIDIA wrapper."""
-    with pytest.warns(LangChainDeprecationWarning):
-        chat = ChatNVIDIA(
-            model=chat_model,
-            temperature=0.7,
-        ).mode(**mode)
-    message = HumanMessage(content="Hello")
-    response = chat.invoke([message])
-    assert isinstance(response, BaseMessage)
-    assert isinstance(response.content, str)
+def test_unknown_model() -> None:
+    with pytest.raises(ValueError):
+        ChatNVIDIA(model="unknown_model")
 
 
-def test_chat_ai_endpoints_model() -> None:
-    """Test wrapper handles model."""
-    chat = ChatNVIDIA(model="mistral")
-    assert chat.model == "mistral"
+def test_base_url_unknown_model() -> None:
+    llm = ChatNVIDIA(model="unknown_model", base_url="http://localhost:88888/v1")
+    assert llm.model == "unknown_model"
 
 
 def test_chat_ai_endpoints_system_message(chat_model: str, mode: dict) -> None:
@@ -231,7 +220,7 @@ def test_ai_endpoints_invoke_max_tokens_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
         llm.invoke("Show me the tokens")
-        assert llm.client.last_response.status_code == 422
+        assert llm._client.client.last_response.status_code == 422
 
 
 def test_ai_endpoints_invoke_max_tokens_positive(
@@ -276,7 +265,7 @@ def test_ai_endpoints_invoke_seed_default(chat_model: str, mode: dict) -> None:
 def test_ai_endpoints_invoke_seed_range(chat_model: str, mode: dict, seed: int) -> None:
     llm = ChatNVIDIA(model=chat_model, seed=seed, **mode)
     llm.invoke("What's in a seed?")
-    assert llm.client.last_response.status_code == 200
+    assert llm._client.client.last_response.status_code == 200
 
 
 @pytest.mark.xfail(reason="seed does not consistently control determinism")
@@ -302,7 +291,7 @@ def test_ai_endpoints_invoke_temperature_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, temperature=temperature, **mode)
         llm.invoke("What's in a temperature?")
-        assert llm.client.last_response.status_code == 422
+        assert llm._client.client.last_response.status_code == 422
 
 
 @pytest.mark.xfail(reason="temperature not consistently implemented")
@@ -329,7 +318,7 @@ def test_ai_endpoints_invoke_top_p_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, top_p=top_p, **mode)
         llm.invoke("What's in a top_p?")
-        assert llm.client.last_response.status_code == 422
+        assert llm._client.client.last_response.status_code == 422
 
 
 @pytest.mark.xfail(reason="seed does not consistently control determinism")
@@ -351,20 +340,3 @@ def test_serialize_chatnvidia(chat_model: str, mode: dict) -> None:
     model = loads(dumps(llm), valid_namespaces=["langchain_nvidia_ai_endpoints"])
     result = model.invoke("What is there if there is nothing?")
     assert isinstance(result.content, str)
-
-
-def test_chat_available_models(mode: dict) -> None:
-    models = ChatNVIDIA(**mode).available_models
-    assert len(models) >= 1
-    for model in models:
-        assert isinstance(model, Model)
-    # we don't have type information for local nim endpoints
-    if "mode" in mode and mode["mode"] == "nvidia":
-        assert all(model.model_type is not None for model in models)
-
-
-def test_chat_get_available_models(mode: dict) -> None:
-    models = ChatNVIDIA.get_available_models(**mode)
-    assert len(models) >= 1
-    for model in models:
-        assert isinstance(model, Model)

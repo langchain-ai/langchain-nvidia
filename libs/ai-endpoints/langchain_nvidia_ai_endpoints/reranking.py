@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from typing import Any, Generator, List, Optional, Sequence
 
-from langchain_core._api import deprecated, warn_deprecated
 from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
 from langchain_core.documents.compressor import BaseDocumentCompressor
 from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
 
-from ._common import _MODE_TYPE, _NVIDIAClient
-from ._statics import Model
+from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._statics import Model, determine_model
 
 
 class Ranking(BaseModel):
@@ -31,6 +30,10 @@ class NVIDIARerank(BaseDocumentCompressor):
     _deprecated_model: str = "ai-rerank-qa-mistral-4b"
     _default_model_name: str = "nv-rerank-qa-mistral-4b:1"
 
+    base_url: str = Field(
+        "https://integrate.api.nvidia.com/v1",
+        description="Base url for model listing an invocation",
+    )
     top_n: int = Field(5, ge=0, description="The number of documents to return.")
     model: str = Field(
         _default_model_name, description="The model to use for reranking."
@@ -38,7 +41,6 @@ class NVIDIARerank(BaseDocumentCompressor):
     max_batch_size: int = Field(
         _default_batch_size, ge=1, description="The maximum batch size."
     )
-    _is_hosted: bool = PrivateAttr(True)
 
     def __init__(self, **kwargs: Any):
         """
@@ -60,125 +62,47 @@ class NVIDIARerank(BaseDocumentCompressor):
             environment variable.
         """
         super().__init__(**kwargs)
+        infer_path = "{base_url}/ranking"
+        # not all models are on https://integrate.api.nvidia.com/v1,
+        # those that are not are served from their own endpoints
+        if model := determine_model(self.model):
+            if model.endpoint:  # some models have custom endpoints
+                infer_path = model.endpoint
         self._client = _NVIDIAClient(
+            base_url=self.base_url,
             model=self.model,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
+            infer_path=infer_path,
         )
-        if base_url := kwargs.get("base_url", None):
-            # todo: detect if the base_url points to hosted NIM, this depends on
-            #       moving from NVCF inference to API Catalog inference
-            self._is_hosted = False
-            self._client.client.base_url = base_url
-            self._client.client.endpoints["infer"] = "{base_url}/ranking"
-            self._client.client.endpoints = {
-                "infer": "{base_url}/ranking",
-                "status": None,
-                "models": None,
-            }
+        # todo: only store the model in one place
+        # the model may be updated to a newer name during initialization
+        self.model = self._client.model
 
     @property
     def available_models(self) -> List[Model]:
         """
         Get a list of available models that work with NVIDIARerank.
         """
-        if self._client.curr_mode == "nim" or not self._is_hosted:
-            # local NIM supports a single model and no /models endpoint
-            models = [
-                Model(
-                    id=NVIDIARerank._default_model_name,
-                    model_name=NVIDIARerank._default_model_name,
-                    model_type="ranking",
-                    client="NVIDIARerank",
-                    path="magic",
-                ),
-                Model(
-                    id=NVIDIARerank._deprecated_model,
-                    model_name=NVIDIARerank._default_model_name,
-                    model_type="ranking",
-                    client="NVIDIARerank",
-                    path="magic",
-                ),
-            ]
-        else:
-            models = self._client.get_available_models(
-                client=self._client,
-                filter=self.__class__.__name__,
-            )
-        return models
+        return self._client.get_available_models(self.__class__.__name__)
 
     @classmethod
     def get_available_models(
         cls,
-        mode: Optional[_MODE_TYPE] = None,
-        list_all: bool = False,
         **kwargs: Any,
     ) -> List[Model]:
         """
-        Get a list of available models. These models will work with the NVIDIARerank
-        interface.
-
-        Use the mode parameter to specify the mode to use. See the docs for mode()
-        to understand additional keyword arguments required when setting mode.
-
-        It is possible to get a list of all models, including those that are not
-        chat models, by setting the list_all parameter to True.
+        Get a list of available models that work with NVIDIARerank.
         """
-        if mode is not None:
-            warn_deprecated(since="0.0.17", removal="0.1.0", alternative="`base_url`")
-        self = cls(**kwargs).mode(mode=mode, **kwargs)
-        if mode == "nim" or not self._is_hosted:
-            # ignoring list_all because there is one
-            models = self.available_models
-        else:
-            models = self._client.get_available_models(
-                mode=mode,
-                list_all=list_all,
-                client=self._client,
-                filter=cls.__name__,
-                **kwargs,
-            )
-        return models
-
-    @deprecated(
-        since="0.0.17",
-        removal="0.1.0",
-        alternative="`base_url` to constructor",
-    )
-    def mode(
-        self,
-        mode: Optional[_MODE_TYPE] = "nvidia",
-        base_url: Optional[str] = None,
-        model: Optional[str] = None,
-        api_key: Optional[str] = None,
-        **kwargs: Any,
-    ) -> NVIDIARerank:
-        """
-        Deprecated: use NVIDIARerank(base_url=...) instead.
-        """
-        # set a default base_url for nim mode
-        if not base_url and mode == "nim":
-            base_url = "http://localhost:1976/v1"
-        self._client = self._client.mode(
-            mode=mode,
-            base_url=base_url,
-            model=model,
-            api_key=api_key,
-            infer_path="{base_url}/ranking",
-            **kwargs,
-        )
-        self.model = self._client.model
-        return self
+        return cls(**kwargs).available_models
 
     # todo: batching when len(documents) > endpoint's max batch size
     def _rank(self, documents: List[str], query: str) -> List[Ranking]:
         response = self._client.client.get_req(
-            model_name=self.model,
             payload={
                 "model": "nv-rerank-qa-mistral-4b:1",
                 "query": {"text": query},
                 "passages": [{"text": passage} for passage in documents],
             },
-            endpoint="infer",
         )
         if response.status_code != 200:
             response.raise_for_status()

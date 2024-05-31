@@ -1,9 +1,11 @@
+import inspect
 from typing import List
 
 import pytest
 
+import langchain_nvidia_ai_endpoints
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
-from langchain_nvidia_ai_endpoints._common import Model
+from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model
 
 
 def get_mode(config: pytest.Config) -> dict:
@@ -49,8 +51,8 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     mode = get_mode(metafunc.config)
 
-    def get_all_models() -> List[Model]:
-        return ChatNVIDIA.get_available_models(list_all=True, **mode)
+    def get_all_known_models() -> List[Model]:
+        return list(MODEL_TABLE.values())
 
     if "chat_model" in metafunc.fixturenames:
         models = [ChatNVIDIA._default_model]
@@ -71,26 +73,28 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             else:
                 models = [
                     model.id
-                    for model in get_all_models()
+                    for model in get_all_known_models()
                     if model.model_type == "ranking"
                 ]
         metafunc.parametrize("rerank_model", models, ids=models)
 
-    if "image_in_model" in metafunc.fixturenames:
-        models = ["adept/fuyu-8b"]
+    if "vlm_model" in metafunc.fixturenames:
+        models = ["nvidia/neva-22b"]
         if model := metafunc.config.getoption("vlm_model_id"):
             models = [model]
         if metafunc.config.getoption("all_models"):
             models = [
-                model.id for model in get_all_models() if model.model_type == "image_in"
+                model.id
+                for model in get_all_known_models()
+                if model.model_type == "vlm"
             ]
-        metafunc.parametrize("image_in_model", models, ids=models)
+        metafunc.parametrize("vlm_model", models, ids=models)
 
     if "qa_model" in metafunc.fixturenames:
         models = []
         if metafunc.config.getoption("all_models"):
             models = [
-                model.id for model in get_all_models() if model.model_type == "qa"
+                model.id for model in get_all_known_models() if model.model_type == "qa"
             ]
         metafunc.parametrize("qa_model", models, ids=models)
 
@@ -99,19 +103,20 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         if metafunc.config.getoption("embedding_model_id"):
             models = [metafunc.config.getoption("embedding_model_id")]
         if metafunc.config.getoption("all_models"):
-            if mode.get("mode", None) == "nim":
-                # there is no guarantee the NIM will return a known model name,
-                # so we just grab all models and assume they are embeddings
-                models = [model.id for model in get_all_models()]
-            else:
-                models = [
-                    model.id
-                    for model in get_all_models()
-                    if model.model_type == "embedding"
-                ]
+            models = [model.id for model in NVIDIAEmbeddings(**mode).available_models]
         metafunc.parametrize("embedding_model", models, ids=models)
 
 
 @pytest.fixture
 def mode(request: pytest.FixtureRequest) -> dict:
     return get_mode(request.config)
+
+
+@pytest.fixture(
+    params=[
+        member[1]
+        for member in inspect.getmembers(langchain_nvidia_ai_endpoints, inspect.isclass)
+    ]
+)
+def public_class(request: pytest.FixtureRequest) -> type:
+    return request.param

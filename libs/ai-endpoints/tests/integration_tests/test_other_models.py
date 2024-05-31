@@ -20,9 +20,9 @@ def test_chat_ai_endpoints_context_message(qa_model: str, mode: dict) -> None:
     assert isinstance(response.content, str)
 
 
-def test_image_in_models(image_in_model: str, mode: dict) -> None:
+def test_image_in_models(vlm_model: str, mode: dict) -> None:
     try:
-        chat = ChatNVIDIA(model=image_in_model, **mode)
+        chat = ChatNVIDIA(model=vlm_model, **mode)
         response = chat.invoke(
             [
                 HumanMessage(
@@ -39,6 +39,6 @@ def test_image_in_models(image_in_model: str, mode: dict) -> None:
         assert isinstance(response, BaseMessage)
         assert isinstance(response.content, str)
     except TimeoutError as e:
-        message = f"TimeoutError: {image_in_model} {e}"
+        message = f"TimeoutError: {vlm_model} {e}"
         warnings.warn(message)
         pytest.skip(message)

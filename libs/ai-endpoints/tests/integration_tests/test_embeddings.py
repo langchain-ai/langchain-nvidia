@@ -4,7 +4,6 @@ Note: These tests are designed to validate the functionality of NVIDIAEmbeddings
 """
 
 import pytest
-import requests_mock
 
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 
@@ -52,30 +51,9 @@ async def test_embed_documents_multiple_async(embedding_model: str, mode: dict) 
     assert all(len(doc) > 4 for doc in output)
 
 
-def test_embed_available_models(mode: dict) -> None:
-    if mode:
-        pytest.skip(f"available_models test only valid against API Catalog, not {mode}")
-    embedding = NVIDIAEmbeddings()
-    models = embedding.available_models
-    assert len(models) >= 1
-    assert "ai-embed-qa-4" in [model.id for model in models]
-    assert all(model.model_type is not None for model in models)
-
-
-def test_embed_available_models_cached() -> None:
-    """Test NVIDIA embeddings for available models."""
-    pytest.skip("There's a bug that needs to be fixed")
-    with requests_mock.Mocker(real_http=True) as mock:
-        embedding = NVIDIAEmbeddings()
-        assert not mock.called
-        embedding.available_models
-        assert mock.called
-        embedding.available_models
-        embedding.available_models
-        assert mock.call_count == 1
-
-
 def test_embed_query_long_text(embedding_model: str, mode: dict) -> None:
+    if embedding_model in ["playground_nvolveqa_40k", "nvolveqa_40k"]:
+        pytest.skip("Skip test for nvolveqa-40k due to compat override of truncate")
     embedding = NVIDIAEmbeddings(model=embedding_model, **mode)
     text = "nvidia " * 2048
     with pytest.raises(Exception):
@@ -92,6 +70,8 @@ def test_embed_documents_batched_texts(embedding_model: str, mode: dict) -> None
 
 
 def test_embed_documents_mixed_long_texts(embedding_model: str, mode: dict) -> None:
+    if embedding_model in ["playground_nvolveqa_40k", "nvolveqa_40k"]:
+        pytest.skip("Skip test for nvolveqa-40k due to compat override of truncate")
     embedding = NVIDIAEmbeddings(model=embedding_model, **mode)
     count = NVIDIAEmbeddings._default_max_batch_size * 2 - 1
     texts = ["nvidia " * 32] * count
@@ -118,6 +98,15 @@ def test_embed_documents_truncate(
     texts[len(texts) // 2] = "nvidia " * 2048
     output = embedding.embed_documents(texts)
     assert len(output) == count
+
+
+@pytest.mark.parametrize("nvolveqa_40k", ["playground_nvolveqa_40k", "nvolveqa_40k"])
+def test_embed_nvolveqa_40k_compat(nvolveqa_40k: str, mode: dict) -> None:
+    with pytest.warns(UserWarning):
+        embedding = NVIDIAEmbeddings(model=nvolveqa_40k, truncate="NONE", **mode)
+    text = "nvidia " * 2048
+    output = embedding.embed_query(text)
+    assert len(output) > 3
 
 
 # todo: test model_type ("passage" and embed_query,
