@@ -64,6 +64,16 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         # the model may be updated to a newer name during initialization
         self.model = self._client.model
 
+        # todo: remove when nvolveqa_40k is removed from MODEL_TABLE
+        if "model" in kwargs and kwargs["model"] in [
+            "playground_nvolveqa_40k",
+            "nvolveqa_40k",
+        ]:
+            warnings.warn(
+                'Setting truncate="END" for nvolveqa_40k backward compatibility'
+            )
+            self.truncate = "END"
+
     @validator("model_type")
     def _validate_model_type(
         cls, v: Optional[Literal["passage", "query"]]
