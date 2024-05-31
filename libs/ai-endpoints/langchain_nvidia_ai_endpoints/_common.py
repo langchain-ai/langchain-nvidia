@@ -14,7 +14,6 @@ from typing import (
     Generator,
     Iterator,
     List,
-    Literal,
     Optional,
     Sequence,
     Tuple,
@@ -37,8 +36,6 @@ from requests.models import Response
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, determine_model
 
 logger = logging.getLogger(__name__)
-
-_MODE_TYPE = Literal["nvidia", "nim"]
 
 
 def default_payload_fn(payload: dict) -> dict:
