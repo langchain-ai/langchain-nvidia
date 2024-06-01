@@ -55,7 +55,7 @@ def test_embed_query_long_text(embedding_model: str, mode: dict) -> None:
     if embedding_model in ["playground_nvolveqa_40k", "nvolveqa_40k"]:
         pytest.skip("Skip test for nvolveqa-40k due to compat override of truncate")
     embedding = NVIDIAEmbeddings(model=embedding_model, **mode)
-    text = "nvidia " * 2048
+    text = "nvidia " * 10240
     with pytest.raises(Exception):
         embedding.embed_query(text)
 
@@ -75,7 +75,7 @@ def test_embed_documents_mixed_long_texts(embedding_model: str, mode: dict) -> N
     embedding = NVIDIAEmbeddings(model=embedding_model, **mode)
     count = NVIDIAEmbeddings._default_max_batch_size * 2 - 1
     texts = ["nvidia " * 32] * count
-    texts[len(texts) // 2] = "nvidia " * 2048
+    texts[len(texts) // 2] = "nvidia " * 10240
     with pytest.raises(Exception):
         embedding.embed_documents(texts)
 
@@ -95,7 +95,7 @@ def test_embed_documents_truncate(
     embedding = NVIDIAEmbeddings(model=embedding_model, truncate=truncate, **mode)
     count = 10
     texts = ["nvidia " * 32] * count
-    texts[len(texts) // 2] = "nvidia " * 2048
+    texts[len(texts) // 2] = "nvidia " * 10240
     output = embedding.embed_documents(texts)
     assert len(output) == count
 
