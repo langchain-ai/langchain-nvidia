@@ -59,7 +59,11 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         if model := metafunc.config.getoption("chat_model_id"):
             models = [model]
         if metafunc.config.getoption("all_models"):
-            models = [model.id for model in ChatNVIDIA(**mode).available_models]
+            models = [
+                model.id
+                for model in ChatNVIDIA(**mode).available_models
+                if model.model_type == "chat"
+            ]
         metafunc.parametrize("chat_model", models, ids=models)
 
     if "rerank_model" in metafunc.fixturenames:

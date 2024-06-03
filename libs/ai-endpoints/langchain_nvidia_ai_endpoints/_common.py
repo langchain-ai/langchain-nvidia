@@ -537,6 +537,7 @@ class _NVIDIAClient(BaseModel):
                         raise ValueError(
                             f"Model {name} is unknown, check `available_models`"
                         )
+
         return values
 
     @classmethod
