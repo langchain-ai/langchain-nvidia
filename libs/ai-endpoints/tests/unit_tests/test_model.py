@@ -84,5 +84,3 @@ def test_unknown_unknown(public_class: type) -> None:
     with pytest.raises(ValueError) as e:
         public_class(model="test/unknown-unknown", nvidia_api_key="a-bogus-key")
     assert "unknown" in str(e.value)
-
-
