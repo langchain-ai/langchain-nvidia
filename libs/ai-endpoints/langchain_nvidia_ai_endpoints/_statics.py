@@ -184,6 +184,12 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-codegemma-1.1-7b"],
     ),
+    "mediatek/breeze-7b-instruct": Model(
+        id="mediatek/breeze-7b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-breeze-7b-instruct"],
+    ),
 }
 
 VLM_MODEL_TABLE = {
