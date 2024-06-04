@@ -524,6 +524,11 @@ class _NVIDIAClient(BaseModel):
             name = values.get("model")
             if model := determine_model(name):
                 values["model"] = model.id
+                # not all models are on https://integrate.api.nvidia.com/v1,
+                # those that are not are served from their own endpoints
+                if model.endpoint:
+                    # we override the infer_path to use the custom endpoint
+                    values["client"].infer_path = model.endpoint
             else:
                 if not (client := values.get("client")):
                     warnings.warn(f"Unable to determine validity of {name}")

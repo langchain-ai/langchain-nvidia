@@ -44,7 +44,7 @@ from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
-from langchain_nvidia_ai_endpoints._statics import Model, determine_model
+from langchain_nvidia_ai_endpoints._statics import Model
 
 _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
 _DictOrPydanticClass = Union[Dict[str, Any], Type[BaseModel]]
@@ -168,17 +168,11 @@ class ChatNVIDIA(BaseChatModel):
             environment variable.
         """
         super().__init__(**kwargs)
-        infer_path = "{base_url}/chat/completions"
-        # not all chat models are on https://integrate.api.nvidia.com/v1,
-        # those that are not are served from their own endpoints
-        if model := determine_model(self.model):
-            if model.endpoint:  # some models have custom endpoints
-                infer_path = model.endpoint
         self._client = _NVIDIAClient(
             base_url=self.base_url,
             model=self.model,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
-            infer_path=infer_path,
+            infer_path="{base_url}/chat/completions",
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
