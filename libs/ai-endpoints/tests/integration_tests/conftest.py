@@ -19,7 +19,8 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--chat-model-id",
         action="store",
-        help="Run tests for a specific chat model",
+        nargs="+",
+        help="Run tests for a specific chat model or list of models",
     )
     parser.addoption(
         "--embedding-model-id",
@@ -56,8 +57,8 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
     if "chat_model" in metafunc.fixturenames:
         models = [ChatNVIDIA._default_model]
-        if model := metafunc.config.getoption("chat_model_id"):
-            models = [model]
+        if model_list := metafunc.config.getoption("chat_model_id"):
+            models = model_list
         if metafunc.config.getoption("all_models"):
             models = [
                 model.id
