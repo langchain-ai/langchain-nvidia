@@ -190,6 +190,12 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-breeze-7b-instruct"],
     ),
+    "upstage/solar-10.7b-instruct": Model(
+        id="upstage/solar-10.7b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-solar-10_7b-instruct"],
+    ),
 }
 
 VLM_MODEL_TABLE = {
