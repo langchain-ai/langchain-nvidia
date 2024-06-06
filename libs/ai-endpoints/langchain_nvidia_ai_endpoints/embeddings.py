@@ -138,6 +138,8 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         }
         if self.truncate:
             payload["truncate"] = self.truncate
+        if "baai/bge-m3" in self.model:
+            del payload["input_type"]
 
         response = self._client.client.get_req(
             payload=payload,
