@@ -442,11 +442,17 @@ class NVEModel(BaseModel):
             payload = {**payload, "stream": True}
         self.last_inputs = {
             "url": invoke_url,
-            "headers": self.headers["stream"],
+            # "headers": self.headers["stream"],
             "json": self.payload_fn(payload),
             "stream": True,
         }
-        response = self.get_session_fn().post(**self.last_inputs)
+        headers = {
+            "Authorization": f"Bearer {self.api_key.get_secret_value()}"
+            if self.api_key
+            else None,
+            **self.headers["stream"],
+        }
+        response = self.get_session_fn().post(headers=headers, **self.last_inputs)
         self._try_raise(response)
         call = self.copy()
 
@@ -477,11 +483,17 @@ class NVEModel(BaseModel):
             payload = {**payload, "stream": True}
         self.last_inputs = {
             "url": invoke_url,
-            "headers": self.headers["stream"],
+            # "headers": self.headers["stream"],
             "json": self.payload_fn(payload),
         }
+        headers = {
+            "Authorization": f"Bearer {self.api_key.get_secret_value()}"
+            if self.api_key
+            else None,
+            **self.headers["stream"],
+        }
         async with self.get_asession_fn() as session:
-            async with session.post(**self.last_inputs) as response:
+            async with session.post(headers=headers, **self.last_inputs) as response:
                 self._try_raise(response)
                 async for line in response.content.iter_any():
                     if line and line.strip() != b"data: [DONE]":
