@@ -261,6 +261,12 @@ EMBEDDING_MODEL_TABLE = {
             "nvolveqa_40k",
         ],
     ),
+    "nvidia/nv-embed-v1": Model(
+        id="nvidia/nv-embed-v1",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+        aliases=["ai-nv-embed-v1"],
+    ),
 }
 
 RANKING_MODEL_TABLE = {
