@@ -143,6 +143,13 @@ class NVEModel(BaseModel):
         )
         return values
 
+    def _add_authorization(self) -> Dict:
+        return {
+            "Authorization": f"Bearer {self.api_key.get_secret_value()}"
+            if self.api_key
+            else None,
+        }
+
     @property
     def available_models(self) -> list[Model]:
         """List the available models that can be invoked."""
@@ -187,16 +194,11 @@ class NVEModel(BaseModel):
         """Method for posting to the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
-            # "headers": self.headers["call"],
             "json": self.payload_fn(payload),
             "stream": False,
         }
-        headers = {
-            "Authorization": f"Bearer {self.api_key.get_secret_value()}"
-            if self.api_key
-            else None,
-            **self.headers["call"],
-        }
+        headers = self._add_authorization()
+        headers.update(**self.headers["call"])
         session = self.get_session_fn()
         self.last_response = response = session.post(
             headers=headers, **self.last_inputs
@@ -212,17 +214,13 @@ class NVEModel(BaseModel):
         """Method for getting from the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
-            # "headers": self.headers["call"],
             "stream": False,
         }
         if payload:
             self.last_inputs["json"] = self.payload_fn(payload)
-        headers = {
-            "Authorization": f"Bearer {self.api_key.get_secret_value()}"
-            if self.api_key
-            else None,
-            **self.headers["call"],
-        }
+
+        headers = self._add_authorization()
+        headers.update(**self.headers["call"])
         session = self.get_session_fn()
         self.last_response = response = session.get(headers=headers, **self.last_inputs)
         self._try_raise(response)
@@ -442,16 +440,12 @@ class NVEModel(BaseModel):
             payload = {**payload, "stream": True}
         self.last_inputs = {
             "url": invoke_url,
-            # "headers": self.headers["stream"],
             "json": self.payload_fn(payload),
             "stream": True,
         }
-        headers = {
-            "Authorization": f"Bearer {self.api_key.get_secret_value()}"
-            if self.api_key
-            else None,
-            **self.headers["stream"],
-        }
+
+        headers = self._add_authorization()
+        headers.update(**self.headers["stream"])
         response = self.get_session_fn().post(headers=headers, **self.last_inputs)
         self._try_raise(response)
         call = self.copy()
@@ -483,15 +477,11 @@ class NVEModel(BaseModel):
             payload = {**payload, "stream": True}
         self.last_inputs = {
             "url": invoke_url,
-            # "headers": self.headers["stream"],
             "json": self.payload_fn(payload),
         }
-        headers = {
-            "Authorization": f"Bearer {self.api_key.get_secret_value()}"
-            if self.api_key
-            else None,
-            **self.headers["stream"],
-        }
+
+        headers = self._add_authorization()
+        headers.update(**self.headers["stream"])
         async with self.get_asession_fn() as session:
             async with session.post(headers=headers, **self.last_inputs) as response:
                 self._try_raise(response)
