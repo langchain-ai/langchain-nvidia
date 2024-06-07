@@ -143,7 +143,7 @@ class NVEModel(BaseModel):
         )
         return values
 
-    def _add_authorization(self) -> Dict:
+    def __add_authorization(self) -> Dict:
         return {
             "Authorization": f"Bearer {self.api_key.get_secret_value()}"
             if self.api_key
@@ -197,7 +197,7 @@ class NVEModel(BaseModel):
             "json": self.payload_fn(payload),
             "stream": False,
         }
-        headers = self._add_authorization()
+        headers = self.__add_authorization()
         headers.update(**self.headers["call"])
         session = self.get_session_fn()
         self.last_response = response = session.post(
@@ -219,7 +219,7 @@ class NVEModel(BaseModel):
         if payload:
             self.last_inputs["json"] = self.payload_fn(payload)
 
-        headers = self._add_authorization()
+        headers = self.__add_authorization()
         headers.update(**self.headers["call"])
         session = self.get_session_fn()
         self.last_response = response = session.get(headers=headers, **self.last_inputs)
@@ -444,7 +444,7 @@ class NVEModel(BaseModel):
             "stream": True,
         }
 
-        headers = self._add_authorization()
+        headers = self.__add_authorization()
         headers.update(**self.headers["stream"])
         response = self.get_session_fn().post(headers=headers, **self.last_inputs)
         self._try_raise(response)
@@ -480,7 +480,7 @@ class NVEModel(BaseModel):
             "json": self.payload_fn(payload),
         }
 
-        headers = self._add_authorization()
+        headers = self.__add_authorization()
         headers.update(**self.headers["stream"])
         async with self.get_asession_fn() as session:
             async with session.post(headers=headers, **self.last_inputs) as response:
