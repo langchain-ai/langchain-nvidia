@@ -5,6 +5,7 @@ import logging
 import os
 import time
 import warnings
+from copy import deepcopy
 from typing import (
     Any,
     AsyncIterator,
@@ -96,11 +97,13 @@ class NVEModel(BaseModel):
         {
             "call": {
                 "Accept": "application/json",
+                "Authorization": "Bearer {api_key}",
                 "User-Agent": "langchain-nvidia-ai-endpoints",
             },
             "stream": {
                 "Accept": "text/event-stream",
                 "Content-Type": "application/json",
+                "Authorization": "Bearer {api_key}",
                 "User-Agent": "langchain-nvidia-ai-endpoints",
             },
         },
@@ -119,7 +122,13 @@ class NVEModel(BaseModel):
     @property
     def headers(self) -> dict:
         """Return headers with API key injected"""
-        return self.headers_tmpl.copy()
+        headers_ = self.headers_tmpl.copy()
+        for header in headers_.values():
+            if "{api_key}" in header["Authorization"] and self.api_key:
+                header["Authorization"] = header["Authorization"].format(
+                    api_key=self.api_key,
+                )
+        return headers_
 
     @validator("base_url")
     def _validate_base_url(cls, v: str) -> str:
@@ -143,12 +152,12 @@ class NVEModel(BaseModel):
         )
         return values
 
-    def __add_authorization(self) -> Dict:
-        return {
-            "Authorization": f"Bearer {self.api_key.get_secret_value()}"
-            if self.api_key
-            else None,
-        }
+    def __add_authorization(self, payload: dict) -> dict:
+        if self.api_key:
+            payload["headers"].update(
+                {"Authorization": f"Bearer {self.api_key.get_secret_value()}"}
+            )
+        return payload
 
     @property
     def available_models(self) -> list[Model]:
@@ -194,15 +203,13 @@ class NVEModel(BaseModel):
         """Method for posting to the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
+            "headers": self.headers["call"],
             "json": self.payload_fn(payload),
             "stream": False,
         }
-        headers = self.__add_authorization()
-        headers.update(**self.headers["call"])
+        payload = self.__add_authorization(deepcopy(self.last_inputs))
         session = self.get_session_fn()
-        self.last_response = response = session.post(
-            headers=headers, **self.last_inputs
-        )
+        self.last_response = response = session.post(**payload)
         self._try_raise(response)
         return response, session
 
@@ -214,15 +221,15 @@ class NVEModel(BaseModel):
         """Method for getting from the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
+            "headers": self.headers["call"],
             "stream": False,
         }
         if payload:
             self.last_inputs["json"] = self.payload_fn(payload)
 
-        headers = self.__add_authorization()
-        headers.update(**self.headers["call"])
+        payload = self.__add_authorization(deepcopy(self.last_inputs))
         session = self.get_session_fn()
-        self.last_response = response = session.get(headers=headers, **self.last_inputs)
+        self.last_response = response = session.get(**payload)
         self._try_raise(response)
         return response, session
 
@@ -440,13 +447,13 @@ class NVEModel(BaseModel):
             payload = {**payload, "stream": True}
         self.last_inputs = {
             "url": invoke_url,
+            "headers": self.headers["stream"],
             "json": self.payload_fn(payload),
             "stream": True,
         }
 
-        headers = self.__add_authorization()
-        headers.update(**self.headers["stream"])
-        response = self.get_session_fn().post(headers=headers, **self.last_inputs)
+        payload = self.__add_authorization(deepcopy(self.last_inputs))
+        response = self.get_session_fn().post(**payload)
         self._try_raise(response)
         call = self.copy()
 
@@ -477,13 +484,13 @@ class NVEModel(BaseModel):
             payload = {**payload, "stream": True}
         self.last_inputs = {
             "url": invoke_url,
+            "headers": self.headers["stream"],
             "json": self.payload_fn(payload),
         }
 
-        headers = self.__add_authorization()
-        headers.update(**self.headers["stream"])
+        payload = self.__add_authorization(deepcopy(self.last_inputs))
         async with self.get_asession_fn() as session:
-            async with session.post(headers=headers, **self.last_inputs) as response:
+            async with session.post(**payload) as response:
                 self._try_raise(response)
                 async for line in response.content.iter_any():
                     if line and line.strip() != b"data: [DONE]":
