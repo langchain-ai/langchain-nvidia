@@ -207,9 +207,10 @@ class NVEModel(BaseModel):
             "json": self.payload_fn(payload),
             "stream": False,
         }
-        payload = self.__add_authorization(deepcopy(self.last_inputs))
         session = self.get_session_fn()
-        self.last_response = response = session.post(**payload)
+        self.last_response = response = session.post(
+            **self.__add_authorization(deepcopy(self.last_inputs))
+        )
         self._try_raise(response)
         return response, session
 
@@ -227,9 +228,10 @@ class NVEModel(BaseModel):
         if payload:
             self.last_inputs["json"] = self.payload_fn(payload)
 
-        payload = self.__add_authorization(deepcopy(self.last_inputs))
         session = self.get_session_fn()
-        self.last_response = response = session.get(**payload)
+        self.last_response = response = session.get(
+            **self.__add_authorization(deepcopy(self.last_inputs))
+        )
         self._try_raise(response)
         return response, session
 
@@ -452,8 +454,9 @@ class NVEModel(BaseModel):
             "stream": True,
         }
 
-        payload = self.__add_authorization(deepcopy(self.last_inputs))
-        response = self.get_session_fn().post(**payload)
+        response = self.get_session_fn().post(
+            **self.__add_authorization(deepcopy(self.last_inputs))
+        )
         self._try_raise(response)
         call = self.copy()
 
@@ -488,9 +491,10 @@ class NVEModel(BaseModel):
             "json": self.payload_fn(payload),
         }
 
-        payload = self.__add_authorization(deepcopy(self.last_inputs))
         async with self.get_asession_fn() as session:
-            async with session.post(**payload) as response:
+            async with session.post(
+                **self.__add_authorization(deepcopy(self.last_inputs))
+            ) as response:
                 self._try_raise(response)
                 async for line in response.content.iter_any():
                     if line and line.strip() != b"data: [DONE]":
