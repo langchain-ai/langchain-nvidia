@@ -210,17 +210,37 @@ def test_ai_endpoints_invoke(chat_model: str, mode: dict) -> None:
 # todo: max_tokens test for ainvoke, batch, abatch, stream, astream
 
 
-@pytest.mark.parametrize("max_tokens", [-100, 0, 2**31 - 1])
-def test_ai_endpoints_invoke_max_tokens_negative(
+@pytest.mark.parametrize("max_tokens", [-100, 0])
+def test_ai_endpoints_invoke_max_tokens_negative_a(
     chat_model: str,
     mode: dict,
     max_tokens: int,
 ) -> None:
-    """Test invoke's max_tokens' bounds."""
+    """Test invoke's max_tokens' negative bounds."""
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
         llm.invoke("Show me the tokens")
-        assert llm._client.client.last_response.status_code == 422
+    assert llm._client.client.last_response.status_code in [400, 422]
+    assert "max_tokens" in str(llm._client.client.last_response.content)
+
+
+@pytest.mark.parametrize("max_tokens", [2**31 - 1])
+def test_ai_endpoints_invoke_max_tokens_negative_b(
+    chat_model: str,
+    mode: dict,
+    max_tokens: int,
+) -> None:
+    """Test invoke's max_tokens' positive bounds."""
+    with pytest.raises(Exception):
+        llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
+        llm.invoke("Show me the tokens")
+    assert llm._client.client.last_response.status_code in [400, 422]
+    # custom error string -
+    #    model inference failed -- ValueError: A requested length of the model output
+    #    is too big. Maximum allowed output length is X, whereas requested output
+    #    length is Y.
+    assert "length" in str(llm._client.client.last_response.content)
+
 
 
 def test_ai_endpoints_invoke_max_tokens_positive(
@@ -291,7 +311,8 @@ def test_ai_endpoints_invoke_temperature_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, temperature=temperature, **mode)
         llm.invoke("What's in a temperature?")
-        assert llm._client.client.last_response.status_code == 422
+    assert llm._client.client.last_response.status_code in [400, 422]
+    assert "temperature" in str(llm._client.client.last_response.content)
 
 
 @pytest.mark.xfail(reason="temperature not consistently implemented")
@@ -318,7 +339,8 @@ def test_ai_endpoints_invoke_top_p_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, top_p=top_p, **mode)
         llm.invoke("What's in a top_p?")
-        assert llm._client.client.last_response.status_code == 422
+    assert llm._client.client.last_response.status_code in [400, 422]
+    assert "top_p" in str(llm._client.client.last_response.content)
 
 
 @pytest.mark.xfail(reason="seed does not consistently control determinism")
