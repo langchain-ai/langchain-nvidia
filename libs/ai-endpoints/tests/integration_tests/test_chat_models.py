@@ -242,7 +242,6 @@ def test_ai_endpoints_invoke_max_tokens_negative_b(
     assert "length" in str(llm._client.client.last_response.content)
 
 
-
 def test_ai_endpoints_invoke_max_tokens_positive(
     chat_model: str, mode: dict, max_tokens: int = 21
 ) -> None:
