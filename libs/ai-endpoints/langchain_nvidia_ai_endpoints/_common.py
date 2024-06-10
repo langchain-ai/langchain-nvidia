@@ -5,6 +5,7 @@ import logging
 import os
 import time
 import warnings
+from copy import deepcopy
 from typing import (
     Any,
     AsyncIterator,
@@ -125,7 +126,7 @@ class NVEModel(BaseModel):
         for header in headers_.values():
             if "{api_key}" in header["Authorization"] and self.api_key:
                 header["Authorization"] = header["Authorization"].format(
-                    api_key=self.api_key.get_secret_value(),
+                    api_key=self.api_key,
                 )
         return headers_
 
@@ -150,6 +151,13 @@ class NVEModel(BaseModel):
             or None
         )
         return values
+
+    def __add_authorization(self, payload: dict) -> dict:
+        if self.api_key:
+            payload["headers"].update(
+                {"Authorization": f"Bearer {self.api_key.get_secret_value()}"}
+            )
+        return payload
 
     @property
     def available_models(self) -> list[Model]:
@@ -200,7 +208,9 @@ class NVEModel(BaseModel):
             "stream": False,
         }
         session = self.get_session_fn()
-        self.last_response = response = session.post(**self.last_inputs)
+        self.last_response = response = session.post(
+            **self.__add_authorization(deepcopy(self.last_inputs))
+        )
         self._try_raise(response)
         return response, session
 
@@ -217,8 +227,11 @@ class NVEModel(BaseModel):
         }
         if payload:
             self.last_inputs["json"] = self.payload_fn(payload)
+
         session = self.get_session_fn()
-        self.last_response = response = session.get(**self.last_inputs)
+        self.last_response = response = session.get(
+            **self.__add_authorization(deepcopy(self.last_inputs))
+        )
         self._try_raise(response)
         return response, session
 
@@ -440,7 +453,10 @@ class NVEModel(BaseModel):
             "json": self.payload_fn(payload),
             "stream": True,
         }
-        response = self.get_session_fn().post(**self.last_inputs)
+
+        response = self.get_session_fn().post(
+            **self.__add_authorization(deepcopy(self.last_inputs))
+        )
         self._try_raise(response)
         call = self.copy()
 
@@ -474,8 +490,11 @@ class NVEModel(BaseModel):
             "headers": self.headers["stream"],
             "json": self.payload_fn(payload),
         }
+
         async with self.get_asession_fn() as session:
-            async with session.post(**self.last_inputs) as response:
+            async with session.post(
+                **self.__add_authorization(deepcopy(self.last_inputs))
+            ) as response:
                 self._try_raise(response)
                 async for line in response.content.iter_any():
                     if line and line.strip() != b"data: [DONE]":

@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from typing import Any, Generator
 
 import pytest
+from langchain_core.pydantic_v1 import SecretStr
 
 
 @contextmanager
@@ -43,3 +44,13 @@ def test_api_key_priority(public_class: type) -> None:
         assert get_api_key(public_class(nvidia_api_key="PARAM")) == "PARAM"
         assert get_api_key(public_class(api_key="PARAM")) == "PARAM"
         assert get_api_key(public_class(api_key="LOW", nvidia_api_key="HIGH")) == "HIGH"
+
+
+def test_api_key_type(public_class: type) -> None:
+    # Test case to make sure the api_key is SecretStr and not str
+    def get_api_key(instance: Any) -> str:
+        return instance._client.client.api_key
+
+    with no_env_var("NVIDIA_API_KEY"):
+        os.environ["NVIDIA_API_KEY"] = "ENV"
+        assert type(get_api_key(public_class())) == SecretStr
