@@ -537,16 +537,6 @@ class _NVIDIAClient(BaseModel):
     @root_validator
     def _postprocess_args(cls, values: Any) -> Any:
         name = values.get("model")
-        if not name:
-            # set default model
-            name = values.get("client").default_model.id
-            values["model"] = name
-            warnings.warn(
-                f"Default model is set as: {name}. \n"
-                "Set model using model parameter. \n"
-                "To get available models use available_models property.",
-                UserWarning,
-            )
         if values["is_hosted"]:
             if not values["client"].api_key:
                 warnings.warn(
@@ -574,6 +564,18 @@ class _NVIDIAClient(BaseModel):
                         raise ValueError(
                             f"Model {name} is unknown, check `available_models`"
                         )
+        else:
+            if not name:
+                # set default model
+                name = values.get("client").default_model.id
+                values["model"] = name
+                warnings.warn(
+                    f"Default model is set as: {name}. \n"
+                    "Set model using model parameter. \n"
+                    "To get available models use available_models property.",
+                    UserWarning,
+                )
+                    
         return values
 
     @classmethod
