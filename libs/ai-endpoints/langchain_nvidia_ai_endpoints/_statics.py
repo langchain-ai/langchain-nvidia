@@ -196,6 +196,18 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-solar-10_7b-instruct"],
     ),
+    "writer/palmyra-med-70b-32k": Model(
+        id="writer/palmyra-med-70b-32k",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-palmyra-med-70b-32k"],
+    ),
+    "writer/palmyra-med-70b": Model(
+        id="writer/palmyra-med-70b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-palmyra-med-70b"],
+    ),
 }
 
 VLM_MODEL_TABLE = {
