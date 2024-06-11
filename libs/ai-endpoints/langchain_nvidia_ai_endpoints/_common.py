@@ -107,6 +107,7 @@ class NVEModel(BaseModel):
         description="Headers template must contain `call` and `stream` keys.",
     )
     _available_models: Optional[List[Model]] = PrivateAttr(default=None)
+    _default_model: Optional[Model] = PrivateAttr(default=None)
 
     @classmethod
     def is_lc_serializable(cls) -> bool:
@@ -155,6 +156,12 @@ class NVEModel(BaseModel):
                 {"Authorization": f"Bearer {self.api_key.get_secret_value()}"}
             )
         return payload
+
+    @property
+    def default_model(self) -> Optional[Model]:
+        if self._available_models is None:
+            self.available_models
+        return self._available_models[0] if self._available_models else None
 
     @property
     def available_models(self) -> list[Model]:
@@ -510,7 +517,7 @@ class _NVIDIAClient(BaseModel):
 
     client: NVEModel = Field(NVEModel)
 
-    model: str = Field(..., description="Name of the model to invoke")
+    model: Optional[str] = Field(..., description="Name of the model to invoke")
     is_hosted: bool = Field(True)
 
     ####################################################################################
@@ -529,6 +536,17 @@ class _NVIDIAClient(BaseModel):
 
     @root_validator
     def _postprocess_args(cls, values: Any) -> Any:
+        name = values.get("model")
+        if not name:
+            # set default model
+            name = values.get("client").default_model.id
+            values["model"] = name
+            warnings.warn(
+                f"Default model is set as: {name}. \n"
+                "Set model using model parameter. \n"
+                "To get available models use available_models property.",
+                UserWarning,
+            )
         if values["is_hosted"]:
             if not values["client"].api_key:
                 warnings.warn(
@@ -536,8 +554,6 @@ class _NVIDIAClient(BaseModel):
                     "This will become an error in the future.",
                     UserWarning,
                 )
-
-            name = values.get("model")
             if model := determine_model(name):
                 values["model"] = model.id
                 # not all models are on https://integrate.api.nvidia.com/v1,
@@ -558,7 +574,6 @@ class _NVIDIAClient(BaseModel):
                         raise ValueError(
                             f"Model {name} is unknown, check `available_models`"
                         )
-
         return values
 
     @classmethod
