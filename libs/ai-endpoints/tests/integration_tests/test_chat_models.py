@@ -202,9 +202,23 @@ def test_ai_endpoints_invoke(chat_model: str, mode: dict) -> None:
     assert isinstance(result.content, str)
 
 
-# todo: tests for parameters -
-#        bad: str - Bad words to avoid (cased)
-#        stop: str - Stop words (cased)
+# todo: test that stop is cased and works with multiple words
+def test_invoke_stop(chat_model: str, mode: dict) -> None:
+    """Test invoke's stop words."""
+    llm = ChatNVIDIA(model=chat_model, **mode, stop=["10"])
+    result = llm.invoke("please count to 20 by 1s, e.g. 1 2 3 4")
+    assert isinstance(result.content, str)
+    assert "10" not in result.content
+
+
+def test_stream_stop(chat_model: str, mode: dict) -> None:
+    """Test stream's stop words."""
+    llm = ChatNVIDIA(model=chat_model, **mode, stop=["10"])
+    result = ""
+    for token in llm.stream("please count to 20 by 1s, e.g. 1 2 3 4"):
+        assert isinstance(token.content, str)
+        result += f"{token.content}|"
+    assert "10" not in result
 
 
 # todo: max_tokens test for ainvoke, batch, abatch, stream, astream
