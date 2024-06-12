@@ -13,6 +13,7 @@ class Model(BaseModel):
     client: client name, e.g. ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
     endpoint: custom endpoint for the model
     aliases: list of aliases for the model
+    supports_tools: whether the model supports tool calling
 
     All aliases are deprecated and will trigger a warning when used.
     """
@@ -25,6 +26,7 @@ class Model(BaseModel):
     client: Optional[Literal["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank"]] = None
     endpoint: Optional[str] = None
     aliases: Optional[list] = None
+    supports_tools: Optional[bool] = False
     base_model: Optional[str] = None
 
     def __hash__(self) -> int:
