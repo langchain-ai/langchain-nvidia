@@ -251,7 +251,19 @@ class ChatNVIDIA(BaseChatModel):
     def _custom_preprocess(  # todo: remove
         self, msg_list: Sequence[BaseMessage]
     ) -> List[Dict[str, str]]:
-        return [self._preprocess_msg(m) for m in msg_list]
+        def _preprocess_msg(msg: BaseMessage) -> Dict[str, str]:
+            if isinstance(msg, BaseMessage):
+                role_convert = {"ai": "assistant", "human": "user"}
+                if isinstance(msg, ChatMessage):
+                    role = msg.role
+                else:
+                    role = msg.type
+                role = role_convert.get(role, role)
+                content = self._process_content(msg.content)
+                return {"role": role, "content": content}
+            raise ValueError(f"Invalid message: {repr(msg)} of type {type(msg)}")
+
+        return [_preprocess_msg(m) for m in msg_list]
 
     def _process_content(self, content: Union[str, List[Union[dict, str]]]) -> str:
         if isinstance(content, str):
@@ -283,18 +295,6 @@ class ChatNVIDIA(BaseChatModel):
                 else:
                     raise ValueError(f"Unrecognized message part format: {part}")
         return "".join(string_array)
-
-    def _preprocess_msg(self, msg: BaseMessage) -> Dict[str, str]:  # todo: remove
-        if isinstance(msg, BaseMessage):
-            role_convert = {"ai": "assistant", "human": "user"}
-            if isinstance(msg, ChatMessage):
-                role = msg.role
-            else:
-                role = msg.type
-            role = role_convert.get(role, role)
-            content = self._process_content(msg.content)
-            return {"role": role, "content": content}
-        raise ValueError(f"Invalid message: {repr(msg)} of type {type(msg)}")
 
     def _custom_postprocess(self, msg: dict) -> dict:  # todo: remove
         kw_left = msg.copy()
