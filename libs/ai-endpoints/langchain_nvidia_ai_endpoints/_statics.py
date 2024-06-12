@@ -253,6 +253,24 @@ VLM_MODEL_TABLE = {
         endpoint="https://ai.api.nvidia.com/v1/vlm/microsoft/phi-3-vision-128k-instruct",
         aliases=["ai-phi-3-vision-128k-instruct"],
     ),
+    "liuhaotian/llava-v1.6-mistral-7b": Model(
+        id="liuhaotian/llava-v1.6-mistral-7b",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/stg/vlm/community/llava16-mistral-7b",
+        aliases=[
+            "ai-llava16-mistral-7b",
+            "community/llava16-mistral-7b",
+            "liuhaotian/llava16-mistral-7b",
+        ],
+    ),
+    "liuhaotian/llava-v1.6-34b": Model(
+        id="liuhaotian/llava-v1.6-34b",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/stg/vlm/community/llava16-34b",
+        aliases=["ai-llava16-34b", "community/llava16-34b", "liuhaotian/llava16-34b"],
+    ),
 }
 
 EMBEDDING_MODEL_TABLE = {
