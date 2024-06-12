@@ -1,3 +1,5 @@
+from typing import Optional, Sequence, Union
+
 import pytest
 from requests_mock import Mocker
 
@@ -40,83 +42,50 @@ def mock_v1_chat_completions(requests_mock: Mocker) -> None:
     )
 
 
-def test_stop_property_invoke(requests_mock: Mocker) -> None:
-    expected_stop = ["STOP"]
+@pytest.mark.parametrize(
+    "prop_stop, param_stop, expected_stop",
+    [
+        (None, ["PARAM"], ["PARAM"]),
+        (None, "PARAM", "PARAM"),
+        (["PROP"], None, ["PROP"]),
+        (["PROP"], ["PARAM"], ["PARAM"]),
+        (["PROP"], "PARAM", "PARAM"),
+    ],
+    ids=["parameter_seq", "parameter_str", "property", "override_seq", "override_str"],
+)
+@pytest.mark.parametrize("func_name", ["invoke", "stream"])
+def test_stop(
+    requests_mock: Mocker,
+    prop_stop: Optional[Sequence[str]],
+    param_stop: Optional[Union[str, Sequence[str]]],
+    expected_stop: Union[str, Sequence[str]],
+    func_name: str,
+) -> None:
+    """
+    Users can pass `stop` as a property of the client or as a parameter to the
+    `invoke` or `stream` methods. The value passed as a parameter should
+    override the value passed as a property.
 
-    client = ChatNVIDIA(model="mock-model", api_key="mocked", stop=expected_stop)
-    response = client.invoke("Ok?")
+    Also, the `stop` parameter can be a str or Sequence[str], while the `stop`
+    property is always a Sequence[str].
+    """
+    # `**(dict(stop=...) if ... else {})` is a clever way to avoid passing stop
+    # if the value is None
+    client = ChatNVIDIA(
+        model="mock-model",
+        api_key="mocked",
+        **(dict(stop=prop_stop) if prop_stop else {}),
+    )
+    # getattr(client, func_name) is a clever way to call a method by name
+    response = getattr(client, func_name)(
+        "Ok?", **(dict(stop=param_stop) if param_stop else {})
+    )
+    # the `stream` method returns a generator, so we need to call `next` to get
+    # the actual response
+    if func_name == "stream":  # one step too clever parameterizing the function name
+        response = next(response)
 
     assert response.content == "Ok"
-
-    assert requests_mock.last_request is not None
-    request_payload = requests_mock.last_request.json()
-    assert "stop" in request_payload
-    assert request_payload["stop"] == expected_stop
-
-
-def test_stop_parameter_invoke(requests_mock: Mocker) -> None:
-    expected_stop = ["STOP"]
-
-    client = ChatNVIDIA(model="mock-model", api_key="mocked")
-    response = client.invoke("Ok?", stop=expected_stop)
-
-    assert response.content == "Ok"
-
-    assert requests_mock.last_request is not None
-    request_payload = requests_mock.last_request.json()
-    assert "stop" in request_payload
-    assert request_payload["stop"] == expected_stop
-
-
-def test_stop_override_invoke(requests_mock: Mocker) -> None:
-    expected_stop = ["STOP"]
-
-    client = ChatNVIDIA(model="mock-model", api_key="mocked", stop=["GO"])
-    response = client.invoke("Ok?", stop=expected_stop)
-
-    assert response.content == "Ok"
-
-    assert requests_mock.last_request is not None
-    request_payload = requests_mock.last_request.json()
-    assert "stop" in request_payload
-    assert request_payload["stop"] == expected_stop
-
-
-def test_stop_property_stream(requests_mock: Mocker) -> None:
-    expected_stop = ["STOP"]
-
-    client = ChatNVIDIA(model="mock-model", api_key="mocked", stop=expected_stop)
-    response = client.stream("Ok?")
-
-    assert next(response).content == "Ok"
-
-    assert requests_mock.last_request is not None
-    request_payload = requests_mock.last_request.json()
-    assert "stop" in request_payload
-    assert request_payload["stop"] == expected_stop
-
-
-def test_stop_parameter_stream(requests_mock: Mocker) -> None:
-    expected_stop = ["STOP"]
-
-    client = ChatNVIDIA(model="mock-model", api_key="mocked")
-    response = client.stream("Ok?", stop=expected_stop)
-
-    assert next(response).content == "Ok"
-
-    assert requests_mock.last_request is not None
-    request_payload = requests_mock.last_request.json()
-    assert "stop" in request_payload
-    assert request_payload["stop"] == expected_stop
-
-
-def test_stop_override_stream(requests_mock: Mocker) -> None:
-    expected_stop = ["STOP"]
-
-    client = ChatNVIDIA(model="mock-model", api_key="mocked", stop=["GO"])
-    response = client.stream("Ok?", stop=expected_stop)
-
-    assert next(response).content == "Ok"
 
     assert requests_mock.last_request is not None
     request_payload = requests_mock.last_request.json()
