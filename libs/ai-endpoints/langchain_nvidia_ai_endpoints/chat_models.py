@@ -217,10 +217,6 @@ class ChatNVIDIA(BaseChatModel):
         generation = ChatGeneration(message=message)
         return ChatResult(generations=[generation], llm_output=responses)
 
-    def _get_filled_chunk(self, **kwargs: Any) -> ChatGenerationChunk:
-        """Fill the generation chunk."""
-        return ChatGenerationChunk(message=ChatMessageChunk(**kwargs))
-
     def _stream(
         self,
         messages: List[BaseMessage],
@@ -232,7 +228,9 @@ class ChatNVIDIA(BaseChatModel):
         inputs = self._custom_preprocess(messages)
         for response in self._get_stream(inputs=inputs, stop=stop, **kwargs):
             self._set_callback_out(response, run_manager)
-            chunk = self._get_filled_chunk(**self._custom_postprocess(response))
+            chunk = ChatGenerationChunk(
+                message=ChatMessageChunk(**self._custom_postprocess(response))
+            )
             if run_manager:
                 run_manager.on_llm_new_token(chunk.text, chunk=chunk)
             yield chunk
