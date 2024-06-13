@@ -1,9 +1,6 @@
 name: Scheduled tests
 
 on:
-  push:
-    branches:
-      - cc/add_scheduled_tests
   workflow_dispatch:
   schedule:
     - cron:  '0 13 * * *'
