@@ -13,6 +13,7 @@ from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 # todo: multiple texts
 # todo: detail (fidelity)
 
+
 #
 # note: differences between api catalog and openai api
 #  - openai api supports server-side image download, api catalog does not
