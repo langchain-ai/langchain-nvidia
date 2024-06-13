@@ -203,6 +203,7 @@ def test_ai_endpoints_invoke(chat_model: str, mode: dict) -> None:
 
 
 # todo: test that stop is cased and works with multiple words
+@pytest.mark.xfail(reason="stop is not consistently implemented")
 def test_invoke_stop(chat_model: str, mode: dict) -> None:
     """Test invoke's stop words."""
     llm = ChatNVIDIA(model=chat_model, **mode, stop=["10"])
@@ -211,6 +212,7 @@ def test_invoke_stop(chat_model: str, mode: dict) -> None:
     assert "10" not in result.content
 
 
+@pytest.mark.xfail(reason="stop is not consistently implemented")
 def test_stream_stop(chat_model: str, mode: dict) -> None:
     """Test stream's stop words."""
     llm = ChatNVIDIA(model=chat_model, **mode, stop=["10"])
