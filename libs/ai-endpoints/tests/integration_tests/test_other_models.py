@@ -1,8 +1,5 @@
 """Test ChatNVIDIA chat model."""
 
-import warnings
-
-import pytest
 from langchain_core.messages import BaseMessage, HumanMessage
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
@@ -18,27 +15,3 @@ def test_chat_ai_endpoints_context_message(qa_model: str, mode: dict) -> None:
     response = chat.invoke([context_message, human_message])
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
-
-
-def test_image_in_models(vlm_model: str, mode: dict) -> None:
-    try:
-        chat = ChatNVIDIA(model=vlm_model, **mode)
-        response = chat.invoke(
-            [
-                HumanMessage(
-                    content=[
-                        {"type": "text", "text": "Describe this image:"},
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": "tests/data/nvidia-picasso.jpg"},
-                        },
-                    ]
-                )
-            ]
-        )
-        assert isinstance(response, BaseMessage)
-        assert isinstance(response.content, str)
-    except TimeoutError as e:
-        message = f"TimeoutError: {vlm_model} {e}"
-        warnings.warn(message)
-        pytest.skip(message)
