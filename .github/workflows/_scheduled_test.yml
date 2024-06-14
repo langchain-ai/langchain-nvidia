@@ -1,4 +1,5 @@
 name: Scheduled tests
+run-name: langchain-nvidia Scheduled tests
 
 on:
   workflow_dispatch:
