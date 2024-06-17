@@ -318,7 +318,6 @@ class ChatNVIDIA(BaseChatModel):
         **kwargs: Any,
     ) -> dict:
         """Call to client generate method with call scope"""
-        kwargs["stop"] = kwargs.get("stop") or self.stop
         payload = self._get_payload(inputs=inputs, stream=False, **kwargs)
         out = self._client.client.get_req_generation(payload=payload)
         return out
@@ -329,7 +328,6 @@ class ChatNVIDIA(BaseChatModel):
         **kwargs: Any,
     ) -> Iterator:
         """Call to client stream method with call scope"""
-        kwargs["stop"] = kwargs.get("stop") or self.stop
         payload = self._get_payload(inputs=inputs, stream=True, **kwargs)
         return self._client.client.get_req_stream(payload=payload)
 
@@ -337,15 +335,26 @@ class ChatNVIDIA(BaseChatModel):
         self, inputs: Sequence[Dict], **kwargs: Any
     ) -> dict:  # todo: remove
         """Generates payload for the _NVIDIAClient API to send to service."""
-        attr_kwargs = {
+        attr_kwargs: Dict[str, Any] = {
             "model": self.model,
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
             "top_p": self.top_p,
             "seed": self.seed,
-            "stop": self.stop,
         }
+        # special handling for "stop" because it always comes in kwargs,
+        # where it may be None, and a default property may be set on self.
+        # None in kwargs means the user did not pass it to invoke/stream and
+        # we should default to self.stop.
+        # todo: remove self.stop
+        assert "stop" in kwargs, '"stop" param is expected in kwargs'
+        attr_kwargs["stop"] = self.stop if kwargs["stop"] is None else kwargs["stop"]
+        kwargs.pop("stop")
+
+        # remove all keys with None for a value
         attr_kwargs = {k: v for k, v in attr_kwargs.items() if v is not None}
+        # merge incoming kwargs with attr_kwargs giving preference to
+        # the incoming kwargs
         new_kwargs = {**attr_kwargs, **kwargs}
         messages: List[Dict[str, Any]] = []
         for msg in inputs:
