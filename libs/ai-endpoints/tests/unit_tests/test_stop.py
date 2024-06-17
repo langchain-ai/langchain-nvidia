@@ -50,8 +50,16 @@ def mock_v1_chat_completions(requests_mock: Mocker) -> None:
         (["PROP"], None, ["PROP"]),
         (["PROP"], ["PARAM"], ["PARAM"]),
         (["PROP"], "PARAM", "PARAM"),
+        (None, None, None),
     ],
-    ids=["parameter_seq", "parameter_str", "property", "override_seq", "override_str"],
+    ids=[
+        "parameter_seq",
+        "parameter_str",
+        "property",
+        "override_seq",
+        "override_str",
+        "absent",
+    ],
 )
 @pytest.mark.parametrize("func_name", ["invoke", "stream"])
 def test_stop(
@@ -89,5 +97,8 @@ def test_stop(
 
     assert requests_mock.last_request is not None
     request_payload = requests_mock.last_request.json()
-    assert "stop" in request_payload
-    assert request_payload["stop"] == expected_stop
+    if expected_stop:
+        assert "stop" in request_payload
+        assert request_payload["stop"] == expected_stop
+    else:
+        assert "stop" not in request_payload
