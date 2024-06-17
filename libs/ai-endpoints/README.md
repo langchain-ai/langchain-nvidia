@@ -163,60 +163,6 @@ for txt in chain.stream({"input": "How do I solve this fizz buzz problem?"}):
     print(txt, end="")
 ```
 
-## Steering LLMs
-
-> [SteerLM-optimized models](https://developer.nvidia.com/blog/announcing-steerlm-a-simple-and-practical-technique-to-customize-llms-during-inference/) supports "dynamic steering" of model outputs at inference time.
-
-This lets you "control" the complexity, verbosity, and creativity of the model via integer labels on a scale from 0 to 9. Under the hood, these are passed as a special type of assistant message to the model.
-
-The "steer" models support this type of input, such as `steerlm_llama_70b`
-
-```python
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
-
-llm = ChatNVIDIA(model="steerlm_llama_70b")
-# Try making it uncreative and not verbose
-complex_result = llm.invoke(
-    "What's a PB&J?",
-    labels={"creativity": 0, "complexity": 3, "verbosity": 0}
-)
-print("Un-creative\n")
-print(complex_result.content)
-
-# Try making it very creative and verbose
-print("\n\nCreative\n")
-creative_result = llm.invoke(
-    "What's a PB&J?",
-    labels={"creativity": 9, "complexity": 3, "verbosity": 9}
-)
-print(creative_result.content)
-```
-
-#### Use within LCEL
-
-The labels are passed as invocation params. You can `bind` these to the LLM using the `bind` method on the LLM to include it within a declarative, functional chain. Below is an example.
-
-```python
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-
-prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", "You are a helpful AI assistant named Fred."),
-        ("user", "{input}")
-    ]
-)
-chain = (
-    prompt
-    | ChatNVIDIA(model="steerlm_llama_70b").bind(labels={"creativity": 9, "complexity": 0, "verbosity": 9})
-    | StrOutputParser()
-)
-
-for txt in chain.stream({"input": "Why is a PB&J?"}):
-    print(txt, end="")
-```
-
 ## Multimodal
 
 NVIDIA also supports multimodal inputs, meaning you can provide both images and text for the model to reason over.

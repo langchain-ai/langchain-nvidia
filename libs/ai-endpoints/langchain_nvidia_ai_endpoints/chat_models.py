@@ -368,10 +368,6 @@ class ChatNVIDIA(BaseChatModel):
     ) -> dict:  # todo: remove
         """Prepares a message or list of messages for the payload"""
         messages = [self._prep_msg(m) for m in inputs]
-        if kwargs.get("labels"):
-            # (WFH) Labels are currently (?) always passed as an assistant
-            # suffix message, but this API seems less stable.
-            messages += [{"labels": kwargs.pop("labels"), "role": "assistant"}]
         if kwargs.get("stop") is None:
             kwargs.pop("stop")
         return {"messages": messages, **kwargs}
