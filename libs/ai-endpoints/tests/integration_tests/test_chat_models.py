@@ -255,7 +255,13 @@ def test_ai_endpoints_invoke_max_tokens_negative_b(
     #    model inference failed -- ValueError: A requested length of the model output
     #    is too big. Maximum allowed output length is X, whereas requested output
     #    length is Y.
-    assert "length" in str(llm._client.client.last_response.content)
+    #  or
+    #    body -> max_tokens
+    #    Input should be less than or equal to 2048 (type=less_than_equal; le=2048)
+    assert "length" in str(llm._client.client.last_response.content) or (
+        "max_tokens" in str(llm._client.client.last_response.content)
+        and "less_than_equal" in str(llm._client.client.last_response.content)
+    )
 
 
 def test_ai_endpoints_invoke_max_tokens_positive(
