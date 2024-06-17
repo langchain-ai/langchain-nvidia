@@ -335,6 +335,19 @@ class ChatNVIDIA(BaseChatModel):
         self, inputs: Sequence[Dict], **kwargs: Any
     ) -> dict:  # todo: remove
         """Generates payload for the _NVIDIAClient API to send to service."""
+        messages: List[Dict[str, Any]] = []
+        for msg in inputs:
+            if isinstance(msg, str):
+                # (WFH) this shouldn't ever be reached but leaving this here bcs
+                # it's a Chesterton's fence I'm unwilling to touch
+                messages.append(dict(role="user", content=msg))
+            elif isinstance(msg, dict):
+                if msg.get("content", None) is None:
+                    raise ValueError(f"Message {msg} has no content")
+                messages.append(msg)
+            else:
+                raise ValueError(f"Unknown message received: {msg} of type {type(msg)}")
+
         attr_kwargs: Dict[str, Any] = {
             "model": self.model,
             "temperature": self.temperature,
@@ -356,20 +369,7 @@ class ChatNVIDIA(BaseChatModel):
         # merge incoming kwargs with attr_kwargs giving preference to
         # the incoming kwargs
         new_kwargs = {**attr_kwargs, **kwargs}
-        messages: List[Dict[str, Any]] = []
-        for msg in inputs:
-            if isinstance(msg, str):
-                # (WFH) this shouldn't ever be reached but leaving this here bcs
-                # it's a Chesterton's fence I'm unwilling to touch
-                messages.append(dict(role="user", content=msg))
-            elif isinstance(msg, dict):
-                if msg.get("content", None) is None:
-                    raise ValueError(f"Message {msg} has no content")
-                messages.append(msg)
-            else:
-                raise ValueError(f"Unknown message received: {msg} of type {type(msg)}")
-        if new_kwargs.get("stop") is None:
-            new_kwargs.pop("stop")
+
         return {"messages": messages, **new_kwargs}
 
     def bind_tools(
