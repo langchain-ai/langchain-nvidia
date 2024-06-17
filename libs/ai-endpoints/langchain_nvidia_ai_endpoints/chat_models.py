@@ -348,29 +348,34 @@ class ChatNVIDIA(BaseChatModel):
             else:
                 raise ValueError(f"Unknown message received: {msg} of type {type(msg)}")
 
-        attr_kwargs: Dict[str, Any] = {
+        # special handling for "stop" because it always comes in kwargs.
+        # if user provided "stop" to invoke/stream, it will be non-None
+        # in kwargs.
+        # note: we cannot tell if the user specified stop=None to invoke/stream because
+        #       the default value of stop is None.
+        # todo: remove self.stop
+        assert "stop" in kwargs, '"stop" param is expected in kwargs'
+        if kwargs["stop"] is None:
+            kwargs.pop("stop")
+
+        # setup default payload values
+        payload: Dict[str, Any] = {
             "model": self.model,
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
             "top_p": self.top_p,
             "seed": self.seed,
+            "stop": self.stop,
         }
-        # special handling for "stop" because it always comes in kwargs,
-        # where it may be None, and a default property may be set on self.
-        # None in kwargs means the user did not pass it to invoke/stream and
-        # we should default to self.stop.
-        # todo: remove self.stop
-        assert "stop" in kwargs, '"stop" param is expected in kwargs'
-        attr_kwargs["stop"] = self.stop if kwargs["stop"] is None else kwargs["stop"]
-        kwargs.pop("stop")
 
-        # remove all keys with None for a value
-        attr_kwargs = {k: v for k, v in attr_kwargs.items() if v is not None}
         # merge incoming kwargs with attr_kwargs giving preference to
         # the incoming kwargs
-        new_kwargs = {**attr_kwargs, **kwargs}
+        payload.update(kwargs)
 
-        return {"messages": messages, **new_kwargs}
+        # remove keys with None values from payload
+        payload = {k: v for k, v in payload.items() if v is not None}
+
+        return {"messages": messages, **payload}
 
     def bind_tools(
         self,
