@@ -208,6 +208,30 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-palmyra-med-70b"],
     ),
+    "mistralai/mistral-7b-instruct-v0.3": Model(
+        id="mistralai/mistral-7b-instruct-v0.3",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-mistral-7b-instruct-v03"],
+    ),
+    "01-ai/yi-large": Model(
+        id="01-ai/yi-large",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-yi-large"],
+    ),
+    "nvidia/nemotron-4-340b-instruct": Model(
+        id="nvidia/nemotron-4-340b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["qa-nemotron-4-340b-instruct"],
+    ),
+    "mistralai/codestral-22b-instruct-v0.1": Model(
+        id="mistralai/codestral-22b-instruct-v0.1",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-codestral-22b-instruct-v01"],
+    ),
 }
 
 VLM_MODEL_TABLE = {
