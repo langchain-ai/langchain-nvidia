@@ -10,7 +10,6 @@ import sys
 import urllib.parse
 from typing import (
     Any,
-    AsyncIterator,
     Callable,
     Dict,
     Iterator,
@@ -333,16 +332,6 @@ class ChatNVIDIA(BaseChatModel):
         kwargs["stop"] = kwargs.get("stop") or self.stop
         payload = self._get_payload(inputs=inputs, stream=True, **kwargs)
         return self._client.client.get_req_stream(payload=payload)
-
-    def _get_astream(  # todo: remove
-        self,
-        inputs: Sequence[Dict],
-        **kwargs: Any,
-    ) -> AsyncIterator:
-        """Call to client astream methods with call scope"""
-        kwargs["stop"] = kwargs.get("stop") or self.stop
-        payload = self._get_payload(inputs=inputs, stream=True, **kwargs)
-        return self._client.client.get_req_astream(payload=payload)
 
     def _get_payload(
         self, inputs: Sequence[Dict], **kwargs: Any
