@@ -356,32 +356,23 @@ class ChatNVIDIA(BaseChatModel):
             "seed": self.seed,
             "stop": self.stop,
         }
-        # if model_name := self._get_binding_model():
-        #     attr_kwargs["model"] = model_name
         attr_kwargs = {k: v for k, v in attr_kwargs.items() if v is not None}
         new_kwargs = {**attr_kwargs, **kwargs}
-        return self._prep_payload(inputs=inputs, **new_kwargs)
-
-    def _prep_payload(
-        self, inputs: Sequence[Dict], **kwargs: Any
-    ) -> dict:  # todo: remove
-        """Prepares a message or list of messages for the payload"""
-        messages = [self._prep_msg(m) for m in inputs]
-        if kwargs.get("stop") is None:
-            kwargs.pop("stop")
-        return {"messages": messages, **kwargs}
-
-    def _prep_msg(self, msg: Union[str, dict, BaseMessage]) -> dict:  # todo: remove
-        """Helper Method: Ensures a message is a dictionary with a role and content."""
-        if isinstance(msg, str):
-            # (WFH) this shouldn't ever be reached but leaving this here bcs
-            # it's a Chesterton's fence I'm unwilling to touch
-            return dict(role="user", content=msg)
-        if isinstance(msg, dict):
-            if msg.get("content", None) is None:
-                raise ValueError(f"Message {msg} has no content")
-            return msg
-        raise ValueError(f"Unknown message received: {msg} of type {type(msg)}")
+        messages: List[Dict[str, Any]] = []
+        for msg in inputs:
+            if isinstance(msg, str):
+                # (WFH) this shouldn't ever be reached but leaving this here bcs
+                # it's a Chesterton's fence I'm unwilling to touch
+                messages.append(dict(role="user", content=msg))
+            elif isinstance(msg, dict):
+                if msg.get("content", None) is None:
+                    raise ValueError(f"Message {msg} has no content")
+                messages.append(msg)
+            else:
+                raise ValueError(f"Unknown message received: {msg} of type {type(msg)}")
+        if new_kwargs.get("stop") is None:
+            new_kwargs.pop("stop")
+        return {"messages": messages, **new_kwargs}
 
     def bind_tools(
         self,
