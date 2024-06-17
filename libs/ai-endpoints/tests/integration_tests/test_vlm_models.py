@@ -19,7 +19,11 @@ from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 #  - openai api supports server-side image download, api catalog does not
 #   - ChatNVIDIA does client side download to simulate the same behavior
 #  - ChatNVIDIA will automatically read local files and convert them to base64
+#  - openai api uses {"image_url": {"url": "..."}}
+#     where api catalog uses {"image_url": "..."}
 #
+
+
 @pytest.mark.parametrize(
     "content",
     [
@@ -54,3 +58,6 @@ def test_vlm_model(
     response = chat.invoke([HumanMessage(content=content)])
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
+
+    for token in chat.stream([HumanMessage(content=content)]):
+        assert isinstance(token.content, str)
