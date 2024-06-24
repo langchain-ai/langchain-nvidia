@@ -1,9 +1,8 @@
-import inspect
-from typing import List
+from typing import Any, List
 
 import pytest
+from langchain_core.documents import Document
 
-import langchain_nvidia_ai_endpoints
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model
 
@@ -129,9 +128,25 @@ def mode(request: pytest.FixtureRequest) -> dict:
 
 @pytest.fixture(
     params=[
-        member[1]
-        for member in inspect.getmembers(langchain_nvidia_ai_endpoints, inspect.isclass)
+        ChatNVIDIA,
+        NVIDIAEmbeddings,
+        NVIDIARerank,
     ]
 )
 def public_class(request: pytest.FixtureRequest) -> type:
     return request.param
+
+
+@pytest.fixture
+def contact_service() -> Any:
+    def _contact_service(instance: Any) -> None:
+        if isinstance(instance, ChatNVIDIA):
+            instance.invoke("Hello")
+        elif isinstance(instance, NVIDIAEmbeddings):
+            instance.embed_documents(["Hello"])
+        elif isinstance(instance, NVIDIARerank):
+            instance.compress_documents(
+                documents=[Document(page_content="World")], query="Hello"
+            )
+
+    return _contact_service
