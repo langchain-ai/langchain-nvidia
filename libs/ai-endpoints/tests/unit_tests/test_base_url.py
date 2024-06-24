@@ -1,4 +1,5 @@
 import pytest
+import requests
 
 
 @pytest.mark.parametrize(
@@ -33,5 +34,6 @@ def test_param_base_url_hosted(public_class: type, base_url: str) -> None:
     ],
 )
 def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
-    client = public_class(base_url=base_url)
-    assert not client._client.is_hosted
+    with pytest.raises(requests.exceptions.ConnectionError):
+        client = public_class(base_url=base_url)
+        assert not client._client.is_hosted

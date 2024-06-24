@@ -107,7 +107,6 @@ class NVEModel(BaseModel):
         description="Headers template must contain `call` and `stream` keys.",
     )
     _available_models: Optional[List[Model]] = PrivateAttr(default=None)
-    _default_model: Optional[Model] = PrivateAttr(default=None)
 
     @classmethod
     def is_lc_serializable(cls) -> bool:
@@ -158,12 +157,6 @@ class NVEModel(BaseModel):
         return payload
 
     @property
-    def default_model(self) -> Optional[Model]:
-        if self._available_models is None:
-            self.available_models
-        return self._available_models[0] if self._available_models else None
-
-    @property
     def available_models(self) -> list[Model]:
         """List the available models that can be invoked."""
         if self._available_models is not None:
@@ -192,6 +185,13 @@ class NVEModel(BaseModel):
                 # so we'll let it through. use of this model will be
                 # accompanied by a warning.
                 model = Model(id=element["id"])
+
+            # add base model for local-nim mode
+            model.base_model = element.get("root")
+
+            if model.base_model and model.id != model.base_model:
+                model.model_type = "lora"
+
             self._available_models.append(model)
 
         return self._available_models
@@ -532,6 +532,10 @@ class _NVIDIAClient(BaseModel):
                 "ai.api.nvidia.com",
             ]
 
+        # set default model for hosted endpoint
+        if values["is_hosted"] and not values["model"]:
+            values["model"] = values["default_model"]
+
         return values
 
     @root_validator
@@ -567,7 +571,7 @@ class _NVIDIAClient(BaseModel):
         else:
             if not name:
                 # set default model
-                name = values.get("client").default_model.id
+                name = values.get("client").available_models[0].id
                 values["model"] = name
                 warnings.warn(
                     f"Default model is set as: {name}. \n"
@@ -575,7 +579,7 @@ class _NVIDIAClient(BaseModel):
                     "To get available models use available_models property.",
                     UserWarning,
                 )
-                    
+
         return values
 
     @classmethod
@@ -603,6 +607,13 @@ class _NVIDIAClient(BaseModel):
         **kwargs: Any,
     ) -> List[Model]:
         """Retrieve a list of available models."""
+
+        # set client for lora models in local-nim mode
+        if not self.is_hosted:
+            for model in self.client.available_models:
+                if model.model_type == "lora":
+                    model.client = filter
+
         available = [
             model for model in self.client.available_models if model.client == filter
         ]

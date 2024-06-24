@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from typing import Any, Generator
 
 import pytest
+import requests
 from langchain_core.pydantic_v1 import SecretStr
 
 
@@ -25,7 +26,8 @@ def test_create_without_api_key(public_class: type) -> None:
 
 def test_create_unknown_url_no_api_key(public_class: type) -> None:
     with no_env_var("NVIDIA_API_KEY"):
-        public_class(base_url="https://test_url/v1")
+        with pytest.raises(requests.exceptions.ConnectionError):
+            public_class(base_url="https://test_url/v1")
 
 
 @pytest.mark.parametrize("param", ["nvidia_api_key", "api_key"])
