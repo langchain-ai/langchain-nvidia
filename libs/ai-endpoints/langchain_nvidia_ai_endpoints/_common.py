@@ -566,17 +566,29 @@ class _NVIDIAClient(BaseModel):
                             f"Model {name} is unknown, check `available_models`"
                         )
         else:
+            # set default model
             if not name:
-                # set default model
-                name = values.get("client").available_models[0].id
-                values["model"] = name
-                warnings.warn(
-                    f"Default model is set as: {name}. \n"
-                    "Set model using model parameter. \n"
-                    "To get available models use available_models property.",
-                    UserWarning,
-                )
-
+                if not (client := values.get("client")):
+                    warnings.warn(f"Unable to determine validity of {name}")
+                else:
+                    valid_models = [
+                        model.id
+                        for model in client.available_models
+                        if model.base_model and model.id == model.base_model
+                    ]
+                    name = next(iter(valid_models), None)
+                    if name:
+                        warnings.warn(
+                            f"Default model is set as: {name}. \n"
+                            "Set model using model parameter. \n"
+                            "To get available models use available_models property.",
+                            UserWarning,
+                        )
+                        values["model"] = name
+                    else:
+                        raise ValueError(
+                            f"Model {name} is unknown, check `available_models`"
+                        )
         return values
 
     @classmethod
@@ -605,23 +617,16 @@ class _NVIDIAClient(BaseModel):
     ) -> List[Model]:
         """Retrieve a list of available models."""
 
-        available = [
-            model
-            for model in self.client.available_models
-            if (
-                model.client == filter
-                or (model.base_model and model.base_model != model.id)
-            )
-        ]
+        available = self.client.available_models
 
         # if we're talking to a hosted endpoint, we mix in the known models
         # because they are not all discoverable by listing. for instance,
         # the NV-Embed-QA and VLM models are hosted on ai.api.nvidia.com
         # instead of integrate.api.nvidia.com.
         if self.is_hosted:
-            known = set(
-                model for model in MODEL_TABLE.values() if model.client == filter
-            )
-            available = list(set(available) | known)
+            known = set(MODEL_TABLE.values())
+            available = [
+                model for model in set(available) | known if model.client == filter
+            ]
 
         return available
