@@ -20,6 +20,7 @@ class Model(BaseModel):
     client: Optional[str] = None
     endpoint: Optional[str] = None
     aliases: Optional[list] = None
+    base_model: Optional[str] = None
 
     def __hash__(self) -> int:
         return hash(self.id)

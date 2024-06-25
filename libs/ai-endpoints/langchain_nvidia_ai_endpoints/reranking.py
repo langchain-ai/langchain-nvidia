@@ -35,9 +35,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         description="Base url for model listing an invocation",
     )
     top_n: int = Field(5, ge=0, description="The number of documents to return.")
-    model: str = Field(
-        _default_model_name, description="The model to use for reranking."
-    )
+    model: Optional[str] = Field(description="The model to use for reranking.")
     max_batch_size: int = Field(
         _default_batch_size, ge=1, description="The maximum batch size."
     )
@@ -65,6 +63,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         self._client = _NVIDIAClient(
             base_url=self.base_url,
             model=self.model,
+            default_model=self._default_model_name,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
             infer_path="{base_url}/ranking",
         )

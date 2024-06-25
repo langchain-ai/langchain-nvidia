@@ -1,4 +1,5 @@
 import pytest
+from requests_mock import Mocker
 
 
 @pytest.mark.parametrize(
@@ -22,6 +23,24 @@ def test_param_base_url_negative(public_class: type, base_url: str) -> None:
 def test_param_base_url_hosted(public_class: type, base_url: str) -> None:
     client = public_class(base_url=base_url)
     assert client._client.is_hosted
+
+
+@pytest.fixture(autouse=True)
+def mock_v1_local_models(requests_mock: Mocker, base_url: str) -> None:
+    requests_mock.get(
+        f"{base_url}/models",
+        json={
+            "data": [
+                {
+                    "id": "model1",
+                    "object": "model",
+                    "created": 1234567890,
+                    "owned_by": "OWNER",
+                    "root": "model1",
+                },
+            ]
+        },
+    )
 
 
 @pytest.mark.parametrize(

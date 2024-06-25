@@ -185,6 +185,10 @@ class NVEModel(BaseModel):
                 # so we'll let it through. use of this model will be
                 # accompanied by a warning.
                 model = Model(id=element["id"])
+
+            # add base model for local-nim mode
+            model.base_model = element.get("root")
+
             self._available_models.append(model)
 
         return self._available_models
@@ -510,7 +514,7 @@ class _NVIDIAClient(BaseModel):
 
     client: NVEModel = Field(NVEModel)
 
-    model: str = Field(..., description="Name of the model to invoke")
+    model: Optional[str] = Field(..., description="Name of the model to invoke")
     is_hosted: bool = Field(True)
 
     ####################################################################################
@@ -525,10 +529,15 @@ class _NVIDIAClient(BaseModel):
                 "ai.api.nvidia.com",
             ]
 
+        # set default model for hosted endpoint
+        if values["is_hosted"] and not values["model"]:
+            values["model"] = values["default_model"]
+
         return values
 
     @root_validator
     def _postprocess_args(cls, values: Any) -> Any:
+        name = values.get("model")
         if values["is_hosted"]:
             if not values["client"].api_key:
                 warnings.warn(
@@ -536,8 +545,6 @@ class _NVIDIAClient(BaseModel):
                     "This will become an error in the future.",
                     UserWarning,
                 )
-
-            name = values.get("model")
             if model := determine_model(name):
                 values["model"] = model.id
                 # not all models are on https://integrate.api.nvidia.com/v1,
@@ -558,7 +565,30 @@ class _NVIDIAClient(BaseModel):
                         raise ValueError(
                             f"Model {name} is unknown, check `available_models`"
                         )
-
+        else:
+            # set default model
+            if not name:
+                if not (client := values.get("client")):
+                    warnings.warn(f"Unable to determine validity of {name}")
+                else:
+                    valid_models = [
+                        model.id
+                        for model in client.available_models
+                        if model.base_model and model.id == model.base_model
+                    ]
+                    name = next(iter(valid_models), None)
+                    if name:
+                        warnings.warn(
+                            f"Default model is set as: {name}. \n"
+                            "Set model using model parameter. \n"
+                            "To get available models use available_models property.",
+                            UserWarning,
+                        )
+                        values["model"] = name
+                    else:
+                        raise ValueError(
+                            f"Model {name} is unknown, check `available_models`"
+                        )
         return values
 
     @classmethod
@@ -586,18 +616,17 @@ class _NVIDIAClient(BaseModel):
         **kwargs: Any,
     ) -> List[Model]:
         """Retrieve a list of available models."""
-        available = [
-            model for model in self.client.available_models if model.client == filter
-        ]
+
+        available = self.client.available_models
 
         # if we're talking to a hosted endpoint, we mix in the known models
         # because they are not all discoverable by listing. for instance,
         # the NV-Embed-QA and VLM models are hosted on ai.api.nvidia.com
         # instead of integrate.api.nvidia.com.
         if self.is_hosted:
-            known = set(
-                model for model in MODEL_TABLE.values() if model.client == filter
-            )
-            available = list(set(available) | known)
+            known = set(MODEL_TABLE.values())
+            available = [
+                model for model in set(available) | known if model.client == filter
+            ]
 
         return available

@@ -136,7 +136,7 @@ class ChatNVIDIA(BaseChatModel):
         "https://integrate.api.nvidia.com/v1",
         description="Base url for model listing an invocation",
     )
-    model: str = Field(_default_model, description="Name of the model to invoke")
+    model: Optional[str] = Field(description="Name of the model to invoke")
     temperature: Optional[float] = Field(description="Sampling temperature in [0, 1]")
     max_tokens: Optional[int] = Field(
         1024, description="Maximum # of tokens to generate"
@@ -173,6 +173,7 @@ class ChatNVIDIA(BaseChatModel):
         self._client = _NVIDIAClient(
             base_url=self.base_url,
             model=self.model,
+            default_model=self._default_model,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
             infer_path="{base_url}/chat/completions",
         )

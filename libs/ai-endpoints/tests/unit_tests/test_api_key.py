@@ -4,6 +4,7 @@ from typing import Any, Generator
 
 import pytest
 from langchain_core.pydantic_v1 import SecretStr
+from requests_mock import Mocker
 
 
 @contextmanager
@@ -15,6 +16,24 @@ def no_env_var(var: str) -> Generator[None, None, None]:
     finally:
         if val:
             os.environ[var] = val
+
+
+@pytest.fixture(autouse=True)
+def mock_v1_local_models(requests_mock: Mocker) -> None:
+    requests_mock.get(
+        "https://test_url/v1/models",
+        json={
+            "data": [
+                {
+                    "id": "model1",
+                    "object": "model",
+                    "created": 1234567890,
+                    "owned_by": "OWNER",
+                    "root": "model1",
+                },
+            ]
+        },
+    )
 
 
 def test_create_without_api_key(public_class: type) -> None:

@@ -26,6 +26,31 @@ def mock_v1_models(requests_mock: Mocker, known_unknown: str) -> None:
     )
 
 
+@pytest.fixture(autouse=True)
+def mock_v1_local_models(requests_mock: Mocker, known_unknown: str) -> None:
+    requests_mock.get(
+        "http://localhost:8000/v1/models",
+        json={
+            "data": [
+                {
+                    "id": known_unknown,
+                    "object": "model",
+                    "created": 1234567890,
+                    "owned_by": "OWNER",
+                    "root": known_unknown,
+                },
+                {
+                    "id": "lora1",
+                    "object": "model",
+                    "created": 1234567890,
+                    "owned_by": "OWNER",
+                    "root": known_unknown,
+                },
+            ]
+        },
+    )
+
+
 @pytest.mark.parametrize(
     "alias",
     [
@@ -84,3 +109,22 @@ def test_unknown_unknown(public_class: type) -> None:
     with pytest.raises(ValueError) as e:
         public_class(model="test/unknown-unknown", nvidia_api_key="a-bogus-key")
     assert "unknown" in str(e.value)
+
+
+def test_default_known(public_class: type, known_unknown: str) -> None:
+    """
+    Test that a model in the model table will be accepted.
+    """
+    # check if default model is getting set
+    with pytest.warns(UserWarning):
+        x = public_class(base_url="http://localhost:8000/v1")
+        assert x.model == known_unknown
+
+
+def test_default_lora(public_class: type) -> None:
+    """
+    Test that a model in the model table will be accepted.
+    """
+    # find a model that matches the public_class under test
+    x = public_class(base_url="http://localhost:8000/v1", model="lora1")
+    assert x.model == "lora1"
