@@ -189,9 +189,6 @@ class NVEModel(BaseModel):
             # add base model for local-nim mode
             model.base_model = element.get("root")
 
-            if model.base_model and model.id != model.base_model:
-                model.model_type = "lora"
-
             self._available_models.append(model)
 
         return self._available_models
@@ -608,14 +605,13 @@ class _NVIDIAClient(BaseModel):
     ) -> List[Model]:
         """Retrieve a list of available models."""
 
-        # set client for lora models in local-nim mode
-        if not self.is_hosted:
-            for model in self.client.available_models:
-                if model.model_type == "lora":
-                    model.client = filter
-
         available = [
-            model for model in self.client.available_models if model.client == filter
+            model
+            for model in self.client.available_models
+            if (
+                model.client == filter
+                or (model.base_model and model.base_model != model.id)
+            )
         ]
 
         # if we're talking to a hosted endpoint, we mix in the known models

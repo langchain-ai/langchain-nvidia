@@ -3,8 +3,8 @@ from contextlib import contextmanager
 from typing import Any, Generator
 
 import pytest
-import requests
 from langchain_core.pydantic_v1 import SecretStr
+from requests_mock import Mocker
 
 
 @contextmanager
@@ -18,6 +18,24 @@ def no_env_var(var: str) -> Generator[None, None, None]:
             os.environ[var] = val
 
 
+@pytest.fixture(autouse=True)
+def mock_v1_local_models(requests_mock: Mocker) -> None:
+    requests_mock.get(
+        "https://test_url/v1/models",
+        json={
+            "data": [
+                {
+                    "id": "model1",
+                    "object": "model",
+                    "created": 1234567890,
+                    "owned_by": "OWNER",
+                    "root": "model1",
+                },
+            ]
+        },
+    )
+
+
 def test_create_without_api_key(public_class: type) -> None:
     with no_env_var("NVIDIA_API_KEY"):
         with pytest.warns(UserWarning):
@@ -26,8 +44,7 @@ def test_create_without_api_key(public_class: type) -> None:
 
 def test_create_unknown_url_no_api_key(public_class: type) -> None:
     with no_env_var("NVIDIA_API_KEY"):
-        with pytest.raises(requests.exceptions.ConnectionError):
-            public_class(base_url="https://test_url/v1")
+        public_class(base_url="https://test_url/v1")
 
 
 @pytest.mark.parametrize("param", ["nvidia_api_key", "api_key"])
