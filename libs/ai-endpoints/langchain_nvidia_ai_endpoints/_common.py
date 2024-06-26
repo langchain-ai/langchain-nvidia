@@ -574,7 +574,7 @@ class _NVIDIAClient(BaseModel):
                     valid_models = [
                         model.id
                         for model in client.available_models
-                        if model.base_model and model.id == model.base_model
+                        if not model.base_model or model.base_model == model.id
                     ]
                     name = next(iter(valid_models), None)
                     if name:
@@ -586,9 +586,7 @@ class _NVIDIAClient(BaseModel):
                         )
                         values["model"] = name
                     else:
-                        raise ValueError(
-                            f"Model {name} is unknown, check `available_models`"
-                        )
+                        raise ValueError("No locally hosted model was found.")
         return values
 
     @classmethod
