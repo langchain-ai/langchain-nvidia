@@ -88,12 +88,6 @@ jobs:
             ${{ env.WORKDIR }}/.mypy_cache
           key: mypy-lint-${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python-version }}-${{ inputs.working-directory }}-${{ hashFiles(format('{0}/poetry.lock', inputs.working-directory)) }}
 
-
-      - name: Analysing the code with our lint
-        working-directory: ${{ inputs.working-directory }}
-        run: |
-          make lint_package
-
       - name: Install unit test dependencies
         # Also installs dev/lint/test/typing dependencies, to ensure we have
         # type hints for as many of our libraries as possible.
@@ -107,6 +101,12 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
         run: |
           poetry install --with test
+
+      - name: Analysing the code with our lint
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          make lint_package
+
       - name: Install unit+integration test dependencies
         if: ${{ startsWith(inputs.working-directory, 'libs/partners/') }}
         working-directory: ${{ inputs.working-directory }}
