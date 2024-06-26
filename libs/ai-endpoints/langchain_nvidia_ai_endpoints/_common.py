@@ -579,7 +579,7 @@ class _NVIDIAClient(BaseModel):
                             for model in client.available_models
                             if model.base_model == model.id
                         ]
-                    name = next(iter(valid_models), None)
+                        name = next(iter(valid_models), None)
                     if name:
                         warnings.warn(
                             f"Default model is set as: {name}. \n"
