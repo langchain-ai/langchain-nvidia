@@ -571,11 +571,14 @@ class _NVIDIAClient(BaseModel):
                 if not (client := values.get("client")):
                     warnings.warn(f"Unable to determine validity of {name}")
                 else:
-                    valid_models = [
-                        model.id
-                        for model in client.available_models
-                        if model.base_model and model.id == model.base_model
-                    ]
+                    if len(client.available_models) == 1:
+                        name = client.available_models[0].id
+                    else:
+                        valid_models = [
+                            model.id
+                            for model in client.available_models
+                            if model.base_model == model.id
+                        ]
                     name = next(iter(valid_models), None)
                     if name:
                         warnings.warn(
