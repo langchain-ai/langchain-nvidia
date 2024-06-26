@@ -235,6 +235,21 @@ CHAT_MODEL_TABLE = {
     ),
 }
 
+QA_MODEL_TABLE = {
+    "nvidia/llama3-chatqa-1.5-8b": Model(
+        id="nvidia/llama3-chatqa-1.5-8b",
+        model_type="qa",
+        client="ChatNVIDIA",
+        aliases=["ai-chatqa-1.5-8b"],
+    ),
+    "nvidia/llama3-chatqa-1.5-70b": Model(
+        id="nvidia/llama3-chatqa-1.5-70b",
+        model_type="qa",
+        client="ChatNVIDIA",
+        aliases=["ai-chatqa-1.5-70b"],
+    ),
+}
+
 VLM_MODEL_TABLE = {
     "adept/fuyu-8b": Model(
         id="adept/fuyu-8b",
@@ -345,6 +360,7 @@ COMPLETION_MODEL_TABLE = {
 
 MODEL_TABLE = {
     **CHAT_MODEL_TABLE,
+    **QA_MODEL_TABLE,
     **VLM_MODEL_TABLE,
     **EMBEDDING_MODEL_TABLE,
     **RANKING_MODEL_TABLE,

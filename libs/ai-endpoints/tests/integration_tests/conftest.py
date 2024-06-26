@@ -23,6 +23,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run tests for a specific chat model or list of models",
     )
     parser.addoption(
+        "--qa-model-id",
+        action="store",
+        nargs="+",
+        help="Run tests for a specific qa model or list of models",
+    )
+    parser.addoption(
         "--embedding-model-id",
         action="store",
         help="Run tests for a specific embedding model",
@@ -97,9 +103,13 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
     if "qa_model" in metafunc.fixturenames:
         models = []
+        if model_list := metafunc.config.getoption("qa_model_id"):
+            models = model_list
         if metafunc.config.getoption("all_models"):
             models = [
-                model.id for model in get_all_known_models() if model.model_type == "qa"
+                model.id
+                for model in ChatNVIDIA(**mode).available_models
+                if model.model_type == "qa"
             ]
         metafunc.parametrize("qa_model", models, ids=models)
 
