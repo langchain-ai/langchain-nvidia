@@ -571,15 +571,12 @@ class _NVIDIAClient(BaseModel):
                 if not (client := values.get("client")):
                     warnings.warn(f"Unable to determine validity of {name}")
                 else:
-                    if len(client.available_models) == 1:
-                        name = client.available_models[0].id
-                    else:
-                        valid_models = [
-                            model.id
-                            for model in client.available_models
-                            if model.base_model == model.id
-                        ]
-                        name = next(iter(valid_models), None)
+                    valid_models = [
+                        model.id
+                        for model in client.available_models
+                        if not model.base_model or model.base_model == model.id
+                    ]
+                    name = next(iter(valid_models), None)
                     if name:
                         warnings.warn(
                             f"Default model is set as: {name}. \n"
@@ -589,9 +586,7 @@ class _NVIDIAClient(BaseModel):
                         )
                         values["model"] = name
                     else:
-                        raise ValueError(
-                            f"Model {name} is unknown, check `available_models`"
-                        )
+                        raise ValueError("No locally hosted model was found.")
         return values
 
     @classmethod
