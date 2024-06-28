@@ -233,6 +233,18 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-codestral-22b-instruct-v01"],
     ),
+    "google/gemma-2-9b-it": Model(
+        id="google/gemma-2-9b-it",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-gemma-2-9b-it"],
+    ),
+    "google/gemma-2-27b-it": Model(
+        id="google/gemma-2-27b-it",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-gemma-2-27b-it"],
+    ),
 }
 
 QA_MODEL_TABLE = {
