@@ -313,21 +313,6 @@ class NVEModel(BaseModel):
     ####################################################################################
     ## Simple query interface to show the set of model options
 
-    def query(
-        self,
-        invoke_url: str,
-        payload: Optional[dict] = None,
-        request: str = "get",
-    ) -> dict:
-        """Simple method for an end-to-end get query. Returns result dictionary"""
-        if request == "get":
-            response, session = self._get(invoke_url, payload)
-        else:
-            response, session = self._post(invoke_url, payload)
-        response = self._wait(response, session)
-        output = self._process_response(response)[0]
-        return output
-
     def _process_response(self, response: Union[str, Response]) -> List[dict]:
         """General-purpose response processing for single responses and streams"""
         if hasattr(response, "json"):  ## For single response (i.e. non-streaming)
