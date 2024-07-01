@@ -8,7 +8,6 @@ import warnings
 from copy import deepcopy
 from typing import (
     Any,
-    AsyncIterator,
     Callable,
     Dict,
     Generator,
@@ -461,37 +460,6 @@ class NVEModel(BaseModel):
                 self._try_raise(response)
 
         return (r for r in out_gen())
-
-    ####################################################################################
-    ## Asynchronous streaming interface to allow multiple generations to happen at once.
-
-    async def get_req_astream(
-        self,
-        payload: dict = {},
-        invoke_url: Optional[str] = None,
-        stop: Optional[Sequence[str]] = None,
-    ) -> AsyncIterator:
-        invoke_url = self._get_invoke_url(invoke_url)
-        if payload.get("stream", True) is False:
-            payload = {**payload, "stream": True}
-        self.last_inputs = {
-            "url": invoke_url,
-            "headers": self.headers["stream"],
-            "json": self.payload_fn(payload),
-        }
-
-        async with self.get_asession_fn() as session:
-            async with session.post(
-                **self.__add_authorization(deepcopy(self.last_inputs))
-            ) as response:
-                self._try_raise(response)
-                async for line in response.content.iter_any():
-                    if line and line.strip() != b"data: [DONE]":
-                        line = line.decode("utf-8")
-                        msg, final_line = self.postprocess(line, stop=stop)
-                        yield msg
-                        if final_line:
-                            break
 
 
 class _NVIDIAClient(BaseModel):
