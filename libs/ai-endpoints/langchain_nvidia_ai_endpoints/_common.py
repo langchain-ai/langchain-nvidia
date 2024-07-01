@@ -370,18 +370,6 @@ class NVEModel(BaseModel):
         response, session = self._post(invoke_url, payload)
         return self._wait(response, session)
 
-    def get_req_generation(
-        self,
-        payload: dict = {},
-        invoke_url: Optional[str] = None,
-        stop: Optional[Sequence[str]] = None,
-    ) -> dict:
-        """Method for an end-to-end post query with NVE post-processing."""
-        invoke_url = self._get_invoke_url(invoke_url)
-        response = self.get_req(payload, invoke_url)
-        output, _ = self.postprocess(response, stop=stop)
-        return output
-
     def postprocess(
         self, response: Union[str, Response], stop: Optional[Sequence[str]] = None
     ) -> Tuple[dict, bool]:

@@ -211,7 +211,8 @@ class ChatNVIDIA(BaseChatModel):
     ) -> ChatResult:
         inputs = self._custom_preprocess(messages)
         payload = self._get_payload(inputs=inputs, stop=stop, stream=False, **kwargs)
-        responses = self._client.client.get_req_generation(payload=payload)
+        response = self._client.client.get_req(payload=payload)
+        responses, _ = self._client.client.postprocess(response, stop=stop)
         self._set_callback_out(responses, run_manager)
         message = ChatMessage(**self._custom_postprocess(responses))
         generation = ChatGeneration(message=message)
