@@ -8,7 +8,6 @@ import warnings
 from copy import deepcopy
 from typing import (
     Any,
-    AsyncIterator,
     Callable,
     Dict,
     Generator,
@@ -314,21 +313,6 @@ class NVEModel(BaseModel):
     ####################################################################################
     ## Simple query interface to show the set of model options
 
-    def query(
-        self,
-        invoke_url: str,
-        payload: Optional[dict] = None,
-        request: str = "get",
-    ) -> dict:
-        """Simple method for an end-to-end get query. Returns result dictionary"""
-        if request == "get":
-            response, session = self._get(invoke_url, payload)
-        else:
-            response, session = self._post(invoke_url, payload)
-        response = self._wait(response, session)
-        output = self._process_response(response)[0]
-        return output
-
     def _process_response(self, response: Union[str, Response]) -> List[dict]:
         """General-purpose response processing for single responses and streams"""
         if hasattr(response, "json"):  ## For single response (i.e. non-streaming)
@@ -369,18 +353,6 @@ class NVEModel(BaseModel):
             payload = {**payload, "stream": False}
         response, session = self._post(invoke_url, payload)
         return self._wait(response, session)
-
-    def get_req_generation(
-        self,
-        payload: dict = {},
-        invoke_url: Optional[str] = None,
-        stop: Optional[Sequence[str]] = None,
-    ) -> dict:
-        """Method for an end-to-end post query with NVE post-processing."""
-        invoke_url = self._get_invoke_url(invoke_url)
-        response = self.get_req(payload, invoke_url)
-        output, _ = self.postprocess(response, stop=stop)
-        return output
 
     def postprocess(
         self, response: Union[str, Response], stop: Optional[Sequence[str]] = None
@@ -473,37 +445,6 @@ class NVEModel(BaseModel):
                 self._try_raise(response)
 
         return (r for r in out_gen())
-
-    ####################################################################################
-    ## Asynchronous streaming interface to allow multiple generations to happen at once.
-
-    async def get_req_astream(
-        self,
-        payload: dict = {},
-        invoke_url: Optional[str] = None,
-        stop: Optional[Sequence[str]] = None,
-    ) -> AsyncIterator:
-        invoke_url = self._get_invoke_url(invoke_url)
-        if payload.get("stream", True) is False:
-            payload = {**payload, "stream": True}
-        self.last_inputs = {
-            "url": invoke_url,
-            "headers": self.headers["stream"],
-            "json": self.payload_fn(payload),
-        }
-
-        async with self.get_asession_fn() as session:
-            async with session.post(
-                **self.__add_authorization(deepcopy(self.last_inputs))
-            ) as response:
-                self._try_raise(response)
-                async for line in response.content.iter_any():
-                    if line and line.strip() != b"data: [DONE]":
-                        line = line.decode("utf-8")
-                        msg, final_line = self.postprocess(line, stop=stop)
-                        yield msg
-                        if final_line:
-                            break
 
 
 class _NVIDIAClient(BaseModel):

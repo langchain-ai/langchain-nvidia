@@ -210,7 +210,9 @@ class ChatNVIDIA(BaseChatModel):
         **kwargs: Any,
     ) -> ChatResult:
         inputs = self._custom_preprocess(messages)
-        responses = self._get_generation(inputs=inputs, stop=stop, **kwargs)
+        payload = self._get_payload(inputs=inputs, stop=stop, stream=False, **kwargs)
+        response = self._client.client.get_req(payload=payload)
+        responses, _ = self._client.client.postprocess(response, stop=stop)
         self._set_callback_out(responses, run_manager)
         message = ChatMessage(**self._custom_postprocess(responses))
         generation = ChatGeneration(message=message)
@@ -225,7 +227,8 @@ class ChatNVIDIA(BaseChatModel):
     ) -> Iterator[ChatGenerationChunk]:
         """Allows streaming to model!"""
         inputs = self._custom_preprocess(messages)
-        for response in self._get_stream(inputs=inputs, stop=stop, **kwargs):
+        payload = self._get_payload(inputs=inputs, stop=stop, stream=True, **kwargs)
+        for response in self._client.client.get_req_stream(payload=payload):
             self._set_callback_out(response, run_manager)
             chunk = ChatGenerationChunk(
                 message=ChatMessageChunk(**self._custom_postprocess(response))
@@ -312,41 +315,10 @@ class ChatNVIDIA(BaseChatModel):
     ######################################################################################
     ## Core client-side interfaces
 
-    def _get_generation(
-        self,
-        inputs: Sequence[Dict],
-        **kwargs: Any,
-    ) -> dict:
-        """Call to client generate method with call scope"""
-        kwargs["stop"] = kwargs.get("stop") or self.stop
-        payload = self._get_payload(inputs=inputs, stream=False, **kwargs)
-        out = self._client.client.get_req_generation(payload=payload)
-        return out
-
-    def _get_stream(  # todo: remove
-        self,
-        inputs: Sequence[Dict],
-        **kwargs: Any,
-    ) -> Iterator:
-        """Call to client stream method with call scope"""
-        kwargs["stop"] = kwargs.get("stop") or self.stop
-        payload = self._get_payload(inputs=inputs, stream=True, **kwargs)
-        return self._client.client.get_req_stream(payload=payload)
-
     def _get_payload(
         self, inputs: Sequence[Dict], **kwargs: Any
     ) -> dict:  # todo: remove
         """Generates payload for the _NVIDIAClient API to send to service."""
-        attr_kwargs = {
-            "model": self.model,
-            "temperature": self.temperature,
-            "max_tokens": self.max_tokens,
-            "top_p": self.top_p,
-            "seed": self.seed,
-            "stop": self.stop,
-        }
-        attr_kwargs = {k: v for k, v in attr_kwargs.items() if v is not None}
-        new_kwargs = {**attr_kwargs, **kwargs}
         messages: List[Dict[str, Any]] = []
         for msg in inputs:
             if isinstance(msg, str):
@@ -359,9 +331,35 @@ class ChatNVIDIA(BaseChatModel):
                 messages.append(msg)
             else:
                 raise ValueError(f"Unknown message received: {msg} of type {type(msg)}")
-        if new_kwargs.get("stop") is None:
-            new_kwargs.pop("stop")
-        return {"messages": messages, **new_kwargs}
+
+        # special handling for "stop" because it always comes in kwargs.
+        # if user provided "stop" to invoke/stream, it will be non-None
+        # in kwargs.
+        # note: we cannot tell if the user specified stop=None to invoke/stream because
+        #       the default value of stop is None.
+        # todo: remove self.stop
+        assert "stop" in kwargs, '"stop" param is expected in kwargs'
+        if kwargs["stop"] is None:
+            kwargs.pop("stop")
+
+        # setup default payload values
+        payload: Dict[str, Any] = {
+            "model": self.model,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+            "top_p": self.top_p,
+            "seed": self.seed,
+            "stop": self.stop,
+        }
+
+        # merge incoming kwargs with attr_kwargs giving preference to
+        # the incoming kwargs
+        payload.update(kwargs)
+
+        # remove keys with None values from payload
+        payload = {k: v for k, v in payload.items() if v is not None}
+
+        return {"messages": messages, **payload}
 
     def bind_tools(
         self,
