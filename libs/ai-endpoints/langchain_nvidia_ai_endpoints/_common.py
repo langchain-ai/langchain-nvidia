@@ -362,7 +362,6 @@ class NVEModel(BaseModel):
         """
         msg_list = self._process_response(response)
         msg, is_stopped = self._aggregate_msgs(msg_list)
-        msg, is_stopped = self._early_stop_msg(msg, is_stopped, stop=stop)
         return msg, is_stopped
 
     def _aggregate_msgs(self, msg_list: Sequence[dict]) -> Tuple[dict, bool]:
@@ -395,18 +394,6 @@ class NVEModel(BaseModel):
         if usage_holder:
             content_holder.update(token_usage=usage_holder)  ####
         return content_holder, is_stopped
-
-    def _early_stop_msg(
-        self, msg: dict, is_stopped: bool, stop: Optional[Sequence[str]] = None
-    ) -> Tuple[dict, bool]:
-        """Try to early-terminate streaming or generation by iterating over stop list"""
-        content = msg.get("content", "")
-        if content and stop:
-            for stop_str in stop:
-                if stop_str and stop_str in content:
-                    msg["content"] = content[: content.find(stop_str) + 1]
-                    is_stopped = True
-        return msg, is_stopped
 
     ####################################################################################
     ## Streaming interface to allow you to iterate through progressive generations
