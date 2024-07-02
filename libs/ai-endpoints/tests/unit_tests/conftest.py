@@ -1,14 +1,13 @@
-import inspect
-
 import pytest
 
-import langchain_nvidia_ai_endpoints
+from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
 
 
 @pytest.fixture(
     params=[
-        member[1]
-        for member in inspect.getmembers(langchain_nvidia_ai_endpoints, inspect.isclass)
+        ChatNVIDIA,
+        NVIDIAEmbeddings,
+        NVIDIARerank,
     ]
 )
 def public_class(request: pytest.FixtureRequest) -> type:

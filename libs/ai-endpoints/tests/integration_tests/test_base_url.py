@@ -1,7 +1,7 @@
+from typing import Any
+
 import pytest
 from requests.exceptions import ConnectionError
-
-from .test_api_key import contact_service
 
 
 @pytest.mark.parametrize(
@@ -13,6 +13,7 @@ from .test_api_key import contact_service
 def test_endpoint_unavailable(
     public_class: type,
     base_url: str,
+    contact_service: Any,
 ) -> None:
     # we test this with a bogus model because users should supply
     # a model when using their own base_url
