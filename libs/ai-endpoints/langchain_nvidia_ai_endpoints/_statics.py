@@ -20,7 +20,7 @@ class Model(BaseModel):
     id: str
     # why do we have a model_type? because ChatNVIDIA can speak both chat and vlm.
     model_type: Optional[
-        Literal["chat", "vlm", "embedding", "ranking", "completion"]
+        Literal["chat", "vlm", "embedding", "ranking", "completion", "qa"]
     ] = None
     client: Optional[Literal["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank"]] = None
     endpoint: Optional[str] = None
@@ -34,7 +34,7 @@ class Model(BaseModel):
     def validate_client(cls, client: str, values: dict) -> str:
         if client:
             supported = {
-                "ChatNVIDIA": ("chat", "vlm"),
+                "ChatNVIDIA": ("chat", "vlm", "qa"),
                 "NVIDIAEmbeddings": ("embedding",),
                 "NVIDIARerank": ("ranking",),
             }
