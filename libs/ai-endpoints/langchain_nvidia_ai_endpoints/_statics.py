@@ -418,11 +418,17 @@ def register_model(model: Model) -> None:
     Be sure that the `id` matches the model parameter the endpoint expects.
 
     Supported model types are:
-        - chat models must accept and produce chat completion payloads
+        - chat models, which must accept and produce chat completion payloads
     Supported model clients are:
-        - ChatNVIDIA for chat models
+        - ChatNVIDIA, for chat models
 
     Endpoint is required.
+
+    Use this instead of passing `base_url` to a client constructor
+    when the model's endpoint supports inference and not /v1/models
+    listing. Use `base_url` when the model's endpoint supports
+    /v1/models listing and inference on a known path,
+    e.g. /v1/chat/completions.
     """
     if model.id in MODEL_TABLE:
         warnings.warn(
