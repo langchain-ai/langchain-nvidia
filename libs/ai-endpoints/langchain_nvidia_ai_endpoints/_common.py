@@ -355,14 +355,13 @@ class NVEModel(BaseModel):
         return self._wait(response, session)
 
     def postprocess(
-        self, response: Union[str, Response], stop: Optional[Sequence[str]] = None
+        self,
+        response: Union[str, Response],
     ) -> Tuple[dict, bool]:
         """Parses a response from the AI Foundation Model Function API.
         Strongly assumes that the API will return a single response.
         """
-        msg_list = self._process_response(response)
-        msg, is_stopped = self._aggregate_msgs(msg_list)
-        return msg, is_stopped
+        return self._aggregate_msgs(self._process_response(response))
 
     def _aggregate_msgs(self, msg_list: Sequence[dict]) -> Tuple[dict, bool]:
         """Dig out relevant details of aggregated message"""
@@ -402,7 +401,6 @@ class NVEModel(BaseModel):
         self,
         payload: dict = {},
         invoke_url: Optional[str] = None,
-        stop: Optional[Sequence[str]] = None,
     ) -> Iterator:
         invoke_url = self._get_invoke_url(invoke_url)
         if payload.get("stream", True) is False:
@@ -425,7 +423,7 @@ class NVEModel(BaseModel):
             for line in response.iter_lines():
                 if line and line.strip() != b"data: [DONE]":
                     line = line.decode("utf-8")
-                    msg, final_line = call.postprocess(line, stop=stop)
+                    msg, final_line = call.postprocess(line)
                     yield msg
                     if final_line:
                         break
