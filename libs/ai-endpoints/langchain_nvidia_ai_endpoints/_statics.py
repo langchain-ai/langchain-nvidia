@@ -245,6 +245,18 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-gemma-2-27b-it"],
     ),
+    "microsoft/phi-3-medium-128k-instruct": Model(
+        id="microsoft/phi-3-medium-128k-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-phi-3-medium-128k-instruct"],
+    ),
+    "deepseek-ai/deepseek-coder-6.7b-instruct": Model(
+        id="deepseek-ai/deepseek-coder-6.7b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-deepseek-coder-6_7b-instruct"],
+    ),
 }
 
 QA_MODEL_TABLE = {
