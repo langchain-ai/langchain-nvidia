@@ -39,8 +39,9 @@ embedding_output = embed_model.embed_query("Exploring AI capabilities.")
 ```
 """  # noqa: E501
 
+from langchain_nvidia_ai_endpoints._statics import Model, register_model
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 from langchain_nvidia_ai_endpoints.embeddings import NVIDIAEmbeddings
 from langchain_nvidia_ai_endpoints.reranking import NVIDIARerank
 
-__all__ = ["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank"]
+__all__ = ["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank", "register_model", "Model"]

@@ -1,29 +1,49 @@
 import warnings
-from typing import Optional
+from typing import Literal, Optional
 
-from langchain_core.pydantic_v1 import BaseModel
+from langchain_core.pydantic_v1 import BaseModel, validator
 
 
-#
-# Model information
-#  - id: unique identifier for the model, passed as model parameter for requests
-#  - model_type: API type (chat, vlm, embedding, ranking, completion)
-#  - client: client name
-#  - endpoint: custom endpoint for the model
-#  - aliases: list of aliases for the model
-#
-# All aliases are deprecated and will trigger a warning when used.
-#
 class Model(BaseModel):
+    """
+    Model information.
+
+    id: unique identifier for the model, passed as model parameter for requests
+    model_type: API type (chat, vlm, embedding, ranking, completion)
+    client: client name, e.g. ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
+    endpoint: custom endpoint for the model
+    aliases: list of aliases for the model
+
+    All aliases are deprecated and will trigger a warning when used.
+    """
+
     id: str
-    model_type: Optional[str] = None
-    client: Optional[str] = None
+    # why do we have a model_type? because ChatNVIDIA can speak both chat and vlm.
+    model_type: Optional[
+        Literal["chat", "vlm", "embedding", "ranking", "completion", "qa"]
+    ] = None
+    client: Optional[Literal["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank"]] = None
     endpoint: Optional[str] = None
     aliases: Optional[list] = None
     base_model: Optional[str] = None
 
     def __hash__(self) -> int:
         return hash(self.id)
+
+    @validator("client", always=True)
+    def validate_client(cls, client: str, values: dict) -> str:
+        if client:
+            supported = {
+                "ChatNVIDIA": ("chat", "vlm", "qa"),
+                "NVIDIAEmbeddings": ("embedding",),
+                "NVIDIARerank": ("ranking",),
+            }
+            model_type = values.get("model_type")
+            if model_type not in supported[client]:
+                raise ValueError(
+                    f"Model type '{model_type}' not supported by client '{client}'"
+                )
+        return client
 
 
 CHAT_MODEL_TABLE = {
@@ -373,14 +393,14 @@ RANKING_MODEL_TABLE = {
     ),
 }
 
-COMPLETION_MODEL_TABLE = {
-    "mistralai/mixtral-8x22b-v0.1": Model(
-        id="mistralai/mixtral-8x22b-v0.1",
-        model_type="completion",
-        client="NVIDIA",
-        aliases=["ai-mixtral-8x22b"],
-    ),
-}
+# COMPLETION_MODEL_TABLE = {
+#     "mistralai/mixtral-8x22b-v0.1": Model(
+#         id="mistralai/mixtral-8x22b-v0.1",
+#         model_type="completion",
+#         client="NVIDIA",
+#         aliases=["ai-mixtral-8x22b"],
+#     ),
+# }
 
 MODEL_TABLE = {
     **CHAT_MODEL_TABLE,
@@ -389,6 +409,48 @@ MODEL_TABLE = {
     **EMBEDDING_MODEL_TABLE,
     **RANKING_MODEL_TABLE,
 }
+
+
+def register_model(model: Model) -> None:
+    """
+    Register a model as a known model. This must be done at the
+    beginning of a program, at least before the model is used or
+    available models are listed.
+
+    For instance -
+    ```
+    from langchain_nvidia_ai_endpoints import register_model, Model
+    register_model(Model(id="my-custom-model-name",
+                         model_type="chat",
+                         client="ChatNVIDIA",
+                         endpoint="http://host:port/path-to-my-model"))
+    llm = ChatNVIDIA(model="my-custom-model-name")
+    ```
+
+    Be sure that the `id` matches the model parameter the endpoint expects.
+
+    Supported model types are:
+        - chat models, which must accept and produce chat completion payloads
+    Supported model clients are:
+        - ChatNVIDIA, for chat models
+
+    Endpoint is required.
+
+    Use this instead of passing `base_url` to a client constructor
+    when the model's endpoint supports inference and not /v1/models
+    listing. Use `base_url` when the model's endpoint supports
+    /v1/models listing and inference on a known path,
+    e.g. /v1/chat/completions.
+    """
+    if model.id in MODEL_TABLE:
+        warnings.warn(
+            f"Model {model.id} is already registered. "
+            f"Overriding {MODEL_TABLE[model.id]}",
+            UserWarning,
+        )
+    if not model.endpoint:
+        raise ValueError(f"Model {model.id} does not have an endpoint.")
+    MODEL_TABLE[model.id] = model
 
 
 def lookup_model(name: str) -> Optional[Model]:
