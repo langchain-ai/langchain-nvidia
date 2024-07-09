@@ -202,27 +202,6 @@ def test_ai_endpoints_invoke(chat_model: str, mode: dict) -> None:
     assert isinstance(result.content, str)
 
 
-# todo: test that stop is cased and works with multiple words
-@pytest.mark.xfail(reason="stop is not consistently implemented")
-def test_invoke_stop(chat_model: str, mode: dict) -> None:
-    """Test invoke's stop words."""
-    llm = ChatNVIDIA(model=chat_model, **mode, stop=["10"])
-    result = llm.invoke("please count to 20 by 1s, e.g. 1 2 3 4")
-    assert isinstance(result.content, str)
-    assert "10" not in result.content
-
-
-@pytest.mark.xfail(reason="stop is not consistently implemented")
-def test_stream_stop(chat_model: str, mode: dict) -> None:
-    """Test stream's stop words."""
-    llm = ChatNVIDIA(model=chat_model, **mode, stop=["10"])
-    result = ""
-    for token in llm.stream("please count to 20 by 1s, e.g. 1 2 3 4"):
-        assert isinstance(token.content, str)
-        result += f"{token.content}|"
-    assert "10" not in result
-
-
 # todo: max_tokens test for ainvoke, batch, abatch, stream, astream
 
 
@@ -383,3 +362,61 @@ def test_serialize_chatnvidia(chat_model: str, mode: dict) -> None:
     model = loads(dumps(llm), valid_namespaces=["langchain_nvidia_ai_endpoints"])
     result = model.invoke("What is there if there is nothing?")
     assert isinstance(result.content, str)
+
+
+# todo: test that stop is cased and works with multiple words
+
+
+@pytest.mark.parametrize(
+    "prop",
+    [
+        False,
+        True,
+    ],
+    ids=["no_prop", "prop"],
+)
+@pytest.mark.parametrize(
+    "param",
+    [
+        False,
+        True,
+    ],
+    ids=["no_param", "param"],
+)
+@pytest.mark.parametrize(
+    "targets",
+    [["5"], ["6", "100"], ["100", "7"]],
+    ids=["5", "6,100", "100,7"],
+)
+@pytest.mark.parametrize(
+    "func",
+    [
+        "invoke",
+        "stream",
+    ],
+)
+@pytest.mark.xfail(reason="stop is not consistently implemented")
+def test_stop(
+    chat_model: str, mode: dict, func: str, prop: bool, param: bool, targets: List[str]
+) -> None:
+    if not prop and not param:
+        pytest.skip("Skipping test, no stop parameter")
+    llm = ChatNVIDIA(
+        model=chat_model, stop=targets if prop else None, max_tokens=512, **mode
+    )
+    result = ""
+    if func == "invoke":
+        response = llm.invoke(
+            "please count to 20 by 1s, e.g. 1 2 3 4",
+            stop=targets if param else None,
+        )  # invoke returns Union[str, List[Union[str, Dict[Any, Any]]]]
+        assert isinstance(response.content, str)
+        result = response.content
+    elif func == "stream":
+        for token in llm.stream(
+            "please count to 20 by 1s, e.g. 1 2 3 4",
+            stop=targets if param else None,
+        ):
+            assert isinstance(token.content, str)
+            result += f"{token.content}|"
+    assert all(target not in result for target in targets)
