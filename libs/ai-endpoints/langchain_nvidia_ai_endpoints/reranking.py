@@ -54,6 +54,7 @@ class NVIDIARerank(BaseDocumentCompressor):
             nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
             api_key (str): Alternative to nvidia_api_key.
             base_url (str): The base URL of the NIM to connect to.
+                            Format for base URL is http://host:port
 
         API Key:
         - The recommended way to provide the API key is through the `NVIDIA_API_KEY`

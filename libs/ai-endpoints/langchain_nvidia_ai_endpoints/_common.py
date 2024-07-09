@@ -18,7 +18,7 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import aiohttp
 import requests
@@ -39,6 +39,17 @@ logger = logging.getLogger(__name__)
 
 def default_payload_fn(payload: dict) -> dict:
     return payload
+
+
+def check_endpoint_health(base_url: str) -> None:
+    try:
+        response = requests.get(urljoin(base_url, "v1/health/live"))
+        response.raise_for_status()  # Raise an HTTPError for bad responses
+    except requests.exceptions.RequestException as e:
+        raise ValueError(
+            f"Unable to reach endpoint {base_url}. Error: {e}. \
+            \n Make sure the NIM is running and healthy."
+        )
 
 
 class NVEModel(BaseModel):
@@ -133,9 +144,15 @@ class NVEModel(BaseModel):
             # Ensure scheme and netloc (domain name) are present
             if not (result.scheme and result.netloc):
                 raise ValueError(
-                    f"Invalid base_url, minimally needs scheme and netloc: {v}"
+                    f"Invalid base_url, Expected format is 'http://host:port'.: {v}"
                 )
-        return v
+            if result.path and result.path != "/":
+                raise ValueError(
+                    f"Endpoint {v} ends with {result.path.rsplit('/', 1)[-1]}. \
+                        \n Expected format is 'http://host:port'"
+                )
+            check_endpoint_health(v)
+        return urljoin(v, "v1")
 
     @root_validator(pre=True)
     def _validate_model(cls, values: Dict[str, Any]) -> Dict[str, Any]:
