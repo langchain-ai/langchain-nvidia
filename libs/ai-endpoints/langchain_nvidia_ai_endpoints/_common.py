@@ -146,12 +146,11 @@ class NVEModel(BaseModel):
                 raise ValueError(
                     f"Invalid base_url, Expected format is 'http://host:port'.: {v}"
                 )
-            if result.path and result.path != "/":
+            if result.path and result.path!="/v1" and result.path != "/":
                 raise ValueError(
                     f"Endpoint {v} ends with {result.path.rsplit('/', 1)[-1]}. \
                         \n Expected format is 'http://host:port'"
                 )
-            check_endpoint_health(v)
         return urljoin(v, "v1")
 
     @root_validator(pre=True)
@@ -471,7 +470,11 @@ class _NVIDIAClient(BaseModel):
                 "integrate.api.nvidia.com",
                 "ai.api.nvidia.com",
             ]
-
+        
+        # check health for local NIM mode
+        if not values["is_hosted"]:
+            check_endpoint_health(values["base_url"])
+            
         # set default model for hosted endpoint
         if values["is_hosted"] and not values["model"]:
             values["model"] = values["default_model"]
