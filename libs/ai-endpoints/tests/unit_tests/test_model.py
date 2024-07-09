@@ -51,6 +51,14 @@ def mock_v1_local_models(requests_mock: Mocker, known_unknown: str) -> None:
     )
 
 
+@pytest.fixture(autouse=True)
+def mock_local_health(requests_mock: Mocker) -> None:
+    requests_mock.get(
+        "http://localhost:8000/v1/health/live",
+        json={"object": "health-response", "message": "Service is live."},
+    )
+
+
 @pytest.mark.parametrize(
     "alias",
     [

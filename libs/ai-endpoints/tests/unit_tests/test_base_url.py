@@ -28,7 +28,7 @@ def test_param_base_url_hosted(public_class: type, base_url: str) -> None:
 @pytest.fixture(autouse=True)
 def mock_v1_local_models(requests_mock: Mocker, base_url: str) -> None:
     requests_mock.get(
-        f"{base_url}/models",
+        f"{base_url}/v1/models",
         json={
             "data": [
                 {
@@ -43,6 +43,14 @@ def mock_v1_local_models(requests_mock: Mocker, base_url: str) -> None:
     )
 
 
+@pytest.fixture(autouse=True)
+def mock_local_health(requests_mock: Mocker, base_url: str) -> None:
+    requests_mock.get(
+        f"{base_url}/v1/health/live",
+        json={"object": "health-response", "message": "Service is live."},
+    )
+
+
 @pytest.mark.parametrize(
     "base_url",
     [
@@ -52,5 +60,6 @@ def mock_v1_local_models(requests_mock: Mocker, base_url: str) -> None:
     ],
 )
 def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
-    client = public_class(base_url=base_url)
-    assert not client._client.is_hosted
+    with pytest.warns(UserWarning):
+        client = public_class(base_url=base_url)
+        assert not client._client.is_hosted
