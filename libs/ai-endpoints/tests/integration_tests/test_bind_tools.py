@@ -1,9 +1,15 @@
 import json
 import warnings
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, Callable, List, Literal, Optional, Union
 
 import pytest
-from langchain_core.messages import AIMessage, ChatMessage
+from langchain_core.messages import (
+    AIMessage,
+    AIMessageChunk,
+    BaseMessage,
+    BaseMessageChunk,
+    ChatMessage,
+)
 from langchain_core.pydantic_v1 import Field
 from langchain_core.tools import tool
 
@@ -34,14 +40,18 @@ from langchain_nvidia_ai_endpoints import ChatNVIDIA
 # test types:
 #  17. deterministic (minimial accuracy tests; relies on basic tool calling skills)
 #  18. accuracy (proper tool; proper arguments)
-# negative tests:
+# edge/negative tests:
 #  19. require unknown named tool (invoke/stream only)
 #  20. partial function (invoke/stream only)
+#  21. not enough tokens to generate tool call
+#  22. tool with no arguments
+#  23. duplicate tool names
+#  24. unknown tool (invoke/stream only)
 #
 
-# todo: streaming
-# todo: test tool with no arguments
+# todo: async methods
 # todo: parallel_tool_calls
+# todo: too many tools
 
 
 @tool
@@ -62,6 +72,31 @@ def zzyyxx(
     return (b**a) % (a - b)
 
 
+@tool
+def tool_no_args() -> str:
+    """8-ball"""
+    return "lookin' good"
+
+
+def eval_stream(llm: ChatNVIDIA, msg: str, tool_choice: Any = None) -> BaseMessageChunk:
+    if tool_choice:
+        generator = llm.stream(msg, tool_choice=tool_choice)  # type: ignore
+    else:
+        generator = llm.stream(msg)
+    response = next(generator)
+    for chunk in generator:
+        assert isinstance(chunk, AIMessageChunk)
+        response += chunk
+    return response
+
+
+def eval_invoke(llm: ChatNVIDIA, msg: str, tool_choice: Any = None) -> BaseMessage:
+    if tool_choice:
+        return llm.invoke(msg, tool_choice=tool_choice)  # type: ignore
+    else:
+        return llm.invoke(msg)
+
+
 def check_response_structure(response: AIMessage) -> None:
     assert not response.content  # should be `response.content is None` but
     # AIMessage.content: Union[str, List[Union[str, Dict]]] cannot be None.
@@ -77,36 +112,49 @@ def check_response_structure(response: AIMessage) -> None:
     assert len(response.tool_calls) > 0
 
 
-# users can also get at the tool calls from the response.additional_kwargs
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
 @pytest.mark.xfail(reason="Accuracy test")
-def test_accuracy_default_invoke_additional_kwargs(tool_model: str, mode: dict) -> None:
+def test_accuracy_extra(tool_model: str, mode: dict, func: Callable) -> None:
     llm = ChatNVIDIA(temperature=0, model=tool_model, **mode).bind_tools([xxyyzz])
-    response = llm.invoke("What is 11 xxyyzz 3?")
+    response = func(llm, "What is 11 xxyyzz 3?")
     assert not response.content  # should be `response.content is None` but
     # AIMessage.content: Union[str, List[Union[str, Dict]]] cannot be None.
     assert response.additional_kwargs is not None
-    assert "tool_calls" in response.additional_kwargs
-    assert isinstance(response.additional_kwargs["tool_calls"], list)
-    assert response.additional_kwargs["tool_calls"]
-    for tool_call in response.additional_kwargs["tool_calls"]:
-        assert "id" in tool_call
-        assert tool_call["id"] is not None
-        assert "type" in tool_call
-        assert tool_call["type"] == "function"
-        assert "function" in tool_call
+    # todo: this is not good, should not care about the param
+    if func == eval_invoke:
+        assert isinstance(response, AIMessage)
+        assert "tool_calls" in response.additional_kwargs
+        assert isinstance(response.additional_kwargs["tool_calls"], list)
+        assert response.additional_kwargs["tool_calls"]
+        assert response.tool_calls
+        for tool_call in response.additional_kwargs["tool_calls"]:
+            assert "id" in tool_call
+            assert tool_call["id"] is not None
+            assert "type" in tool_call
+            assert tool_call["type"] == "function"
+            assert "function" in tool_call
+        assert len(response.additional_kwargs["tool_calls"]) > 0
+        tool_call = response.additional_kwargs["tool_calls"][0]
+        assert tool_call["function"]["name"] == "xxyyzz"
+        assert json.loads(tool_call["function"]["arguments"]) == {"a": 11, "b": 3}
+    else:
+        assert isinstance(response, AIMessageChunk)
+        assert response.tool_call_chunks
     assert response.response_metadata is not None
     assert isinstance(response.response_metadata, dict)
-    assert "content" in response.response_metadata
-    assert response.response_metadata["content"] is None
+    if "content" in response.response_metadata:
+        assert response.response_metadata["content"] is None
+    assert "model_name" in response.response_metadata
+    assert response.response_metadata["model_name"] == tool_model
     assert "finish_reason" in response.response_metadata
     assert response.response_metadata["finish_reason"] in [
         "tool_calls",
         "stop",
     ]  # todo: remove "stop"
-    assert len(response.additional_kwargs["tool_calls"]) > 0
-    tool_call = response.additional_kwargs["tool_calls"][0]
-    assert tool_call["function"]["name"] == "xxyyzz"
-    assert json.loads(tool_call["function"]["arguments"]) == {"a": 11, "b": 3}
 
 
 @pytest.mark.parametrize(
@@ -119,12 +167,17 @@ def test_accuracy_default_invoke_additional_kwargs(tool_model: str, mode: dict) 
     ],
     ids=["none", "required", "partial", "function"],
 )
-def test_invoke_tool_choice_with_no_tool(
-    tool_model: str, mode: dict, tool_choice: Any
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
+def test_tool_choice_with_no_tool(
+    tool_model: str, mode: dict, tool_choice: Any, func: Callable
 ) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode)
     with pytest.raises(Exception) as e:
-        llm.invoke("What is 11 xxyyzz 3?", tool_choice=tool_choice)
+        func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
     assert "400" in str(e.value) or "###" in str(
         e.value
     )  # todo: stop transforming 400 -> ###
@@ -139,10 +192,14 @@ def test_invoke_tool_choice_with_no_tool(
     )
 
 
-def test_invoke_tool_choice_none(tool_model: str, mode: dict) -> None:
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
+def test_tool_choice_none(tool_model: str, mode: dict, func: Callable) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools(tools=[xxyyzz])
-    response = llm.invoke("What is 11 xxyyzz 3?", tool_choice="none")  # type: ignore
-    assert isinstance(response, ChatMessage)
+    response = func(llm, "What is 11 xxyyzz 3?", tool_choice="none")
     assert "tool_calls" not in response.additional_kwargs
 
 
@@ -153,20 +210,145 @@ def test_invoke_tool_choice_none(tool_model: str, mode: dict) -> None:
     ],
     ids=["partial"],
 )
-def test_invoke_tool_choice_negative(
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
+def test_tool_choice_negative(
     tool_model: str,
     mode: dict,
     tool_choice: Optional[
         Union[dict, str, Literal["auto", "none", "any", "required"], bool]
     ],
+    func: Callable,
 ) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools([xxyyzz])
     with pytest.raises(Exception) as e:
-        llm.invoke("What is 11 xxyyzz 3?", tool_choice=tool_choice)  # type: ignore
+        func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
     assert "400" in str(e.value) or "###" in str(
         e.value
     )  # todo: stop transforming 400 -> ###
-    assert "invalid_request_error" in str(e.value) or "value_error" in str(e.value)
+    assert (
+        "invalid_request_error" in str(e.value)
+        or "value_error" in str(e.value)
+        or "Incorrectly formatted `tool_choice`" in str(e.value)
+    )
+
+
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
+def test_tool_choice_negative_max_tokens_required(
+    tool_model: str,
+    mode: dict,
+    func: Callable,
+) -> None:
+    llm = ChatNVIDIA(max_tokens=5, model=tool_model, **mode).bind_tools([xxyyzz])
+    with pytest.raises(Exception) as e:
+        func(llm, "What is 11 xxyyzz 3?", tool_choice="required")
+    assert "400" in str(e.value) or "###" in str(
+        e.value
+    )  # todo: stop transforming 400 -> ###
+    assert "invalid_request_error" in str(e.value)
+    assert (
+        "Could not finish the message because max_tokens was reached. "
+        "Please try again with higher max_tokens."
+    ) in str(e.value)
+
+
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
+def test_tool_choice_negative_max_tokens_function(
+    tool_model: str,
+    mode: dict,
+    func: Callable,
+) -> None:
+    llm = ChatNVIDIA(max_tokens=5, model=tool_model, **mode).bind_tools([xxyyzz])
+    response = func(
+        llm,
+        "What is 11 xxyyzz 3?",
+        tool_choice={"type": "function", "function": {"name": "xxyyzz"}},
+    )
+    # todo: this is not good, should not care about the param
+    if func == eval_invoke:
+        assert isinstance(response, AIMessage)
+        assert "tool_calls" in response.additional_kwargs
+        assert response.invalid_tool_calls
+    else:
+        assert isinstance(response, AIMessageChunk)
+        assert response.tool_call_chunks
+    assert "finish_reason" in response.response_metadata
+    assert response.response_metadata["finish_reason"] == "length"
+
+
+@pytest.mark.parametrize(
+    "tool_choice",
+    [
+        "required",
+        {"type": "function", "function": {"name": "tool_no_args"}},
+    ],
+    ids=["required", "function"],
+)
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
+def test_tool_choice_negative_no_args(
+    tool_model: str,
+    mode: dict,
+    tool_choice: Optional[
+        Union[dict, str, Literal["auto", "none", "any", "required"], bool]
+    ],
+    func: Callable,
+) -> None:
+    llm = ChatNVIDIA(model=tool_model, **mode).bind_tools([tool_no_args])
+    response = func(llm, "What does the 8-ball say?", tool_choice=tool_choice)
+    # todo: this is not good, should not care about the param
+    if func == eval_invoke:
+        assert isinstance(response, AIMessage)
+        assert response.tool_calls
+    else:
+        assert isinstance(response, AIMessageChunk)
+        assert response.tool_call_chunks
+    # assert "tool_calls" in response.additional_kwargs
+
+
+@pytest.mark.parametrize(
+    "tool_choice",
+    [
+        "required",
+        {"type": "function", "function": {"name": "tool_no_args"}},
+    ],
+    ids=["required", "function"],
+)
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
+@pytest.mark.xfail(reason="Accuracy test")
+def test_accuracy_tool_choice_negative_no_args(
+    tool_model: str,
+    mode: dict,
+    tool_choice: Optional[
+        Union[dict, str, Literal["auto", "none", "any", "required"], bool]
+    ],
+    func: Callable,
+) -> None:
+    llm = ChatNVIDIA(model=tool_model, **mode).bind_tools([tool_no_args])
+    response = func(llm, "What does the 8-ball say?", tool_choice=tool_choice)
+    assert isinstance(response, AIMessage)
+    # assert "tool_calls" in response.additional_kwargs
+    assert response.tool_calls
+    assert response.tool_calls[0]["name"] == "tool_no_args"
+    assert response.tool_calls[0]["args"] == {}
 
 
 @pytest.mark.parametrize(
@@ -177,15 +359,49 @@ def test_invoke_tool_choice_negative(
     ],
     ids=["required", "function"],
 )
-def test_invoke_tool_choice(
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
+def test_tool_choice_negative_duplicate_tool(
     tool_model: str,
     mode: dict,
     tool_choice: Optional[
         Union[dict, str, Literal["auto", "none", "any", "required"], bool]
     ],
+    func: Callable,
+) -> None:
+    llm = ChatNVIDIA(model=tool_model, **mode).bind_tools([xxyyzz, xxyyzz])
+    response = func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
+    assert isinstance(response, AIMessage)
+    assert response.tool_calls
+    # assert "tool_calls" in response.additional_kwargs
+
+
+@pytest.mark.parametrize(
+    "tool_choice",
+    [
+        "required",
+        {"type": "function", "function": {"name": "xxyyzz"}},
+    ],
+    ids=["required", "function"],
+)
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
+def test_tool_choice(
+    tool_model: str,
+    mode: dict,
+    tool_choice: Optional[
+        Union[dict, str, Literal["auto", "none", "any", "required"], bool]
+    ],
+    func: Callable,
 ) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools([xxyyzz])
-    response = llm.invoke("What is 11 xxyyzz 3?", tool_choice=tool_choice)  # type: ignore
+    response = func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
     assert isinstance(response, AIMessage)
     check_response_structure(response)
 
@@ -205,15 +421,21 @@ def test_invoke_tool_choice(
     [[xxyyzz], [xxyyzz, zzyyxx], [zzyyxx, xxyyzz]],
     ids=["xxyyzz", "xxyyzz_and_zzyyxx", "zzyyxx_and_xxyyzz"],
 )
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
 @pytest.mark.xfail(reason="Accuracy test")
-def test_accuracy_invoke_tool_choice(
+def test_accuracy_tool_choice(
     tool_model: str,
     mode: dict,
     tools: List,
     tool_choice: Any,
+    func: Callable,
 ) -> None:
     llm = ChatNVIDIA(temperature=0, model=tool_model, **mode).bind_tools(tools)
-    response = llm.invoke("What is 11 xxyyzz 3?", tool_choice=tool_choice)  # type: ignore
+    response = func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
     assert isinstance(response, AIMessage)
     check_response_structure(response)
     tool_call = response.tool_calls[0]
@@ -221,13 +443,23 @@ def test_accuracy_invoke_tool_choice(
     assert tool_call["args"] == {"b": 3, "a": 11}
 
 
-def test_invoke_tool_choice_with_unknown_tool(tool_model: str, mode: dict) -> None:
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
+def test_tool_choice_negative_unknown_tool(
+    tool_model: str,
+    mode: dict,
+    func: Callable,
+) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools(tools=[xxyyzz])
     with pytest.raises(Exception) as e:
-        llm.invoke(
+        func(
+            llm,
             "What is 11 xxyyzz 3?",
             tool_choice={"type": "function", "function": {"name": "zzyyxx"}},
-        )  # type: ignore
+        )
     assert (
         "not found in the tools list" in str(e.value)
         or "no function named" in str(e.value)
