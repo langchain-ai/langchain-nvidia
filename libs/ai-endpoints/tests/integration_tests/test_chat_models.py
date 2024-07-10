@@ -6,8 +6,10 @@ import pytest
 from langchain_core.load.dump import dumps
 from langchain_core.load.load import loads
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from requests_mock import Mocker
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
+
 
 #
 # we setup an --all-models flag in conftest.py, when passed it configures chat_model
@@ -16,6 +18,12 @@ from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 # note: currently --all-models only works with the default mode because different
 #       modes may have different available models
 #
+@pytest.fixture
+def mock_local_health(requests_mock: Mocker) -> None:
+    requests_mock.get(
+        "http://localhost:12321/v1/health/live",
+        json={"object": "health-response", "message": "Service is live."},
+    )
 
 
 def test_chat_ai_endpoints(chat_model: str, mode: dict) -> None:
@@ -32,8 +40,8 @@ def test_unknown_model() -> None:
         ChatNVIDIA(model="unknown_model")
 
 
-def test_base_url_unknown_model() -> None:
-    llm = ChatNVIDIA(model="unknown_model", base_url="http://localhost:88888/v1")
+def test_base_url_unknown_model(mock_local_health: None) -> None:
+    llm = ChatNVIDIA(model="unknown_model", base_url="http://localhost:12321/v1")
     assert llm.model == "unknown_model"
 
 

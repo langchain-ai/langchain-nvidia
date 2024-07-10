@@ -146,7 +146,7 @@ class NVEModel(BaseModel):
                 raise ValueError(
                     f"Invalid base_url, Expected format is 'http://host:port'.: {v}"
                 )
-            if result.path and result.path != "/v1" and result.path != "/":
+            if result.path and result.path not in ["/v1", "/"]:
                 raise ValueError(
                     f"Endpoint {v} ends with {result.path.rsplit('/', 1)[-1]}. \
                         \n Expected format is 'http://host:port'"
@@ -511,28 +511,28 @@ class _NVIDIAClient(BaseModel):
                         raise ValueError(
                             f"Model {name} is unknown, check `available_models`"
                         )
-        else:
-            # set default model
-            if not name:
-                if not (client := values.get("client")):
-                    warnings.warn(f"Unable to determine validity of {name}")
-                else:
-                    valid_models = [
-                        model.id
-                        for model in client.available_models
-                        if not model.base_model or model.base_model == model.id
-                    ]
-                    name = next(iter(valid_models), None)
-                    if name:
-                        warnings.warn(
-                            f"Default model is set as: {name}. \n"
-                            "Set model using model parameter. \n"
-                            "To get available models use available_models property.",
-                            UserWarning,
-                        )
-                        values["model"] = name
-                    else:
-                        raise ValueError("No locally hosted model was found.")
+        # else:
+        #     # set default model
+        #     if not name:
+        #         if not (client := values.get("client")):
+        #             warnings.warn(f"Unable to determine validity of {name}")
+        #         else:
+        #             valid_models = [
+        #                 model.id
+        #                 for model in client.available_models
+        #                 if not model.base_model or model.base_model == model.id
+        #             ]
+        #             name = next(iter(valid_models), None)
+        #             if name:
+        #                 warnings.warn(
+        #                     f"Default model is set as: {name}. \n"
+        #                     "Set model using model parameter. \n"
+        #                     "To get available models use available_models property.",
+        #                     UserWarning,
+        #                 )
+        #                 values["model"] = name
+        #             else:
+        #                 raise ValueError("No locally hosted model was found.")
         return values
 
     @classmethod
