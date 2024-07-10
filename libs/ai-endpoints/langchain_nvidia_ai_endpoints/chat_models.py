@@ -31,9 +31,9 @@ from langchain_core.callbacks.manager import (
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
 from langchain_core.messages import (
     AIMessage,
+    AIMessageChunk,
     BaseMessage,
     ChatMessage,
-    ChatMessageChunk,
 )
 from langchain_core.outputs import (
     ChatGeneration,
@@ -267,10 +267,10 @@ class ChatNVIDIA(BaseChatModel):
         response = self._client.client.get_req(payload=payload)
         responses, _ = self._client.client.postprocess(response)
         self._set_callback_out(responses, run_manager)
-        parsed_response = self._custom_postprocess(responses)
-        # arguably we should always return an AIMessage, but to maintain
-        # API compatibility, we only return it for tool_calls. we can
-        # change this for an API breaking 1.0.
+        parsed_response = self._custom_postprocess(responses, streaming=False)
+        # todo: we should always return an AIMessage, but to maintain
+        #       API compatibility, we only return it for tool_calls. we can
+        #       change this for an API breaking 1.0.
         if "tool_calls" in parsed_response["additional_kwargs"]:
             message: BaseMessage = AIMessage(**parsed_response)
         else:
@@ -293,10 +293,16 @@ class ChatNVIDIA(BaseChatModel):
         payload = self._get_payload(inputs=inputs, stop=stop, stream=True, **kwargs)
         for response in self._client.client.get_req_stream(payload=payload):
             self._set_callback_out(response, run_manager)
-            # todo: AIMessageChunk for tool_calls
-            chunk = ChatGenerationChunk(
-                message=ChatMessageChunk(**self._custom_postprocess(response))
-            )
+            parsed_response = self._custom_postprocess(response, streaming=True)
+            # todo: we should always return an AIMessage, but to maintain
+            #       API compatibility, we only return it for tool_calls. we can
+            #       change this for an API breaking 1.0.
+            # if "tool_calls" in parsed_response["additional_kwargs"]:
+            #     message: BaseMessageChunk = AIMessageChunk(**parsed_response)
+            # else:
+            #     message = ChatMessageChunk(**parsed_response)
+            message = AIMessageChunk(**parsed_response)
+            chunk = ChatGenerationChunk(message=message)
             if run_manager:
                 run_manager.on_llm_new_token(chunk.text, chunk=chunk)
             yield chunk
@@ -312,7 +318,9 @@ class ChatNVIDIA(BaseChatModel):
                 if hasattr(cb, "llm_output"):
                     cb.llm_output = result
 
-    def _custom_postprocess(self, msg: dict) -> dict:  # todo: remove
+    def _custom_postprocess(
+        self, msg: dict, streaming: bool = False
+    ) -> dict:  # todo: remove
         kw_left = msg.copy()
         out_dict = {
             "role": kw_left.pop("role", "assistant") or "assistant",
@@ -322,9 +330,38 @@ class ChatNVIDIA(BaseChatModel):
             "additional_kwargs": {},
             "response_metadata": {},
         }
+        # "tool_calls" is set for invoke and stream responses
         if tool_calls := kw_left.pop("tool_calls", None):
-            out_dict["additional_kwargs"]["tool_calls"] = tool_calls
-        out_dict["response_metadata"] = kw_left
+            assert isinstance(
+                tool_calls, list
+            ), "invalid response from server: tool_calls must be a list"
+            # todo: break this into post-processing for invoke and stream
+            if not streaming:
+                out_dict["additional_kwargs"]["tool_calls"] = tool_calls
+            elif streaming:
+                out_dict["tool_call_chunks"] = []
+                for tool_call in tool_calls:
+                    assert "index" in tool_call, (
+                        "invalid response from server: "
+                        "tool_call must have an 'index' key"
+                    )
+                    assert "function" in tool_call, (
+                        "invalid response from server: "
+                        "tool_call must have a 'function' key"
+                    )
+                    out_dict["tool_call_chunks"].append(
+                        {
+                            "index": tool_call.get("index", None),
+                            "id": tool_call.get("id", None),
+                            "name": tool_call["function"].get("name", None),
+                            "args": tool_call["function"].get("arguments", None),
+                        }
+                    )
+        # we only create the response_metadata from the last message in a stream.
+        # if we do it for all messages, we'll end up with things like
+        # "model_name" = "mode-xyz" * # messages.
+        if "finish_reason" in kw_left:
+            out_dict["response_metadata"] = kw_left
         return out_dict
 
     ######################################################################################

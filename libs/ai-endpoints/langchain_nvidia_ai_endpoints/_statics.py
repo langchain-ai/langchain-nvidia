@@ -1,3 +1,4 @@
+import os
 import warnings
 from typing import Literal, Optional
 
@@ -425,6 +426,18 @@ RANKING_MODEL_TABLE = {
 #     ),
 # }
 
+
+OPENAI_MODEL_TABLE = {
+    "gpt-3.5-turbo": Model(
+        id="gpt-3.5-turbo",
+        model_type="chat",
+        client="ChatNVIDIA",
+        endpoint="https://api.openai.com/v1/chat/completions",
+        supports_tools=True,
+    ),
+}
+
+
 MODEL_TABLE = {
     **CHAT_MODEL_TABLE,
     **QA_MODEL_TABLE,
@@ -432,6 +445,9 @@ MODEL_TABLE = {
     **EMBEDDING_MODEL_TABLE,
     **RANKING_MODEL_TABLE,
 }
+
+if "_INCLUDE_OPENAI" in os.environ:
+    MODEL_TABLE.update(OPENAI_MODEL_TABLE)
 
 
 def register_model(model: Model) -> None:
