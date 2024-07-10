@@ -34,9 +34,8 @@ def test_endpoint_unavailable(
     contact_service: Any,
     mock_endpoints: None,  # Inject the mock_endpoints fixture
 ) -> None:
-    # Create a client instance
+    # we test this with a bogus model because users should supply
+    # a model when using their own base_url
     client = public_class(model="not-a-model", base_url=base_url)
-
-    # Attempt to contact the service and expect a ConnectionError
     with pytest.raises(ConnectionError):
         contact_service(client)
