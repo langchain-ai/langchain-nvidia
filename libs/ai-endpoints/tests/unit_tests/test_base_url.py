@@ -51,6 +51,11 @@ def mock_local_health(requests_mock: Mocker, base_url: str) -> None:
     )
 
 
+@pytest.fixture
+def mock_local_unhealthy(requests_mock: Mocker, base_url: str) -> None:
+    requests_mock.get(f"{base_url}/v1/health/live", status_code=404)
+
+
 @pytest.mark.parametrize(
     "base_url",
     [
@@ -63,3 +68,31 @@ def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
     with pytest.warns(UserWarning):
         client = public_class(base_url=base_url)
         assert not client._client.is_hosted
+
+
+# test case for base_url warnings
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "localhost",
+        "http://localhost:8888/embeddings",
+        "http://0.0.0.0:8888/ranking",
+        "http://localhost:8888/v1/chat/completion",
+    ],
+)
+def test_base_url_warning_not_hosted(public_class: type, base_url: str) -> None:
+    with pytest.raises(ValueError):
+        public_class(base_url=base_url)
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://localhost:8888",
+    ],
+)
+def test_base_url_unhealthy_not_hosted(
+    public_class: type, base_url: str, mock_local_unhealthy: None
+) -> None:
+    with pytest.raises(ValueError):
+        public_class(base_url=base_url)
