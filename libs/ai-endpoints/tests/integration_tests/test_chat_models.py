@@ -125,6 +125,12 @@ def test_messages(
 ) -> None:
     if not system and not exchange:
         pytest.skip("No messages to test")
+    if (
+        chat_model == "mistralai/mixtral-8x7b-instruct-v0.1"
+        and exchange
+        and isinstance(exchange[0], AIMessage)
+    ):
+        pytest.skip("mistralai does not support system=>AIMessage")
     chat = ChatNVIDIA(model=chat_model, max_tokens=36, **mode)
     response = chat.invoke(system + exchange)
     assert isinstance(response, BaseMessage)
