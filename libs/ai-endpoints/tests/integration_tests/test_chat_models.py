@@ -130,7 +130,7 @@ def test_messages(
         and exchange
         and isinstance(exchange[0], AIMessage)
     ):
-        pytest.skip("mistralai does not support system=>AIMessage")
+        pytest.xfail("mistralai does not support system=>AIMessage")
     chat = ChatNVIDIA(model=chat_model, max_tokens=36, **mode)
     response = chat.invoke(system + exchange)
     assert isinstance(response, BaseMessage)
