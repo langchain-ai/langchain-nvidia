@@ -47,10 +47,13 @@ from langchain_nvidia_ai_endpoints import ChatNVIDIA
 #  22. tool with no arguments
 #  23. duplicate tool names
 #  24. unknown tool (invoke/stream only)
-#
+# ways to specify parallel_tool_calls: (accuracy only)
+#  25. invoke
+#  26. stream
 
+# todo: parallel_tool_calls w/ bind_tools
+# todo: parallel_tool_calls w/ tool_choice = function
 # todo: async methods
-# todo: parallel_tool_calls
 # todo: too many tools
 
 
@@ -78,11 +81,31 @@ def tool_no_args() -> str:
     return "lookin' good"
 
 
-def eval_stream(llm: ChatNVIDIA, msg: str, tool_choice: Any = None) -> BaseMessageChunk:
+@tool
+def get_current_weather(
+    location: str = Field(..., description="The location to get the weather for"),
+    scale: Optional[str] = Field(
+        default="Fahrenheit",
+        description="The temperature scale (e.g., Celsius or Fahrenheit)",
+    ),
+) -> str:
+    """Get the current weather for a location"""
+    return f"The current weather in {location} is sunny."
+
+
+def eval_stream(
+    llm: ChatNVIDIA,
+    msg: str,
+    tool_choice: Any = None,
+    parallel_tool_calls: bool = False,
+) -> BaseMessageChunk:
+    params = {}
     if tool_choice:
-        generator = llm.stream(msg, tool_choice=tool_choice)  # type: ignore
-    else:
-        generator = llm.stream(msg)
+        params["tool_choice"] = tool_choice
+    if parallel_tool_calls:
+        params["parallel_tool_calls"] = True
+
+    generator = llm.stream(msg, **params)  # type: ignore
     response = next(generator)
     for chunk in generator:
         assert isinstance(chunk, AIMessageChunk)
@@ -90,11 +113,19 @@ def eval_stream(llm: ChatNVIDIA, msg: str, tool_choice: Any = None) -> BaseMessa
     return response
 
 
-def eval_invoke(llm: ChatNVIDIA, msg: str, tool_choice: Any = None) -> BaseMessage:
+def eval_invoke(
+    llm: ChatNVIDIA,
+    msg: str,
+    tool_choice: Any = None,
+    parallel_tool_calls: bool = False,
+) -> BaseMessage:
+    params = {}
     if tool_choice:
-        return llm.invoke(msg, tool_choice=tool_choice)  # type: ignore
-    else:
-        return llm.invoke(msg)
+        params["tool_choice"] = tool_choice
+    if parallel_tool_calls:
+        params["parallel_tool_calls"] = True
+
+    return llm.invoke(msg, **params)  # type: ignore
 
 
 def check_response_structure(response: AIMessage) -> None:
@@ -612,3 +643,91 @@ def test_unknown_warns(mode: dict) -> None:
         ChatNVIDIA(model="mock-model", **mode).bind_tools([xxyyzz])
     assert len(record) == 1
     assert "not known to support tools" in str(record[0].message)
+
+
+@pytest.mark.parametrize(
+    "tool_choice",
+    [
+        "auto",
+        None,
+        "required",
+    ],
+    ids=["auto", "absent", "required"],
+)
+@pytest.mark.parametrize(
+    "tools",
+    [[xxyyzz, zzyyxx], [zzyyxx, xxyyzz]],
+    ids=["xxyyzz_and_zzyyxx", "zzyyxx_and_xxyyzz"],
+)
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
+@pytest.mark.xfail(reason="Accuracy test")
+def test_accuracy_parallel_tool_calls_hard(
+    tool_model: str,
+    mode: dict,
+    tools: List,
+    tool_choice: Any,
+    func: Callable,
+) -> None:
+    llm = ChatNVIDIA(seed=42, temperature=1, model=tool_model, **mode).bind_tools(tools)
+    response = func(
+        llm,
+        "What is 11 xxyyzz 3 zzyyxx 5?",
+        tool_choice=tool_choice,
+        parallel_tool_calls=True,
+    )
+    assert isinstance(response, AIMessage)
+    check_response_structure(response)
+    assert len(response.tool_calls) == 2
+    valid_tool_names = ["xxyyzz", "zzyyxx"]
+    tool_call0 = response.tool_calls[0]
+    assert tool_call0["name"] in valid_tool_names
+    valid_tool_names.remove(tool_call0["name"])
+    tool_call1 = response.tool_calls[1]
+    assert tool_call1["name"] in valid_tool_names
+
+
+@pytest.mark.parametrize(
+    "tool_choice",
+    [
+        "auto",
+        None,
+        "required",
+    ],
+    ids=["auto", "absent", "required"],
+)
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream],
+    ids=["invoke", "stream"],
+)
+@pytest.mark.xfail(reason="Accuracy test")
+def test_accuracy_parallel_tool_calls_easy(
+    tool_model: str,
+    mode: dict,
+    tool_choice: Any,
+    func: Callable,
+) -> None:
+    llm = ChatNVIDIA(seed=42, temperature=1, model=tool_model, **mode).bind_tools(
+        tools=[get_current_weather],
+    )
+    response = func(
+        llm,
+        "What is the weather in Boston, and what is the weather in Dublin?",
+        tool_choice=tool_choice,
+        parallel_tool_calls=True,
+    )
+    assert isinstance(response, AIMessage)
+    check_response_structure(response)
+    assert len(response.tool_calls) == 2
+    valid_args = ["Boston", "Dublin"]
+    tool_call0 = response.tool_calls[0]
+    assert tool_call0["name"] == "get_current_weather"
+    assert tool_call0["args"]["location"] in valid_args
+    valid_args.remove(tool_call0["args"]["location"])
+    tool_call1 = response.tool_calls[1]
+    assert tool_call1["name"] == "get_current_weather"
+    assert tool_call1["args"]["location"] in valid_args
