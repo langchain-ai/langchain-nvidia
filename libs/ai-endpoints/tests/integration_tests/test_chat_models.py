@@ -120,6 +120,9 @@ def test_chat_ai_endpoints_system_message(chat_model: str, mode: dict) -> None:
         ),
     ],
 )
+@pytest.mark.xfail(
+    reason="mistralai recent impl does not support AIMessage followed by SystemAI"
+)
 def test_messages(
     chat_model: str, mode: dict, system: List, exchange: List[BaseMessage]
 ) -> None:
