@@ -73,19 +73,11 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("chat_model", models, ids=models)
 
     if "rerank_model" in metafunc.fixturenames:
-        models = ["nv-rerank-qa-mistral-4b:1"]
+        models = [NVIDIARerank._default_model_name]
         if model := metafunc.config.getoption("rerank_model_id"):
             models = [model]
-        # nim-mode reranking does not support model listing via /v1/models endpoint
         if metafunc.config.getoption("all_models"):
-            if mode.get("mode", None) == "nim":
-                models = [model.id for model in NVIDIARerank(**mode).available_models]
-            else:
-                models = [
-                    model.id
-                    for model in get_all_known_models()
-                    if model.model_type == "ranking"
-                ]
+            models = [model.id for model in NVIDIARerank(**mode).available_models]
         metafunc.parametrize("rerank_model", models, ids=models)
 
     if "vlm_model" in metafunc.fixturenames:

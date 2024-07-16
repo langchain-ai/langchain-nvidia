@@ -27,7 +27,6 @@ class NVIDIARerank(BaseDocumentCompressor):
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
 
     _default_batch_size: int = 32
-    _deprecated_model: str = "ai-rerank-qa-mistral-4b"
     _default_model_name: str = "nv-rerank-qa-mistral-4b:1"
 
     base_url: str = Field(
@@ -92,7 +91,7 @@ class NVIDIARerank(BaseDocumentCompressor):
     def _rank(self, documents: List[str], query: str) -> List[Ranking]:
         response = self._client.client.get_req(
             payload={
-                "model": "nv-rerank-qa-mistral-4b:1",
+                "model": self.model,
                 "query": {"text": query},
                 "passages": [{"text": passage} for passage in documents],
             },
