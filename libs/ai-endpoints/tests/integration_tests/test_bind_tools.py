@@ -8,7 +8,6 @@ from langchain_core.messages import (
     AIMessageChunk,
     BaseMessage,
     BaseMessageChunk,
-    ChatMessage,
 )
 from langchain_core.pydantic_v1 import Field
 from langchain_core.tools import tool
@@ -564,7 +563,7 @@ def test_bind_tool_tool_choice_none(
         tools=[xxyyzz], tool_choice=tool_choice
     )
     response = llm.invoke("What is 11 xxyyzz 3?")
-    assert isinstance(response, ChatMessage)
+    assert isinstance(response, AIMessage)
     assert "tool_calls" not in response.additional_kwargs
 
 

@@ -33,7 +33,6 @@ from langchain_core.messages import (
     AIMessage,
     AIMessageChunk,
     BaseMessage,
-    ChatMessage,
 )
 from langchain_core.outputs import (
     ChatGeneration,
@@ -268,14 +267,7 @@ class ChatNVIDIA(BaseChatModel):
         responses, _ = self._client.client.postprocess(response)
         self._set_callback_out(responses, run_manager)
         parsed_response = self._custom_postprocess(responses, streaming=False)
-        # todo: we should always return an AIMessage, but to maintain
-        #       API compatibility, we only return it for tool_calls. we can
-        #       change this for an API breaking 1.0.
-        if "tool_calls" in parsed_response["additional_kwargs"]:
-            message: BaseMessage = AIMessage(**parsed_response)
-        else:
-            message = ChatMessage(**parsed_response)
-        generation = ChatGeneration(message=message)
+        generation = ChatGeneration(message=AIMessage(**parsed_response))
         return ChatResult(generations=[generation], llm_output=responses)
 
     def _stream(
@@ -294,13 +286,6 @@ class ChatNVIDIA(BaseChatModel):
         for response in self._client.client.get_req_stream(payload=payload):
             self._set_callback_out(response, run_manager)
             parsed_response = self._custom_postprocess(response, streaming=True)
-            # todo: we should always return an AIMessage, but to maintain
-            #       API compatibility, we only return it for tool_calls. we can
-            #       change this for an API breaking 1.0.
-            # if "tool_calls" in parsed_response["additional_kwargs"]:
-            #     message: BaseMessageChunk = AIMessageChunk(**parsed_response)
-            # else:
-            #     message = ChatMessageChunk(**parsed_response)
             message = AIMessageChunk(**parsed_response)
             chunk = ChatGenerationChunk(message=message)
             if run_manager:
