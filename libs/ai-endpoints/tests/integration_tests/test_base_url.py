@@ -8,12 +8,6 @@ from requests_mock import Mocker
 # Fixture setup (mocking /v1/health/live and /v1/chat/completions endpoints)
 @pytest.fixture()
 def mock_endpoints(requests_mock: Mocker, base_url: str) -> None:
-    # Mock the /v1/health/live endpoint
-    requests_mock.get(
-        f"{base_url}/v1/health/live",
-        json={"object": "health-response", "message": "Service is live."},
-    )
-
     for endpoint in ["/v1/embeddings", "/v1/chat/completions", "/v1/ranking"]:
         requests_mock.post(
             f"{base_url}{endpoint}",

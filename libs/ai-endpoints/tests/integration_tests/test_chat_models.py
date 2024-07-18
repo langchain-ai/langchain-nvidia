@@ -33,7 +33,7 @@ def test_unknown_model() -> None:
 
 
 def test_base_url_unknown_model() -> None:
-    llm = ChatNVIDIA(model="unknown_model", base_url="http://localhost:12321/v1")
+    llm = ChatNVIDIA(model="unknown_model", base_url="http://localhost:88888/v1")
     assert llm.model == "unknown_model"
 
 
