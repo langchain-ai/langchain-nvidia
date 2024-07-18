@@ -130,7 +130,7 @@ class ChatNVIDIA(BaseChatModel):
     """
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
-    _default_model: str = "mistralai/mixtral-8x7b-instruct-v0.1"
+    _default_model: str = "meta/llama3-8b-instruct"
     _default_base_url: str = "https://integrate.api.nvidia.com/v1"
     base_url: str = Field(
         description="Base url for model listing an invocation",
