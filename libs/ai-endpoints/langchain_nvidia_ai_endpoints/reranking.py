@@ -1,11 +1,11 @@
 from __future__ import annotations
-
-from typing import Any, Generator, List, Optional, Sequence
+import os
+from typing import Any, Generator, List, Dict, Optional, Sequence
 
 from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
 from langchain_core.documents.compressor import BaseDocumentCompressor
-from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
+from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr, root_validator
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
@@ -29,9 +29,8 @@ class NVIDIARerank(BaseDocumentCompressor):
     _default_batch_size: int = 32
     _deprecated_model: str = "ai-rerank-qa-mistral-4b"
     _default_model_name: str = "nv-rerank-qa-mistral-4b:1"
-
+    _default_base_url: str = "https://integrate.api.nvidia.com/v1"
     base_url: str = Field(
-        "https://integrate.api.nvidia.com/v1",
         description="Base url for model listing an invocation",
     )
     top_n: int = Field(5, ge=0, description="The number of documents to return.")
@@ -40,6 +39,17 @@ class NVIDIARerank(BaseDocumentCompressor):
         _default_batch_size, ge=1, description="The maximum batch size."
     )
 
+    _base_url_var = "NVIDIA_BASE_URL"
+    @root_validator(pre=True)
+    def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        values["base_url"] = (
+            values.get(cls._base_url_var.lower())
+            or values.get("base_url")
+            or os.getenv(cls._base_url_var)
+            or cls._default_base_url
+        )
+        return values
+    
     def __init__(self, **kwargs: Any):
         """
         Create a new NVIDIARerank document compressor.
