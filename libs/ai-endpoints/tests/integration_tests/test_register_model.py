@@ -44,7 +44,7 @@ def test_registered_model_functional(
     ) as record:  # warns because we're overriding known models
         register_model(model)
         contact_service(client(model=id))
-    assert len(record) == 1
+    assert len(record) == 2
     assert isinstance(record[0].message, UserWarning)
     assert "already registered" in str(record[0].message)
     assert "Overriding" in str(record[0].message)

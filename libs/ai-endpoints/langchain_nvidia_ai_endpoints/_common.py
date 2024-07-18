@@ -18,7 +18,7 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse, urlunparse
 
 import aiohttp
 import requests
@@ -39,17 +39,6 @@ logger = logging.getLogger(__name__)
 
 def default_payload_fn(payload: dict) -> dict:
     return payload
-
-
-def check_endpoint_health(base_url: str) -> None:
-    try:
-        response = requests.get(urljoin(base_url, "v1/health/live"))
-        response.raise_for_status()  # Raise an HTTPError for bad responses
-    except requests.exceptions.RequestException as e:
-        raise ValueError(
-            f"Unable to reach endpoint {base_url}. Error: {e}. \
-            \n Make sure the NIM is running and healthy."
-        )
 
 
 class NVEModel(BaseModel):
@@ -141,17 +130,11 @@ class NVEModel(BaseModel):
     def _validate_base_url(cls, v: str) -> str:
         if v is not None:
             result = urlparse(v)
+            expected_format = "Expected format is 'http://host:port'."
             # Ensure scheme and netloc (domain name) are present
             if not (result.scheme and result.netloc):
-                raise ValueError(
-                    f"Invalid base_url, Expected format is 'http://host:port'.: {v}"
-                )
-            if result.path and result.path not in ["/v1", "/"]:
-                raise ValueError(
-                    f"Endpoint {v} ends with {result.path.rsplit('/', 1)[-1]}. \
-                        \n Expected format is 'http://host:port'"
-                )
-        return urljoin(v, "v1")
+                raise ValueError(f"Invalid base_url format. {expected_format} Got: {v}")
+        return v
 
     @root_validator(pre=True)
     def _validate_model(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -463,20 +446,45 @@ class _NVIDIAClient(BaseModel):
 
     @root_validator(pre=True)
     def _preprocess_args(cls, values: Any) -> Any:
-        values["client"] = NVEModel(**values)
-
         if "base_url" in values:
-            values["is_hosted"] = urlparse(values["base_url"]).netloc in [
+            is_hosted = urlparse(values["base_url"]).netloc in [
                 "integrate.api.nvidia.com",
                 "ai.api.nvidia.com",
             ]
 
-        # check health for local NIM mode
-        if not values["is_hosted"]:
-            check_endpoint_health(values["base_url"])
+        ## Making sure /v1 in added to the url, followed by infer_path
+        if "base_url" in values:
+            result = urlparse(values["base_url"])
+            expected_format = "Expected format is 'http://host:port'."
+
+            if result.path:
+                normalized_path = result.path.strip("/")
+                if normalized_path in [
+                    "v1",
+                    "v1/embeddings",
+                    "v1/completions",
+                    "v1/rankings",
+                ]:
+                    warnings.warn(f"{expected_format} Rest is ingnored.")
+                else:
+                    raise ValueError(
+                        f"Base URL path is not recognized. {expected_format}"
+                    )
+
+            base_url = urlunparse((result.scheme, result.netloc, "v1", "", "", ""))
+            values["base_url"] = base_url
+            values["infer_path"] = values["infer_path"].format(base_url=base_url)
+
+        values["client"] = NVEModel(**values)
+        if "base_url" in values:
+            values["client"].listing_path = values["client"].listing_path.format(
+                base_url=values["base_url"]
+            )
+
+        values["is_hosted"] = is_hosted
 
         # set default model for hosted endpoint
-        if values["is_hosted"] and not values["model"]:
+        if is_hosted and not values["model"]:
             values["model"] = values["default_model"]
 
         return values
