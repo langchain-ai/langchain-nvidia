@@ -70,12 +70,8 @@ def test_aliases(public_class: type, alias: str) -> None:
         assert x.model == x._client.model
 
     # Check the warnings
-    assert len(record) >= 1  # Ensure at least one warning was issued
     assert isinstance(record[0].message, Warning)
-    assert (
-        isinstance(record[1].message, Warning)
-        and "deprecated" in record[1].message.args[0]
-    )
+    assert "deprecated" in record[0].message.args[0]
 
 
 def test_known(public_class: type) -> None:
@@ -102,13 +98,8 @@ def test_known_unknown(public_class: type, known_unknown: str) -> None:
         x = public_class(model=known_unknown, nvidia_api_key="a-bogus-key")
         assert x.model == known_unknown
     assert isinstance(record[0].message, Warning)
-    assert (
-        isinstance(record[1].message, Warning) and "Found" in record[1].message.args[0]
-    )
-    assert (
-        isinstance(record[1].message, Warning)
-        and "unknown" in record[1].message.args[0]
-    )
+    assert "Found" in record[0].message.args[0]
+    assert "unknown" in record[0].message.args[0]
 
 
 def test_unknown_unknown(public_class: type) -> None:

@@ -459,8 +459,9 @@ class _NVIDIAClient(BaseModel):
 
             if result.path:
                 normalized_path = result.path.strip("/")
-                if normalized_path in [
-                    "v1",
+                if normalized_path == "v1":
+                    pass
+                elif normalized_path in [
                     "v1/embeddings",
                     "v1/completions",
                     "v1/rankings",

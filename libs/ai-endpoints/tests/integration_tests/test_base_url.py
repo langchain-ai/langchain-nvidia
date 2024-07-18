@@ -5,7 +5,7 @@ from requests.exceptions import ConnectionError
 from requests_mock import Mocker
 
 
-# Fixture setup (mocking /v1/health/live and /v1/chat/completions endpoints)
+# Fixture setup /v1/chat/completions endpoints
 @pytest.fixture()
 def mock_endpoints(requests_mock: Mocker, base_url: str) -> None:
     for endpoint in ["/v1/embeddings", "/v1/chat/completions", "/v1/ranking"]:
