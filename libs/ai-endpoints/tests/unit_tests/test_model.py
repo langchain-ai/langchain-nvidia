@@ -51,14 +51,6 @@ def mock_v1_local_models(requests_mock: Mocker, known_unknown: str) -> None:
     )
 
 
-@pytest.fixture(autouse=True)
-def mock_local_health(requests_mock: Mocker) -> None:
-    requests_mock.get(
-        "http://localhost:8000/v1/health/live",
-        json={"object": "health-response", "message": "Service is live."},
-    )
-
-
 @pytest.mark.parametrize(
     "alias",
     [
@@ -140,10 +132,10 @@ def test_default_known(public_class: type, known_unknown: str) -> None:
         assert x.model == known_unknown
 
 
-# def test_default_lora(public_class: type) -> None:
-#     """
-#     Test that a model in the model table will be accepted.
-#     """
-#     # find a model that matches the public_class under test
-#     x = public_class(base_url="http://localhost:8000/v1", model="lora1")
-#     assert x.model == "lora1"
+def test_default_lora(public_class: type) -> None:
+    """
+    Test that a model in the model table will be accepted.
+    """
+    # find a model that matches the public_class under test
+    x = public_class(base_url="http://localhost:8000/v1", model="lora1")
+    assert x.model == "lora1"

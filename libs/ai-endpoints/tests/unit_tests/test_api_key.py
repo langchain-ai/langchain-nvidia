@@ -36,14 +36,6 @@ def mock_v1_local_models(requests_mock: Mocker) -> None:
     )
 
 
-@pytest.fixture(autouse=True)
-def mock_local_health(requests_mock: Mocker) -> None:
-    requests_mock.get(
-        "https://test_url/v1/health/live",
-        json={"object": "health-response", "message": "Service is live."},
-    )
-
-
 def test_create_without_api_key(public_class: type) -> None:
     with no_env_var("NVIDIA_API_KEY"):
         with pytest.warns(UserWarning):
