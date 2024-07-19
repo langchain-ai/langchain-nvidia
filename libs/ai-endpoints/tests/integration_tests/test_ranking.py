@@ -179,3 +179,41 @@ def test_rerank_batching(
     #     result_docs[i].page_content == reference_docs[i].page_content
     #     for i in range(top_n)
     # ), "batched results do not match unbatched results"
+
+
+@pytest.mark.parametrize("truncate", ["END"])
+def test_truncate_positive(rerank_model: str, mode: dict, truncate: str) -> None:
+    query = "What is acceleration?"
+    documents = [
+        Document(page_content="NVIDIA " * length)
+        for length in [32, 1024, 64, 128, 2048, 256, 512]
+    ]
+    client = NVIDIARerank(
+        model=rerank_model, top_n=len(documents), truncate=truncate, **mode
+    )
+    response = client.compress_documents(documents=documents, query=query)
+    assert len(response) == len(documents)
+
+
+@pytest.mark.parametrize("truncate", [None, "NONE"])
+@pytest.mark.xfail(
+    reason=(
+        "truncation is inconsistent across models, "
+        "nv-rerank-qa-mistral-4b:1 truncates by default "
+        "while others do not"
+    )
+)
+def test_truncate_negative(rerank_model: str, mode: dict, truncate: str) -> None:
+    query = "What is acceleration?"
+    documents = [
+        Document(page_content="NVIDIA " * length)
+        for length in [32, 1024, 64, 128, 2048, 256, 512]
+    ]
+    truncate_param = {}
+    if truncate:
+        truncate_param = {"truncate": truncate}
+    client = NVIDIARerank(model=rerank_model, **truncate_param, **mode)
+    with pytest.raises(Exception) as e:
+        client.compress_documents(documents=documents, query=query)
+    assert "400" in str(e.value)
+    assert "exceeds maximum allowed" in str(e.value)
