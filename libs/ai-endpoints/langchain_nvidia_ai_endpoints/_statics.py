@@ -277,6 +277,11 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-deepseek-coder-6_7b-instruct"],
     ),
+    "nv-mistralai/mistral-nemo-12b-instruct": Model(
+        id="nv-mistralai/mistral-nemo-12b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
