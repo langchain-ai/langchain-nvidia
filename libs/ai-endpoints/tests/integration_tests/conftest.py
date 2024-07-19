@@ -30,12 +30,14 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--embedding-model-id",
         action="store",
-        help="Run tests for a specific embedding model",
+        nargs="+",
+        help="Run tests for a specific embedding model or list of models",
     )
     parser.addoption(
         "--rerank-model-id",
         action="store",
-        help="Run tests for a specific rerank model",
+        nargs="+",
+        help="Run tests for a specific rerank model or list of models",
     )
     parser.addoption(
         "--vlm-model-id",
@@ -74,8 +76,8 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
     if "rerank_model" in metafunc.fixturenames:
         models = [NVIDIARerank._default_model_name]
-        if model := metafunc.config.getoption("rerank_model_id"):
-            models = [model]
+        if model_list := metafunc.config.getoption("rerank_model_id"):
+            models = model_list
         if metafunc.config.getoption("all_models"):
             models = [model.id for model in NVIDIARerank(**mode).available_models]
         metafunc.parametrize("rerank_model", models, ids=models)
@@ -106,8 +108,10 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
     if "embedding_model" in metafunc.fixturenames:
         models = [NVIDIAEmbeddings._default_model]
-        if metafunc.config.getoption("embedding_model_id"):
-            models = [metafunc.config.getoption("embedding_model_id")]
+        if metafunc.config.getoption("all_models"):
+            models = [model.id for model in NVIDIAEmbeddings(**mode).available_models]
+        if model_list := metafunc.config.getoption("embedding_model_id"):
+            models = model_list
         if metafunc.config.getoption("all_models"):
             models = [model.id for model in NVIDIAEmbeddings(**mode).available_models]
         metafunc.parametrize("embedding_model", models, ids=models)
