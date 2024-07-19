@@ -5,7 +5,12 @@ from typing import List
 import pytest
 from langchain_core.load.dump import dumps
 from langchain_core.load.load import loads
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+)
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
@@ -25,6 +30,10 @@ def test_chat_ai_endpoints(chat_model: str, mode: dict) -> None:
     response = chat.invoke([message])
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
+    # compatibility test for ChatMessage (pre 0.2)
+    # assert isinstance(response, ChatMessage)
+    assert hasattr(response, "role")
+    assert response.role == "assistant"
 
 
 def test_unknown_model() -> None:
@@ -145,11 +154,17 @@ def test_ai_endpoints_streaming(chat_model: str, mode: dict) -> None:
     """Test streaming tokens from ai endpoints."""
     llm = ChatNVIDIA(model=chat_model, max_tokens=36, **mode)
 
+    generator = llm.stream("I'm Pickle Rick")
+    response = next(generator)
     cnt = 0
-    for token in llm.stream("I'm Pickle Rick"):
-        assert isinstance(token.content, str)
+    for chunk in generator:
+        assert isinstance(chunk.content, str)
+        response += chunk
         cnt += 1
     assert cnt > 1
+    # compatibility test for ChatMessageChunk (pre 0.2)
+    # assert hasattr(response, "role")
+    # assert response.role == "assistant"  # does not work, role not passed through
 
 
 async def test_ai_endpoints_astream(chat_model: str, mode: dict) -> None:

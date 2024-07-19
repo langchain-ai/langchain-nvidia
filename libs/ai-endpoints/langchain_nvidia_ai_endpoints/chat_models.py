@@ -267,6 +267,9 @@ class ChatNVIDIA(BaseChatModel):
         responses, _ = self._client.client.postprocess(response)
         self._set_callback_out(responses, run_manager)
         parsed_response = self._custom_postprocess(responses, streaming=False)
+        # for pre 0.2 compatibility w/ ChatMessage
+        # ChatMessage had a role property that was not present in AIMessage
+        parsed_response.update({"role": "assistant"})
         generation = ChatGeneration(message=AIMessage(**parsed_response))
         return ChatResult(generations=[generation], llm_output=responses)
 
@@ -286,6 +289,11 @@ class ChatNVIDIA(BaseChatModel):
         for response in self._client.client.get_req_stream(payload=payload):
             self._set_callback_out(response, run_manager)
             parsed_response = self._custom_postprocess(response, streaming=True)
+            # for pre 0.2 compatibility w/ ChatMessageChunk
+            # ChatMessageChunk had a role property that was not
+            # present in AIMessageChunk
+            # unfortunately, AIMessageChunk does not have extensible propery
+            # parsed_response.update({"role": "assistant"})
             message = AIMessageChunk(**parsed_response)
             chunk = ChatGenerationChunk(message=message)
             if run_manager:
