@@ -386,6 +386,16 @@ EMBEDDING_MODEL_TABLE = {
         client="NVIDIAEmbeddings",
         aliases=["ai-nv-embed-v1"],
     ),
+    "nvidia/nv-embedqa-mistral-7b-v2": Model(
+        id="nvidia/nv-embedqa-mistral-7b-v2",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+    ),
+    "nvidia/nv-embedqa-e5-v5": Model(
+        id="nvidia/nv-embedqa-e5-v5",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+    ),
 }
 
 RANKING_MODEL_TABLE = {
@@ -395,6 +405,12 @@ RANKING_MODEL_TABLE = {
         client="NVIDIARerank",
         endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/reranking",
         aliases=["ai-rerank-qa-mistral-4b"],
+    ),
+    "nvidia/nv-rerankqa-mistral-4b-v3": Model(
+        id="nvidia/nv-rerankqa-mistral-4b-v3",
+        model_type="ranking",
+        client="NVIDIARerank",
+        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/nv-rerankqa-mistral-4b-v3/reranking",
     ),
 }
 
