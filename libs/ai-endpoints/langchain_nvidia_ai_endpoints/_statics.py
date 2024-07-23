@@ -1,126 +1,548 @@
-from typing import Optional
+import os
+import warnings
+from typing import Literal, Optional
 
-from langchain_core.pydantic_v1 import BaseModel
+from langchain_core.pydantic_v1 import BaseModel, validator
 
 
 class Model(BaseModel):
+    """
+    Model information.
+
+    id: unique identifier for the model, passed as model parameter for requests
+    model_type: API type (chat, vlm, embedding, ranking, completion)
+    client: client name, e.g. ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
+    endpoint: custom endpoint for the model
+    aliases: list of aliases for the model
+    supports_tools: whether the model supports tool calling
+
+    All aliases are deprecated and will trigger a warning when used.
+    """
+
     id: str
-    model_type: Optional[str] = None
-    api_type: Optional[str] = None
-    model_name: Optional[str] = None
-    client: Optional[str] = None
-    path: str
+    # why do we have a model_type? because ChatNVIDIA can speak both chat and vlm.
+    model_type: Optional[
+        Literal["chat", "vlm", "embedding", "ranking", "completion", "qa"]
+    ] = None
+    client: Optional[Literal["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank"]] = None
+    endpoint: Optional[str] = None
+    aliases: Optional[list] = None
+    supports_tools: Optional[bool] = False
+    base_model: Optional[str] = None
+
+    def __hash__(self) -> int:
+        return hash(self.id)
+
+    @validator("client", always=True)
+    def validate_client(cls, client: str, values: dict) -> str:
+        if client:
+            supported = {
+                "ChatNVIDIA": ("chat", "vlm", "qa"),
+                "NVIDIAEmbeddings": ("embedding",),
+                "NVIDIARerank": ("ranking",),
+            }
+            model_type = values.get("model_type")
+            if model_type not in supported[client]:
+                raise ValueError(
+                    f"Model type '{model_type}' not supported by client '{client}'"
+                )
+        return client
 
 
-MODEL_SPECS = {
-    "playground_smaug_72b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_kosmos_2": {"model_type": "image_in", "api_type": "aifm"},
-    "playground_llama2_70b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_nvolveqa_40k": {"model_type": "embedding", "api_type": "aifm"},
-    "playground_nemotron_qa_8b": {"model_type": "qa", "api_type": "aifm"},
-    "playground_gemma_7b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_mistral_7b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_mamba_chat": {"model_type": "chat", "api_type": "aifm"},
-    "playground_phi2": {"model_type": "chat", "api_type": "aifm"},
-    "playground_sdxl": {"model_type": "image_out", "api_type": "aifm"},
-    "playground_nv_llama2_rlhf_70b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_neva_22b": {"model_type": "image_in", "api_type": "aifm"},
-    "playground_yi_34b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_nemotron_steerlm_8b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_cuopt": {"model_type": "cuopt", "api_type": "aifm"},
-    "playground_llama_guard": {"model_type": "classifier", "api_type": "aifm"},
-    "playground_starcoder2_15b": {"model_type": "completion", "api_type": "aifm"},
-    "playground_deplot": {"model_type": "image_in", "api_type": "aifm"},
-    "playground_llama2_code_70b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_gemma_2b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_seamless": {"model_type": "translation", "api_type": "aifm"},
-    "playground_mixtral_8x7b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_fuyu_8b": {"model_type": "image_in", "api_type": "aifm"},
-    "playground_llama2_code_34b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_llama2_code_13b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_steerlm_llama_70b": {"model_type": "chat", "api_type": "aifm"},
-    "playground_clip": {"model_type": "similarity", "api_type": "aifm"},
-    "playground_llama2_13b": {"model_type": "chat", "api_type": "aifm"},
+CHAT_MODEL_TABLE = {
+    "meta/codellama-70b": Model(
+        id="meta/codellama-70b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=[
+            "ai-codellama-70b",
+            "playground_llama2_code_70b",
+            "llama2_code_70b",
+            "playground_llama2_code_34b",
+            "llama2_code_34b",
+            "playground_llama2_code_13b",
+            "llama2_code_13b",
+        ],
+    ),
+    "google/gemma-7b": Model(
+        id="google/gemma-7b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-gemma-7b", "playground_gemma_7b", "gemma_7b"],
+    ),
+    "meta/llama2-70b": Model(
+        id="meta/llama2-70b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=[
+            "ai-llama2-70b",
+            "playground_llama2_70b",
+            "llama2_70b",
+            "playground_llama2_13b",
+            "llama2_13b",
+        ],
+    ),
+    "mistralai/mistral-7b-instruct-v0.2": Model(
+        id="mistralai/mistral-7b-instruct-v0.2",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-mistral-7b-instruct-v2", "playground_mistral_7b", "mistral_7b"],
+    ),
+    "mistralai/mixtral-8x7b-instruct-v0.1": Model(
+        id="mistralai/mixtral-8x7b-instruct-v0.1",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-mixtral-8x7b-instruct", "playground_mixtral_8x7b", "mixtral_8x7b"],
+    ),
+    "google/codegemma-7b": Model(
+        id="google/codegemma-7b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-codegemma-7b"],
+    ),
+    "google/gemma-2b": Model(
+        id="google/gemma-2b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-gemma-2b", "playground_gemma_2b", "gemma_2b"],
+    ),
+    "google/recurrentgemma-2b": Model(
+        id="google/recurrentgemma-2b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-recurrentgemma-2b"],
+    ),
+    "mistralai/mistral-large": Model(
+        id="mistralai/mistral-large",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-mistral-large"],
+    ),
+    "mistralai/mixtral-8x22b-instruct-v0.1": Model(
+        id="mistralai/mixtral-8x22b-instruct-v0.1",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-mixtral-8x22b-instruct"],
+    ),
+    "meta/llama3-8b-instruct": Model(
+        id="meta/llama3-8b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-llama3-8b"],
+    ),
+    "meta/llama3-70b-instruct": Model(
+        id="meta/llama3-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-llama3-70b"],
+    ),
+    "microsoft/phi-3-mini-128k-instruct": Model(
+        id="microsoft/phi-3-mini-128k-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-phi-3-mini"],
+    ),
+    "snowflake/arctic": Model(
+        id="snowflake/arctic",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-arctic"],
+    ),
+    "databricks/dbrx-instruct": Model(
+        id="databricks/dbrx-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-dbrx-instruct"],
+    ),
+    "microsoft/phi-3-mini-4k-instruct": Model(
+        id="microsoft/phi-3-mini-4k-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-phi-3-mini-4k", "playground_phi2", "phi2"],
+    ),
+    "seallms/seallm-7b-v2.5": Model(
+        id="seallms/seallm-7b-v2.5",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-seallm-7b"],
+    ),
+    "aisingapore/sea-lion-7b-instruct": Model(
+        id="aisingapore/sea-lion-7b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-sea-lion-7b-instruct"],
+    ),
+    "microsoft/phi-3-small-8k-instruct": Model(
+        id="microsoft/phi-3-small-8k-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-phi-3-small-8k-instruct"],
+    ),
+    "microsoft/phi-3-small-128k-instruct": Model(
+        id="microsoft/phi-3-small-128k-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-phi-3-small-128k-instruct"],
+    ),
+    "microsoft/phi-3-medium-4k-instruct": Model(
+        id="microsoft/phi-3-medium-4k-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-phi-3-medium-4k-instruct"],
+    ),
+    "ibm/granite-8b-code-instruct": Model(
+        id="ibm/granite-8b-code-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-granite-8b-code-instruct"],
+    ),
+    "ibm/granite-34b-code-instruct": Model(
+        id="ibm/granite-34b-code-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-granite-34b-code-instruct"],
+    ),
+    "google/codegemma-1.1-7b": Model(
+        id="google/codegemma-1.1-7b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-codegemma-1.1-7b"],
+    ),
+    "mediatek/breeze-7b-instruct": Model(
+        id="mediatek/breeze-7b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-breeze-7b-instruct"],
+    ),
+    "upstage/solar-10.7b-instruct": Model(
+        id="upstage/solar-10.7b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-solar-10_7b-instruct"],
+    ),
+    "writer/palmyra-med-70b-32k": Model(
+        id="writer/palmyra-med-70b-32k",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-palmyra-med-70b-32k"],
+    ),
+    "writer/palmyra-med-70b": Model(
+        id="writer/palmyra-med-70b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-palmyra-med-70b"],
+    ),
+    "mistralai/mistral-7b-instruct-v0.3": Model(
+        id="mistralai/mistral-7b-instruct-v0.3",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-mistral-7b-instruct-v03"],
+    ),
+    "01-ai/yi-large": Model(
+        id="01-ai/yi-large",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-yi-large"],
+    ),
+    "nvidia/nemotron-4-340b-instruct": Model(
+        id="nvidia/nemotron-4-340b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["qa-nemotron-4-340b-instruct"],
+    ),
+    "mistralai/codestral-22b-instruct-v0.1": Model(
+        id="mistralai/codestral-22b-instruct-v0.1",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-codestral-22b-instruct-v01"],
+    ),
+    "google/gemma-2-9b-it": Model(
+        id="google/gemma-2-9b-it",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-gemma-2-9b-it"],
+    ),
+    "google/gemma-2-27b-it": Model(
+        id="google/gemma-2-27b-it",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-gemma-2-27b-it"],
+    ),
+    "microsoft/phi-3-medium-128k-instruct": Model(
+        id="microsoft/phi-3-medium-128k-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-phi-3-medium-128k-instruct"],
+    ),
+    "deepseek-ai/deepseek-coder-6.7b-instruct": Model(
+        id="deepseek-ai/deepseek-coder-6.7b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        aliases=["ai-deepseek-coder-6_7b-instruct"],
+    ),
+    "nv-mistralai/mistral-nemo-12b-instruct": Model(
+        id="nv-mistralai/mistral-nemo-12b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "meta/llama-3.1-8b-instruct": Model(
+        id="meta/llama-3.1-8b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+    ),
+    "meta/llama-3.1-70b-instruct": Model(
+        id="meta/llama-3.1-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+    ),
+    "meta/llama-3.1-405b-instruct": Model(
+        id="meta/llama-3.1-405b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+    ),
 }
 
-MODEL_SPECS.update(
-    {
-        "ai-codellama-70b": {"model_type": "chat", "model_name": "meta/codellama-70b"},
-        "ai-embed-qa-4": {"model_type": "embedding", "model_name": "NV-Embed-QA"},
-        "ai-fuyu-8b": {"model_type": "image_in"},
-        "ai-gemma-7b": {"model_type": "chat", "model_name": "google/gemma-7b"},
-        "ai-google-deplot": {"model_type": "image_in"},
-        "ai-llama2-70b": {"model_type": "chat", "model_name": "meta/llama2-70b"},
-        "ai-microsoft-kosmos-2": {"model_type": "image_in"},
-        "ai-mistral-7b-instruct-v2": {
-            "model_type": "chat",
-            "model_name": "mistralai/mistral-7b-instruct-v0.2",
-        },
-        "ai-mixtral-8x7b-instruct": {
-            "model_type": "chat",
-            "model_name": "mistralai/mixtral-8x7b-instruct-v0.1",
-        },
-        "ai-neva-22b": {"model_type": "image_in"},
-        # 'ai-reranking-4b': {'model_type': 'chat'},
-        # 'ai-sdxl-turbo': {'model_type': 'image_out'},
-        # 'ai-stable-diffusion-xl-base': {'model_type': 'iamge_out'},
-        "ai-codegemma-7b": {"model_type": "chat", "model_name": "google/codegemma-7b"},
-        "ai-recurrentgemma-2b": {
-            "model_type": "chat",
-            "model_name": "google/recurrentgemma-2b",
-        },
-        "ai-gemma-2b": {"model_type": "chat", "model_name": "google/gemma-2b"},
-    }
-)
-
-
-MODEL_SPECS.update(
-    {
-        "babbage-002": {"model_type": "completion"},
-        "dall-e-2": {"model_type": "image_out"},
-        "dall-e-3": {"model_type": "image_out"},
-        "davinci-002": {"model_type": "completion"},
-        "gpt-3.5-turbo-0125": {"model_type": "chat"},
-        "gpt-3.5-turbo-0301": {"model_type": "chat"},
-        "gpt-3.5-turbo-0613": {"model_type": "chat"},
-        "gpt-3.5-turbo-1106": {"model_type": "chat"},
-        "gpt-3.5-turbo-16k-0613": {"model_type": "chat"},
-        "gpt-3.5-turbo-16k": {"model_type": "chat"},
-        "gpt-3.5-turbo-instruct-0914": {"model_type": "completion"},
-        "gpt-3.5-turbo-instruct": {"model_type": "completion"},
-        "gpt-3.5-turbo": {"model_type": "chat"},
-        "gpt-4-0125-preview": {"model_type": "chat"},
-        "gpt-4-0613": {"model_type": "chat"},
-        "gpt-4-1106-preview": {"model_type": "chat"},
-        "gpt-4-turbo-preview": {"model_type": "chat"},
-        "gpt-4-vision-preview": {"model_type": "chat"},
-        "gpt-4": {"model_type": "chat"},
-        "text-embedding-3-large": {"model_type": "embedding"},
-        "text-embedding-3-small": {"model_type": "embedding"},
-        "text-embedding-ada-002": {"model_type": "embedding"},
-        "tts-1-1106": {"model_type": "tts"},
-        "tts-1-hd-1106": {"model_type": "tts"},
-        "tts-1-hd": {"model_type": "tts"},
-        "tts-1": {"model_type": "tts"},
-        "whisper-1": {"model_type": "asr"},
-    }
-)
-
-client_map = {
-    "asr": "None",
-    "chat": "ChatNVIDIA",
-    "classifier": "None",
-    "completion": "NVIDIA",
-    "cuopt": "None",
-    "embedding": "NVIDIAEmbeddings",
-    "image_in": "ChatNVIDIA",
-    "image_out": "ImageGenNVIDIA",
-    "qa": "ChatNVIDIA",
-    "similarity": "None",
-    "translation": "None",
-    "tts": "None",
+QA_MODEL_TABLE = {
+    "nvidia/llama3-chatqa-1.5-8b": Model(
+        id="nvidia/llama3-chatqa-1.5-8b",
+        model_type="qa",
+        client="ChatNVIDIA",
+        aliases=["ai-chatqa-1.5-8b"],
+    ),
+    "nvidia/llama3-chatqa-1.5-70b": Model(
+        id="nvidia/llama3-chatqa-1.5-70b",
+        model_type="qa",
+        client="ChatNVIDIA",
+        aliases=["ai-chatqa-1.5-70b"],
+    ),
 }
 
-MODEL_SPECS = {
-    k: {**v, "client": client_map[v["model_type"]]} for k, v in MODEL_SPECS.items()
+VLM_MODEL_TABLE = {
+    "adept/fuyu-8b": Model(
+        id="adept/fuyu-8b",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/vlm/adept/fuyu-8b",
+        aliases=["ai-fuyu-8b", "playground_fuyu_8b", "fuyu_8b"],
+    ),
+    "google/deplot": Model(
+        id="google/deplot",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/vlm/google/deplot",
+        aliases=["ai-google-deplot", "playground_deplot", "deplot"],
+    ),
+    "microsoft/kosmos-2": Model(
+        id="microsoft/kosmos-2",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/vlm/microsoft/kosmos-2",
+        aliases=["ai-microsoft-kosmos-2", "playground_kosmos_2", "kosmos_2"],
+    ),
+    "nvidia/neva-22b": Model(
+        id="nvidia/neva-22b",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/vlm/nvidia/neva-22b",
+        aliases=["ai-neva-22b", "playground_neva_22b", "neva_22b"],
+    ),
+    "google/paligemma": Model(
+        id="google/paligemma",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/vlm/google/paligemma",
+        aliases=["ai-google-paligemma"],
+    ),
+    "microsoft/phi-3-vision-128k-instruct": Model(
+        id="microsoft/phi-3-vision-128k-instruct",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/vlm/microsoft/phi-3-vision-128k-instruct",
+        aliases=["ai-phi-3-vision-128k-instruct"],
+    ),
+    "liuhaotian/llava-v1.6-mistral-7b": Model(
+        id="liuhaotian/llava-v1.6-mistral-7b",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/stg/vlm/community/llava16-mistral-7b",
+        aliases=[
+            "ai-llava16-mistral-7b",
+            "community/llava16-mistral-7b",
+            "liuhaotian/llava16-mistral-7b",
+        ],
+    ),
+    "liuhaotian/llava-v1.6-34b": Model(
+        id="liuhaotian/llava-v1.6-34b",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/stg/vlm/community/llava16-34b",
+        aliases=["ai-llava16-34b", "community/llava16-34b", "liuhaotian/llava16-34b"],
+    ),
 }
+
+EMBEDDING_MODEL_TABLE = {
+    "snowflake/arctic-embed-l": Model(
+        id="snowflake/arctic-embed-l",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+        aliases=["ai-arctic-embed-l"],
+    ),
+    "NV-Embed-QA": Model(
+        id="NV-Embed-QA",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/embeddings",
+        aliases=[
+            "ai-embed-qa-4",
+            "playground_nvolveqa_40k",
+            "nvolveqa_40k",
+        ],
+    ),
+    "nvidia/nv-embed-v1": Model(
+        id="nvidia/nv-embed-v1",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+        aliases=["ai-nv-embed-v1"],
+    ),
+    "nvidia/nv-embedqa-mistral-7b-v2": Model(
+        id="nvidia/nv-embedqa-mistral-7b-v2",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+    ),
+    "nvidia/nv-embedqa-e5-v5": Model(
+        id="nvidia/nv-embedqa-e5-v5",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+    ),
+}
+
+RANKING_MODEL_TABLE = {
+    "nv-rerank-qa-mistral-4b:1": Model(
+        id="nv-rerank-qa-mistral-4b:1",
+        model_type="ranking",
+        client="NVIDIARerank",
+        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/reranking",
+        aliases=["ai-rerank-qa-mistral-4b"],
+    ),
+    "nvidia/nv-rerankqa-mistral-4b-v3": Model(
+        id="nvidia/nv-rerankqa-mistral-4b-v3",
+        model_type="ranking",
+        client="NVIDIARerank",
+        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/nv-rerankqa-mistral-4b-v3/reranking",
+    ),
+}
+
+# COMPLETION_MODEL_TABLE = {
+#     "mistralai/mixtral-8x22b-v0.1": Model(
+#         id="mistralai/mixtral-8x22b-v0.1",
+#         model_type="completion",
+#         client="NVIDIA",
+#         aliases=["ai-mixtral-8x22b"],
+#     ),
+# }
+
+
+OPENAI_MODEL_TABLE = {
+    "gpt-3.5-turbo": Model(
+        id="gpt-3.5-turbo",
+        model_type="chat",
+        client="ChatNVIDIA",
+        endpoint="https://api.openai.com/v1/chat/completions",
+        supports_tools=True,
+    ),
+}
+
+
+MODEL_TABLE = {
+    **CHAT_MODEL_TABLE,
+    **QA_MODEL_TABLE,
+    **VLM_MODEL_TABLE,
+    **EMBEDDING_MODEL_TABLE,
+    **RANKING_MODEL_TABLE,
+}
+
+if "_INCLUDE_OPENAI" in os.environ:
+    MODEL_TABLE.update(OPENAI_MODEL_TABLE)
+
+
+def register_model(model: Model) -> None:
+    """
+    Register a model as a known model. This must be done at the
+    beginning of a program, at least before the model is used or
+    available models are listed.
+
+    For instance -
+    ```
+    from langchain_nvidia_ai_endpoints import register_model, Model
+    register_model(Model(id="my-custom-model-name",
+                         model_type="chat",
+                         client="ChatNVIDIA",
+                         endpoint="http://host:port/path-to-my-model"))
+    llm = ChatNVIDIA(model="my-custom-model-name")
+    ```
+
+    Be sure that the `id` matches the model parameter the endpoint expects.
+
+    Supported model types are:
+        - chat models, which must accept and produce chat completion payloads
+    Supported model clients are:
+        - ChatNVIDIA, for chat models
+
+    Endpoint is required.
+
+    Use this instead of passing `base_url` to a client constructor
+    when the model's endpoint supports inference and not /v1/models
+    listing. Use `base_url` when the model's endpoint supports
+    /v1/models listing and inference on a known path,
+    e.g. /v1/chat/completions.
+    """
+    if model.id in MODEL_TABLE:
+        warnings.warn(
+            f"Model {model.id} is already registered. "
+            f"Overriding {MODEL_TABLE[model.id]}",
+            UserWarning,
+        )
+    if not model.endpoint:
+        raise ValueError(f"Model {model.id} does not have an endpoint.")
+    MODEL_TABLE[model.id] = model
+
+
+def lookup_model(name: str) -> Optional[Model]:
+    """
+    Lookup a model by name, using only the table of known models.
+    The name is either:
+        - directly in the table
+        - an alias in the table
+        - not found (None)
+    Callers can check to see if the name was an alias by
+    comparing the result's id field to the name they provided.
+    """
+    model = None
+    if not (model := MODEL_TABLE.get(name)):
+        for mdl in MODEL_TABLE.values():
+            if mdl.aliases and name in mdl.aliases:
+                model = mdl
+                break
+    return model
+
+
+def determine_model(name: str) -> Optional[Model]:
+    """
+    Determine the model to use based on a name, using
+    only the table of known models.
+
+    Raise a warning if the model is found to be
+    an alias of a known model.
+
+    If the model is not found, return None.
+    """
+    if model := lookup_model(name):
+        # all aliases are deprecated
+        if model.id != name:
+            warnings.warn(
+                f"Model {name} is deprecated. Using {model.id} instead.", UserWarning
+            )
+    return model

@@ -1,4 +1,4 @@
-from typing import Generator
+from typing import Any, Generator, Literal
 
 import pytest
 from requests_mock import Mocker
@@ -10,20 +10,15 @@ from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 def embedding(requests_mock: Mocker) -> Generator[NVIDIAEmbeddings, None, None]:
     model = "mock-model"
     requests_mock.get(
-        "https://api.nvcf.nvidia.com/v2/nvcf/functions",
+        "https://integrate.api.nvidia.com/v1/models",
         json={
-            "functions": [
+            "data": [
                 {
-                    "id": "ID",
-                    "ncaId": "NCA-ID",
-                    "versionId": "VERSION-ID",
-                    "name": model,
-                    "status": "ACTIVE",
-                    "ownedByDifferentAccount": True,
-                    "apiBodyFormat": "CUSTOM",
-                    "healthUri": "/v2/health/ready",
-                    "createdAt": "0000-00-00T00:00:00.000Z",
-                }
+                    "id": model,
+                    "object": "model",
+                    "created": 1234567890,
+                    "owned_by": "OWNER",
+                },
             ]
         },
     )
@@ -43,7 +38,8 @@ def embedding(requests_mock: Mocker) -> Generator[NVIDIAEmbeddings, None, None]:
             "usage": {"prompt_tokens": 8, "total_tokens": 8},
         },
     )
-    yield NVIDIAEmbeddings(model=model, nvidia_api_key="a-bogus-key")
+    with pytest.warns(UserWarning):
+        yield NVIDIAEmbeddings(model=model, nvidia_api_key="a-bogus-key")
 
 
 def test_embed_documents_negative_input_int(embedding: NVIDIAEmbeddings) -> None:
@@ -82,5 +78,19 @@ def test_embed_documents_negative_input_list_mixed(embedding: NVIDIAEmbeddings) 
         embedding.embed_documents(documents)  # type: ignore
 
 
-# todo: test max_length (-100, 0, 100)
+@pytest.mark.parametrize("truncate", [True, False, 1, 0, 1.0, "BOGUS"])
+def test_embed_query_truncate_invalid(truncate: Any) -> None:
+    with pytest.raises(ValueError):
+        NVIDIAEmbeddings(truncate=truncate)
+
+
+@pytest.mark.parametrize("model_type", ["query", "passage"])
+def test_embed_model_type_deprecated(model_type: Literal["query", "passage"]) -> None:
+    with pytest.warns(UserWarning):
+        NVIDIAEmbeddings(model_type=model_type)
+    x = NVIDIAEmbeddings()
+    with pytest.warns(UserWarning):
+        x.model_type = model_type
+
+
 # todo: test max_batch_size (-50, 0, 1, 50)

@@ -1,6 +1,12 @@
 from langchain_nvidia_ai_endpoints import __all__
 
-EXPECTED_ALL = ["ChatNVIDIA", "NVIDIAEmbeddings"]
+EXPECTED_ALL = [
+    "ChatNVIDIA",
+    "NVIDIAEmbeddings",
+    "NVIDIARerank",
+    "register_model",
+    "Model",
+]
 
 
 def test_all_imports() -> None:

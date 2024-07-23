@@ -1,20 +1,21 @@
 [tool.poetry]
 name = "langchain-nvidia-ai-endpoints"
-version = "0.0.6"
+version = "0.2.0"
 description = "An integration package connecting NVIDIA AI Endpoints and LangChain"
 authors = []
 readme = "README.md"
-repository = "https://github.com/langchain-ai/langchain"
+repository = "https://github.com/langchain-ai/langchain-nvidia"
 license = "MIT"
 
 [tool.poetry.urls]
-"Source Code" = "https://github.com/langchain-ai/langchain/tree/master/libs/partners/nvidia-ai-endpoints"
+"Source Code" = "https://github.com/langchain-ai/langchain-nvidia/tree/main/libs/ai-endpoints"
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
-langchain-core = "^0.1.5"
+langchain-core = ">=0.1.47,<0.3"
 aiohttp = "^3.9.1"
 pillow = ">=10.0.0,<11.0.0"
+langchain-community = "^0.2.5"
 
 [tool.poetry.group.test]
 optional = true
@@ -26,9 +27,10 @@ pytest-mock = "^3.10.0"
 syrupy = "^4.0.2"
 pytest-watcher = "^0.3.4"
 pytest-asyncio = "^0.21.1"
-langchain-core = {git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core"}
+langchain-core = { git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core" }
 requests-mock = "^1.11.0"
-langchain-standard-tests = {git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/standard-tests"}
+langchain-standard-tests = { git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/standard-tests" }
+faker = "^24.4.0"
 
 [tool.poetry.group.codespell]
 optional = true
@@ -52,13 +54,13 @@ ruff = "^0.1.5"
 mypy = "^0.991"
 types-requests = "^2.31.0.10"
 types-pillow = "^10.2.0.20240125"
-langchain-core = {git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core"}
+langchain-core = { git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core" }
 
 [tool.poetry.group.dev]
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-langchain-core = {git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core"}
+langchain-core = { git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core" }
 
 [tool.ruff.lint]
 select = [
@@ -71,6 +73,11 @@ select = [
 [tool.mypy]
 disallow_untyped_defs = "True"
 exclude = ["notebooks", "examples", "example_data", "langchain_core/pydantic"]
+
+[[tool.mypy.overrides]]
+# conditional dependencies introduced by langsmith-sdk
+module = ["numpy", "pytest"]
+ignore_missing_imports = true
 
 [tool.coverage.run]
 omit = ["tests/*"]
