@@ -271,6 +271,7 @@ def test_tool_choice_negative(
     [eval_invoke, eval_stream],
     ids=["invoke", "stream"],
 )
+@pytest.mark.xfail(reason="Server side is broken")
 def test_tool_choice_negative_max_tokens_required(
     tool_model: str,
     mode: dict,
@@ -294,6 +295,7 @@ def test_tool_choice_negative_max_tokens_required(
     [eval_invoke, eval_stream],
     ids=["invoke", "stream"],
 )
+@pytest.mark.xfail(reason="Server side is broken")
 def test_tool_choice_negative_max_tokens_function(
     tool_model: str,
     mode: dict,
@@ -638,8 +640,12 @@ def test_known_does_not_warn(tool_model: str, mode: dict) -> None:
 
 
 def test_unknown_warns(mode: dict) -> None:
+    candidates = [
+        model for model in ChatNVIDIA.get_available_models() if not model.supports_tools
+    ]
+    assert candidates, "All models support tools"
     with pytest.warns(UserWarning) as record:
-        ChatNVIDIA(model="mock-model", **mode).bind_tools([xxyyzz])
+        ChatNVIDIA(model=candidates[0].id, **mode).bind_tools([xxyyzz])
     assert len(record) == 1
     assert "not known to support tools" in str(record[0].message)
 
