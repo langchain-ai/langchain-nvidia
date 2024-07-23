@@ -285,6 +285,21 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "meta/llama-3.1-8b-instruct": Model(
+        id="meta/llama-3.1-8b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "meta/llama-3.1-70b-instruct": Model(
+        id="meta/llama-3.1-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "meta/llama-3.1-405b-instruct": Model(
+        id="meta/llama-3.1-405b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
