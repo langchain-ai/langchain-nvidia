@@ -1,3 +1,4 @@
+import os
 import warnings
 from typing import Literal, Optional
 
@@ -13,6 +14,7 @@ class Model(BaseModel):
     client: client name, e.g. ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
     endpoint: custom endpoint for the model
     aliases: list of aliases for the model
+    supports_tools: whether the model supports tool calling
 
     All aliases are deprecated and will trigger a warning when used.
     """
@@ -25,6 +27,7 @@ class Model(BaseModel):
     client: Optional[Literal["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank"]] = None
     endpoint: Optional[str] = None
     aliases: Optional[list] = None
+    supports_tools: Optional[bool] = False
     base_model: Optional[str] = None
 
     def __hash__(self) -> int:
@@ -286,16 +289,19 @@ CHAT_MODEL_TABLE = {
         id="meta/llama-3.1-8b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        supports_tools=True,
     ),
     "meta/llama-3.1-70b-instruct": Model(
         id="meta/llama-3.1-70b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        supports_tools=True,
     ),
     "meta/llama-3.1-405b-instruct": Model(
         id="meta/llama-3.1-405b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        supports_tools=True,
     ),
 }
 
@@ -438,6 +444,18 @@ RANKING_MODEL_TABLE = {
 #     ),
 # }
 
+
+OPENAI_MODEL_TABLE = {
+    "gpt-3.5-turbo": Model(
+        id="gpt-3.5-turbo",
+        model_type="chat",
+        client="ChatNVIDIA",
+        endpoint="https://api.openai.com/v1/chat/completions",
+        supports_tools=True,
+    ),
+}
+
+
 MODEL_TABLE = {
     **CHAT_MODEL_TABLE,
     **QA_MODEL_TABLE,
@@ -445,6 +463,9 @@ MODEL_TABLE = {
     **EMBEDDING_MODEL_TABLE,
     **RANKING_MODEL_TABLE,
 }
+
+if "_INCLUDE_OPENAI" in os.environ:
+    MODEL_TABLE.update(OPENAI_MODEL_TABLE)
 
 
 def register_model(model: Model) -> None:

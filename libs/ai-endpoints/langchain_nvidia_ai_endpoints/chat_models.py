@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 import urllib.parse
+import warnings
 from typing import (
     Any,
     Callable,
@@ -15,7 +16,6 @@ from typing import (
     Iterator,
     List,
     Literal,
-    Mapping,
     Optional,
     Sequence,
     Type,
@@ -23,15 +23,16 @@ from typing import (
 )
 
 import requests
+from langchain_community.adapters.openai import convert_message_to_dict
 from langchain_core.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
 )
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
 from langchain_core.messages import (
+    AIMessage,
+    AIMessageChunk,
     BaseMessage,
-    ChatMessage,
-    ChatMessageChunk,
 )
 from langchain_core.outputs import (
     ChatGeneration,
@@ -41,6 +42,7 @@ from langchain_core.outputs import (
 from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
+from langchain_core.utils.function_calling import convert_to_openai_tool
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
@@ -114,6 +116,53 @@ def _url_to_b64_string(image_source: str) -> str:
             )
     except Exception as e:
         raise ValueError(f"Unable to process the provided image source: {e}")
+
+
+def _nv_vlm_adjust_input(message_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    The NVIDIA VLM API input message.content:
+        {
+            "role": "user",
+            "content": [
+                ...,
+                {
+                    "type": "image_url",
+                    "image_url": "{data}"
+                },
+                ...
+            ]
+        }
+    where OpenAI VLM API input message.content:
+        {
+            "role": "user",
+            "content": [
+                ...,
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "{url | data}"
+                    }
+                },
+                ...
+            ]
+        }
+
+    This function converts the OpenAI VLM API input message to
+    NVIDIA VLM API input message, in place.
+
+    In the process, it accepts a url or file and converts them to
+    data urls.
+    """
+    if content := message_dict.get("content"):
+        if isinstance(content, list):
+            for part in content:
+                if isinstance(part, dict) and "image_url" in part:
+                    if (
+                        isinstance(part["image_url"], dict)
+                        and "url" in part["image_url"]
+                    ):
+                        part["image_url"] = _url_to_b64_string(part["image_url"]["url"])
+    return message_dict
 
 
 class ChatNVIDIA(BaseChatModel):
@@ -209,13 +258,19 @@ class ChatNVIDIA(BaseChatModel):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> ChatResult:
-        inputs = self._custom_preprocess(messages)
+        inputs = [
+            _nv_vlm_adjust_input(message)
+            for message in [convert_message_to_dict(message) for message in messages]
+        ]
         payload = self._get_payload(inputs=inputs, stop=stop, stream=False, **kwargs)
         response = self._client.client.get_req(payload=payload)
         responses, _ = self._client.client.postprocess(response)
         self._set_callback_out(responses, run_manager)
-        message = ChatMessage(**self._custom_postprocess(responses))
-        generation = ChatGeneration(message=message)
+        parsed_response = self._custom_postprocess(responses, streaming=False)
+        # for pre 0.2 compatibility w/ ChatMessage
+        # ChatMessage had a role property that was not present in AIMessage
+        parsed_response.update({"role": "assistant"})
+        generation = ChatGeneration(message=AIMessage(**parsed_response))
         return ChatResult(generations=[generation], llm_output=responses)
 
     def _stream(
@@ -226,13 +281,21 @@ class ChatNVIDIA(BaseChatModel):
         **kwargs: Any,
     ) -> Iterator[ChatGenerationChunk]:
         """Allows streaming to model!"""
-        inputs = self._custom_preprocess(messages)
+        inputs = [
+            _nv_vlm_adjust_input(message)
+            for message in [convert_message_to_dict(message) for message in messages]
+        ]
         payload = self._get_payload(inputs=inputs, stop=stop, stream=True, **kwargs)
         for response in self._client.client.get_req_stream(payload=payload):
             self._set_callback_out(response, run_manager)
-            chunk = ChatGenerationChunk(
-                message=ChatMessageChunk(**self._custom_postprocess(response))
-            )
+            parsed_response = self._custom_postprocess(response, streaming=True)
+            # for pre 0.2 compatibility w/ ChatMessageChunk
+            # ChatMessageChunk had a role property that was not
+            # present in AIMessageChunk
+            # unfortunately, AIMessageChunk does not have extensible propery
+            # parsed_response.update({"role": "assistant"})
+            message = AIMessageChunk(**parsed_response)
+            chunk = ChatGenerationChunk(message=message)
             if run_manager:
                 run_manager.on_llm_new_token(chunk.text, chunk=chunk)
             yield chunk
@@ -248,55 +311,9 @@ class ChatNVIDIA(BaseChatModel):
                 if hasattr(cb, "llm_output"):
                     cb.llm_output = result
 
-    def _custom_preprocess(  # todo: remove
-        self, msg_list: Sequence[BaseMessage]
-    ) -> List[Dict[str, str]]:
-        def _preprocess_msg(msg: BaseMessage) -> Dict[str, str]:
-            if isinstance(msg, BaseMessage):
-                role_convert = {"ai": "assistant", "human": "user"}
-                if isinstance(msg, ChatMessage):
-                    role = msg.role
-                else:
-                    role = msg.type
-                role = role_convert.get(role, role)
-                content = self._process_content(msg.content)
-                return {"role": role, "content": content}
-            raise ValueError(f"Invalid message: {repr(msg)} of type {type(msg)}")
-
-        return [_preprocess_msg(m) for m in msg_list]
-
-    def _process_content(self, content: Union[str, List[Union[dict, str]]]) -> str:
-        if isinstance(content, str):
-            return content
-        string_array: list = []
-
-        for part in content:
-            if isinstance(part, str):
-                string_array.append(part)
-            elif isinstance(part, Mapping):
-                # OpenAI Format
-                if "type" in part:
-                    if part["type"] == "text":
-                        string_array.append(str(part["text"]))
-                    elif part["type"] == "image_url":
-                        img_url = part["image_url"]
-                        if isinstance(img_url, dict):
-                            if "url" not in img_url:
-                                raise ValueError(
-                                    f"Unrecognized message image format: {img_url}"
-                                )
-                            img_url = img_url["url"]
-                        b64_string = _url_to_b64_string(img_url)
-                        string_array.append(f'<img src="{b64_string}" />')
-                    else:
-                        raise ValueError(
-                            f"Unrecognized message part type: {part['type']}"
-                        )
-                else:
-                    raise ValueError(f"Unrecognized message part format: {part}")
-        return "".join(string_array)
-
-    def _custom_postprocess(self, msg: dict) -> dict:  # todo: remove
+    def _custom_postprocess(
+        self, msg: dict, streaming: bool = False
+    ) -> dict:  # todo: remove
         kw_left = msg.copy()
         out_dict = {
             "role": kw_left.pop("role", "assistant") or "assistant",
@@ -306,10 +323,44 @@ class ChatNVIDIA(BaseChatModel):
             "additional_kwargs": {},
             "response_metadata": {},
         }
-        for k in list(kw_left.keys()):
-            if "tool" in k:
-                out_dict["additional_kwargs"][k] = kw_left.pop(k)
-        out_dict["response_metadata"] = kw_left
+        # "tool_calls" is set for invoke and stream responses
+        if tool_calls := kw_left.pop("tool_calls", None):
+            assert isinstance(
+                tool_calls, list
+            ), "invalid response from server: tool_calls must be a list"
+            # todo: break this into post-processing for invoke and stream
+            if not streaming:
+                out_dict["additional_kwargs"]["tool_calls"] = tool_calls
+            elif streaming:
+                out_dict["tool_call_chunks"] = []
+                for tool_call in tool_calls:
+                    # todo: the nim api does not return the function index
+                    #       for tool calls in stream responses. this is
+                    #       an issue that needs to be resolved server-side.
+                    #       the only reason we can skip this for now
+                    #       is because the nim endpoint returns only full
+                    #       tool calls, no deltas.
+                    # assert "index" in tool_call, (
+                    #     "invalid response from server: "
+                    #     "tool_call must have an 'index' key"
+                    # )
+                    assert "function" in tool_call, (
+                        "invalid response from server: "
+                        "tool_call must have a 'function' key"
+                    )
+                    out_dict["tool_call_chunks"].append(
+                        {
+                            "index": tool_call.get("index", None),
+                            "id": tool_call.get("id", None),
+                            "name": tool_call["function"].get("name", None),
+                            "args": tool_call["function"].get("arguments", None),
+                        }
+                    )
+        # we only create the response_metadata from the last message in a stream.
+        # if we do it for all messages, we'll end up with things like
+        # "model_name" = "mode-xyz" * # messages.
+        if "finish_reason" in kw_left:
+            out_dict["response_metadata"] = kw_left
         return out_dict
 
     ######################################################################################
@@ -365,13 +416,92 @@ class ChatNVIDIA(BaseChatModel):
         self,
         tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]],
         *,
-        tool_choice: Optional[Union[dict, str, Literal["auto", "none"], bool]] = None,
+        tool_choice: Optional[
+            Union[dict, str, Literal["auto", "none", "any", "required"], bool]
+        ] = None,
         **kwargs: Any,
     ) -> Runnable[LanguageModelInput, BaseMessage]:
-        raise NotImplementedError(
-            "Not implemented, awaiting server-side function-recieving API"
-            " Consider following open-source LLM agent spec techniques:"
-            " https://huggingface.co/blog/open-source-llms-as-agents"
+        """
+        Bind tools to the model.
+
+        Args:
+            tools (list): A list of tools to bind to the model.
+            tool_choice (Optional[Union[dict,
+                                        str,
+                                        Literal["auto", "none", "any", "required"],
+                                        bool]]):
+               Control tool choice.
+                 "any" and "required" - force a tool call.
+                 "auto" - let the model decide.
+                 "none" - force no tool call.
+                 string or dict - force a specific tool call.
+                 bool - if True, force a tool call; if False, force no tool call.
+               Defaults to passing no value.
+            **kwargs: Additional keyword arguments.
+
+        see https://python.langchain.com/v0.1/docs/modules/model_io/chat/function_calling/#request-forcing-a-tool-call
+        """
+        # check if the model supports tools, warn if it does not
+        known_good = False
+        # todo: we need to store model: Model in this class
+        #       instead of model: str (= Model.id)
+        #  this should be: if not self.model.supports_tools: warnings.warn...
+        candidates = [
+            model for model in self.available_models if model.id == self.model
+        ]
+        if not candidates:  # user must have specified the model themselves
+            known_good = False
+        else:
+            assert len(candidates) == 1, "Multiple models with the same id"
+            known_good = candidates[0].supports_tools is True
+        if not known_good:
+            warnings.warn(
+                f"Model '{self.model}' is not known to support tools. "
+                "Your tool binding may fail at inference time."
+            )
+
+        tool_name = None
+        if isinstance(tool_choice, bool):
+            tool_choice = "required" if tool_choice else "none"
+        elif isinstance(tool_choice, str):
+            # LangChain documents "any" as an option, server API uses "required"
+            if tool_choice == "any":
+                tool_choice = "required"
+            # if a string that's not "auto", "none", or "required"
+            # then it must be a tool name
+            if tool_choice not in ["auto", "none", "required"]:
+                tool_name = tool_choice
+                tool_choice = {
+                    "type": "function",
+                    "function": {"name": tool_choice},
+                }
+        elif isinstance(tool_choice, dict):
+            # if a dict, it must be a tool choice dict, e.g.
+            #  {"type": "function", "function": {"name": "my_tool"}}
+            if "type" not in tool_choice:
+                tool_choice["type"] = "function"
+            if "function" not in tool_choice:
+                raise ValueError("Tool choice dict must have a 'function' key")
+            if "name" not in tool_choice["function"]:
+                raise ValueError("Tool choice function dict must have a 'name' key")
+            tool_name = tool_choice["function"]["name"]
+
+        # check that the specified tool is in the tools list
+        if tool_name:
+            if not any(
+                isinstance(tool, BaseTool) and tool.name == tool_name for tool in tools
+            ) and not any(
+                isinstance(tool, dict) and tool.get("name") == tool_name
+                for tool in tools
+            ):
+                raise ValueError(
+                    f"Tool choice '{tool_name}' not found in the tools list"
+                )
+
+        return super().bind(
+            tools=[convert_to_openai_tool(tool) for tool in tools],
+            tool_choice=tool_choice,
+            **kwargs,
         )
 
     def bind_functions(
@@ -380,11 +510,7 @@ class ChatNVIDIA(BaseChatModel):
         function_call: Optional[str] = None,
         **kwargs: Any,
     ) -> Runnable[LanguageModelInput, BaseMessage]:
-        raise NotImplementedError(
-            "Not implemented, awaiting server-side function-recieving API"
-            " Consider following open-source LLM agent spec techniques:"
-            " https://huggingface.co/blog/open-source-llms-as-agents"
-        )
+        raise NotImplementedError("Not implemented, use `bind_tools` instead.")
 
     def with_structured_output(
         self,
