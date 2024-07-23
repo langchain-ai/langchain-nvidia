@@ -289,16 +289,19 @@ CHAT_MODEL_TABLE = {
         id="meta/llama-3.1-8b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        supports_tools=True,
     ),
     "meta/llama-3.1-70b-instruct": Model(
         id="meta/llama-3.1-70b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        supports_tools=True,
     ),
     "meta/llama-3.1-405b-instruct": Model(
         id="meta/llama-3.1-405b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        supports_tools=True,
     ),
 }
 
