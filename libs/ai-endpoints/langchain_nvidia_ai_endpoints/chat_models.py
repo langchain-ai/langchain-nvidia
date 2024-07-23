@@ -334,10 +334,16 @@ class ChatNVIDIA(BaseChatModel):
             elif streaming:
                 out_dict["tool_call_chunks"] = []
                 for tool_call in tool_calls:
-                    assert "index" in tool_call, (
-                        "invalid response from server: "
-                        "tool_call must have an 'index' key"
-                    )
+                    # todo: the nim api does not return the function index
+                    #       for tool calls in stream responses. this is
+                    #       an issue that needs to be resolved server-side.
+                    #       the only reason we can skip this for now
+                    #       is because the nim endpoint returns only full
+                    #       tool calls, no deltas.
+                    # assert "index" in tool_call, (
+                    #     "invalid response from server: "
+                    #     "tool_call must have an 'index' key"
+                    # )
                     assert "function" in tool_call, (
                         "invalid response from server: "
                         "tool_call must have a 'function' key"
