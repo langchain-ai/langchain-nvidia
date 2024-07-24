@@ -522,25 +522,3 @@ class ChatNVIDIA(BaseChatModel):
             tool_choice=tool_choice,
             **kwargs,
         )
-
-    def bind_functions(
-        self,
-        functions: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable]],
-        function_call: Optional[str] = None,
-        **kwargs: Any,
-    ) -> Runnable[LanguageModelInput, BaseMessage]:
-        raise NotImplementedError("Not implemented, use `bind_tools` instead.")
-
-    def with_structured_output(
-        self,
-        schema: _DictOrPydanticClass,
-        *,
-        method: Literal["function_calling", "json_mode"] = "function_calling",
-        return_type: Literal["parsed", "all"] = "parsed",
-        **kwargs: Any,
-    ) -> Runnable[LanguageModelInput, _DictOrPydantic]:
-        raise NotImplementedError(
-            "Not implemented, awaiting server-side function-recieving API"
-            " Consider following open-source LLM agent spec techniques:"
-            " https://huggingface.co/blog/open-source-llms-as-agents"
-        )
