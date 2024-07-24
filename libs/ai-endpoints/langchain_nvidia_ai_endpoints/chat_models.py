@@ -23,7 +23,6 @@ from typing import (
 )
 
 import requests
-from langchain_community.adapters.openai import convert_message_to_dict
 from langchain_core.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
@@ -46,6 +45,7 @@ from langchain_core.utils.function_calling import convert_to_openai_tool
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
+from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
 
 _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
 _DictOrPydanticClass = Union[Dict[str, Any], Type[BaseModel]]
