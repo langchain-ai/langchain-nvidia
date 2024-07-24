@@ -15,6 +15,4 @@ class TestNVIDIAStandard(ChatModelUnitTests):
 
     @property
     def chat_model_params(self) -> dict:
-        return {
-            "model": "meta/llama-3.1-8b-instruct"
-        }
+        return {"model": "meta/llama-3.1-8b-instruct"}
