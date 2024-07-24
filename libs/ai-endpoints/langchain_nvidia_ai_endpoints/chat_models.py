@@ -29,6 +29,7 @@ from langchain_core.callbacks.manager import (
     CallbackManagerForLLMRun,
 )
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
+from langchain_core.language_models.chat_models import LangSmithParams
 from langchain_core.messages import (
     AIMessage,
     AIMessageChunk,
@@ -250,6 +251,24 @@ class ChatNVIDIA(BaseChatModel):
     def _llm_type(self) -> str:
         """Return type of NVIDIA AI Foundation Model Interface."""
         return "chat-nvidia-ai-playground"
+
+    def _get_ls_params(
+        self,
+        stop: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> LangSmithParams:
+        """Get standard LangSmith parameters for tracing."""
+        params = self._get_invocation_params(stop=stop, **kwargs)
+        return LangSmithParams(
+            ls_provider="NVIDIA",
+            ls_model_name=self.model,
+            ls_model_type="chat",
+            ls_temperature=params.get("temperature", self.temperature),
+            ls_max_tokens=params.get("max_tokens", self.max_tokens),
+            ls_top_p=params.get("top_p", self.top_p),
+            ls_seed=params.get("seed", self.seed),
+            ls_stop=params.get("stop", self.stop),
+        )
 
     def _generate(
         self,
