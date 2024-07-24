@@ -378,7 +378,9 @@ class ChatNVIDIA(BaseChatModel):
                 messages.append(dict(role="user", content=msg))
             elif isinstance(msg, dict):
                 if msg.get("content", None) is None:
-                    raise ValueError(f"Message {msg} has no content")
+                    # content=None is valid for assistant messages (tool calling)
+                    if not msg.get("role") == "assistant":
+                        raise ValueError(f"Message {msg} has no content.")
                 messages.append(msg)
             else:
                 raise ValueError(f"Unknown message received: {msg} of type {type(msg)}")
