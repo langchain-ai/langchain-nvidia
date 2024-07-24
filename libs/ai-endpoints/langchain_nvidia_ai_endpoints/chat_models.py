@@ -489,19 +489,15 @@ class ChatNVIDIA(BaseChatModel):
             tool_name = tool_choice["function"]["name"]
 
         # check that the specified tool is in the tools list
+        tool_dicts = [convert_to_openai_tool(tool) for tool in tools]
         if tool_name:
-            if not any(
-                isinstance(tool, BaseTool) and tool.name == tool_name for tool in tools
-            ) and not any(
-                isinstance(tool, dict) and tool.get("name") == tool_name
-                for tool in tools
-            ):
+            if not any(tool["function"]["name"] == tool_name for tool in tool_dicts):
                 raise ValueError(
                     f"Tool choice '{tool_name}' not found in the tools list"
                 )
 
         return super().bind(
-            tools=[convert_to_openai_tool(tool) for tool in tools],
+            tools=tool_dicts,
             tool_choice=tool_choice,
             **kwargs,
         )
