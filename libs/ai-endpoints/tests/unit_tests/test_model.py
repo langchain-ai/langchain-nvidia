@@ -157,3 +157,51 @@ def test_default_lora(public_class: type) -> None:
     # find a model that matches the public_class under test
     x = public_class(base_url="http://localhost:8000/v1", model="lora1")
     assert x.model == "lora1"
+
+
+@pytest.mark.parametrize(
+    "model, client",
+    [(model.id, model.client) for model in MODEL_TABLE.values()],
+)
+def test_hosted_all_incompatible(public_class: type, model: str, client: str) -> None:
+    """
+    Test that the aliases for each model in the model table are accepted
+    with a warning about deprecation of the alias.
+    """
+    msg = (
+        "Model {model_name} is incompatible with client {cls_name}. "
+        "Please check `available_models`."
+    )
+
+    if client != public_class.__name__:
+        with pytest.raises(ValueError) as err_msg:
+            public_class(model=model, nvidia_api_key="a-bogus-key")
+            assert err_msg == msg.format(model_name=model, cls_name=client)
+
+
+@pytest.mark.parametrize(
+    "model, client",
+    [(model.id, model.client) for model in MODEL_TABLE.values()],
+)
+def test_locally_hosted_all_incompatible(
+    public_class: type, model: str, client: str
+) -> None:
+    """
+    Test that the aliases for each model in the model table are accepted
+    with a warning about deprecation of the alias.
+    """
+    msg = (
+        "Model {model_name} is incompatible with client {cls_name}. "
+        "Please check `available_models`."
+    )
+    if client != public_class.__name__:
+        with pytest.raises(ValueError) as err_msg:
+            public_class(
+                base_url="http://localhost:8000/v1",
+                model=model,
+                nvidia_api_key="a-bogus-key",
+            )
+            assert err_msg == msg.format(model_name=model, cls_name=client)
+    else:
+        cls = public_class(model=model, nvidia_api_key="a-bogus-key")
+        assert cls.model == model
