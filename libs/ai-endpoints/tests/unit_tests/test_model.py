@@ -1,7 +1,18 @@
+from itertools import chain
+from typing import Any
+
 import pytest
 from requests_mock import Mocker
 
-from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE
+from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
+from langchain_nvidia_ai_endpoints._statics import (
+    CHAT_MODEL_TABLE,
+    EMBEDDING_MODEL_TABLE,
+    MODEL_TABLE,
+    QA_MODEL_TABLE,
+    RANKING_MODEL_TABLE,
+    VLM_MODEL_TABLE,
+)
 
 
 @pytest.fixture
@@ -51,25 +62,43 @@ def mock_v1_local_models(requests_mock: Mocker, known_unknown: str) -> None:
     )
 
 
-# @pytest.mark.parametrize(
-#     "alias",
-#     [
-#         alias
-#         for model in MODEL_TABLE.values()
-#         if model.aliases is not None
-#         for alias in model.aliases
-#     ],
-# )
-# def test_aliases(public_class: type, alias: str) -> None:
-#     """
-#     Test that the aliases for each model in the model table are accepted
-#     with a warning about deprecation of the alias.
-#     """
-#     with pytest.warns(UserWarning) as record:
-#         x = public_class(model=alias, nvidia_api_key="a-bogus-key")
-#         assert x.model == x._client.model
-#     assert isinstance(record[0].message, Warning)
-#     assert "deprecated" in record[0].message.args[0]
+@pytest.mark.parametrize(
+    "alias, client",
+    [
+        (alias, ChatNVIDIA)
+        for model in list(
+            chain(
+                CHAT_MODEL_TABLE.values(),
+                VLM_MODEL_TABLE.values(),
+                QA_MODEL_TABLE.values(),
+            )
+        )
+        if model.aliases is not None
+        for alias in model.aliases
+    ]
+    + [
+        (alias, NVIDIAEmbeddings)
+        for model in EMBEDDING_MODEL_TABLE.values()
+        if model.aliases is not None
+        for alias in model.aliases
+    ]
+    + [
+        (alias, NVIDIARerank)
+        for model in RANKING_MODEL_TABLE.values()
+        if model.aliases is not None
+        for alias in model.aliases
+    ],
+)
+def test_aliases(alias: str, client: Any) -> None:
+    """
+    Test that the aliases for each model in the model table are accepted
+    with a warning about deprecation of the alias.
+    """
+    with pytest.warns(UserWarning) as record:
+        x = client(model=alias, nvidia_api_key="a-bogus-key")
+        assert x.model == x._client.model
+    assert isinstance(record[0].message, Warning)
+    assert "deprecated" in record[0].message.args[0]
 
 
 def test_known(public_class: type) -> None:
