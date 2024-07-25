@@ -17,6 +17,6 @@ def test_endpoint_unavailable(
 ) -> None:
     # we test this with a bogus model because users should supply
     # a model when using their own base_url
-    client = public_class(model="not-a-model", base_url=base_url)
     with pytest.raises(ConnectionError):
+        client = public_class(model="not-a-model", base_url=base_url)
         contact_service(client)

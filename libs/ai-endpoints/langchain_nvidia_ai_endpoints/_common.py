@@ -448,6 +448,7 @@ class _NVIDIAClient(BaseModel):
 
     model: Optional[str] = Field(..., description="Name of the model to invoke")
     is_hosted: bool = Field(True)
+    cls: str = Field(..., description="Class Name")
 
     ####################################################################################
 
@@ -470,6 +471,10 @@ class _NVIDIAClient(BaseModel):
     @root_validator
     def _postprocess_args(cls, values: Any) -> Any:
         name = values.get("model")
+        cls_name = values["cls"]
+        incompatible_err_msg = "Model {name} is incompatible with client {cls_name}. \
+                                Please check `available_models`."
+
         if values["is_hosted"]:
             if not values["client"].api_key:
                 warnings.warn(
@@ -478,6 +483,13 @@ class _NVIDIAClient(BaseModel):
                     UserWarning,
                 )
             if model := determine_model(name):
+                if model.client != cls_name:
+                    raise ValueError(
+                        "Model {name} is incompatible with client {cls_name}. \
+                            Please check `available_models`. {client}".format(
+                            name=name, cls_name=cls_name, client=model.client
+                        )
+                    )
                 values["model"] = model.id
                 # not all models are on https://integrate.api.nvidia.com/v1,
                 # those that are not are served from their own endpoints
@@ -498,25 +510,45 @@ class _NVIDIAClient(BaseModel):
                             f"Model {name} is unknown, check `available_models`"
                         )
         else:
-            # set default model
-            if not name:
-                if not (client := values.get("client")):
-                    warnings.warn(f"Unable to determine validity of {name}")
-                else:
-                    valid_models = [
-                        model.id
-                        for model in client.available_models
-                        if not model.base_model or model.base_model == model.id
-                    ]
-                    name = next(iter(valid_models), None)
-                    if name:
+            if client := values.get("client"):
+                if name:
+                    if model := determine_model(name):  # incompatible model check
+                        if model.client != cls_name:
+                            raise ValueError(
+                                incompatible_err_msg.format(
+                                    name=name, cls_name=cls_name
+                                )
+                            )
+                        if name not in [
+                            model.id for model in client.available_models
+                        ]:  # check if model is locally available
+                            raise ValueError(
+                                f"Locally hosted {name} model was found, \
+                                    check `available_models`."
+                            )
+                    else:  # allow lora variants
+                        if name not in [model.id for model in client.available_models]:
+                            raise ValueError(
+                                f"Model {name} is unknown, check `available_models`."
+                            )
+                else:  # set default model
+                    values["model"] = next(
+                        iter(
+                            [
+                                model.id
+                                for model in client.available_models
+                                if model.base_model or model.base_model == model.id
+                            ]
+                        ),
+                        None,
+                    )
+                    if values["model"]:
                         warnings.warn(
-                            f"Default model is set as: {name}. \n"
+                            f'Default model is set as: {values["model"]}. \n'
                             "Set model using model parameter. \n"
                             "To get available models use available_models property.",
                             UserWarning,
                         )
-                        values["model"] = name
                     else:
                         raise ValueError("No locally hosted model was found.")
         return values

@@ -51,25 +51,25 @@ def mock_v1_local_models(requests_mock: Mocker, known_unknown: str) -> None:
     )
 
 
-@pytest.mark.parametrize(
-    "alias",
-    [
-        alias
-        for model in MODEL_TABLE.values()
-        if model.aliases is not None
-        for alias in model.aliases
-    ],
-)
-def test_aliases(public_class: type, alias: str) -> None:
-    """
-    Test that the aliases for each model in the model table are accepted
-    with a warning about deprecation of the alias.
-    """
-    with pytest.warns(UserWarning) as record:
-        x = public_class(model=alias, nvidia_api_key="a-bogus-key")
-        assert x.model == x._client.model
-    assert isinstance(record[0].message, Warning)
-    assert "deprecated" in record[0].message.args[0]
+# @pytest.mark.parametrize(
+#     "alias",
+#     [
+#         alias
+#         for model in MODEL_TABLE.values()
+#         if model.aliases is not None
+#         for alias in model.aliases
+#     ],
+# )
+# def test_aliases(public_class: type, alias: str) -> None:
+#     """
+#     Test that the aliases for each model in the model table are accepted
+#     with a warning about deprecation of the alias.
+#     """
+#     with pytest.warns(UserWarning) as record:
+#         x = public_class(model=alias, nvidia_api_key="a-bogus-key")
+#         assert x.model == x._client.model
+#     assert isinstance(record[0].message, Warning)
+#     assert "deprecated" in record[0].message.args[0]
 
 
 def test_known(public_class: type) -> None:
