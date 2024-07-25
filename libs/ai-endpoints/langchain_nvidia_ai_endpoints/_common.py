@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import time
-import warnings
 from copy import deepcopy
 from typing import (
     Any,
@@ -32,6 +31,7 @@ from langchain_core.pydantic_v1 import (
 )
 from requests.models import Response
 
+import langchain_nvidia_ai_endpoints.utils as utils
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, determine_model
 
 logger = logging.getLogger(__name__)
@@ -470,87 +470,10 @@ class _NVIDIAClient(BaseModel):
 
     @root_validator
     def _postprocess_args(cls, values: Any) -> Any:
-        name = values.get("model")
-        cls_name = values["cls"]
-        incompatible_err_msg = "Model {name} is incompatible with client {cls_name}. \
-                                Please check `available_models`."
-
         if values["is_hosted"]:
-            if not values["client"].api_key:
-                warnings.warn(
-                    "An API key is required for the hosted NIM. "
-                    "This will become an error in the future.",
-                    UserWarning,
-                )
-            if model := determine_model(name):
-                if model.client != cls_name:
-                    raise ValueError(
-                        "Model {name} is incompatible with client {cls_name}. \
-                            Please check `available_models`. {client}".format(
-                            name=name, cls_name=cls_name, client=model.client
-                        )
-                    )
-                values["model"] = model.id
-                # not all models are on https://integrate.api.nvidia.com/v1,
-                # those that are not are served from their own endpoints
-                if model.endpoint:
-                    # we override the infer_path to use the custom endpoint
-                    values["client"].infer_path = model.endpoint
-            else:
-                if not (client := values.get("client")):
-                    warnings.warn(f"Unable to determine validity of {name}")
-                else:
-                    if any(model.id == name for model in client.available_models):
-                        warnings.warn(
-                            f"Found {name} in available_models, but type is "
-                            "unknown and inference may fail."
-                        )
-                    else:
-                        raise ValueError(
-                            f"Model {name} is unknown, check `available_models`"
-                        )
+            utils._process_hosted_model(values)
         else:
-            if client := values.get("client"):
-                if name:
-                    if model := determine_model(name):  # incompatible model check
-                        if model.client != cls_name:
-                            raise ValueError(
-                                incompatible_err_msg.format(
-                                    name=name, cls_name=cls_name
-                                )
-                            )
-                        if name not in [
-                            model.id for model in client.available_models
-                        ]:  # check if model is locally available
-                            raise ValueError(
-                                f"Locally hosted {name} model was found, \
-                                    check `available_models`."
-                            )
-                    else:  # allow lora variants
-                        if name not in [model.id for model in client.available_models]:
-                            raise ValueError(
-                                f"Model {name} is unknown, check `available_models`."
-                            )
-                else:  # set default model
-                    values["model"] = next(
-                        iter(
-                            [
-                                model.id
-                                for model in client.available_models
-                                if model.base_model or model.base_model == model.id
-                            ]
-                        ),
-                        None,
-                    )
-                    if values["model"]:
-                        warnings.warn(
-                            f'Default model is set as: {values["model"]}. \n'
-                            "Set model using model parameter. \n"
-                            "To get available models use available_models property.",
-                            UserWarning,
-                        )
-                    else:
-                        raise ValueError("No locally hosted model was found.")
+            utils._process_locally_hosted_model(values)
         return values
 
     @classmethod
