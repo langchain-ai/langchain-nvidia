@@ -221,7 +221,7 @@ class ChatNVIDIA(BaseChatModel):
         self._client = _NVIDIAClient(
             base_url=self.base_url,
             model=self.model,
-            default_model=self._default_model,
+            default_model_name=self._default_model,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
             infer_path="{base_url}/chat/completions",
         )

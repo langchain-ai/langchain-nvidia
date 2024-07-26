@@ -41,6 +41,7 @@ class _NVIDIAClient(BaseModel):
     Low level client library interface to NIM endpoints.
     """
 
+    default_model_name: str = Field(..., description="Default model name to use")
     model: Optional[str] = Field(..., description="Name of the model to invoke")
     is_hosted: bool = Field(True)
 
@@ -114,23 +115,12 @@ class _NVIDIAClient(BaseModel):
 
     @root_validator(pre=True)
     def _preprocess_args(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate and update model arguments, including API key and formatting"""
         values["api_key"] = (
             values.get(cls._api_key_var.lower())
             or values.get("api_key")
             or os.getenv(cls._api_key_var)
             or None
         )
-
-        if "base_url" in values:
-            values["is_hosted"] = urlparse(values["base_url"]).netloc in [
-                "integrate.api.nvidia.com",
-                "ai.api.nvidia.com",
-            ]
-
-        # set default model for hosted endpoint
-        if values["is_hosted"] and not values["model"]:
-            values["model"] = values["default_model"]
 
         return values
 
@@ -139,6 +129,15 @@ class _NVIDIAClient(BaseModel):
     #       use __post_init__ or model_validator(method="after")
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
+
+        self.is_hosted = urlparse(self.base_url).netloc in [
+            "integrate.api.nvidia.com",
+            "ai.api.nvidia.com",
+        ]
+
+        # set default model for hosted endpoint
+        if self.is_hosted and not self.model:
+            self.model = self.default_model_name
 
         name = self.model
         if self.is_hosted:
