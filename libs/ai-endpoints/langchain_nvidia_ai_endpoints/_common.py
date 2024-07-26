@@ -194,7 +194,7 @@ class NVEModel(BaseModel):
         self,
         invoke_url: str,
         payload: Optional[dict] = {},
-    ) -> Tuple[Response, Any]:
+    ) -> Tuple[Response, requests.Session]:
         """Method for posting to the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
@@ -211,7 +211,7 @@ class NVEModel(BaseModel):
     def _get(
         self,
         invoke_url: str,
-    ) -> Tuple[Response, Any]:
+    ) -> Tuple[Response, requests.Session]:
         """Method for getting from the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
@@ -224,7 +224,7 @@ class NVEModel(BaseModel):
         self._try_raise(response)
         return response, session
 
-    def _wait(self, response: Response, session: Any) -> Response:
+    def _wait(self, response: Response, session: requests.Session) -> Response:
         """
         Any request may return a 202 status code, which means the request is still
         processing. This method will wait for a response using the request id.
