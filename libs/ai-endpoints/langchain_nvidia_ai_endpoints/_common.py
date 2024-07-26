@@ -37,10 +37,6 @@ from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, determine
 logger = logging.getLogger(__name__)
 
 
-def default_payload_fn(payload: dict) -> dict:
-    return payload
-
-
 class NVEModel(BaseModel):
 
     """
@@ -85,9 +81,6 @@ class NVEModel(BaseModel):
     last_inputs: dict = Field({}, description="Last inputs sent over to the server")
     last_response: Response = Field(
         None, description="Last response sent from the server"
-    )
-    payload_fn: Callable = Field(
-        default_payload_fn, description="Function to process payload"
     )
     headers_tmpl: dict = Field(
         {
@@ -204,7 +197,7 @@ class NVEModel(BaseModel):
         self.last_inputs = {
             "url": invoke_url,
             "headers": self.headers["call"],
-            "json": self.payload_fn(payload),
+            "json": payload,
             "stream": False,
         }
         session = self.get_session_fn()
@@ -226,7 +219,7 @@ class NVEModel(BaseModel):
             "stream": False,
         }
         if payload:
-            self.last_inputs["json"] = self.payload_fn(payload)
+            self.last_inputs["json"] = payload
 
         session = self.get_session_fn()
         self.last_response = response = session.get(
@@ -414,7 +407,7 @@ class NVEModel(BaseModel):
         self.last_inputs = {
             "url": invoke_url,
             "headers": self.headers["stream"],
-            "json": self.payload_fn(payload),
+            "json": payload,
             "stream": True,
         }
 
