@@ -380,8 +380,8 @@ class NVEModel(BaseModel):
 
     def get_req_stream(
         self,
-        payload: dict = {},
-    ) -> Iterator:
+        payload: dict,
+    ) -> Iterator[Dict]:
         self.last_inputs = {
             "url": self.infer_url,
             "headers": self.headers["stream"],
