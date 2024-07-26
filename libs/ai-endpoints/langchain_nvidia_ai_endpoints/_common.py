@@ -42,7 +42,8 @@ class _NVIDIAClient(BaseModel):
     """
 
     default_model_name: str = Field(..., description="Default model name to use")
-    model: Optional[str] = Field(..., description="Name of the model to invoke")
+    model_name: Optional[str] = Field(..., description="Name of the model to invoke")
+    model: Optional[Model] = Field(None, description="The model to invoke")
     is_hosted: bool = Field(True)
 
     # todo: add a validator for requests.Response (last_response attribute) and
@@ -144,38 +145,50 @@ class _NVIDIAClient(BaseModel):
                 )
 
             # set default model for hosted endpoint
-            if not self.model:
-                self.model = self.default_model_name
+            if not self.model_name:
+                self.model_name = self.default_model_name
 
-            if model := determine_model(self.model):
-                self.model = model.id  # name may change because of aliasing
+            if model := determine_model(self.model_name):
                 # not all models are on https://integrate.api.nvidia.com/v1,
                 # those that are not are served from their own endpoints
                 if model.endpoint:
                     # we override the infer_path to use the custom endpoint
                     self.infer_path = model.endpoint
             else:
-                if any(model.id == self.model for model in self.available_models):
+                candidates = [
+                    model
+                    for model in self.available_models
+                    if model.id == self.model_name
+                ]
+                assert len(candidates) <= 1, (
+                    f"Multiple candidates for {self.model_name} "
+                    f"in `available_models`: {candidates}"
+                )
+                if candidates:
+                    model = candidates[0]
                     warnings.warn(
-                        f"Found {self.model} in available_models, but type is "
+                        f"Found {self.model_name} in available_models, but type is "
                         "unknown and inference may fail."
                     )
                 else:
                     raise ValueError(
-                        f"Model {self.model} is unknown, check `available_models`"
+                        f"Model {self.model_name} is unknown, check `available_models`"
                     )
+            self.model = model
+            self.model_name = self.model.id  # name may change because of aliasing
         else:
             # set default model
-            if not self.model:
+            if not self.model_name:
                 valid_models = [
-                    model.id
+                    model
                     for model in self.available_models
                     if not model.base_model or model.base_model == model.id
                 ]
                 self.model = next(iter(valid_models), None)
                 if self.model:
+                    self.model_name = self.model.id
                     warnings.warn(
-                        f"Default model is set as: {self.model}. \n"
+                        f"Default model is set as: {self.model_name}. \n"
                         "Set model using model parameter. \n"
                         "To get available models use available_models property.",
                         UserWarning,
@@ -199,8 +212,8 @@ class _NVIDIAClient(BaseModel):
         attributes: Dict[str, Any] = {}
         attributes["base_url"] = self.base_url
 
-        if self.model:
-            attributes["model"] = self.model
+        if self.model_name:
+            attributes["model"] = self.model_name
 
         return attributes
 

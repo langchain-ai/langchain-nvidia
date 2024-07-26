@@ -71,14 +71,14 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         super().__init__(**kwargs)
         self._client = _NVIDIAClient(
             base_url=self.base_url,
-            model=self.model,
+            model_name=self.model,
             default_model_name=self._default_model,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
             infer_path="{base_url}/embeddings",
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
-        self.model = self._client.model
+        self.model = self._client.model_name
 
         # todo: remove when nvolveqa_40k is removed from MODEL_TABLE
         if "model" in kwargs and kwargs["model"] in [

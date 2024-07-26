@@ -67,7 +67,7 @@ def test_aliases(public_class: type, alias: str) -> None:
     """
     with pytest.warns(UserWarning) as record:
         x = public_class(model=alias, nvidia_api_key="a-bogus-key")
-        assert x.model == x._client.model
+        assert x.model == x._client.model_name
     assert isinstance(record[0].message, Warning)
     assert "deprecated" in record[0].message.args[0]
 
