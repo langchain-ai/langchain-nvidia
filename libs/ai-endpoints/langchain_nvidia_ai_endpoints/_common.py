@@ -20,7 +20,6 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-import aiohttp
 import requests
 from langchain_core.pydantic_v1 import (
     BaseModel,
@@ -71,7 +70,6 @@ class NVEModel(BaseModel):
         description="Path for polling after HTTP 202 responses",
     )
     get_session_fn: Callable = Field(requests.Session)
-    get_asession_fn: Callable = Field(aiohttp.ClientSession)
 
     api_key: Optional[SecretStr] = Field(description="API Key for service of choice")
 
