@@ -100,6 +100,10 @@ class NVEModel(BaseModel):
     )
     _available_models: Optional[List[Model]] = PrivateAttr(default=None)
 
+    @property
+    def infer_url(self) -> str:
+        return self.infer_path.format(base_url=self.base_url)
+
     @classmethod
     def is_lc_serializable(cls) -> bool:
         return True
@@ -322,29 +326,17 @@ class NVEModel(BaseModel):
             return msg_list
         raise ValueError(f"Received ill-formed response: {response}")
 
-    def _get_invoke_url(
-        self,
-        invoke_url: Optional[str] = None,
-    ) -> str:
-        """Helper method to get invoke URL from a model name, URL, or endpoint stub"""
-        if not invoke_url:
-            invoke_url = self.infer_path.format(base_url=self.base_url)
-
-        return invoke_url
-
     ####################################################################################
     ## Generation interface to allow users to generate new values from endpoints
 
     def get_req(
         self,
         payload: dict = {},
-        invoke_url: Optional[str] = None,
     ) -> Response:
         """Post to the API."""
-        invoke_url = self._get_invoke_url(invoke_url)
         if payload.get("stream", False) is True:
             payload = {**payload, "stream": False}
-        response, session = self._post(invoke_url, payload)
+        response, session = self._post(self.infer_url, payload)
         return self._wait(response, session)
 
     def postprocess(
@@ -399,13 +391,11 @@ class NVEModel(BaseModel):
     def get_req_stream(
         self,
         payload: dict = {},
-        invoke_url: Optional[str] = None,
     ) -> Iterator:
-        invoke_url = self._get_invoke_url(invoke_url)
         if payload.get("stream", True) is False:
             payload = {**payload, "stream": True}
         self.last_inputs = {
-            "url": invoke_url,
+            "url": self.infer_url,
             "headers": self.headers["stream"],
             "json": payload,
             "stream": True,
