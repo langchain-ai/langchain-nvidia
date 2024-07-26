@@ -65,7 +65,7 @@ class NVEModel(BaseModel):
         "{base_url}/models",
         description="Path for listing available models",
     )
-    polling_endpoint: str = Field(
+    polling_url_tmpl: str = Field(
         "https://api.nvcf.nvidia.com/v2/nvcf/pexec/status/{request_id}",
         description="Path for polling after HTTP 202 responses",
     )
@@ -248,7 +248,7 @@ class NVEModel(BaseModel):
             ), "Received 202 response with no request id to follow"
             request_id = response.headers.get("NVCF-REQID")
             self.last_response = response = session.get(
-                self.polling_endpoint.format(request_id=request_id),
+                self.polling_url_tmpl.format(request_id=request_id),
                 headers=self.headers["call"],
             )
         self._try_raise(response)
