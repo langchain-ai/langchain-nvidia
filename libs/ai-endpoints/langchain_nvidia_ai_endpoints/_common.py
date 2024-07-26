@@ -135,11 +135,6 @@ class _NVIDIAClient(BaseModel):
             "ai.api.nvidia.com",
         ]
 
-        # set default model for hosted endpoint
-        if self.is_hosted and not self.model:
-            self.model = self.default_model_name
-
-        name = self.model
         if self.is_hosted:
             if not self.api_key:
                 warnings.warn(
@@ -147,40 +142,44 @@ class _NVIDIAClient(BaseModel):
                     "This will become an error in the future.",
                     UserWarning,
                 )
-            if name is not None and (model := determine_model(name)):
-                self.model = model.id
+
+            # set default model for hosted endpoint
+            if not self.model:
+                self.model = self.default_model_name
+
+            if model := determine_model(self.model):
+                self.model = model.id  # name may change because of aliasing
                 # not all models are on https://integrate.api.nvidia.com/v1,
                 # those that are not are served from their own endpoints
                 if model.endpoint:
                     # we override the infer_path to use the custom endpoint
                     self.infer_path = model.endpoint
             else:
-                if any(model.id == name for model in self.available_models):
+                if any(model.id == self.model for model in self.available_models):
                     warnings.warn(
-                        f"Found {name} in available_models, but type is "
+                        f"Found {self.model} in available_models, but type is "
                         "unknown and inference may fail."
                     )
                 else:
                     raise ValueError(
-                        f"Model {name} is unknown, check `available_models`"
+                        f"Model {self.model} is unknown, check `available_models`"
                     )
         else:
             # set default model
-            if not name:
+            if not self.model:
                 valid_models = [
                     model.id
                     for model in self.available_models
                     if not model.base_model or model.base_model == model.id
                 ]
-                name = next(iter(valid_models), None)
-                if name:
+                self.model = next(iter(valid_models), None)
+                if self.model:
                     warnings.warn(
-                        f"Default model is set as: {name}. \n"
+                        f"Default model is set as: {self.model}. \n"
                         "Set model using model parameter. \n"
                         "To get available models use available_models property.",
                         UserWarning,
                     )
-                    self.model = name
                 else:
                     raise ValueError("No locally hosted model was found.")
 
