@@ -211,16 +211,12 @@ class NVEModel(BaseModel):
     def _get(
         self,
         invoke_url: str,
-        payload: Optional[dict] = {},
     ) -> Tuple[Response, Any]:
         """Method for getting from the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
             "headers": self.headers["call"],
         }
-        if payload:
-            self.last_inputs["json"] = payload
-
         session = self.get_session_fn()
         self.last_response = response = session.get(
             **self.__add_authorization(deepcopy(self.last_inputs))
