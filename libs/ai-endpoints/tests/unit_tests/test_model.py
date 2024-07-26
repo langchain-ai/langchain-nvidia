@@ -129,7 +129,7 @@ def test_known_unknown(public_class: type, known_unknown: str) -> None:
     assert "unknown" in record[0].message.args[0]
 
 
-def test_unknown_unknown(public_class: type) -> None:
+def test_unknown_unknown(public_class: type, empty_v1_models: None) -> None:
     """
     Test that a model not in /v1/models and not in known model table will be
     rejected.
@@ -170,13 +170,16 @@ def test_hosted_all_incompatible(public_class: type, model: str, client: str) ->
     """
     msg = (
         "Model {model_name} is incompatible with client {cls_name}. "
-        "Please check `available_models`."
+        "Please check `{cls_name}.get_available_models()`."
     )
 
     if client != public_class.__name__:
         with pytest.raises(ValueError) as err_msg:
             public_class(model=model, nvidia_api_key="a-bogus-key")
-            assert err_msg == msg.format(model_name=model, cls_name=client)
+
+        assert msg.format(model_name=model, cls_name=public_class.__name__) in str(
+            err_msg.value
+        )
 
 
 @pytest.mark.parametrize(

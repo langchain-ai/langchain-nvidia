@@ -16,40 +16,35 @@ from langchain_nvidia_ai_endpoints import (
 # you will have to find the new ones from https://api.nvcf.nvidia.com/v2/nvcf/functions
 #
 @pytest.mark.parametrize(
-    "client, id, endpoint, model_type",
+    "client, id, endpoint",
     [
         (
             ChatNVIDIA,
             "meta/llama3-8b-instruct",
             "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/a5a3ad64-ec2c-4bfc-8ef7-5636f26630fe",
-            "chat",
         ),
         (
             NVIDIAEmbeddings,
             "NV-Embed-QA",
             "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/09c64e32-2b65-4892-a285-2f585408d118",
-            "embedding",
         ),
         (
             NVIDIARerank,
             "nv-rerank-qa-mistral-4b:1",
             "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/0bf77f50-5c35-4488-8e7a-f49bb1974af6",
-            "ranking",
         ),
     ],
 )
 def test_registered_model_functional(
-    client: type, id: str, endpoint: str, model_type: str, contact_service: Any
+    client: type, id: str, endpoint: str, contact_service: Any
 ) -> None:
-    model = Model(
-        id=id, endpoint=endpoint, client=client.__name__, model_type=model_type
-    )
+    model = Model(id=id, endpoint=endpoint)
     with pytest.warns(
         UserWarning
     ) as record:  # warns because we're overriding known models
         register_model(model)
         contact_service(client(model=id))
-    assert len(record) == 1
+    assert len(record) == 2
     assert isinstance(record[0].message, UserWarning)
     assert "already registered" in str(record[0].message)
     assert "Overriding" in str(record[0].message)

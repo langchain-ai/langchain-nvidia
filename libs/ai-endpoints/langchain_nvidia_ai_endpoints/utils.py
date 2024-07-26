@@ -46,10 +46,12 @@ def _validate_hosted_model_compatibility(
     Raises:
         ValueError: If the model is incompatible with the client.
     """
-    if model.client != cls_name:
+    if not model.client:
+        warnings.warn(f"Unable to determine validity of {name}")
+    elif model.client != cls_name:
         raise ValueError(
             f"Model {name} is incompatible with client {cls_name}. "
-            "Please check `available_models`."
+            f"Please check `{cls_name}.get_available_models()`."
         )
 
 
@@ -110,7 +112,7 @@ def _validate_locally_hosted_model_compatibility(
     if model.client != cls_name:
         raise ValueError(
             f"Model {model_name} is incompatible with client {cls_name}. "
-            "Please check `available_models`."
+            f"Please check `{cls_name}.get_available_models()`."
         )
 
     if model_name not in [model.id for model in client.available_models]:

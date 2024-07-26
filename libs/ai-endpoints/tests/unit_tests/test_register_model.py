@@ -64,18 +64,13 @@ def test_registered_model_usable(public_class: type) -> None:
 
 def test_registered_model_without_client_usable(public_class: type) -> None:
     id = f"test/no-client-{public_class.__name__}"
-    incompatible_err_msg = "Model {name} is incompatible with client {cls_name}. \
-                            Please check `available_models`."
     model = Model(id=id, endpoint="BOGUS")
     register_model(model)
     # todo: this should warn that the model is known but type is not
     #       and therefore inference may not work
     # Marking this as failed
-    with pytest.raises(ValueError) as err_msg:
+    with pytest.warns(UserWarning):
         public_class(model=id, nvidia_api_key="a-bogus-key")
-        assert err_msg == incompatible_err_msg.format(
-            name=id, cls_name=public_class.__name__
-        )
 
 
 def test_missing_endpoint() -> None:
