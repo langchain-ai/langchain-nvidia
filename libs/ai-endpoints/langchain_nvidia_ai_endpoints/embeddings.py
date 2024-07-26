@@ -140,7 +140,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         if self.truncate:
             payload["truncate"] = self.truncate
 
-        response = self._client.client.get_req(
+        response = self._client.get_req(
             payload=payload,
         )
         response.raise_for_status()

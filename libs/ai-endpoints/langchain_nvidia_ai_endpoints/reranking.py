@@ -106,7 +106,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         }
         if self.truncate:
             payload["truncate"] = self.truncate
-        response = self._client.client.get_req(payload=payload)
+        response = self._client.get_req(payload=payload)
         if response.status_code != 200:
             response.raise_for_status()
         # todo: handle errors

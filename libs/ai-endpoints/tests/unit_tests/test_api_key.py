@@ -55,7 +55,7 @@ def test_create_with_api_key(public_class: type, param: str) -> None:
 
 def test_api_key_priority(public_class: type) -> None:
     def get_api_key(instance: Any) -> str:
-        return instance._client.client.api_key.get_secret_value()
+        return instance._client.api_key.get_secret_value()
 
     with no_env_var("NVIDIA_API_KEY"):
         os.environ["NVIDIA_API_KEY"] = "ENV"
@@ -68,7 +68,7 @@ def test_api_key_priority(public_class: type) -> None:
 def test_api_key_type(public_class: type) -> None:
     # Test case to make sure the api_key is SecretStr and not str
     def get_api_key(instance: Any) -> str:
-        return instance._client.client.api_key
+        return instance._client.api_key
 
     with no_env_var("NVIDIA_API_KEY"):
         os.environ["NVIDIA_API_KEY"] = "ENV"

@@ -263,8 +263,8 @@ class ChatNVIDIA(BaseChatModel):
             for message in [convert_message_to_dict(message) for message in messages]
         ]
         payload = self._get_payload(inputs=inputs, stop=stop, stream=False, **kwargs)
-        response = self._client.client.get_req(payload=payload)
-        responses, _ = self._client.client.postprocess(response)
+        response = self._client.get_req(payload=payload)
+        responses, _ = self._client.postprocess(response)
         self._set_callback_out(responses, run_manager)
         parsed_response = self._custom_postprocess(responses, streaming=False)
         # for pre 0.2 compatibility w/ ChatMessage
@@ -286,7 +286,7 @@ class ChatNVIDIA(BaseChatModel):
             for message in [convert_message_to_dict(message) for message in messages]
         ]
         payload = self._get_payload(inputs=inputs, stop=stop, stream=True, **kwargs)
-        for response in self._client.client.get_req_stream(payload=payload):
+        for response in self._client.get_req_stream(payload=payload):
             self._set_callback_out(response, run_manager)
             parsed_response = self._custom_postprocess(response, streaming=True)
             # for pre 0.2 compatibility w/ ChatMessageChunk
