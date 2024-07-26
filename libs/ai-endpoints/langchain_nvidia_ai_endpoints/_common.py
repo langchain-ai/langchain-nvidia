@@ -200,7 +200,6 @@ class NVEModel(BaseModel):
             "url": invoke_url,
             "headers": self.headers["call"],
             "json": payload,
-            "stream": False,
         }
         session = self.get_session_fn()
         self.last_response = response = session.post(
@@ -218,7 +217,6 @@ class NVEModel(BaseModel):
         self.last_inputs = {
             "url": invoke_url,
             "headers": self.headers["call"],
-            "stream": False,
         }
         if payload:
             self.last_inputs["json"] = payload
@@ -332,8 +330,6 @@ class NVEModel(BaseModel):
         payload: dict = {},
     ) -> Response:
         """Post to the API."""
-        if payload.get("stream", False) is True:
-            payload = {**payload, "stream": False}
         response, session = self._post(self.infer_url, payload)
         return self._wait(response, session)
 
@@ -390,13 +386,10 @@ class NVEModel(BaseModel):
         self,
         payload: dict = {},
     ) -> Iterator:
-        if payload.get("stream", True) is False:
-            payload = {**payload, "stream": True}
         self.last_inputs = {
             "url": self.infer_url,
             "headers": self.headers["stream"],
             "json": payload,
-            "stream": True,
         }
 
         response = self.get_session_fn().post(
