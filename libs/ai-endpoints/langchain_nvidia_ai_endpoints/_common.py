@@ -41,7 +41,7 @@ class _NVIDIAClient(BaseModel):
     Low level client library interface to NIM endpoints.
     """
 
-    default_model_name: str = Field(..., description="Default model name to use")
+    default_hosted_model_name: str = Field(..., description="Default model name to use")
     model_name: Optional[str] = Field(..., description="Name of the model to invoke")
     model: Optional[Model] = Field(None, description="The model to invoke")
     is_hosted: bool = Field(True)
@@ -146,7 +146,7 @@ class _NVIDIAClient(BaseModel):
 
             # set default model for hosted endpoint
             if not self.model_name:
-                self.model_name = self.default_model_name
+                self.model_name = self.default_hosted_model_name
 
             if model := determine_model(self.model_name):
                 # not all models are on https://integrate.api.nvidia.com/v1,
