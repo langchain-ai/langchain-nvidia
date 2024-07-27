@@ -5,7 +5,6 @@ import logging
 import os
 import time
 import warnings
-from copy import deepcopy
 from typing import (
     Any,
     Callable,
@@ -86,13 +85,13 @@ class _NVIDIAClient(BaseModel):
         {
             "call": {
                 "Accept": "application/json",
-                "Authorization": "Bearer {api_key}",
+                "Authorization": "Bearer **********",
                 "User-Agent": "langchain-nvidia-ai-endpoints",
             },
             "stream": {
                 "Accept": "text/event-stream",
                 "Content-Type": "application/json",
-                "Authorization": "Bearer {api_key}",
+                "Authorization": "Bearer **********",
                 "User-Agent": "langchain-nvidia-ai-endpoints",
             },
         },
@@ -224,25 +223,16 @@ class _NVIDIAClient(BaseModel):
     def infer_url(self) -> str:
         return self.infer_path.format(base_url=self.base_url)
 
-    @property
-    def headers(self) -> dict:
-        """Return headers with API key injected"""
-        headers_ = self.headers_tmpl.copy()
-        for header in headers_.values():
-            if "{api_key}" in header["Authorization"] and self.api_key:
-                header["Authorization"] = header["Authorization"].format(
-                    api_key=self.api_key,
-                )
-        return headers_
-
     ###################################################################################
     ################### Authorization handling ########################################
 
     def __add_authorization(self, payload: dict) -> dict:
         if self.api_key:
-            payload["headers"].update(
-                {"Authorization": f"Bearer {self.api_key.get_secret_value()}"}
-            )
+            payload = {**payload}
+            payload["headers"] = {
+                **payload.get("headers", {}),
+                "Authorization": f"Bearer {self.api_key.get_secret_value()}",
+            }
         return payload
 
     ###################################################################################
@@ -317,12 +307,12 @@ class _NVIDIAClient(BaseModel):
         """Method for posting to the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
-            "headers": self.headers["call"],
+            "headers": self.headers_tmpl["call"],
             "json": payload,
         }
         session = self.get_session_fn()
         self.last_response = response = session.post(
-            **self.__add_authorization(deepcopy(self.last_inputs))
+            **self.__add_authorization(self.last_inputs)
         )
         self._try_raise(response)
         return response, session
@@ -334,11 +324,11 @@ class _NVIDIAClient(BaseModel):
         """Method for getting from the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
-            "headers": self.headers["call"],
+            "headers": self.headers_tmpl["call"],
         }
         session = self.get_session_fn()
         self.last_response = response = session.get(
-            **self.__add_authorization(deepcopy(self.last_inputs))
+            **self.__add_authorization(self.last_inputs)
         )
         self._try_raise(response)
         return response, session
@@ -366,9 +356,10 @@ class _NVIDIAClient(BaseModel):
                 "NVCF-REQID" in response.headers
             ), "Received 202 response with no request id to follow"
             request_id = response.headers.get("NVCF-REQID")
+            # todo: this needs testing, missing auth header update
             self.last_response = response = session.get(
                 self.polling_url_tmpl.format(request_id=request_id),
-                headers=self.headers["call"],
+                headers=self.headers_tmpl["call"],
             )
         self._try_raise(response)
         return response
@@ -500,12 +491,12 @@ class _NVIDIAClient(BaseModel):
     ) -> Iterator[Dict]:
         self.last_inputs = {
             "url": self.infer_url,
-            "headers": self.headers["stream"],
+            "headers": self.headers_tmpl["stream"],
             "json": payload,
         }
 
         response = self.get_session_fn().post(
-            **self.__add_authorization(deepcopy(self.last_inputs))
+            **self.__add_authorization(self.last_inputs)
         )
         self._try_raise(response)
         call = self.copy()
