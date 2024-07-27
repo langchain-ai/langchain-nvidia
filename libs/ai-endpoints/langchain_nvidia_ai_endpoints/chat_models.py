@@ -444,19 +444,7 @@ class ChatNVIDIA(BaseChatModel):
         see https://python.langchain.com/v0.1/docs/modules/model_io/chat/function_calling/#request-forcing-a-tool-call
         """
         # check if the model supports tools, warn if it does not
-        known_good = False
-        # todo: we need to store model: Model in this class
-        #       instead of model: str (= Model.id)
-        #  this should be: if not self.model.supports_tools: warnings.warn...
-        candidates = [
-            model for model in self.available_models if model.id == self.model
-        ]
-        if not candidates:  # user must have specified the model themselves
-            known_good = False
-        else:
-            assert len(candidates) == 1, "Multiple models with the same id"
-            known_good = candidates[0].supports_tools is True
-        if not known_good:
+        if self._client.model and not self._client.model.supports_tools:
             warnings.warn(
                 f"Model '{self.model}' is not known to support tools. "
                 "Your tool binding may fail at inference time."
