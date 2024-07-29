@@ -34,7 +34,7 @@ def test_create_without_base_url(public_class: type) -> None:
                           ("https://test_url/v1", "base_url")])
 def test_create_with_base_url(public_class: type, base_url: str, param: str) -> None:
     with no_env_var("NVIDIA_BASE_URL") and pytest.warns(UserWarning):
-        assert public_class(**{param: base_url}).base_url == "https://test_url/v1"
+        assert public_class(**{param: base_url}).base_url == base_url
 
 @pytest.mark.parametrize(
     "base_url",["https://test_url/v1"],
@@ -43,6 +43,7 @@ def test_base_url_priority(public_class: type, base_url: str) -> None:
     os.environ["NVIDIA_BASE_URL"] = base_url
     assert public_class().base_url == base_url
     with no_env_var("NVIDIA_BASE_URL") and pytest.warns(UserWarning):  
+        os.environ["NVIDIA_BASE_URL"] = "bogus"
         assert public_class(nvidia_base_url=base_url).base_url == base_url
         assert public_class(base_url=base_url).base_url == base_url
         assert public_class(base_url="bogus", nvidia_base_url=base_url).base_url == base_url
