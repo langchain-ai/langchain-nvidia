@@ -422,6 +422,11 @@ EMBEDDING_MODEL_TABLE = {
         model_type="embedding",
         client="NVIDIAEmbeddings",
     ),
+    "baai/bge-m3": Model(
+        id="baai/bge-m3",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+    ),
 }
 
 RANKING_MODEL_TABLE = {
