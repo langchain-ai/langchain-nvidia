@@ -71,8 +71,9 @@ def test_base_url_priority(public_class: type, base_url: str) -> None:
 )
 def test_param_base_url_negative(public_class: type, base_url: str) -> None:
     with no_env_var("NVIDIA_BASE_URL"):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as e:
             public_class(base_url=base_url)
+        assert "Invalid base_url, minimally needs scheme and netloc" in str(e.value)
 
 
 @pytest.mark.parametrize(
