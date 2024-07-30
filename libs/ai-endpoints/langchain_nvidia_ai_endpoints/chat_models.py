@@ -207,6 +207,7 @@ class ChatNVIDIA(BaseChatModel):
             nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
             api_key (str): Alternative to nvidia_api_key.
             base_url (str): The base URL of the NIM to connect to.
+                            Format for base URL is http://host:port
             temperature (float): Sampling temperature in [0, 1].
             max_tokens (int): Maximum number of tokens to generate.
             top_p (float): Top-p for distribution sampling.

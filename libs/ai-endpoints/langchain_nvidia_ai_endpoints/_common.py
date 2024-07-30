@@ -18,7 +18,7 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 import aiohttp
 import requests
@@ -130,11 +130,10 @@ class NVEModel(BaseModel):
     def _validate_base_url(cls, v: str) -> str:
         if v is not None:
             result = urlparse(v)
+            expected_format = "Expected format is 'http://host:port'."
             # Ensure scheme and netloc (domain name) are present
             if not (result.scheme and result.netloc):
-                raise ValueError(
-                    f"Invalid base_url, minimally needs scheme and netloc: {v}"
-                )
+                raise ValueError(f"Invalid base_url format. {expected_format} Got: {v}")
         return v
 
     @root_validator(pre=True)
@@ -453,16 +452,46 @@ class _NVIDIAClient(BaseModel):
 
     @root_validator(pre=True)
     def _preprocess_args(cls, values: Any) -> Any:
-        values["client"] = NVEModel(**values)
-
         if "base_url" in values:
-            values["is_hosted"] = urlparse(values["base_url"]).netloc in [
+            is_hosted = urlparse(values["base_url"]).netloc in [
                 "integrate.api.nvidia.com",
                 "ai.api.nvidia.com",
             ]
 
+        ## Making sure /v1 in added to the url, followed by infer_path
+        if "base_url" in values:
+            result = urlparse(values["base_url"])
+            expected_format = "Expected format is 'http://host:port'."
+
+            if result.path:
+                normalized_path = result.path.strip("/")
+                if normalized_path == "v1":
+                    pass
+                elif normalized_path in [
+                    "v1/embeddings",
+                    "v1/completions",
+                    "v1/rankings",
+                ]:
+                    warnings.warn(f"{expected_format} Rest is ingnored.")
+                else:
+                    raise ValueError(
+                        f"Base URL path is not recognized. {expected_format}"
+                    )
+
+            base_url = urlunparse((result.scheme, result.netloc, "v1", "", "", ""))
+            values["base_url"] = base_url
+            values["infer_path"] = values["infer_path"].format(base_url=base_url)
+
+        values["client"] = NVEModel(**values)
+        if "base_url" in values:
+            values["client"].listing_path = values["client"].listing_path.format(
+                base_url=values["base_url"]
+            )
+
+        values["is_hosted"] = is_hosted
+
         # set default model for hosted endpoint
-        if values["is_hosted"] and not values["model"]:
+        if is_hosted and not values["model"]:
             values["model"] = values["default_model"]
 
         return values
