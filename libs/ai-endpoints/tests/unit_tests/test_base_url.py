@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 import pytest
 from requests_mock import Mocker
@@ -47,16 +48,22 @@ def test_create_with_base_url(public_class: type, base_url: str, param: str) -> 
     "base_url",
     ["https://test_url/v1"],
 )
-def test_base_url_priority(public_class: type, base_url: str) -> None:
-    os.environ["NVIDIA_BASE_URL"] = base_url
-    assert public_class(model="model1").base_url == base_url
+def test_base_url_priority(public_class: type) -> None:
+    ENV_URL = "https://test/v1/ENV"
+    NV_PARAM_URL = "https://test/v1/NV_PARAM"
+    PARAM_URL = "https://test/v1/PARAM"
+
+    def get_base_url(**kwargs: Any) -> str:
+        return public_class(model="model1", **kwargs).base_url
+
     with no_env_var("NVIDIA_BASE_URL"):
-        os.environ["NVIDIA_BASE_URL"] = "bogus"
-        assert public_class(model="model1", nvidia_base_url=base_url).base_url == base_url
-        assert public_class(model="model1", base_url=base_url).base_url == base_url
+        os.environ["NVIDIA_BASE_URL"] = ENV_URL
+        assert get_base_url() == ENV_URL
+        assert get_base_url(nvidia_base_url=NV_PARAM_URL) == NV_PARAM_URL
+        assert get_base_url(base_url=PARAM_URL) == PARAM_URL
         assert (
-            public_class(model="model1", base_url="bogus", nvidia_base_url=base_url).base_url
-            == base_url
+            get_base_url(base_url=PARAM_URL, nvidia_base_url=NV_PARAM_URL)
+            == NV_PARAM_URL
         )
 
 
