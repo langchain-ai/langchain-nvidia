@@ -49,7 +49,7 @@ def test_create_with_base_url(public_class: type, base_url: str, param: str) -> 
 )
 def test_base_url_priority(public_class: type, base_url: str) -> None:
     os.environ["NVIDIA_BASE_URL"] = base_url
-    assert public_class().base_url == base_url
+    assert public_class(model="model1").base_url == base_url
     with no_env_var("NVIDIA_BASE_URL"):
         os.environ["NVIDIA_BASE_URL"] = "bogus"
         assert public_class(model="model1", nvidia_base_url=base_url).base_url == base_url
