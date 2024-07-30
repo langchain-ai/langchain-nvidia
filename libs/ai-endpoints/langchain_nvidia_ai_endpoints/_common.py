@@ -17,7 +17,7 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 import requests
 from langchain_core.pydantic_v1 import (
@@ -106,11 +106,10 @@ class _NVIDIAClient(BaseModel):
     def _validate_base_url(cls, v: str) -> str:
         if v is not None:
             result = urlparse(v)
+            expected_format = "Expected format is 'http://host:port'."
             # Ensure scheme and netloc (domain name) are present
             if not (result.scheme and result.netloc):
-                raise ValueError(
-                    f"Invalid base_url, minimally needs scheme and netloc: {v}"
-                )
+                raise ValueError(f"Invalid base_url format. {expected_format} Got: {v}")
         return v
 
     @root_validator(pre=True)
@@ -121,6 +120,38 @@ class _NVIDIAClient(BaseModel):
             or os.getenv(cls._api_key_var)
             or None
         )
+
+        ## Making sure /v1 in added to the url, followed by infer_path
+        if "base_url" in values:
+            base_url = values["base_url"]
+            parsed = urlparse(base_url)
+            expected_format = "Expected format is: http://host:port"
+
+            if not (parsed.scheme and parsed.netloc):
+                raise ValueError(
+                    f"Invalid base_url format. {expected_format} Got: {base_url}"
+                )
+
+            if parsed.path:
+                normalized_path = parsed.path.strip("/")
+                if normalized_path == "v1":
+                    pass
+                elif normalized_path in [
+                    "v1/embeddings",
+                    "v1/completions",
+                    "v1/rankings",
+                ]:
+                    warnings.warn(f"Using {base_url}, ignoring the rest")
+                else:
+                    raise ValueError(
+                        f"Base URL path is not recognized. {expected_format}"
+                    )
+
+            base_url = urlunparse(
+                (parsed.scheme, parsed.netloc, "v1", None, None, None)
+            )
+            values["base_url"] = base_url
+            values["infer_path"] = values["infer_path"].format(base_url=base_url)
 
         return values
 

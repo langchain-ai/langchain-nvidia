@@ -303,6 +303,11 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_tools=True,
     ),
+    "nvidia/usdcode-llama3-70b-instruct": Model(
+        id="nvidia/usdcode-llama3-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
@@ -414,6 +419,11 @@ EMBEDDING_MODEL_TABLE = {
     ),
     "nvidia/nv-embedqa-e5-v5": Model(
         id="nvidia/nv-embedqa-e5-v5",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+    ),
+    "baai/bge-m3": Model(
+        id="baai/bge-m3",
         model_type="embedding",
         client="NVIDIAEmbeddings",
     ),

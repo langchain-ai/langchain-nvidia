@@ -16,6 +16,9 @@ def no_env_var(var: str) -> Generator[None, None, None]:
     finally:
         if val:
             os.environ[var] = val
+        else:
+            if var in os.environ:
+                del os.environ[var]
 
 
 @pytest.fixture(autouse=True)
@@ -43,7 +46,7 @@ def test_create_without_api_key(public_class: type) -> None:
 
 
 def test_create_unknown_url_no_api_key(public_class: type) -> None:
-    with no_env_var("NVIDIA_API_KEY"):
+    with no_env_var("NVIDIA_API_KEY") and pytest.warns(UserWarning):
         public_class(base_url="https://test_url/v1")
 
 

@@ -23,7 +23,6 @@ from typing import (
 )
 
 import requests
-from langchain_community.adapters.openai import convert_message_to_dict
 from langchain_core.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
@@ -39,13 +38,14 @@ from langchain_core.outputs import (
     ChatGenerationChunk,
     ChatResult,
 )
-from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
+from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr, root_validator
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
+from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
 
 _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
 _DictOrPydanticClass = Union[Dict[str, Any], Type[BaseModel]]
@@ -180,8 +180,8 @@ class ChatNVIDIA(BaseChatModel):
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model: str = "meta/llama3-8b-instruct"
+    _default_base_url: str = "https://integrate.api.nvidia.com/v1"
     base_url: str = Field(
-        "https://integrate.api.nvidia.com/v1",
         description="Base url for model listing an invocation",
     )
     model: Optional[str] = Field(description="Name of the model to invoke")
@@ -192,6 +192,18 @@ class ChatNVIDIA(BaseChatModel):
     top_p: Optional[float] = Field(description="Top-p for distribution sampling")
     seed: Optional[int] = Field(description="The seed for deterministic results")
     stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
+
+    _base_url_var = "NVIDIA_BASE_URL"
+
+    @root_validator(pre=True)
+    def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        values["base_url"] = (
+            values.get(cls._base_url_var.lower())
+            or values.get("base_url")
+            or os.getenv(cls._base_url_var)
+            or cls._default_base_url
+        )
+        return values
 
     def __init__(self, **kwargs: Any):
         """
@@ -207,6 +219,7 @@ class ChatNVIDIA(BaseChatModel):
             nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
             api_key (str): Alternative to nvidia_api_key.
             base_url (str): The base URL of the NIM to connect to.
+                            Format for base URL is http://host:port
             temperature (float): Sampling temperature in [0, 1].
             max_tokens (int): Maximum number of tokens to generate.
             top_p (float): Top-p for distribution sampling.
