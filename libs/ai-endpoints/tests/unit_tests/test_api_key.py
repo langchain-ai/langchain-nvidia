@@ -16,6 +16,9 @@ def no_env_var(var: str) -> Generator[None, None, None]:
     finally:
         if val:
             os.environ[var] = val
+        else:
+            if var in os.environ:
+                del os.environ[var]
 
 
 @pytest.fixture(autouse=True)
