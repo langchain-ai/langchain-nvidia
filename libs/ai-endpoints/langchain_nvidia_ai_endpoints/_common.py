@@ -367,13 +367,17 @@ class NVEModel(BaseModel):
         content_buffer: Dict[str, Any] = dict()
         content_holder: Dict[Any, Any] = dict()
         usage_holder: Dict[Any, Any] = dict()  ####
+        finish_reason_holder: Optional[str] = None
         is_stopped = False
         for msg in msg_list:
             usage_holder = msg.get("usage", {})  ####
             if "choices" in msg:
                 ## Tease out ['choices'][0]...['delta'/'message']
                 msg = msg.get("choices", [{}])[0]
-                is_stopped = msg.get("finish_reason", "") == "stop"
+                # todo: this meeds to be fixed, the fact we only
+                #       use the first choice breaks the interface
+                finish_reason_holder = msg.get("finish_reason", None)
+                is_stopped = finish_reason_holder == "stop"
                 msg = msg.get("delta", msg.get("message", msg.get("text", "")))
                 if not isinstance(msg, dict):
                     msg = {"content": msg}
@@ -391,6 +395,8 @@ class NVEModel(BaseModel):
         content_holder = {**content_holder, **content_buffer}
         if usage_holder:
             content_holder.update(token_usage=usage_holder)  ####
+        if finish_reason_holder:
+            content_holder.update(finish_reason=finish_reason_holder)
         return content_holder, is_stopped
 
     ####################################################################################

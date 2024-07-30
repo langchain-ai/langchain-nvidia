@@ -102,6 +102,8 @@ def test_embed_documents_truncate(
 
 @pytest.mark.parametrize("nvolveqa_40k", ["playground_nvolveqa_40k", "nvolveqa_40k"])
 def test_embed_nvolveqa_40k_compat(nvolveqa_40k: str, mode: dict) -> None:
+    if mode:
+        pytest.skip("Test only relevant for API Catalog")
     with pytest.warns(UserWarning):
         embedding = NVIDIAEmbeddings(model=nvolveqa_40k, truncate="NONE", **mode)
     text = "nvidia " * 2048

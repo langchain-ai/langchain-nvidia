@@ -22,6 +22,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run tests for a specific chat model or list of models",
     )
     parser.addoption(
+        "--tool-model-id",
+        action="store",
+        nargs="+",
+        help="Run tests for a specific chat models that support tool calling",
+    )
+    parser.addoption(
         "--qa-model-id",
         action="store",
         nargs="+",
@@ -30,12 +36,14 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--embedding-model-id",
         action="store",
-        help="Run tests for a specific embedding model",
+        nargs="+",
+        help="Run tests for a specific embedding model or list of models",
     )
     parser.addoption(
         "--rerank-model-id",
         action="store",
-        help="Run tests for a specific rerank model",
+        nargs="+",
+        help="Run tests for a specific rerank model or list of models",
     )
     parser.addoption(
         "--vlm-model-id",
@@ -72,20 +80,24 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             ]
         metafunc.parametrize("chat_model", models, ids=models)
 
-    if "rerank_model" in metafunc.fixturenames:
-        models = ["nv-rerank-qa-mistral-4b:1"]
-        if model := metafunc.config.getoption("rerank_model_id"):
-            models = [model]
-        # nim-mode reranking does not support model listing via /v1/models endpoint
+    if "tool_model" in metafunc.fixturenames:
+        models = ["meta/llama-3.1-8b-instruct"]
+        if model_list := metafunc.config.getoption("tool_model_id"):
+            models = model_list
         if metafunc.config.getoption("all_models"):
-            if mode.get("mode", None) == "nim":
-                models = [model.id for model in NVIDIARerank(**mode).available_models]
-            else:
-                models = [
-                    model.id
-                    for model in get_all_known_models()
-                    if model.model_type == "ranking"
-                ]
+            models = [
+                model.id
+                for model in ChatNVIDIA(**mode).available_models
+                if model.model_type == "chat" and model.supports_tools
+            ]
+        metafunc.parametrize("tool_model", models, ids=models)
+
+    if "rerank_model" in metafunc.fixturenames:
+        models = [NVIDIARerank._default_model_name]
+        if model_list := metafunc.config.getoption("rerank_model_id"):
+            models = model_list
+        if metafunc.config.getoption("all_models"):
+            models = [model.id for model in NVIDIARerank(**mode).available_models]
         metafunc.parametrize("rerank_model", models, ids=models)
 
     if "vlm_model" in metafunc.fixturenames:
@@ -114,8 +126,10 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
     if "embedding_model" in metafunc.fixturenames:
         models = [NVIDIAEmbeddings._default_model]
-        if metafunc.config.getoption("embedding_model_id"):
-            models = [metafunc.config.getoption("embedding_model_id")]
+        if metafunc.config.getoption("all_models"):
+            models = [model.id for model in NVIDIAEmbeddings(**mode).available_models]
+        if model_list := metafunc.config.getoption("embedding_model_id"):
+            models = model_list
         if metafunc.config.getoption("all_models"):
             models = [model.id for model in NVIDIAEmbeddings(**mode).available_models]
         metafunc.parametrize("embedding_model", models, ids=models)
