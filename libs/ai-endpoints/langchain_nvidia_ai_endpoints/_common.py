@@ -460,11 +460,15 @@ class _NVIDIAClient(BaseModel):
 
         ## Making sure /v1 in added to the url, followed by infer_path
         if "base_url" in values:
-            result = urlparse(values["base_url"])
-            expected_format = "Expected format is 'http://host:port'."
+            base_url = values["base_url"]
+            parsed = urlparse(base_url)
+            expected_format = "Expected format is: http://host:port"
 
-            if result.path:
-                normalized_path = result.path.strip("/")
+            if not (parsed.scheme and parsed.netloc):
+                raise ValueError(f"Invalid base_url: {base_url}\n{expected_format}")
+
+            if parsed.path:
+                normalized_path = parsed.path.strip("/")
                 if normalized_path == "v1":
                     pass
                 elif normalized_path in [
@@ -472,13 +476,15 @@ class _NVIDIAClient(BaseModel):
                     "v1/completions",
                     "v1/rankings",
                 ]:
-                    warnings.warn(f"{expected_format} Rest is ingnored.")
+                    base_url = urlunparse(
+                        (parsed.scheme, parsed.netloc, "v1", None, None, None)
+                    )
+                    warnings.warn(f"Using {base_url}, ignoring the rest")
                 else:
                     raise ValueError(
                         f"Base URL path is not recognized. {expected_format}"
                     )
 
-            base_url = urlunparse((result.scheme, result.netloc, "v1", "", "", ""))
             values["base_url"] = base_url
             values["infer_path"] = values["infer_path"].format(base_url=base_url)
 
