@@ -1,8 +1,10 @@
 import os
+
 import pytest
 from requests_mock import Mocker
-from typing import Any
+
 from .test_api_key import no_env_var
+
 
 @pytest.fixture(autouse=True)
 def mock_v1_local_models(requests_mock: Mocker, base_url: str) -> None:
@@ -22,34 +24,43 @@ def mock_v1_local_models(requests_mock: Mocker, base_url: str) -> None:
         },
     )
 
+
 @pytest.mark.parametrize(
-    "base_url",["bogus"],
+    "base_url",
+    ["bogus"],
 )
 def test_create_without_base_url(public_class: type) -> None:
-   with no_env_var("NVIDIA_BASE_URL"):
-       assert public_class().base_url == "https://integrate.api.nvidia.com/v1"
+    with no_env_var("NVIDIA_BASE_URL"):
+        assert public_class().base_url == "https://integrate.api.nvidia.com/v1"
 
-@pytest.mark.parametrize("base_url, param", 
-                         [("https://test_url/v1", "nvidia_base_url"),
-                          ("https://test_url/v1", "base_url")])
+
+@pytest.mark.parametrize(
+    "base_url, param",
+    [("https://test_url/v1", "nvidia_base_url"), ("https://test_url/v1", "base_url")],
+)
 def test_create_with_base_url(public_class: type, base_url: str, param: str) -> None:
     with no_env_var("NVIDIA_BASE_URL") and pytest.warns(UserWarning):
         assert public_class(**{param: base_url}).base_url == base_url
 
+
 @pytest.mark.parametrize(
-    "base_url",["https://test_url/v1"],
+    "base_url",
+    ["https://test_url/v1"],
 )
 def test_base_url_priority(public_class: type, base_url: str) -> None:
     os.environ["NVIDIA_BASE_URL"] = base_url
     assert public_class().base_url == base_url
-    with no_env_var("NVIDIA_BASE_URL") and pytest.warns(UserWarning):  
+    with no_env_var("NVIDIA_BASE_URL") and pytest.warns(UserWarning):
         os.environ["NVIDIA_BASE_URL"] = "bogus"
         assert public_class(nvidia_base_url=base_url).base_url == base_url
         assert public_class(base_url=base_url).base_url == base_url
-        assert public_class(base_url="bogus", nvidia_base_url=base_url).base_url == base_url
+        assert (
+            public_class(base_url="bogus", nvidia_base_url=base_url).base_url
+            == base_url
+        )
+
 
 @pytest.mark.parametrize(
-
     "base_url",
     [
         "bogus",
@@ -63,6 +74,7 @@ def test_param_base_url_negative(public_class: type, base_url: str) -> None:
         with pytest.raises(ValueError):
             public_class(base_url=base_url)
 
+
 @pytest.mark.parametrize(
     "base_url",
     ["https://integrate.api.nvidia.com/v1", "https://ai.api.nvidia.com/v1"],
@@ -71,6 +83,7 @@ def test_param_base_url_hosted(public_class: type, base_url: str) -> None:
     with no_env_var("NVIDIA_BASE_URL"):
         client = public_class(base_url=base_url)
         assert client._client.is_hosted
+
 
 @pytest.mark.parametrize(
     "base_url",
@@ -83,4 +96,4 @@ def test_param_base_url_hosted(public_class: type, base_url: str) -> None:
 def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
     with no_env_var("NVIDIA_BASE_URL") and pytest.warns(UserWarning):
         client = public_class(base_url=base_url)
-        assert not client._client.is_hosted 
+        assert not client._client.is_hosted

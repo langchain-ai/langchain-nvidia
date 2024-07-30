@@ -1,6 +1,7 @@
 from __future__ import annotations
+
 import os
-from typing import Any, Generator, List, Dict, Optional, Sequence
+from typing import Any, Dict, Generator, List, Optional, Sequence
 
 from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
@@ -40,6 +41,7 @@ class NVIDIARerank(BaseDocumentCompressor):
     )
 
     _base_url_var = "NVIDIA_BASE_URL"
+
     @root_validator(pre=True)
     def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         values["base_url"] = (
@@ -49,7 +51,7 @@ class NVIDIARerank(BaseDocumentCompressor):
             or cls._default_base_url
         )
         return values
-    
+
     def __init__(self, **kwargs: Any):
         """
         Create a new NVIDIARerank document compressor.

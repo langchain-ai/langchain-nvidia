@@ -1,12 +1,18 @@
 """Embeddings Components Derived from NVEModel/Embeddings"""
 
-import warnings
 import os
-from typing import Any, List, Dict, Literal, Optional
+import warnings
+from typing import Any, Dict, List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.outputs.llm_result import LLMResult
-from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr, validator, root_validator
+from langchain_core.pydantic_v1 import (
+    BaseModel,
+    Field,
+    PrivateAttr,
+    root_validator,
+    validator,
+)
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
@@ -48,6 +54,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     )
 
     _base_url_var = "NVIDIA_BASE_URL"
+
     @root_validator(pre=True)
     def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         values["base_url"] = (
@@ -57,7 +64,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             or cls._default_base_url
         )
         return values
-    
+
     def __init__(self, **kwargs: Any):
         """
         Create a new NVIDIAEmbeddings embedder.

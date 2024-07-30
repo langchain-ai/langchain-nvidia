@@ -145,6 +145,7 @@ class ChatNVIDIA(BaseChatModel):
     stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
 
     _base_url_var = "NVIDIA_BASE_URL"
+
     @root_validator(pre=True)
     def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         values["base_url"] = (
