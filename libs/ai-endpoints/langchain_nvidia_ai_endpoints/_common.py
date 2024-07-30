@@ -18,7 +18,7 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 import aiohttp
 import requests
@@ -130,11 +130,10 @@ class NVEModel(BaseModel):
     def _validate_base_url(cls, v: str) -> str:
         if v is not None:
             result = urlparse(v)
+            expected_format = "Expected format is 'http://host:port'."
             # Ensure scheme and netloc (domain name) are present
             if not (result.scheme and result.netloc):
-                raise ValueError(
-                    f"Invalid base_url, minimally needs scheme and netloc: {v}"
-                )
+                raise ValueError(f"Invalid base_url format. {expected_format} Got: {v}")
         return v
 
     @root_validator(pre=True)
@@ -355,28 +354,30 @@ class NVEModel(BaseModel):
         return self._wait(response, session)
 
     def postprocess(
-        self, response: Union[str, Response], stop: Optional[Sequence[str]] = None
+        self,
+        response: Union[str, Response],
     ) -> Tuple[dict, bool]:
         """Parses a response from the AI Foundation Model Function API.
         Strongly assumes that the API will return a single response.
         """
-        msg_list = self._process_response(response)
-        msg, is_stopped = self._aggregate_msgs(msg_list)
-        msg, is_stopped = self._early_stop_msg(msg, is_stopped, stop=stop)
-        return msg, is_stopped
+        return self._aggregate_msgs(self._process_response(response))
 
     def _aggregate_msgs(self, msg_list: Sequence[dict]) -> Tuple[dict, bool]:
         """Dig out relevant details of aggregated message"""
         content_buffer: Dict[str, Any] = dict()
         content_holder: Dict[Any, Any] = dict()
         usage_holder: Dict[Any, Any] = dict()  ####
+        finish_reason_holder: Optional[str] = None
         is_stopped = False
         for msg in msg_list:
             usage_holder = msg.get("usage", {})  ####
             if "choices" in msg:
                 ## Tease out ['choices'][0]...['delta'/'message']
                 msg = msg.get("choices", [{}])[0]
-                is_stopped = msg.get("finish_reason", "") == "stop"
+                # todo: this meeds to be fixed, the fact we only
+                #       use the first choice breaks the interface
+                finish_reason_holder = msg.get("finish_reason", None)
+                is_stopped = finish_reason_holder == "stop"
                 msg = msg.get("delta", msg.get("message", msg.get("text", "")))
                 if not isinstance(msg, dict):
                     msg = {"content": msg}
@@ -394,19 +395,9 @@ class NVEModel(BaseModel):
         content_holder = {**content_holder, **content_buffer}
         if usage_holder:
             content_holder.update(token_usage=usage_holder)  ####
+        if finish_reason_holder:
+            content_holder.update(finish_reason=finish_reason_holder)
         return content_holder, is_stopped
-
-    def _early_stop_msg(
-        self, msg: dict, is_stopped: bool, stop: Optional[Sequence[str]] = None
-    ) -> Tuple[dict, bool]:
-        """Try to early-terminate streaming or generation by iterating over stop list"""
-        content = msg.get("content", "")
-        if content and stop:
-            for stop_str in stop:
-                if stop_str and stop_str in content:
-                    msg["content"] = content[: content.find(stop_str) + 1]
-                    is_stopped = True
-        return msg, is_stopped
 
     ####################################################################################
     ## Streaming interface to allow you to iterate through progressive generations
@@ -415,7 +406,6 @@ class NVEModel(BaseModel):
         self,
         payload: dict = {},
         invoke_url: Optional[str] = None,
-        stop: Optional[Sequence[str]] = None,
     ) -> Iterator:
         invoke_url = self._get_invoke_url(invoke_url)
         if payload.get("stream", True) is False:
@@ -438,7 +428,7 @@ class NVEModel(BaseModel):
             for line in response.iter_lines():
                 if line and line.strip() != b"data: [DONE]":
                     line = line.decode("utf-8")
-                    msg, final_line = call.postprocess(line, stop=stop)
+                    msg, final_line = call.postprocess(line)
                     yield msg
                     if final_line:
                         break
@@ -462,16 +452,52 @@ class _NVIDIAClient(BaseModel):
 
     @root_validator(pre=True)
     def _preprocess_args(cls, values: Any) -> Any:
-        values["client"] = NVEModel(**values)
-
         if "base_url" in values:
-            values["is_hosted"] = urlparse(values["base_url"]).netloc in [
+            is_hosted = urlparse(values["base_url"]).netloc in [
                 "integrate.api.nvidia.com",
                 "ai.api.nvidia.com",
             ]
 
+        ## Making sure /v1 in added to the url, followed by infer_path
+        if "base_url" in values:
+            base_url = values["base_url"]
+            parsed = urlparse(base_url)
+            expected_format = "Expected format is: http://host:port"
+
+            if not (parsed.scheme and parsed.netloc):
+                raise ValueError(f"Invalid base_url: {base_url}\n{expected_format}")
+
+            if parsed.path:
+                normalized_path = parsed.path.strip("/")
+                if normalized_path == "v1":
+                    pass
+                elif normalized_path in [
+                    "v1/embeddings",
+                    "v1/completions",
+                    "v1/rankings",
+                ]:
+                    base_url = urlunparse(
+                        (parsed.scheme, parsed.netloc, "v1", None, None, None)
+                    )
+                    warnings.warn(f"Using {base_url}, ignoring the rest")
+                else:
+                    raise ValueError(
+                        f"Base URL path is not recognized. {expected_format}"
+                    )
+
+            values["base_url"] = base_url
+            values["infer_path"] = values["infer_path"].format(base_url=base_url)
+
+        values["client"] = NVEModel(**values)
+        if "base_url" in values:
+            values["client"].listing_path = values["client"].listing_path.format(
+                base_url=values["base_url"]
+            )
+
+        values["is_hosted"] = is_hosted
+
         # set default model for hosted endpoint
-        if values["is_hosted"] and not values["model"]:
+        if is_hosted and not values["model"]:
             values["model"] = values["default_model"]
 
         return values

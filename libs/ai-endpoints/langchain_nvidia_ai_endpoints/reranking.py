@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Generator, List, Optional, Sequence
+from typing import Any, Dict, Generator, List, Literal, Optional, Sequence
 
 from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
@@ -28,7 +28,6 @@ class NVIDIARerank(BaseDocumentCompressor):
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
 
     _default_batch_size: int = 32
-    _deprecated_model: str = "ai-rerank-qa-mistral-4b"
     _default_model_name: str = "nv-rerank-qa-mistral-4b:1"
     _default_base_url: str = "https://integrate.api.nvidia.com/v1"
     base_url: str = Field(
@@ -36,6 +35,13 @@ class NVIDIARerank(BaseDocumentCompressor):
     )
     top_n: int = Field(5, ge=0, description="The number of documents to return.")
     model: Optional[str] = Field(description="The model to use for reranking.")
+    truncate: Optional[Literal["NONE", "END"]] = Field(
+        description=(
+            "Truncate input text if it exceeds the model's maximum token length. "
+            "Default is model dependent and is likely to raise error if an "
+            "input is too long."
+        ),
+    )
     max_batch_size: int = Field(
         _default_batch_size, ge=1, description="The maximum batch size."
     )
@@ -66,6 +72,9 @@ class NVIDIARerank(BaseDocumentCompressor):
             nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
             api_key (str): Alternative to nvidia_api_key.
             base_url (str): The base URL of the NIM to connect to.
+            truncate (str): "NONE", "END", truncate input text if it exceeds
+                            the model's context length. Default is model dependent and
+                            is likely to raise an error if an input is too long.
 
         API Key:
         - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
@@ -102,13 +111,14 @@ class NVIDIARerank(BaseDocumentCompressor):
 
     # todo: batching when len(documents) > endpoint's max batch size
     def _rank(self, documents: List[str], query: str) -> List[Ranking]:
-        response = self._client.client.get_req(
-            payload={
-                "model": "nv-rerank-qa-mistral-4b:1",
-                "query": {"text": query},
-                "passages": [{"text": passage} for passage in documents],
-            },
-        )
+        payload = {
+            "model": self.model,
+            "query": {"text": query},
+            "passages": [{"text": passage} for passage in documents],
+        }
+        if self.truncate:
+            payload["truncate"] = self.truncate
+        response = self._client.client.get_req(payload=payload)
         if response.status_code != 200:
             response.raise_for_status()
         # todo: handle errors
@@ -147,6 +157,9 @@ class NVIDIARerank(BaseDocumentCompressor):
                 query=query, documents=[d.page_content for d in doc_batch]
             )
             for ranking in rankings:
+                assert (
+                    0 <= ranking.index < len(doc_batch)
+                ), "invalid response from server: index out of range"
                 doc = doc_batch[ranking.index]
                 doc.metadata["relevance_score"] = ranking.logit
                 results.append(doc)

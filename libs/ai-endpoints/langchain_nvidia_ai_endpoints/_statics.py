@@ -1,29 +1,52 @@
+import os
 import warnings
-from typing import Optional
+from typing import Literal, Optional
 
-from langchain_core.pydantic_v1 import BaseModel
+from langchain_core.pydantic_v1 import BaseModel, validator
 
 
-#
-# Model information
-#  - id: unique identifier for the model, passed as model parameter for requests
-#  - model_type: API type (chat, vlm, embedding, ranking, completion)
-#  - client: client name
-#  - endpoint: custom endpoint for the model
-#  - aliases: list of aliases for the model
-#
-# All aliases are deprecated and will trigger a warning when used.
-#
 class Model(BaseModel):
+    """
+    Model information.
+
+    id: unique identifier for the model, passed as model parameter for requests
+    model_type: API type (chat, vlm, embedding, ranking, completion)
+    client: client name, e.g. ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
+    endpoint: custom endpoint for the model
+    aliases: list of aliases for the model
+    supports_tools: whether the model supports tool calling
+
+    All aliases are deprecated and will trigger a warning when used.
+    """
+
     id: str
-    model_type: Optional[str] = None
-    client: Optional[str] = None
+    # why do we have a model_type? because ChatNVIDIA can speak both chat and vlm.
+    model_type: Optional[
+        Literal["chat", "vlm", "embedding", "ranking", "completion", "qa"]
+    ] = None
+    client: Optional[Literal["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank"]] = None
     endpoint: Optional[str] = None
     aliases: Optional[list] = None
+    supports_tools: Optional[bool] = False
     base_model: Optional[str] = None
 
     def __hash__(self) -> int:
         return hash(self.id)
+
+    @validator("client", always=True)
+    def validate_client(cls, client: str, values: dict) -> str:
+        if client:
+            supported = {
+                "ChatNVIDIA": ("chat", "vlm", "qa"),
+                "NVIDIAEmbeddings": ("embedding",),
+                "NVIDIARerank": ("ranking",),
+            }
+            model_type = values.get("model_type")
+            if model_type not in supported[client]:
+                raise ValueError(
+                    f"Model type '{model_type}' not supported by client '{client}'"
+                )
+        return client
 
 
 CHAT_MODEL_TABLE = {
@@ -257,6 +280,34 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-deepseek-coder-6_7b-instruct"],
     ),
+    "nv-mistralai/mistral-nemo-12b-instruct": Model(
+        id="nv-mistralai/mistral-nemo-12b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "meta/llama-3.1-8b-instruct": Model(
+        id="meta/llama-3.1-8b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+    ),
+    "meta/llama-3.1-70b-instruct": Model(
+        id="meta/llama-3.1-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+    ),
+    "meta/llama-3.1-405b-instruct": Model(
+        id="meta/llama-3.1-405b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+    ),
+    "nvidia/usdcode-llama3-70b-instruct": Model(
+        id="nvidia/usdcode-llama3-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
@@ -361,6 +412,21 @@ EMBEDDING_MODEL_TABLE = {
         client="NVIDIAEmbeddings",
         aliases=["ai-nv-embed-v1"],
     ),
+    "nvidia/nv-embedqa-mistral-7b-v2": Model(
+        id="nvidia/nv-embedqa-mistral-7b-v2",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+    ),
+    "nvidia/nv-embedqa-e5-v5": Model(
+        id="nvidia/nv-embedqa-e5-v5",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+    ),
+    "baai/bge-m3": Model(
+        id="baai/bge-m3",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+    ),
 }
 
 RANKING_MODEL_TABLE = {
@@ -371,16 +437,34 @@ RANKING_MODEL_TABLE = {
         endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/reranking",
         aliases=["ai-rerank-qa-mistral-4b"],
     ),
-}
-
-COMPLETION_MODEL_TABLE = {
-    "mistralai/mixtral-8x22b-v0.1": Model(
-        id="mistralai/mixtral-8x22b-v0.1",
-        model_type="completion",
-        client="NVIDIA",
-        aliases=["ai-mixtral-8x22b"],
+    "nvidia/nv-rerankqa-mistral-4b-v3": Model(
+        id="nvidia/nv-rerankqa-mistral-4b-v3",
+        model_type="ranking",
+        client="NVIDIARerank",
+        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/nv-rerankqa-mistral-4b-v3/reranking",
     ),
 }
+
+# COMPLETION_MODEL_TABLE = {
+#     "mistralai/mixtral-8x22b-v0.1": Model(
+#         id="mistralai/mixtral-8x22b-v0.1",
+#         model_type="completion",
+#         client="NVIDIA",
+#         aliases=["ai-mixtral-8x22b"],
+#     ),
+# }
+
+
+OPENAI_MODEL_TABLE = {
+    "gpt-3.5-turbo": Model(
+        id="gpt-3.5-turbo",
+        model_type="chat",
+        client="ChatNVIDIA",
+        endpoint="https://api.openai.com/v1/chat/completions",
+        supports_tools=True,
+    ),
+}
+
 
 MODEL_TABLE = {
     **CHAT_MODEL_TABLE,
@@ -389,6 +473,51 @@ MODEL_TABLE = {
     **EMBEDDING_MODEL_TABLE,
     **RANKING_MODEL_TABLE,
 }
+
+if "_INCLUDE_OPENAI" in os.environ:
+    MODEL_TABLE.update(OPENAI_MODEL_TABLE)
+
+
+def register_model(model: Model) -> None:
+    """
+    Register a model as a known model. This must be done at the
+    beginning of a program, at least before the model is used or
+    available models are listed.
+
+    For instance -
+    ```
+    from langchain_nvidia_ai_endpoints import register_model, Model
+    register_model(Model(id="my-custom-model-name",
+                         model_type="chat",
+                         client="ChatNVIDIA",
+                         endpoint="http://host:port/path-to-my-model"))
+    llm = ChatNVIDIA(model="my-custom-model-name")
+    ```
+
+    Be sure that the `id` matches the model parameter the endpoint expects.
+
+    Supported model types are:
+        - chat models, which must accept and produce chat completion payloads
+    Supported model clients are:
+        - ChatNVIDIA, for chat models
+
+    Endpoint is required.
+
+    Use this instead of passing `base_url` to a client constructor
+    when the model's endpoint supports inference and not /v1/models
+    listing. Use `base_url` when the model's endpoint supports
+    /v1/models listing and inference on a known path,
+    e.g. /v1/chat/completions.
+    """
+    if model.id in MODEL_TABLE:
+        warnings.warn(
+            f"Model {model.id} is already registered. "
+            f"Overriding {MODEL_TABLE[model.id]}",
+            UserWarning,
+        )
+    if not model.endpoint:
+        raise ValueError(f"Model {model.id} does not have an endpoint.")
+    MODEL_TABLE[model.id] = model
 
 
 def lookup_model(name: str) -> Optional[Model]:
