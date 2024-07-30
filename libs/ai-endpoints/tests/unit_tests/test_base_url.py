@@ -39,8 +39,8 @@ def test_create_without_base_url(public_class: type) -> None:
     [("https://test_url/v1", "nvidia_base_url"), ("https://test_url/v1", "base_url")],
 )
 def test_create_with_base_url(public_class: type, base_url: str, param: str) -> None:
-    with no_env_var("NVIDIA_BASE_URL") and pytest.warns(UserWarning):
-        assert public_class(**{param: base_url}).base_url == base_url
+    with no_env_var("NVIDIA_BASE_URL"):
+        assert public_class(model="model1", **{param: base_url}).base_url == base_url
 
 
 @pytest.mark.parametrize(
@@ -50,12 +50,12 @@ def test_create_with_base_url(public_class: type, base_url: str, param: str) -> 
 def test_base_url_priority(public_class: type, base_url: str) -> None:
     os.environ["NVIDIA_BASE_URL"] = base_url
     assert public_class().base_url == base_url
-    with no_env_var("NVIDIA_BASE_URL") and pytest.warns(UserWarning):
+    with no_env_var("NVIDIA_BASE_URL"):
         os.environ["NVIDIA_BASE_URL"] = "bogus"
-        assert public_class(nvidia_base_url=base_url).base_url == base_url
-        assert public_class(base_url=base_url).base_url == base_url
+        assert public_class(model="model1", nvidia_base_url=base_url).base_url == base_url
+        assert public_class(model="model1", base_url=base_url).base_url == base_url
         assert (
-            public_class(base_url="bogus", nvidia_base_url=base_url).base_url
+            public_class(model="model1", base_url="bogus", nvidia_base_url=base_url).base_url
             == base_url
         )
 
@@ -94,6 +94,6 @@ def test_param_base_url_hosted(public_class: type, base_url: str) -> None:
     ],
 )
 def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
-    with no_env_var("NVIDIA_BASE_URL") and pytest.warns(UserWarning):
-        client = public_class(base_url=base_url)
+    with no_env_var("NVIDIA_BASE_URL"):
+        client = public_class(model="model1", base_url=base_url)
         assert not client._client.is_hosted
