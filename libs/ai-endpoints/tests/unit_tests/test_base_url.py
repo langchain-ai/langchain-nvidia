@@ -128,3 +128,8 @@ def test_expect_warn(public_class: type, base_url: str) -> None:
         public_class(model="model1", base_url=base_url)
     assert len(record) == 1
     assert "ignoring the rest" in str(record[0].message)
+
+
+def test_default_hosted(public_class: type) -> None:
+    x = public_class()
+    assert x._client.is_hosted
