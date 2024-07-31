@@ -145,9 +145,11 @@ def test_default_known(public_class: type, known_unknown: str) -> None:
     Test that a model in the model table will be accepted.
     """
     # check if default model is getting set
-    with pytest.warns(UserWarning):
+    with pytest.warns(UserWarning) as record:
         x = public_class(base_url="http://localhost:8000/v1")
         assert x.model == known_unknown
+    assert len(record) == 1
+    assert "Default model is set as: mock-model" in str(record[0].message)
 
 
 def test_default_lora(public_class: type) -> None:

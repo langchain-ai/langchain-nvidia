@@ -38,8 +38,10 @@ def embedding(requests_mock: Mocker) -> Generator[NVIDIAEmbeddings, None, None]:
             "usage": {"prompt_tokens": 8, "total_tokens": 8},
         },
     )
-    with pytest.warns(UserWarning):
+    with pytest.warns(UserWarning) as record:
         yield NVIDIAEmbeddings(model=model, nvidia_api_key="a-bogus-key")
+    assert len(record) == 1
+    assert "type is unknown and inference may fail" in str(record[0].message)
 
 
 def test_embed_documents_negative_input_int(embedding: NVIDIAEmbeddings) -> None:

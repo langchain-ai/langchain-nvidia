@@ -59,13 +59,18 @@ def mock_v1_local_models(requests_mock: Mocker) -> None:
 
 def test_create_without_api_key(public_class: type) -> None:
     with no_env_var("NVIDIA_API_KEY"):
-        with pytest.warns(UserWarning):
+        with pytest.warns(UserWarning) as record:
             public_class()
+        assert len(record) == 1
+        assert "API key is required for the hosted" in str(record[0].message)
 
 
 def test_create_unknown_url_no_api_key(public_class: type) -> None:
-    with no_env_var("NVIDIA_API_KEY") and pytest.warns(UserWarning):
-        public_class(base_url="https://test_url/v1")
+    with no_env_var("NVIDIA_API_KEY"):
+        with pytest.warns(UserWarning) as record:
+            public_class(base_url="https://test_url/v1")
+    assert len(record) == 1
+    assert "Default model is set as" in str(record[0].message)
 
 
 @pytest.mark.parametrize("param", ["nvidia_api_key", "api_key"])
