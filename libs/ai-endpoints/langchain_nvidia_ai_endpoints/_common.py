@@ -44,6 +44,7 @@ class _NVIDIAClient(BaseModel):
     model_name: Optional[str] = Field(..., description="Name of the model to invoke")
     model: Optional[Model] = Field(None, description="The model to invoke")
     is_hosted: bool = Field(True)
+    cls: str = Field(..., description="Class Name")
 
     # todo: add a validator for requests.Response (last_response attribute) and
     #       remove arbitrary_types_allowed=True
@@ -179,6 +180,14 @@ class _NVIDIAClient(BaseModel):
                 self.model_name = self.default_hosted_model_name
 
             if model := determine_model(self.model_name):
+                if not model.client:
+                    warnings.warn(f"Unable to determine validity of {model.id}")
+                elif model.client != self.cls:
+                    raise ValueError(
+                        f"Model {model.id} is incompatible with client {self.cls}. "
+                        f"Please check `{self.cls}.get_available_models()`."
+                    )
+
                 # not all models are on https://integrate.api.nvidia.com/v1,
                 # those that are not are served from their own endpoints
                 if model.endpoint:

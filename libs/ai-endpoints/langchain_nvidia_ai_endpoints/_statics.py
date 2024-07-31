@@ -314,6 +314,22 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "mistralai/mamba-codestral-7b-v0.1": Model(
+        id="mistralai/mamba-codestral-7b-v0.1",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "writer/palmyra-fin-70b-32k": Model(
+        id="writer/palmyra-fin-70b-32k",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_structured_output=True,
+    ),
+    "google/gemma-2-2b-it": Model(
+        id="google/gemma-2-2b-it",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {

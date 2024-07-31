@@ -41,11 +41,6 @@ def test_unknown_model() -> None:
         ChatNVIDIA(model="unknown_model")
 
 
-def test_base_url_unknown_model() -> None:
-    llm = ChatNVIDIA(model="unknown_model", base_url="http://localhost:88888/v1")
-    assert llm.model == "unknown_model"
-
-
 def test_chat_ai_endpoints_system_message(chat_model: str, mode: dict) -> None:
     """Test wrapper with system message."""
     # mamba_chat only supports 'user' or 'assistant' messages -

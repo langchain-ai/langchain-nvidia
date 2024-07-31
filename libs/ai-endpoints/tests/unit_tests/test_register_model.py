@@ -66,9 +66,11 @@ def test_registered_model_without_client_usable(public_class: type) -> None:
     id = f"test/no-client-{public_class.__name__}"
     model = Model(id=id, endpoint="BOGUS")
     register_model(model)
-    # todo: this should warn that the model is known but type is not
-    #       and therefore inference may not work
-    public_class(model=id, nvidia_api_key="a-bogus-key")
+    with pytest.warns(UserWarning) as record:
+        public_class(model=id, nvidia_api_key="a-bogus-key")
+    assert len(record) == 1
+    assert isinstance(record[0].message, UserWarning)
+    assert "Unable to determine validity" in str(record[0].message)
 
 
 def test_missing_endpoint() -> None:

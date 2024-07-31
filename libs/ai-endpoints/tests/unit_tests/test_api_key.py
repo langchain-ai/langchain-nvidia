@@ -22,17 +22,35 @@ def no_env_var(var: str) -> Generator[None, None, None]:
 
 
 @pytest.fixture(autouse=True)
+def mock_endpoint_models(requests_mock: Mocker) -> None:
+    requests_mock.get(
+        "https://integrate.api.nvidia.com/v1/models",
+        json={
+            "data": [
+                {
+                    "id": "meta/llama3-8b-instruct",
+                    "object": "model",
+                    "created": 1234567890,
+                    "owned_by": "OWNER",
+                    "root": "model1",
+                },
+            ]
+        },
+    )
+
+
+@pytest.fixture(autouse=True)
 def mock_v1_local_models(requests_mock: Mocker) -> None:
     requests_mock.get(
         "https://test_url/v1/models",
         json={
             "data": [
                 {
-                    "id": "model1",
+                    "id": "model",
                     "object": "model",
                     "created": 1234567890,
                     "owned_by": "OWNER",
-                    "root": "model1",
+                    "root": "model",
                 },
             ]
         },
