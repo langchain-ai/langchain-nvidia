@@ -131,5 +131,5 @@ def test_expect_warn(public_class: type, base_url: str) -> None:
 
 
 def test_default_hosted(public_class: type) -> None:
-    x = public_class()
+    x = public_class(api_key="BOGUS")
     assert x._client.is_hosted

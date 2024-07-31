@@ -1,3 +1,4 @@
+import warnings
 from typing import Optional, Sequence, Union
 
 import pytest
@@ -79,6 +80,9 @@ def test_stop(
     """
     # `**(dict(stop=...) if ... else {})` is a clever way to avoid passing stop
     # if the value is None
+    warnings.filterwarnings(
+        "ignore", ".*Found mock-model in available_models.*"
+    )  # expect to see this warning
     client = ChatNVIDIA(
         model="mock-model",
         api_key="mocked",

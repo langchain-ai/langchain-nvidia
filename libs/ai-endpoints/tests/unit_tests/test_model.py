@@ -160,7 +160,7 @@ def test_default_lora(public_class: type) -> None:
 
 
 def test_default(public_class: type) -> None:
-    x = public_class()
+    x = public_class(api_key="BOGUS")
     assert x.model == x._default_model_name
 
 

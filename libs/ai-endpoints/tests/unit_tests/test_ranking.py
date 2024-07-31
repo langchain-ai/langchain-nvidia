@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Literal, Optional
 
 import pytest
@@ -51,7 +52,10 @@ def test_truncate(
     truncate_param = {}
     if truncate:
         truncate_param = {"truncate": truncate}
-    client = NVIDIARerank(model="mock-model", **truncate_param)
+    warnings.filterwarnings(
+        "ignore", ".*Found mock-model in available_models.*"
+    )  # expect to see this warning
+    client = NVIDIARerank(api_key="BOGUS", model="mock-model", **truncate_param)
     response = client.compress_documents(
         documents=[Document(page_content="Nothing really.")], query="What is it?"
     )
