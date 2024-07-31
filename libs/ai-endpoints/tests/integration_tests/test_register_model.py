@@ -50,6 +50,7 @@ def test_registered_model_functional(
     contact_service(client(model=id))
 
 
+# todo: make this a unit test
 def test_registered_model_is_available() -> None:
     register_model(
         Model(
@@ -92,12 +93,8 @@ def test_registered_model_is_available() -> None:
     assert "test/rerank" in [model.id for model in ranking_models]
 
 
-def test_registered_model_without_client_is_not_listed() -> None:
-    register_model(Model(id="test/no_client", endpoint="BOGUS"))
-    chat_models = ChatNVIDIA.get_available_models()
-    embedding_models = NVIDIAEmbeddings.get_available_models()
-    ranking_models = NVIDIARerank.get_available_models()
-
-    assert "test/no_client" not in [model.id for model in chat_models]
-    assert "test/no_client" not in [model.id for model in embedding_models]
-    assert "test/no_client" not in [model.id for model in ranking_models]
+def test_registered_model_without_client_is_not_listed(public_class: type) -> None:
+    model_name = f"test/{public_class.__name__}"
+    register_model(Model(id=model_name, endpoint="BOGUS"))
+    models = public_class.get_available_models()
+    assert model_name not in [model.id for model in models]
