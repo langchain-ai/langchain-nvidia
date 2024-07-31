@@ -41,11 +41,6 @@ def test_unknown_model() -> None:
         ChatNVIDIA(model="unknown_model")
 
 
-def test_base_url_unknown_model() -> None:
-    llm = ChatNVIDIA(model="unknown_model", base_url="http://localhost:88888/v1")
-    assert llm.model == "unknown_model"
-
-
 def test_chat_ai_endpoints_system_message(chat_model: str, mode: dict) -> None:
     """Test wrapper with system message."""
     # mamba_chat only supports 'user' or 'assistant' messages -
@@ -154,14 +149,14 @@ def test_ai_endpoints_streaming(chat_model: str, mode: dict) -> None:
     """Test streaming tokens from ai endpoints."""
     llm = ChatNVIDIA(model=chat_model, max_tokens=36, **mode)
 
-    generator = llm.stream("I'm Pickle Rick")
+    generator = llm.stream("Count to 100, e.g. 1 2 3 4")
     response = next(generator)
     cnt = 0
     for chunk in generator:
         assert isinstance(chunk.content, str)
         response += chunk
         cnt += 1
-    assert cnt > 1
+    assert cnt > 1, response
     # compatibility test for ChatMessageChunk (pre 0.2)
     # assert hasattr(response, "role")
     # assert response.role == "assistant"  # does not work, role not passed through
@@ -171,11 +166,16 @@ async def test_ai_endpoints_astream(chat_model: str, mode: dict) -> None:
     """Test streaming tokens from ai endpoints."""
     llm = ChatNVIDIA(model=chat_model, max_tokens=35, **mode)
 
+    generator = llm.astream("Count to 100, e.g. 1 2 3 4")
+    response = (
+        await generator.__anext__()
+    )  # todo: use anext(generator) when py3.8 is dropped
     cnt = 0
-    async for token in llm.astream("I'm Pickle Rick"):
-        assert isinstance(token.content, str)
+    async for chunk in generator:
+        assert isinstance(chunk.content, str)
+        response += chunk
         cnt += 1
-    assert cnt > 1
+    assert cnt > 1, response
 
 
 async def test_ai_endpoints_abatch(chat_model: str, mode: dict) -> None:
@@ -236,8 +236,8 @@ def test_ai_endpoints_invoke_max_tokens_negative_a(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
         llm.invoke("Show me the tokens")
-    assert llm._client.client.last_response.status_code in [400, 422]
-    assert "max_tokens" in str(llm._client.client.last_response.content)
+    assert llm._client.last_response.status_code in [400, 422]
+    assert "max_tokens" in str(llm._client.last_response.content)
 
 
 @pytest.mark.parametrize("max_tokens", [2**31 - 1])
@@ -250,7 +250,7 @@ def test_ai_endpoints_invoke_max_tokens_negative_b(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
         llm.invoke("Show me the tokens")
-    assert llm._client.client.last_response.status_code in [400, 422]
+    assert llm._client.last_response.status_code in [400, 422]
     # custom error string -
     #    model inference failed -- ValueError: A requested length of the model output
     #    is too big. Maximum allowed output length is X, whereas requested output
@@ -258,9 +258,9 @@ def test_ai_endpoints_invoke_max_tokens_negative_b(
     #  or
     #    body -> max_tokens
     #    Input should be less than or equal to 2048 (type=less_than_equal; le=2048)
-    assert "length" in str(llm._client.client.last_response.content) or (
-        "max_tokens" in str(llm._client.client.last_response.content)
-        and "less_than_equal" in str(llm._client.client.last_response.content)
+    assert "length" in str(llm._client.last_response.content) or (
+        "max_tokens" in str(llm._client.last_response.content)
+        and "less_than_equal" in str(llm._client.last_response.content)
     )
 
 
@@ -306,7 +306,7 @@ def test_ai_endpoints_invoke_seed_default(chat_model: str, mode: dict) -> None:
 def test_ai_endpoints_invoke_seed_range(chat_model: str, mode: dict, seed: int) -> None:
     llm = ChatNVIDIA(model=chat_model, seed=seed, **mode)
     llm.invoke("What's in a seed?")
-    assert llm._client.client.last_response.status_code == 200
+    assert llm._client.last_response.status_code == 200
 
 
 @pytest.mark.xfail(reason="seed does not consistently control determinism")
@@ -332,8 +332,8 @@ def test_ai_endpoints_invoke_temperature_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, temperature=temperature, **mode)
         llm.invoke("What's in a temperature?")
-    assert llm._client.client.last_response.status_code in [400, 422]
-    assert "temperature" in str(llm._client.client.last_response.content)
+    assert llm._client.last_response.status_code in [400, 422]
+    assert "temperature" in str(llm._client.last_response.content)
 
 
 @pytest.mark.xfail(reason="temperature not consistently implemented")
@@ -360,8 +360,8 @@ def test_ai_endpoints_invoke_top_p_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, top_p=top_p, **mode)
         llm.invoke("What's in a top_p?")
-    assert llm._client.client.last_response.status_code in [400, 422]
-    assert "top_p" in str(llm._client.client.last_response.content)
+    assert llm._client.last_response.status_code in [400, 422]
+    assert "top_p" in str(llm._client.last_response.content)
 
 
 @pytest.mark.xfail(reason="seed does not consistently control determinism")

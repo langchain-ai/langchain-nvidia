@@ -1,11 +1,18 @@
 """Embeddings Components Derived from NVEModel/Embeddings"""
 
+import os
 import warnings
-from typing import Any, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.outputs.llm_result import LLMResult
-from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr, validator
+from langchain_core.pydantic_v1 import (
+    BaseModel,
+    Field,
+    PrivateAttr,
+    root_validator,
+    validator,
+)
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
@@ -27,10 +34,10 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         validate_assignment = True
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
-    _default_model: str = "NV-Embed-QA"
+    _default_model_name: str = "NV-Embed-QA"
     _default_max_batch_size: int = 50
+    _default_base_url: str = "https://integrate.api.nvidia.com/v1"
     base_url: str = Field(
-        "https://integrate.api.nvidia.com/v1",
         description="Base url for model listing an invocation",
     )
     model: Optional[str] = Field(description="Name of the model to invoke")
@@ -46,6 +53,18 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         None, description="(DEPRECATED) The type of text to be embedded."
     )
 
+    _base_url_var = "NVIDIA_BASE_URL"
+
+    @root_validator(pre=True)
+    def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        values["base_url"] = (
+            values.get(cls._base_url_var.lower())
+            or values.get("base_url")
+            or os.getenv(cls._base_url_var)
+            or cls._default_base_url
+        )
+        return values
+
     def __init__(self, **kwargs: Any):
         """
         Create a new NVIDIAEmbeddings embedder.
@@ -60,6 +79,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
             api_key (str): Alternative to nvidia_api_key.
             base_url (str): The base URL of the NIM to connect to.
+                            Format for base URL is http://host:port
             trucate (str): "NONE", "START", "END", truncate input text if it exceeds
                             the model's context length. Default is "NONE", which raises
                             an error if an input is too long.
@@ -71,14 +91,15 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         super().__init__(**kwargs)
         self._client = _NVIDIAClient(
             base_url=self.base_url,
-            model=self.model,
-            default_model=self._default_model,
+            model_name=self.model,
+            default_hosted_model_name=self._default_model_name,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
             infer_path="{base_url}/embeddings",
+            cls=self.__class__.__name__,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
-        self.model = self._client.model
+        self.model = self._client.model_name
 
         # todo: remove when nvolveqa_40k is removed from MODEL_TABLE
         if "model" in kwargs and kwargs["model"] in [
@@ -140,7 +161,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         if self.truncate:
             payload["truncate"] = self.truncate
 
-        response = self._client.client.get_req(
+        response = self._client.get_req(
             payload=payload,
         )
         response.raise_for_status()

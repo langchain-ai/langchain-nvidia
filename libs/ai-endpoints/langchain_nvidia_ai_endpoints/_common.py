@@ -5,7 +5,6 @@ import logging
 import os
 import time
 import warnings
-from copy import deepcopy
 from typing import (
     Any,
     Callable,
@@ -18,9 +17,8 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
-import aiohttp
 import requests
 from langchain_core.pydantic_v1 import (
     BaseModel,
@@ -37,19 +35,16 @@ from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, determine
 logger = logging.getLogger(__name__)
 
 
-def default_payload_fn(payload: dict) -> dict:
-    return payload
-
-
-class NVEModel(BaseModel):
-
+class _NVIDIAClient(BaseModel):
     """
-    Underlying Client for interacting with the AI Foundation Model Function API.
-    Leveraged by the NVIDIABaseModel to provide a simple requests-oriented interface.
-    Direct abstraction over NGC-recommended streaming/non-streaming Python solutions.
-
-    NOTE: Models in the playground does not currently support raw text continuation.
+    Low level client library interface to NIM endpoints.
     """
+
+    default_hosted_model_name: str = Field(..., description="Default model name to use")
+    model_name: Optional[str] = Field(..., description="Name of the model to invoke")
+    model: Optional[Model] = Field(None, description="The model to invoke")
+    is_hosted: bool = Field(True)
+    cls: str = Field(..., description="Class Name")
 
     # todo: add a validator for requests.Response (last_response attribute) and
     #       remove arbitrary_types_allowed=True
@@ -70,42 +65,178 @@ class NVEModel(BaseModel):
         "{base_url}/models",
         description="Path for listing available models",
     )
-    polling_endpoint: str = Field(
+    polling_url_tmpl: str = Field(
         "https://api.nvcf.nvidia.com/v2/nvcf/pexec/status/{request_id}",
         description="Path for polling after HTTP 202 responses",
     )
     get_session_fn: Callable = Field(requests.Session)
-    get_asession_fn: Callable = Field(aiohttp.ClientSession)
 
     api_key: Optional[SecretStr] = Field(description="API Key for service of choice")
 
     ## Generation arguments
     timeout: float = Field(60, ge=0, description="Timeout for waiting on response (s)")
     interval: float = Field(0.02, ge=0, description="Interval for pulling response")
-    last_inputs: dict = Field({}, description="Last inputs sent over to the server")
+    last_inputs: Optional[dict] = Field(
+        description="Last inputs sent over to the server"
+    )
     last_response: Response = Field(
         None, description="Last response sent from the server"
-    )
-    payload_fn: Callable = Field(
-        default_payload_fn, description="Function to process payload"
     )
     headers_tmpl: dict = Field(
         {
             "call": {
                 "Accept": "application/json",
-                "Authorization": "Bearer {api_key}",
+                "Authorization": "Bearer **********",
                 "User-Agent": "langchain-nvidia-ai-endpoints",
             },
             "stream": {
                 "Accept": "text/event-stream",
                 "Content-Type": "application/json",
-                "Authorization": "Bearer {api_key}",
+                "Authorization": "Bearer **********",
                 "User-Agent": "langchain-nvidia-ai-endpoints",
             },
         },
         description="Headers template must contain `call` and `stream` keys.",
     )
     _available_models: Optional[List[Model]] = PrivateAttr(default=None)
+
+    ###################################################################################
+    ################### Validation and Initialization #################################
+
+    @validator("base_url")
+    def _validate_base_url(cls, v: str) -> str:
+        if v is not None:
+            result = urlparse(v)
+            expected_format = "Expected format is 'http://host:port'."
+            # Ensure scheme and netloc (domain name) are present
+            if not (result.scheme and result.netloc):
+                raise ValueError(f"Invalid base_url format. {expected_format} Got: {v}")
+        return v
+
+    @root_validator(pre=True)
+    def _preprocess_args(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        values["api_key"] = (
+            values.get(cls._api_key_var.lower())
+            or values.get("api_key")
+            or os.getenv(cls._api_key_var)
+            or None
+        )
+
+        ## Making sure /v1 in added to the url, followed by infer_path
+        if "base_url" in values:
+            base_url = values["base_url"]
+            parsed = urlparse(base_url)
+            expected_format = "Expected format is: http://host:port"
+
+            if not (parsed.scheme and parsed.netloc):
+                raise ValueError(
+                    f"Invalid base_url format. {expected_format} Got: {base_url}"
+                )
+
+            if parsed.path:
+                normalized_path = parsed.path.strip("/")
+                if normalized_path == "v1":
+                    pass
+                elif normalized_path in [
+                    "v1/embeddings",
+                    "v1/completions",
+                    "v1/rankings",
+                ]:
+                    warnings.warn(f"Using {base_url}, ignoring the rest")
+                else:
+                    raise ValueError(
+                        f"Base URL path is not recognized. {expected_format}"
+                    )
+
+            base_url = urlunparse(
+                (parsed.scheme, parsed.netloc, "v1", None, None, None)
+            )
+            values["base_url"] = base_url
+            values["infer_path"] = values["infer_path"].format(base_url=base_url)
+
+        return values
+
+    # final validation after model is constructed
+    # todo: when pydantic v2 is available,
+    #       use __post_init__ or model_validator(method="after")
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+
+        self.is_hosted = urlparse(self.base_url).netloc in [
+            "integrate.api.nvidia.com",
+            "ai.api.nvidia.com",
+        ]
+
+        if self.is_hosted:
+            if not self.api_key:
+                warnings.warn(
+                    "An API key is required for the hosted NIM. "
+                    "This will become an error in the future.",
+                    UserWarning,
+                )
+
+            # set default model for hosted endpoint
+            if not self.model_name:
+                self.model_name = self.default_hosted_model_name
+
+            if model := determine_model(self.model_name):
+                if not model.client:
+                    warnings.warn(f"Unable to determine validity of {model.id}")
+                elif model.client != self.cls:
+                    raise ValueError(
+                        f"Model {model.id} is incompatible with client {self.cls}. "
+                        f"Please check `{self.cls}.get_available_models()`."
+                    )
+
+                # not all models are on https://integrate.api.nvidia.com/v1,
+                # those that are not are served from their own endpoints
+                if model.endpoint:
+                    # we override the infer_path to use the custom endpoint
+                    self.infer_path = model.endpoint
+            else:
+                candidates = [
+                    model
+                    for model in self.available_models
+                    if model.id == self.model_name
+                ]
+                assert len(candidates) <= 1, (
+                    f"Multiple candidates for {self.model_name} "
+                    f"in `available_models`: {candidates}"
+                )
+                if candidates:
+                    model = candidates[0]
+                    warnings.warn(
+                        f"Found {self.model_name} in available_models, but type is "
+                        "unknown and inference may fail."
+                    )
+                else:
+                    raise ValueError(
+                        f"Model {self.model_name} is unknown, check `available_models`"
+                    )
+            self.model = model
+            self.model_name = self.model.id  # name may change because of aliasing
+        else:
+            # set default model
+            if not self.model_name:
+                valid_models = [
+                    model
+                    for model in self.available_models
+                    if not model.base_model or model.base_model == model.id
+                ]
+                self.model = next(iter(valid_models), None)
+                if self.model:
+                    self.model_name = self.model.id
+                    warnings.warn(
+                        f"Default model is set as: {self.model_name}. \n"
+                        "Set model using model parameter. \n"
+                        "To get available models use available_models property.",
+                        UserWarning,
+                    )
+                else:
+                    raise ValueError("No locally hosted model was found.")
+
+    ###################################################################################
+    ################### LangChain functions ###########################################
 
     @classmethod
     def is_lc_serializable(cls) -> bool:
@@ -116,44 +247,36 @@ class NVEModel(BaseModel):
         return {"api_key": self._api_key_var}
 
     @property
-    def headers(self) -> dict:
-        """Return headers with API key injected"""
-        headers_ = self.headers_tmpl.copy()
-        for header in headers_.values():
-            if "{api_key}" in header["Authorization"] and self.api_key:
-                header["Authorization"] = header["Authorization"].format(
-                    api_key=self.api_key,
-                )
-        return headers_
+    def lc_attributes(self) -> Dict[str, Any]:
+        attributes: Dict[str, Any] = {}
+        attributes["base_url"] = self.base_url
 
-    @validator("base_url")
-    def _validate_base_url(cls, v: str) -> str:
-        if v is not None:
-            result = urlparse(v)
-            # Ensure scheme and netloc (domain name) are present
-            if not (result.scheme and result.netloc):
-                raise ValueError(
-                    f"Invalid base_url, minimally needs scheme and netloc: {v}"
-                )
-        return v
+        if self.model_name:
+            attributes["model"] = self.model_name
 
-    @root_validator(pre=True)
-    def _validate_model(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate and update model arguments, including API key and formatting"""
-        values["api_key"] = (
-            values.get(cls._api_key_var.lower())
-            or values.get("api_key")
-            or os.getenv(cls._api_key_var)
-            or None
-        )
-        return values
+        return attributes
+
+    ###################################################################################
+    ################### Property accessors ############################################
+
+    @property
+    def infer_url(self) -> str:
+        return self.infer_path.format(base_url=self.base_url)
+
+    ###################################################################################
+    ################### Authorization handling ########################################
 
     def __add_authorization(self, payload: dict) -> dict:
         if self.api_key:
-            payload["headers"].update(
-                {"Authorization": f"Bearer {self.api_key.get_secret_value()}"}
-            )
+            payload = {**payload}
+            payload["headers"] = {
+                **payload.get("headers", {}),
+                "Authorization": f"Bearer {self.api_key.get_secret_value()}",
+            }
         return payload
+
+    ###################################################################################
+    ################### Model discovery and selection #################################
 
     @property
     def available_models(self) -> list[Model]:
@@ -192,24 +315,44 @@ class NVEModel(BaseModel):
 
         return self._available_models
 
-    ####################################################################################
-    ## Core utilities for posting and getting from NV Endpoints
+    def get_available_models(
+        self,
+        filter: str,
+        **kwargs: Any,
+    ) -> List[Model]:
+        """Retrieve a list of available models."""
+
+        available = self.available_models
+
+        # if we're talking to a hosted endpoint, we mix in the known models
+        # because they are not all discoverable by listing. for instance,
+        # the NV-Embed-QA and VLM models are hosted on ai.api.nvidia.com
+        # instead of integrate.api.nvidia.com.
+        if self.is_hosted:
+            known = set(MODEL_TABLE.values())
+            available = [
+                model for model in set(available) | known if model.client == filter
+            ]
+
+        return available
+
+    ###################################################################################
+    ## Core utilities for posting and getting from NV Endpoints #######################
 
     def _post(
         self,
         invoke_url: str,
         payload: Optional[dict] = {},
-    ) -> Tuple[Response, Any]:
+    ) -> Tuple[Response, requests.Session]:
         """Method for posting to the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
-            "headers": self.headers["call"],
-            "json": self.payload_fn(payload),
-            "stream": False,
+            "headers": self.headers_tmpl["call"],
+            "json": payload,
         }
         session = self.get_session_fn()
         self.last_response = response = session.post(
-            **self.__add_authorization(deepcopy(self.last_inputs))
+            **self.__add_authorization(self.last_inputs)
         )
         self._try_raise(response)
         return response, session
@@ -217,25 +360,20 @@ class NVEModel(BaseModel):
     def _get(
         self,
         invoke_url: str,
-        payload: Optional[dict] = {},
-    ) -> Tuple[Response, Any]:
+    ) -> Tuple[Response, requests.Session]:
         """Method for getting from the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
-            "headers": self.headers["call"],
-            "stream": False,
+            "headers": self.headers_tmpl["call"],
         }
-        if payload:
-            self.last_inputs["json"] = self.payload_fn(payload)
-
         session = self.get_session_fn()
         self.last_response = response = session.get(
-            **self.__add_authorization(deepcopy(self.last_inputs))
+            **self.__add_authorization(self.last_inputs)
         )
         self._try_raise(response)
         return response, session
 
-    def _wait(self, response: Response, session: Any) -> Response:
+    def _wait(self, response: Response, session: requests.Session) -> Response:
         """
         Any request may return a 202 status code, which means the request is still
         processing. This method will wait for a response using the request id.
@@ -258,9 +396,10 @@ class NVEModel(BaseModel):
                 "NVCF-REQID" in response.headers
             ), "Received 202 response with no request id to follow"
             request_id = response.headers.get("NVCF-REQID")
+            # todo: this needs testing, missing auth header update
             self.last_response = response = session.get(
-                self.polling_endpoint.format(request_id=request_id),
-                headers=self.headers["call"],
+                self.polling_url_tmpl.format(request_id=request_id),
+                headers=self.headers_tmpl["call"],
             )
         self._try_raise(response)
         return response
@@ -310,8 +449,25 @@ class NVEModel(BaseModel):
             # todo: raise as an HTTPError
             raise Exception(f"{header}\n{body}") from None
 
-    ####################################################################################
-    ## Simple query interface to show the set of model options
+    ###################################################################################
+    ## Generation interface to allow users to generate new values from endpoints ######
+
+    def get_req(
+        self,
+        payload: dict = {},
+    ) -> Response:
+        """Post to the API."""
+        response, session = self._post(self.infer_url, payload)
+        return self._wait(response, session)
+
+    def postprocess(
+        self,
+        response: Union[str, Response],
+    ) -> Tuple[dict, bool]:
+        """Parses a response from the AI Foundation Model Function API.
+        Strongly assumes that the API will return a single response.
+        """
+        return self._aggregate_msgs(self._process_response(response))
 
     def _process_response(self, response: Union[str, Response]) -> List[dict]:
         """General-purpose response processing for single responses and streams"""
@@ -328,40 +484,6 @@ class NVEModel(BaseModel):
                 msg_list += [json.loads(msg[msg.find("{") :])]
             return msg_list
         raise ValueError(f"Received ill-formed response: {response}")
-
-    def _get_invoke_url(
-        self,
-        invoke_url: Optional[str] = None,
-    ) -> str:
-        """Helper method to get invoke URL from a model name, URL, or endpoint stub"""
-        if not invoke_url:
-            invoke_url = self.infer_path.format(base_url=self.base_url)
-
-        return invoke_url
-
-    ####################################################################################
-    ## Generation interface to allow users to generate new values from endpoints
-
-    def get_req(
-        self,
-        payload: dict = {},
-        invoke_url: Optional[str] = None,
-    ) -> Response:
-        """Post to the API."""
-        invoke_url = self._get_invoke_url(invoke_url)
-        if payload.get("stream", False) is True:
-            payload = {**payload, "stream": False}
-        response, session = self._post(invoke_url, payload)
-        return self._wait(response, session)
-
-    def postprocess(
-        self,
-        response: Union[str, Response],
-    ) -> Tuple[dict, bool]:
-        """Parses a response from the AI Foundation Model Function API.
-        Strongly assumes that the API will return a single response.
-        """
-        return self._aggregate_msgs(self._process_response(response))
 
     def _aggregate_msgs(self, msg_list: Sequence[dict]) -> Tuple[dict, bool]:
         """Dig out relevant details of aggregated message"""
@@ -400,26 +522,21 @@ class NVEModel(BaseModel):
             content_holder.update(finish_reason=finish_reason_holder)
         return content_holder, is_stopped
 
-    ####################################################################################
-    ## Streaming interface to allow you to iterate through progressive generations
+    ###################################################################################
+    ## Streaming interface to allow you to iterate through progressive generations ####
 
     def get_req_stream(
         self,
-        payload: dict = {},
-        invoke_url: Optional[str] = None,
-    ) -> Iterator:
-        invoke_url = self._get_invoke_url(invoke_url)
-        if payload.get("stream", True) is False:
-            payload = {**payload, "stream": True}
+        payload: dict,
+    ) -> Iterator[Dict]:
         self.last_inputs = {
-            "url": invoke_url,
-            "headers": self.headers["stream"],
-            "json": self.payload_fn(payload),
-            "stream": True,
+            "url": self.infer_url,
+            "headers": self.headers_tmpl["stream"],
+            "json": payload,
         }
 
         response = self.get_session_fn().post(
-            **self.__add_authorization(deepcopy(self.last_inputs))
+            **self.__add_authorization(self.last_inputs)
         )
         self._try_raise(response)
         call = self.copy()
@@ -436,127 +553,3 @@ class NVEModel(BaseModel):
                 self._try_raise(response)
 
         return (r for r in out_gen())
-
-
-class _NVIDIAClient(BaseModel):
-    """
-    Higher-Level AI Foundation Model Function API Client with argument defaults.
-    Is subclassed by ChatNVIDIA to provide a simple LangChain interface.
-    """
-
-    client: NVEModel = Field(NVEModel)
-
-    model: Optional[str] = Field(..., description="Name of the model to invoke")
-    is_hosted: bool = Field(True)
-
-    ####################################################################################
-
-    @root_validator(pre=True)
-    def _preprocess_args(cls, values: Any) -> Any:
-        values["client"] = NVEModel(**values)
-
-        if "base_url" in values:
-            values["is_hosted"] = urlparse(values["base_url"]).netloc in [
-                "integrate.api.nvidia.com",
-                "ai.api.nvidia.com",
-            ]
-
-        # set default model for hosted endpoint
-        if values["is_hosted"] and not values["model"]:
-            values["model"] = values["default_model"]
-
-        return values
-
-    @root_validator
-    def _postprocess_args(cls, values: Any) -> Any:
-        name = values.get("model")
-        if values["is_hosted"]:
-            if not values["client"].api_key:
-                warnings.warn(
-                    "An API key is required for the hosted NIM. "
-                    "This will become an error in the future.",
-                    UserWarning,
-                )
-            if model := determine_model(name):
-                values["model"] = model.id
-                # not all models are on https://integrate.api.nvidia.com/v1,
-                # those that are not are served from their own endpoints
-                if model.endpoint:
-                    # we override the infer_path to use the custom endpoint
-                    values["client"].infer_path = model.endpoint
-            else:
-                if not (client := values.get("client")):
-                    warnings.warn(f"Unable to determine validity of {name}")
-                else:
-                    if any(model.id == name for model in client.available_models):
-                        warnings.warn(
-                            f"Found {name} in available_models, but type is "
-                            "unknown and inference may fail."
-                        )
-                    else:
-                        raise ValueError(
-                            f"Model {name} is unknown, check `available_models`"
-                        )
-        else:
-            # set default model
-            if not name:
-                if not (client := values.get("client")):
-                    warnings.warn(f"Unable to determine validity of {name}")
-                else:
-                    valid_models = [
-                        model.id
-                        for model in client.available_models
-                        if not model.base_model or model.base_model == model.id
-                    ]
-                    name = next(iter(valid_models), None)
-                    if name:
-                        warnings.warn(
-                            f"Default model is set as: {name}. \n"
-                            "Set model using model parameter. \n"
-                            "To get available models use available_models property.",
-                            UserWarning,
-                        )
-                        values["model"] = name
-                    else:
-                        raise ValueError("No locally hosted model was found.")
-        return values
-
-    @classmethod
-    def is_lc_serializable(cls) -> bool:
-        return True
-
-    @property
-    def lc_secrets(self) -> Dict[str, str]:
-        return {"api_key": self.client._api_key_var}
-
-    @property
-    def lc_attributes(self) -> Dict[str, Any]:
-        attributes: Dict[str, Any] = {}
-        if getattr(self.client, "base_url"):
-            attributes["base_url"] = self.client.base_url
-
-        if self.model:
-            attributes["model"] = self.model
-
-        return attributes
-
-    def get_available_models(
-        self,
-        filter: str,
-        **kwargs: Any,
-    ) -> List[Model]:
-        """Retrieve a list of available models."""
-
-        available = self.client.available_models
-
-        # if we're talking to a hosted endpoint, we mix in the known models
-        # because they are not all discoverable by listing. for instance,
-        # the NV-Embed-QA and VLM models are hosted on ai.api.nvidia.com
-        # instead of integrate.api.nvidia.com.
-        if self.is_hosted:
-            known = set(MODEL_TABLE.values())
-            available = [
-                model for model in set(available) | known if model.client == filter
-            ]
-
-        return available

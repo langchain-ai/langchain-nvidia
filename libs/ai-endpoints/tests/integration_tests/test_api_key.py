@@ -11,8 +11,10 @@ from ..unit_tests.test_api_key import no_env_var
 
 def test_missing_api_key_error(public_class: type, contact_service: Any) -> None:
     with no_env_var("NVIDIA_API_KEY"):
-        with pytest.warns(UserWarning):
+        with pytest.warns(UserWarning) as record:
             client = public_class()
+        assert len(record) == 1
+        assert "API key is required for the hosted" in str(record[0].message)
         with pytest.raises(Exception) as exc_info:
             contact_service(client)
         message = str(exc_info.value)
@@ -47,7 +49,7 @@ def test_api_key_leakage(chat_model: str, mode: dict) -> None:
     chat.invoke([message])
 
     # check last_input post request
-    last_inputs = chat._client.client.last_inputs
+    last_inputs = chat._client.last_inputs
     assert last_inputs
 
     authorization_header = last_inputs.get("headers", {}).get("Authorization")

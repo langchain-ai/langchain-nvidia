@@ -28,6 +28,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run tests for a specific chat models that support tool calling",
     )
     parser.addoption(
+        "--structured-model-id",
+        action="store",
+        nargs="+",
+        help="Run tests for a specific models that support structured output",
+    )
+    parser.addoption(
         "--qa-model-id",
         action="store",
         nargs="+",
@@ -69,7 +75,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         return list(MODEL_TABLE.values())
 
     if "chat_model" in metafunc.fixturenames:
-        models = [ChatNVIDIA._default_model]
+        models = [ChatNVIDIA._default_model_name]
         if model_list := metafunc.config.getoption("chat_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):
@@ -91,6 +97,18 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 if model.model_type == "chat" and model.supports_tools
             ]
         metafunc.parametrize("tool_model", models, ids=models)
+
+    if "structured_model" in metafunc.fixturenames:
+        models = ["meta/llama-3.1-8b-instruct"]
+        if model_list := metafunc.config.getoption("structured_model_id"):
+            models = model_list
+        if metafunc.config.getoption("all_models"):
+            models = [
+                model.id
+                for model in ChatNVIDIA(**mode).available_models
+                if model.supports_structured_output
+            ]
+        metafunc.parametrize("structured_model", models, ids=models)
 
     if "rerank_model" in metafunc.fixturenames:
         models = [NVIDIARerank._default_model_name]
@@ -125,7 +143,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("qa_model", models, ids=models)
 
     if "embedding_model" in metafunc.fixturenames:
-        models = [NVIDIAEmbeddings._default_model]
+        models = [NVIDIAEmbeddings._default_model_name]
         if metafunc.config.getoption("all_models"):
             models = [model.id for model in NVIDIAEmbeddings(**mode).available_models]
         if model_list := metafunc.config.getoption("embedding_model_id"):
