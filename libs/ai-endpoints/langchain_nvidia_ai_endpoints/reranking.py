@@ -83,15 +83,15 @@ class NVIDIARerank(BaseDocumentCompressor):
         super().__init__(**kwargs)
         self._client = _NVIDIAClient(
             base_url=self.base_url,
-            model=self.model,
-            default_model=self._default_model_name,
+            model_name=self.model,
+            default_hosted_model_name=self._default_model_name,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
             infer_path="{base_url}/ranking",
             cls=self.__class__.__name__,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
-        self.model = self._client.model
+        self.model = self._client.model_name
 
     @property
     def available_models(self) -> List[Model]:
@@ -119,7 +119,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         }
         if self.truncate:
             payload["truncate"] = self.truncate
-        response = self._client.client.get_req(payload=payload)
+        response = self._client.get_req(payload=payload)
         if response.status_code != 200:
             response.raise_for_status()
         # todo: handle errors

@@ -34,7 +34,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         validate_assignment = True
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
-    _default_model: str = "NV-Embed-QA"
+    _default_model_name: str = "NV-Embed-QA"
     _default_max_batch_size: int = 50
     _default_base_url: str = "https://integrate.api.nvidia.com/v1"
     base_url: str = Field(
@@ -91,15 +91,15 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         super().__init__(**kwargs)
         self._client = _NVIDIAClient(
             base_url=self.base_url,
-            model=self.model,
-            default_model=self._default_model,
+            model_name=self.model,
+            default_hosted_model_name=self._default_model_name,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
             infer_path="{base_url}/embeddings",
             cls=self.__class__.__name__,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
-        self.model = self._client.model
+        self.model = self._client.model_name
 
         # todo: remove when nvolveqa_40k is removed from MODEL_TABLE
         if "model" in kwargs and kwargs["model"] in [
@@ -161,7 +161,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         if self.truncate:
             payload["truncate"] = self.truncate
 
-        response = self._client.client.get_req(
+        response = self._client.get_req(
             payload=payload,
         )
         response.raise_for_status()

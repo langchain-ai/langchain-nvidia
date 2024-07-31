@@ -24,7 +24,7 @@ def test_invoke_aimessage_content_none(requests_mock: requests_mock.Mocker) -> N
     empty_aimessage = AIMessage(content="EMPTY")
     empty_aimessage.content = None  # type: ignore
 
-    llm = ChatNVIDIA()
+    llm = ChatNVIDIA(api_key="BOGUS")
     response = llm.invoke([empty_aimessage])
     request = requests_mock.request_history[0]
     assert request.method == "POST"

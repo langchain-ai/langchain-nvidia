@@ -27,5 +27,7 @@ def test_model_table_integrity_name_id(entry: str) -> None:
 
 
 def test_determine_model_deprecated_alternative_warns(alias: str) -> None:
-    with pytest.warns(UserWarning):
+    with pytest.warns(UserWarning) as record:
         determine_model(alias)
+    assert len(record) == 1
+    assert f"Model {alias} is deprecated" in str(record[0].message)

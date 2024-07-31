@@ -21,7 +21,7 @@ def test_serialize_chatnvidia() -> None:
 
 
 def test_pickle_embeddings() -> None:
-    x = NVIDIAEmbeddings()
+    x = NVIDIAEmbeddings(api_key="BOGUS")
     y = pickle.loads(pickle.dumps(x))
     assert x.model == y.model
     assert x.max_batch_size == y.max_batch_size

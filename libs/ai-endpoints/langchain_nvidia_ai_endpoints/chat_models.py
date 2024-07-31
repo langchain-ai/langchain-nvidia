@@ -187,7 +187,7 @@ class ChatNVIDIA(BaseChatModel):
     """
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
-    _default_model: str = "meta/llama3-8b-instruct"
+    _default_model_name: str = "meta/llama3-8b-instruct"
     _default_base_url: str = "https://integrate.api.nvidia.com/v1"
     base_url: str = Field(
         description="Base url for model listing an invocation",
@@ -241,15 +241,15 @@ class ChatNVIDIA(BaseChatModel):
         super().__init__(**kwargs)
         self._client = _NVIDIAClient(
             base_url=self.base_url,
-            model=self.model,
-            default_model=self._default_model,
+            model_name=self.model,
+            default_hosted_model_name=self._default_model_name,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
             infer_path="{base_url}/chat/completions",
             cls=self.__class__.__name__,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
-        self.model = self._client.model
+        self.model = self._client.model_name
 
     @property
     def available_models(self) -> List[Model]:
@@ -285,8 +285,8 @@ class ChatNVIDIA(BaseChatModel):
             for message in [convert_message_to_dict(message) for message in messages]
         ]
         payload = self._get_payload(inputs=inputs, stop=stop, stream=False, **kwargs)
-        response = self._client.client.get_req(payload=payload)
-        responses, _ = self._client.client.postprocess(response)
+        response = self._client.get_req(payload=payload)
+        responses, _ = self._client.postprocess(response)
         self._set_callback_out(responses, run_manager)
         parsed_response = self._custom_postprocess(responses, streaming=False)
         # for pre 0.2 compatibility w/ ChatMessage
@@ -308,7 +308,7 @@ class ChatNVIDIA(BaseChatModel):
             for message in [convert_message_to_dict(message) for message in messages]
         ]
         payload = self._get_payload(inputs=inputs, stop=stop, stream=True, **kwargs)
-        for response in self._client.client.get_req_stream(payload=payload):
+        for response in self._client.get_req_stream(payload=payload):
             self._set_callback_out(response, run_manager)
             parsed_response = self._custom_postprocess(response, streaming=True)
             # for pre 0.2 compatibility w/ ChatMessageChunk
@@ -466,19 +466,7 @@ class ChatNVIDIA(BaseChatModel):
         see https://python.langchain.com/v0.1/docs/modules/model_io/chat/function_calling/#request-forcing-a-tool-call
         """
         # check if the model supports tools, warn if it does not
-        known_good = False
-        # todo: we need to store model: Model in this class
-        #       instead of model: str (= Model.id)
-        #  this should be: if not self.model.supports_tools: warnings.warn...
-        candidates = [
-            model for model in self.available_models if model.id == self.model
-        ]
-        if not candidates:  # user must have specified the model themselves
-            known_good = False
-        else:
-            assert len(candidates) == 1, "Multiple models with the same id"
-            known_good = candidates[0].supports_tools is True
-        if not known_good:
+        if self._client.model and not self._client.model.supports_tools:
             warnings.warn(
                 f"Model '{self.model}' is not known to support tools. "
                 "Your tool binding may fail at inference time."

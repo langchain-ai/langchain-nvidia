@@ -72,7 +72,7 @@ def test_invoke_parallel_tool_calls(requests_mock: requests_mock.Mocker) -> None
     )
 
     warnings.filterwarnings("ignore", r".*Found magic-model in available_models.*")
-    llm = ChatNVIDIA(model="magic-model")
+    llm = ChatNVIDIA(api_key="BOGUS", model="magic-model")
     response = llm.invoke(
         "What is 11 xxyyzz 3 zzyyxx 5?",
     )
@@ -111,7 +111,7 @@ def test_stream_parallel_tool_calls_A(requests_mock: requests_mock.Mocker) -> No
     )
 
     warnings.filterwarnings("ignore", r".*Found magic-model in available_models.*")
-    llm = ChatNVIDIA(model="magic-model")
+    llm = ChatNVIDIA(api_key="BOGUS", model="magic-model")
     generator = llm.stream(
         "What is 11 xxyyzz 3 zzyyxx 5?",
     )
@@ -143,7 +143,7 @@ def test_stream_parallel_tool_calls_B(requests_mock: requests_mock.Mocker) -> No
     )
 
     warnings.filterwarnings("ignore", r".*Found magic-model in available_models.*")
-    llm = ChatNVIDIA(model="magic-model")
+    llm = ChatNVIDIA(api_key="BOGUS", model="magic-model")
     generator = llm.stream(
         "What is 11 xxyyzz 3 zzyyxx 5?",
     )

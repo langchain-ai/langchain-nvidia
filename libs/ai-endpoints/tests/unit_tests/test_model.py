@@ -96,7 +96,7 @@ def test_aliases(alias: str, client: Any) -> None:
     """
     with pytest.warns(UserWarning) as record:
         x = client(model=alias, nvidia_api_key="a-bogus-key")
-        assert x.model == x._client.model
+        assert x.model == x._client.model_name
     assert isinstance(record[0].message, Warning)
     assert "deprecated" in record[0].message.args[0]
 
@@ -145,9 +145,11 @@ def test_default_known(public_class: type, known_unknown: str) -> None:
     Test that a model in the model table will be accepted.
     """
     # check if default model is getting set
-    with pytest.warns(UserWarning):
+    with pytest.warns(UserWarning) as record:
         x = public_class(base_url="http://localhost:8000/v1")
         assert x.model == known_unknown
+    assert len(record) == 1
+    assert "Default model is set as: mock-model" in str(record[0].message)
 
 
 def test_default_lora(public_class: type) -> None:
@@ -159,52 +161,21 @@ def test_default_lora(public_class: type) -> None:
     assert x.model == "lora1"
 
 
-@pytest.mark.parametrize(
-    "model, client",
-    [(model.id, model.client) for model in MODEL_TABLE.values()],
-)
-def test_hosted_all_incompatible(public_class: type, model: str, client: str) -> None:
-    """
-    Test that the aliases for each model in the model table are accepted
-    with a warning about deprecation of the alias.
-    """
-    msg = (
-        "Model {model_name} is incompatible with client {cls_name}. "
-        "Please check `{cls_name}.get_available_models()`."
-    )
-
-    if client != public_class.__name__:
-        with pytest.raises(ValueError) as err_msg:
-            public_class(model=model, nvidia_api_key="a-bogus-key")
-
-        assert msg.format(model_name=model, cls_name=public_class.__name__) in str(
-            err_msg.value
-        )
+def test_default(public_class: type) -> None:
+    x = public_class(api_key="BOGUS")
+    assert x.model == x._default_model_name
 
 
 @pytest.mark.parametrize(
     "model, client",
     [(model.id, model.client) for model in MODEL_TABLE.values()],
 )
-def test_locally_hosted_all_incompatible(
-    public_class: type, model: str, client: str
-) -> None:
-    """
-    Test that the aliases for each model in the model table are accepted
-    with a warning about deprecation of the alias.
-    """
-    msg = (
-        "Model {model_name} is incompatible with client {cls_name}. "
-        "Please check `available_models`."
+def test_all_incompatible(public_class: type, model: str, client: str) -> None:
+    if client == public_class.__name__:
+        pytest.skip("Compatibility expected.")
+
+    with pytest.raises(ValueError) as err_msg:
+        public_class(model=model, nvidia_api_key="a-bogus-key")
+    assert f"Model {model} is incompatible with client {public_class.__name__}" in str(
+        err_msg.value
     )
-    if client != public_class.__name__:
-        with pytest.raises(ValueError) as err_msg:
-            public_class(
-                base_url="http://localhost:8000/v1",
-                model=model,
-                nvidia_api_key="a-bogus-key",
-            )
-            assert err_msg == msg.format(model_name=model, cls_name=client)
-    else:
-        cls = public_class(model=model, nvidia_api_key="a-bogus-key")
-        assert cls.model == model

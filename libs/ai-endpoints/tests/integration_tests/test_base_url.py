@@ -10,7 +10,6 @@ from requests_mock import Mocker
 @pytest.fixture()
 def mock_endpoints(requests_mock: Mocker) -> None:
     for endpoint in [
-        "/v1/models",
         "/v1/embeddings",
         "/v1/chat/completions",
         "/v1/ranking",
@@ -38,6 +37,7 @@ def mock_endpoints(requests_mock: Mocker) -> None:
 @pytest.mark.parametrize(
     "base_url",
     [
+        "http://localhost:12321",
         "http://localhost:12321/v1",
     ],
 )
