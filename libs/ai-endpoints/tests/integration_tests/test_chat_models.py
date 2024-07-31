@@ -172,7 +172,9 @@ async def test_ai_endpoints_astream(chat_model: str, mode: dict) -> None:
     llm = ChatNVIDIA(model=chat_model, max_tokens=35, **mode)
 
     generator = llm.astream("Count to 100, e.g. 1 2 3 4")
-    response = await anext(generator)
+    response = (
+        await generator.__anext__()
+    )  # todo: use anext(generator) when py3.8 is dropped
     cnt = 0
     async for chunk in generator:
         assert isinstance(chunk.content, str)
