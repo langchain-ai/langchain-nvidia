@@ -1,3 +1,4 @@
+import warnings
 from typing import Any
 
 import pytest
@@ -39,15 +40,14 @@ def test_registered_model_functional(
     client: type, id: str, endpoint: str, contact_service: Any
 ) -> None:
     model = Model(id=id, endpoint=endpoint)
-    with pytest.warns(
-        UserWarning
-    ) as record:  # warns because we're overriding known models
-        register_model(model)
-        contact_service(client(model=id))
-    assert len(record) == 2
-    assert isinstance(record[0].message, UserWarning)
-    assert "already registered" in str(record[0].message)
-    assert "Overriding" in str(record[0].message)
+    warnings.filterwarnings(
+        "ignore", r".*is already registered.*"
+    )  # intentionally overridding known models
+    warnings.filterwarnings(
+        "ignore", r".*Unable to determine validity of.*"
+    )  # we aren't passing client & type to Model()
+    register_model(model)
+    contact_service(client(model=id))
 
 
 def test_registered_model_is_available() -> None:
