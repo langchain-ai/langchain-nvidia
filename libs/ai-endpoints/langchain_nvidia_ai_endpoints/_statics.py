@@ -314,6 +314,11 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "mistralai/mamba-codestral-7b-v0.1": Model(
+        id="mistralai/mamba-codestral-7b-v0.1",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
