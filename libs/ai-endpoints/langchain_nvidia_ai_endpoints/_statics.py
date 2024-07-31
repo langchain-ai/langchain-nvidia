@@ -15,6 +15,7 @@ class Model(BaseModel):
     endpoint: custom endpoint for the model
     aliases: list of aliases for the model
     supports_tools: whether the model supports tool calling
+    supports_structured_output: whether the model supports structured output
 
     All aliases are deprecated and will trigger a warning when used.
     """
@@ -28,6 +29,7 @@ class Model(BaseModel):
     endpoint: Optional[str] = None
     aliases: Optional[list] = None
     supports_tools: Optional[bool] = False
+    supports_structured_output: Optional[bool] = False
     base_model: Optional[str] = None
 
     def __hash__(self) -> int:
@@ -284,24 +286,28 @@ CHAT_MODEL_TABLE = {
         id="nv-mistralai/mistral-nemo-12b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        supports_structured_output=True,
     ),
     "meta/llama-3.1-8b-instruct": Model(
         id="meta/llama-3.1-8b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         supports_tools=True,
+        supports_structured_output=True,
     ),
     "meta/llama-3.1-70b-instruct": Model(
         id="meta/llama-3.1-70b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         supports_tools=True,
+        supports_structured_output=True,
     ),
     "meta/llama-3.1-405b-instruct": Model(
         id="meta/llama-3.1-405b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         supports_tools=True,
+        supports_structured_output=True,
     ),
     "nvidia/usdcode-llama3-70b-instruct": Model(
         id="nvidia/usdcode-llama3-70b-instruct",
