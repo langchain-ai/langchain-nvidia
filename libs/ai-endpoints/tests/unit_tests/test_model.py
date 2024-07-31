@@ -128,3 +128,8 @@ def test_default_lora(public_class: type) -> None:
     # find a model that matches the public_class under test
     x = public_class(base_url="http://localhost:8000/v1", model="lora1")
     assert x.model == "lora1"
+
+
+def test_default(public_class: type) -> None:
+    x = public_class()
+    assert x.model == x._default_model_name
