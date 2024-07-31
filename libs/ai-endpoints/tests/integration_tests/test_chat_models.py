@@ -149,14 +149,14 @@ def test_ai_endpoints_streaming(chat_model: str, mode: dict) -> None:
     """Test streaming tokens from ai endpoints."""
     llm = ChatNVIDIA(model=chat_model, max_tokens=36, **mode)
 
-    generator = llm.stream("I'm Pickle Rick")
+    generator = llm.stream("Count to 100, e.g. 1 2 3 4")
     response = next(generator)
     cnt = 0
     for chunk in generator:
         assert isinstance(chunk.content, str)
         response += chunk
         cnt += 1
-    assert cnt > 1
+    assert cnt > 1, response
     # compatibility test for ChatMessageChunk (pre 0.2)
     # assert hasattr(response, "role")
     # assert response.role == "assistant"  # does not work, role not passed through
@@ -166,11 +166,16 @@ async def test_ai_endpoints_astream(chat_model: str, mode: dict) -> None:
     """Test streaming tokens from ai endpoints."""
     llm = ChatNVIDIA(model=chat_model, max_tokens=35, **mode)
 
+    generator = llm.astream("Count to 100, e.g. 1 2 3 4")
+    response = (
+        await generator.__anext__()
+    )  # todo: use anext(generator) when py3.8 is dropped
     cnt = 0
-    async for token in llm.astream("I'm Pickle Rick"):
-        assert isinstance(token.content, str)
+    async for chunk in generator:
+        assert isinstance(chunk.content, str)
+        response += chunk
         cnt += 1
-    assert cnt > 1
+    assert cnt > 1, response
 
 
 async def test_ai_endpoints_abatch(chat_model: str, mode: dict) -> None:

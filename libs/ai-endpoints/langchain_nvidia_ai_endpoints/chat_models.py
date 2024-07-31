@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import enum
 import io
 import logging
 import os
@@ -23,33 +24,40 @@ from typing import (
 )
 
 import requests
-from langchain_community.adapters.openai import convert_message_to_dict
 from langchain_core.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
 )
+from langchain_core.exceptions import OutputParserException
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
 from langchain_core.messages import (
     AIMessage,
     AIMessageChunk,
     BaseMessage,
 )
+from langchain_core.output_parsers import (
+    BaseOutputParser,
+    JsonOutputParser,
+    PydanticOutputParser,
+)
 from langchain_core.outputs import (
     ChatGeneration,
     ChatGenerationChunk,
     ChatResult,
+    Generation,
 )
-from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
+from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr, root_validator
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
+from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
 
 _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
-_DictOrPydanticClass = Union[Dict[str, Any], Type[BaseModel]]
-_DictOrPydantic = Union[Dict, BaseModel]
+_DictOrPydanticOrEnumClass = Union[Dict[str, Any], Type[BaseModel], Type[enum.Enum]]
+_DictOrPydanticOrEnum = Union[Dict, BaseModel, enum.Enum]
 
 try:
     import PIL.Image
@@ -180,8 +188,8 @@ class ChatNVIDIA(BaseChatModel):
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model: str = "meta/llama3-8b-instruct"
+    _default_base_url: str = "https://integrate.api.nvidia.com/v1"
     base_url: str = Field(
-        "https://integrate.api.nvidia.com/v1",
         description="Base url for model listing an invocation",
     )
     model: Optional[str] = Field(description="Name of the model to invoke")
@@ -192,6 +200,18 @@ class ChatNVIDIA(BaseChatModel):
     top_p: Optional[float] = Field(description="Top-p for distribution sampling")
     seed: Optional[int] = Field(description="The seed for deterministic results")
     stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
+
+    _base_url_var = "NVIDIA_BASE_URL"
+
+    @root_validator(pre=True)
+    def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        values["base_url"] = (
+            values.get(cls._base_url_var.lower())
+            or values.get("base_url")
+            or os.getenv(cls._base_url_var)
+            or cls._default_base_url
+        )
+        return values
 
     def __init__(self, **kwargs: Any):
         """
@@ -207,6 +227,7 @@ class ChatNVIDIA(BaseChatModel):
             nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
             api_key (str): Alternative to nvidia_api_key.
             base_url (str): The base URL of the NIM to connect to.
+                            Format for base URL is http://host:port
             temperature (float): Sampling temperature in [0, 1].
             max_tokens (int): Maximum number of tokens to generate.
             top_p (float): Top-p for distribution sampling.
@@ -379,7 +400,9 @@ class ChatNVIDIA(BaseChatModel):
                 messages.append(dict(role="user", content=msg))
             elif isinstance(msg, dict):
                 if msg.get("content", None) is None:
-                    raise ValueError(f"Message {msg} has no content")
+                    # content=None is valid for assistant messages (tool calling)
+                    if not msg.get("role") == "assistant":
+                        raise ValueError(f"Message {msg} has no content.")
                 messages.append(msg)
             else:
                 raise ValueError(f"Unknown message received: {msg} of type {type(msg)}")
@@ -488,19 +511,15 @@ class ChatNVIDIA(BaseChatModel):
             tool_name = tool_choice["function"]["name"]
 
         # check that the specified tool is in the tools list
+        tool_dicts = [convert_to_openai_tool(tool) for tool in tools]
         if tool_name:
-            if not any(
-                isinstance(tool, BaseTool) and tool.name == tool_name for tool in tools
-            ) and not any(
-                isinstance(tool, dict) and tool.get("name") == tool_name
-                for tool in tools
-            ):
+            if not any(tool["function"]["name"] == tool_name for tool in tool_dicts):
                 raise ValueError(
                     f"Tool choice '{tool_name}' not found in the tools list"
                 )
 
         return super().bind(
-            tools=[convert_to_openai_tool(tool) for tool in tools],
+            tools=tool_dicts,
             tool_choice=tool_choice,
             **kwargs,
         )
@@ -513,16 +532,214 @@ class ChatNVIDIA(BaseChatModel):
     ) -> Runnable[LanguageModelInput, BaseMessage]:
         raise NotImplementedError("Not implemented, use `bind_tools` instead.")
 
-    def with_structured_output(
+    # we have an Enum extension to BaseChatModel.with_structured_output and
+    # as a result need to type ignore for the schema parameter and return type.
+    def with_structured_output(  # type: ignore
         self,
-        schema: _DictOrPydanticClass,
+        schema: _DictOrPydanticOrEnumClass,
         *,
-        method: Literal["function_calling", "json_mode"] = "function_calling",
-        return_type: Literal["parsed", "all"] = "parsed",
+        include_raw: bool = False,
         **kwargs: Any,
-    ) -> Runnable[LanguageModelInput, _DictOrPydantic]:
-        raise NotImplementedError(
-            "Not implemented, awaiting server-side function-recieving API"
-            " Consider following open-source LLM agent spec techniques:"
-            " https://huggingface.co/blog/open-source-llms-as-agents"
-        )
+    ) -> Runnable[LanguageModelInput, _DictOrPydanticOrEnum]:
+        """
+        Bind a structured output schema to the model.
+
+        The schema can be -
+         0. a dictionary representing a JSON schema
+         1. a Pydantic object
+         2. an Enum
+
+        0. If a dictionary is provided, the model will return a dictionary. Example:
+        ```
+        json_schema = {
+            "title": "joke",
+            "description": "Joke to tell user.",
+            "type": "object",
+            "properties": {
+                "setup": {
+                    "type": "string",
+                    "description": "The setup of the joke",
+                },
+                "punchline": {
+                    "type": "string",
+                    "description": "The punchline to the joke",
+                },
+            },
+            "required": ["setup", "punchline"],
+        }
+
+        structured_llm = llm.with_structured_output(json_schema)
+        structured_llm.invoke("Tell me a joke about NVIDIA")
+        # Output: {'setup': 'Why did NVIDIA go broke? The hardware ate all the software.',
+        #          'punchline': 'It took a big bite out of their main board.'}
+        ```
+
+        1. If a Pydantic schema is provided, the model will return a Pydantic object.
+           Example:
+        ```
+        from langchain_core.pydantic_v1 import BaseModel, Field
+        class Joke(BaseModel):
+            setup: str = Field(description="The setup of the joke")
+            punchline: str = Field(description="The punchline to the joke")
+
+        structured_llm = llm.with_structured_output(Joke)
+        structured_llm.invoke("Tell me a joke about NVIDIA")
+        # Output: Joke(setup='Why did NVIDIA go broke? The hardware ate all the software.',
+        #              punchline='It took a big bite out of their main board.')
+        ```
+
+        2. If an Enum is provided, all values must be strings, and the model will return
+           an Enum object. Example:
+        ```
+        import enum
+        class Choices(enum.Enum):
+            A = "A"
+            B = "B"
+            C = "C"
+
+        structured_llm = llm.with_structured_output(Choices)
+        structured_llm.invoke("What is the first letter in this list? [X, Y, Z, C]")
+        # Output: <Choices.C: 'C'>
+        ```
+
+        Note about streaming: Unlike other streaming responses, the streamed chunks
+        will be increasingly complete. They will not be deltas. The last chunk will
+        contain the complete response.
+
+        For instance with a dictionary schema, the chunks will be:
+        ```
+        structured_llm = llm.with_structured_output(json_schema)
+        for chunk in structured_llm.stream("Tell me a joke about NVIDIA"):
+            print(chunk)
+
+        # Output:
+        # {}
+        # {'setup': ''}
+        # {'setup': 'Why'}
+        # {'setup': 'Why did'}
+        # {'setup': 'Why did N'}
+        # {'setup': 'Why did NVID'}
+        # ...
+        # {'setup': 'Why did NVIDIA go broke? The hardware ate all the software.', 'punchline': 'It took a big bite out of their main board'}
+        # {'setup': 'Why did NVIDIA go broke? The hardware ate all the software.', 'punchline': 'It took a big bite out of their main board.'}
+        ```
+
+        For instnace with a Pydantic schema, the chunks will be:
+        ```
+        structured_llm = llm.with_structured_output(Joke)
+        for chunk in structured_llm.stream("Tell me a joke about NVIDIA"):
+            print(chunk)
+
+        # Output:
+        # setup='Why did NVIDIA go broke? The hardware ate all the software.' punchline=''
+        # setup='Why did NVIDIA go broke? The hardware ate all the software.' punchline='It'
+        # setup='Why did NVIDIA go broke? The hardware ate all the software.' punchline='It took'
+        # ...
+        # setup='Why did NVIDIA go broke? The hardware ate all the software.' punchline='It took a big bite out of their main board'
+        # setup='Why did NVIDIA go broke? The hardware ate all the software.' punchline='It took a big bite out of their main board.'
+        ```
+
+        For Pydantic schema and Enum, the output will be None if the response is
+        insufficient to construct the object or otherwise invalid. For instance,
+        ```
+        llm = ChatNVIDIA(max_tokens=1)
+        structured_llm = llm.with_structured_output(Joke)
+        print(structured_llm.invoke("Tell me a joke about NVIDIA"))
+
+        # Output: None
+        ```
+
+        For more, see https://python.langchain.com/v0.2/docs/how_to/structured_output/
+        """  # noqa: E501
+
+        if "method" in kwargs:
+            warnings.warn(
+                "The 'method' parameter is unnecessary and is ignored. "
+                "The appropriate method will be chosen automatically depending "
+                "on the type of schema provided."
+            )
+
+        if include_raw:
+            raise NotImplementedError(
+                "include_raw=True is not implemented, consider "
+                "https://python.langchain.com/v0.2/docs/how_to/"
+                "structured_output/#prompting-and-parsing-model"
+                "-outputs-directly or rely on the structured response "
+                "being None when the LLM produces an incomplete response."
+            )
+
+        # check if the model supports structured output, warn if it does not
+        known_good = False
+        # todo: we need to store model: Model in this class
+        #       instead of model: str (= Model.id)
+        #  this should be: if not self.model.supports_tools: warnings.warn...
+        candidates = [
+            model for model in self.available_models if model.id == self.model
+        ]
+        if not candidates:  # user must have specified the model themselves
+            known_good = False
+        else:
+            assert len(candidates) == 1, "Multiple models with the same id"
+            known_good = candidates[0].supports_structured_output is True
+        if not known_good:
+            warnings.warn(
+                f"Model '{self.model}' is not known to support structured output. "
+                "Your output may fail at inference time."
+            )
+
+        if isinstance(schema, dict):
+            output_parser: BaseOutputParser = JsonOutputParser()
+            nvext_param: Dict[str, Any] = {"guided_json": schema}
+
+        elif issubclass(schema, BaseModel):
+            # PydanticOutputParser does not support streaming. what we do
+            # instead is ignore all inputs that are incomplete wrt the
+            # underlying Pydantic schema. if the entire input is invalid,
+            # we return None.
+            class ForgivingPydanticOutputParser(PydanticOutputParser):
+                def parse_result(
+                    self, result: List[Generation], *, partial: bool = False
+                ) -> Any:
+                    try:
+                        return super().parse_result(result, partial=partial)
+                    except OutputParserException:
+                        pass
+                    return None
+
+            output_parser = ForgivingPydanticOutputParser(pydantic_object=schema)
+            nvext_param = {"guided_json": schema.schema()}
+
+        elif issubclass(schema, enum.Enum):
+            # langchain's EnumOutputParser is not in langchain_core
+            # and doesn't support streaming. this is a simple implementation
+            # that supports streaming with our semantics of returning None
+            # if no complete object can be constructed.
+            class EnumOutputParser(BaseOutputParser):
+                enum: Type[enum.Enum]
+
+                def parse(self, response: str) -> Any:
+                    try:
+                        return self.enum(response.strip())
+                    except ValueError:
+                        pass
+                    return None
+
+            # guided_choice only supports string choices
+            choices = [choice.value for choice in schema]
+            if not all(isinstance(choice, str) for choice in choices):
+                # instead of erroring out we could coerce the enum values to
+                # strings, but would then need to coerce them back to their
+                # original type for Enum construction.
+                raise ValueError(
+                    "Enum schema must only contain string choices. "
+                    "Use StrEnum or ensure all member values are strings."
+                )
+            output_parser = EnumOutputParser(enum=schema)
+            nvext_param = {"guided_choice": choices}
+        else:
+            raise ValueError(
+                "Schema must be a Pydantic object, a dictionary "
+                "representing a JSON schema, or an Enum."
+            )
+
+        return super().bind(nvext=nvext_param) | output_parser
