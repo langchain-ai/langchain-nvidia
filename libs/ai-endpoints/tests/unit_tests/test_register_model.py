@@ -2,7 +2,13 @@ import warnings
 
 import pytest
 
-from langchain_nvidia_ai_endpoints import Model, register_model
+from langchain_nvidia_ai_endpoints import (
+    ChatNVIDIA,
+    Model,
+    NVIDIAEmbeddings,
+    NVIDIARerank,
+    register_model,
+)
 
 
 @pytest.mark.parametrize(
@@ -79,3 +85,52 @@ def test_missing_endpoint() -> None:
             Model(id="missing-endpoint", model_type="chat", client="ChatNVIDIA")
         )
     assert "does not have an endpoint" in str(e.value)
+
+
+def test_registered_model_is_available() -> None:
+    register_model(
+        Model(
+            id="test/chat",
+            model_type="chat",
+            client="ChatNVIDIA",
+            endpoint="BOGUS",
+        )
+    )
+    register_model(
+        Model(
+            id="test/embedding",
+            model_type="embedding",
+            client="NVIDIAEmbeddings",
+            endpoint="BOGUS",
+        )
+    )
+    register_model(
+        Model(
+            id="test/rerank",
+            model_type="ranking",
+            client="NVIDIARerank",
+            endpoint="BOGUS",
+        )
+    )
+    chat_models = ChatNVIDIA.get_available_models(api_key="BOGUS")
+    embedding_models = NVIDIAEmbeddings.get_available_models(api_key="BOGUS")
+    ranking_models = NVIDIARerank.get_available_models(api_key="BOGUS")
+
+    assert "test/chat" in [model.id for model in chat_models]
+    assert "test/chat" not in [model.id for model in embedding_models]
+    assert "test/chat" not in [model.id for model in ranking_models]
+
+    assert "test/embedding" not in [model.id for model in chat_models]
+    assert "test/embedding" in [model.id for model in embedding_models]
+    assert "test/embedding" not in [model.id for model in ranking_models]
+
+    assert "test/rerank" not in [model.id for model in chat_models]
+    assert "test/rerank" not in [model.id for model in embedding_models]
+    assert "test/rerank" in [model.id for model in ranking_models]
+
+
+def test_registered_model_without_client_is_not_listed(public_class: type) -> None:
+    model_name = f"test/{public_class.__name__}"
+    register_model(Model(id=model_name, endpoint="BOGUS"))
+    models = public_class.get_available_models(api_key="BOGUS")  # type: ignore
+    assert model_name not in [model.id for model in models]
