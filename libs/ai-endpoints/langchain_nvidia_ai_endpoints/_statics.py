@@ -319,6 +319,12 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "writer/palmyra-fin-70b-32k": Model(
+        id="writer/palmyra-fin-70b-32k",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_structured_output=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
