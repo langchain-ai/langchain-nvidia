@@ -1,7 +1,18 @@
+from itertools import chain
+from typing import Any
+
 import pytest
 from requests_mock import Mocker
 
-from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE
+from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
+from langchain_nvidia_ai_endpoints._statics import (
+    CHAT_MODEL_TABLE,
+    EMBEDDING_MODEL_TABLE,
+    MODEL_TABLE,
+    QA_MODEL_TABLE,
+    RANKING_MODEL_TABLE,
+    VLM_MODEL_TABLE,
+)
 
 
 @pytest.fixture
@@ -52,21 +63,39 @@ def mock_v1_local_models(requests_mock: Mocker, known_unknown: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "alias",
+    "alias, client",
     [
-        alias
-        for model in MODEL_TABLE.values()
+        (alias, ChatNVIDIA)
+        for model in list(
+            chain(
+                CHAT_MODEL_TABLE.values(),
+                VLM_MODEL_TABLE.values(),
+                QA_MODEL_TABLE.values(),
+            )
+        )
+        if model.aliases is not None
+        for alias in model.aliases
+    ]
+    + [
+        (alias, NVIDIAEmbeddings)
+        for model in EMBEDDING_MODEL_TABLE.values()
+        if model.aliases is not None
+        for alias in model.aliases
+    ]
+    + [
+        (alias, NVIDIARerank)
+        for model in RANKING_MODEL_TABLE.values()
         if model.aliases is not None
         for alias in model.aliases
     ],
 )
-def test_aliases(public_class: type, alias: str) -> None:
+def test_aliases(alias: str, client: Any) -> None:
     """
     Test that the aliases for each model in the model table are accepted
     with a warning about deprecation of the alias.
     """
     with pytest.warns(UserWarning) as record:
-        x = public_class(model=alias, nvidia_api_key="a-bogus-key")
+        x = client(model=alias, nvidia_api_key="a-bogus-key")
         assert x.model == x._client.model
     assert isinstance(record[0].message, Warning)
     assert "deprecated" in record[0].message.args[0]
@@ -100,7 +129,7 @@ def test_known_unknown(public_class: type, known_unknown: str) -> None:
     assert "unknown" in record[0].message.args[0]
 
 
-def test_unknown_unknown(public_class: type) -> None:
+def test_unknown_unknown(public_class: type, empty_v1_models: None) -> None:
     """
     Test that a model not in /v1/models and not in known model table will be
     rejected.
@@ -128,3 +157,54 @@ def test_default_lora(public_class: type) -> None:
     # find a model that matches the public_class under test
     x = public_class(base_url="http://localhost:8000/v1", model="lora1")
     assert x.model == "lora1"
+
+
+@pytest.mark.parametrize(
+    "model, client",
+    [(model.id, model.client) for model in MODEL_TABLE.values()],
+)
+def test_hosted_all_incompatible(public_class: type, model: str, client: str) -> None:
+    """
+    Test that the aliases for each model in the model table are accepted
+    with a warning about deprecation of the alias.
+    """
+    msg = (
+        "Model {model_name} is incompatible with client {cls_name}. "
+        "Please check `{cls_name}.get_available_models()`."
+    )
+
+    if client != public_class.__name__:
+        with pytest.raises(ValueError) as err_msg:
+            public_class(model=model, nvidia_api_key="a-bogus-key")
+
+        assert msg.format(model_name=model, cls_name=public_class.__name__) in str(
+            err_msg.value
+        )
+
+
+@pytest.mark.parametrize(
+    "model, client",
+    [(model.id, model.client) for model in MODEL_TABLE.values()],
+)
+def test_locally_hosted_all_incompatible(
+    public_class: type, model: str, client: str
+) -> None:
+    """
+    Test that the aliases for each model in the model table are accepted
+    with a warning about deprecation of the alias.
+    """
+    msg = (
+        "Model {model_name} is incompatible with client {cls_name}. "
+        "Please check `available_models`."
+    )
+    if client != public_class.__name__:
+        with pytest.raises(ValueError) as err_msg:
+            public_class(
+                base_url="http://localhost:8000/v1",
+                model=model,
+                nvidia_api_key="a-bogus-key",
+            )
+            assert err_msg == msg.format(model_name=model, cls_name=client)
+    else:
+        cls = public_class(model=model, nvidia_api_key="a-bogus-key")
+        assert cls.model == model

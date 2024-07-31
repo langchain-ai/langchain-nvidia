@@ -32,6 +32,7 @@ from langchain_core.pydantic_v1 import (
 )
 from requests.models import Response
 
+import langchain_nvidia_ai_endpoints.utils as utils
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, determine_model
 
 logger = logging.getLogger(__name__)
@@ -447,6 +448,7 @@ class _NVIDIAClient(BaseModel):
 
     model: Optional[str] = Field(..., description="Name of the model to invoke")
     is_hosted: bool = Field(True)
+    cls: str = Field(..., description="Class Name")
 
     ####################################################################################
 
@@ -504,56 +506,10 @@ class _NVIDIAClient(BaseModel):
 
     @root_validator
     def _postprocess_args(cls, values: Any) -> Any:
-        name = values.get("model")
         if values["is_hosted"]:
-            if not values["client"].api_key:
-                warnings.warn(
-                    "An API key is required for the hosted NIM. "
-                    "This will become an error in the future.",
-                    UserWarning,
-                )
-            if model := determine_model(name):
-                values["model"] = model.id
-                # not all models are on https://integrate.api.nvidia.com/v1,
-                # those that are not are served from their own endpoints
-                if model.endpoint:
-                    # we override the infer_path to use the custom endpoint
-                    values["client"].infer_path = model.endpoint
-            else:
-                if not (client := values.get("client")):
-                    warnings.warn(f"Unable to determine validity of {name}")
-                else:
-                    if any(model.id == name for model in client.available_models):
-                        warnings.warn(
-                            f"Found {name} in available_models, but type is "
-                            "unknown and inference may fail."
-                        )
-                    else:
-                        raise ValueError(
-                            f"Model {name} is unknown, check `available_models`"
-                        )
+            utils._process_hosted_model(values)
         else:
-            # set default model
-            if not name:
-                if not (client := values.get("client")):
-                    warnings.warn(f"Unable to determine validity of {name}")
-                else:
-                    valid_models = [
-                        model.id
-                        for model in client.available_models
-                        if not model.base_model or model.base_model == model.id
-                    ]
-                    name = next(iter(valid_models), None)
-                    if name:
-                        warnings.warn(
-                            f"Default model is set as: {name}. \n"
-                            "Set model using model parameter. \n"
-                            "To get available models use available_models property.",
-                            UserWarning,
-                        )
-                        values["model"] = name
-                    else:
-                        raise ValueError("No locally hosted model was found.")
+            utils._process_locally_hosted_model(values)
         return values
 
     @classmethod
