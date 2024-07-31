@@ -325,6 +325,11 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_structured_output=True,
     ),
+    "google/gemma-2-2b-it": Model(
+        id="google/gemma-2-2b-it",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
