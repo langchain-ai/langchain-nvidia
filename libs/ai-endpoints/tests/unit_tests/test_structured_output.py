@@ -24,42 +24,48 @@ def test_method() -> None:
                 category=UserWarning,
                 message=".*not known to support structured output.*",
             )
-            ChatNVIDIA().with_structured_output(Joke, method="json_mode")
+            ChatNVIDIA(api_key="BOGUS").with_structured_output(Joke, method="json_mode")
         assert len(record) == 1
         assert "unnecessary" in str(record[0].message)
 
 
 def test_include_raw() -> None:
     with pytest.raises(NotImplementedError):
-        ChatNVIDIA().with_structured_output(Joke, include_raw=True)
+        ChatNVIDIA(api_key="BOGUS").with_structured_output(Joke, include_raw=True)
 
     with pytest.raises(NotImplementedError):
-        ChatNVIDIA().with_structured_output(Joke.schema(), include_raw=True)
+        ChatNVIDIA(api_key="BOGUS").with_structured_output(
+            Joke.schema(), include_raw=True
+        )
 
 
 def test_known_does_not_warn(empty_v1_models: None) -> None:
     structured_model = [
         model
-        for model in ChatNVIDIA.get_available_models()
+        for model in ChatNVIDIA.get_available_models(api_key="BOGUS")
         if model.supports_structured_output
     ]
     assert structured_model, "No models support structured output"
 
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        ChatNVIDIA(model=structured_model[0].id).with_structured_output(Joke)
+        ChatNVIDIA(
+            api_key="BOGUS", model=structured_model[0].id
+        ).with_structured_output(Joke)
 
 
 def test_unknown_warns(empty_v1_models: None) -> None:
     unstructured_model = [
         model
-        for model in ChatNVIDIA.get_available_models()
+        for model in ChatNVIDIA.get_available_models(api_key="BOGUS")
         if not model.supports_structured_output
     ]
     assert unstructured_model, "All models support structured output"
 
     with pytest.warns(UserWarning) as record:
-        ChatNVIDIA(model=unstructured_model[0].id).with_structured_output(Joke)
+        ChatNVIDIA(
+            api_key="BOGUS", model=unstructured_model[0].id
+        ).with_structured_output(Joke)
     assert len(record) == 1
     assert "not known to support structured output" in str(record[0].message)
 
@@ -70,7 +76,7 @@ def test_enum_negative() -> None:
         B = "2"
         C = 3
 
-    llm = ChatNVIDIA()
+    llm = ChatNVIDIA(api_key="BOGUS")
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -102,7 +108,7 @@ def test_stream_enum(
     mock_streaming_response(chunks)
 
     warnings.filterwarnings("ignore", r".*not known to support structured output.*")
-    structured_llm = ChatNVIDIA().with_structured_output(Choices)
+    structured_llm = ChatNVIDIA(api_key="BOGUS").with_structured_output(Choices)
     # chunks are progressively more complete, so we only consider the last
     for chunk in structured_llm.stream("This is ignored."):
         response = chunk
@@ -125,7 +131,7 @@ def test_stream_enum_incomplete(
     mock_streaming_response(chunks)
 
     warnings.filterwarnings("ignore", r".*not known to support structured output.*")
-    structured_llm = ChatNVIDIA().with_structured_output(Choices)
+    structured_llm = ChatNVIDIA(api_key="BOGUS").with_structured_output(Choices)
     # chunks are progressively more complete, so we only consider the last
     for chunk in structured_llm.stream("This is ignored."):
         response = chunk
