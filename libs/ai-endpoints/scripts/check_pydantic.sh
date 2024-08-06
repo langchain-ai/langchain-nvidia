@@ -14,7 +14,7 @@ fi
 repository_path="$1"
 
 # Search for lines matching the pattern within the specified repository
-result=$(git -C "$repository_path" grep -E '^import pydantic|^from pydantic')
+result=$(git -C "$repository_path" grep -E '^import pydantic|^from pydantic' | grep -v "# ignore: check_pydantic")
 
 # Check if any matching lines were found
 if [ -n "$result" ]; then
