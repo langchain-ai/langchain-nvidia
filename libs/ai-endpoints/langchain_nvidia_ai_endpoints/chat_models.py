@@ -50,6 +50,7 @@ from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr, root_valid
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
+from langchain_core.utils.pydantic import is_basemodel_subclass
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
@@ -679,24 +680,6 @@ class ChatNVIDIA(BaseChatModel):
             output_parser: BaseOutputParser = JsonOutputParser()
             nvext_param: Dict[str, Any] = {"guided_json": schema}
 
-        elif issubclass(schema, BaseModel):
-            # PydanticOutputParser does not support streaming. what we do
-            # instead is ignore all inputs that are incomplete wrt the
-            # underlying Pydantic schema. if the entire input is invalid,
-            # we return None.
-            class ForgivingPydanticOutputParser(PydanticOutputParser):
-                def parse_result(
-                    self, result: List[Generation], *, partial: bool = False
-                ) -> Any:
-                    try:
-                        return super().parse_result(result, partial=partial)
-                    except OutputParserException:
-                        pass
-                    return None
-
-            output_parser = ForgivingPydanticOutputParser(pydantic_object=schema)
-            nvext_param = {"guided_json": schema.schema()}
-
         elif issubclass(schema, enum.Enum):
             # langchain's EnumOutputParser is not in langchain_core
             # and doesn't support streaming. this is a simple implementation
@@ -724,6 +707,25 @@ class ChatNVIDIA(BaseChatModel):
                 )
             output_parser = EnumOutputParser(enum=schema)
             nvext_param = {"guided_choice": choices}
+
+        elif is_basemodel_subclass(schema):
+            # PydanticOutputParser does not support streaming. what we do
+            # instead is ignore all inputs that are incomplete wrt the
+            # underlying Pydantic schema. if the entire input is invalid,
+            # we return None.
+            class ForgivingPydanticOutputParser(PydanticOutputParser):
+                def parse_result(
+                    self, result: List[Generation], *, partial: bool = False
+                ) -> Any:
+                    try:
+                        return super().parse_result(result, partial=partial)
+                    except OutputParserException:
+                        pass
+                    return None
+
+            output_parser = ForgivingPydanticOutputParser(pydantic_object=schema)
+            nvext_param = {"guided_json": schema.schema()}
+
         else:
             raise ValueError(
                 "Schema must be a Pydantic object, a dictionary "
