@@ -6,7 +6,13 @@ from typing import Any, List
 
 import pytest
 import requests_mock
-from langchain_core.messages import AIMessage, AIMessageChunk
+from langchain_core.messages import (
+    AIMessage,
+    AIMessageChunk,
+    BaseMessage,
+    HumanMessage,
+    ToolMessage,
+)
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.tools import tool
 
@@ -189,3 +195,68 @@ def test_stream_response_parsing(
     assert isinstance(response, AIMessageChunk)
     assert response.tool_calls
     assert response.tool_calls[0]["name"] == "magic"
+
+
+def test_regression_parsing_human_ai_tool_invoke(
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    """
+    a bug existed in the inference for sequence -
+     0. messages = [human message]
+     1. messages.append(llm.invoke(messages))
+     2. llm.invoke(messages) <- raised ValueError: Message ... has no content
+    """
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        json={
+            "id": "chatcmpl-ID",
+            "object": "chat.completion",
+            "created": 1234567890,
+            "model": "BOGUS",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "tool_calls": [
+                            {
+                                "id": "tool-ID",
+                                "type": "function",
+                                "function": {
+                                    "name": "magic",
+                                    "arguments": "{}",
+                                },
+                            }
+                        ],
+                    },
+                    "logprobs": None,
+                    "finish_reason": "tool_calls",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 22,
+                "completion_tokens": 20,
+                "total_tokens": 42,
+            },
+            "system_fingerprint": None,
+        },
+    )
+
+    llm = ChatNVIDIA(api_key="BOGUS")
+    messages: List[BaseMessage] = [HumanMessage("THIS IS IGNORED")]
+    response0 = llm.invoke(messages)
+    messages.append(response0)
+    messages.append(ToolMessage(content="SO IS THIS", tool_call_id="BOGUS"))
+    llm.invoke(messages)
+
+
+def test_regression_ai_null_content(
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    requests_mock.post("https://integrate.api.nvidia.com/v1/chat/completions", json={})
+    llm = ChatNVIDIA(api_key="BOGUS")
+    assistant = AIMessage(content="SKIPPED")
+    assistant.content = None  # type: ignore
+    llm.invoke([assistant])
+    llm.stream([assistant])
