@@ -287,6 +287,7 @@ CHAT_MODEL_TABLE = {
         id="nv-mistralai/mistral-nemo-12b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        supports_tools=True,
         supports_structured_output=True,
     ),
     "meta/llama-3.1-8b-instruct": Model(
