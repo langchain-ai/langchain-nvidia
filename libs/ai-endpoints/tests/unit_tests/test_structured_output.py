@@ -1,14 +1,18 @@
 import enum
 import warnings
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Type
 
 import pytest
-from langchain_core.pydantic_v1 import BaseModel, Field
+import requests_mock
+from langchain_core.pydantic_v1 import BaseModel as lc_pydanticV1BaseModel
+from langchain_core.pydantic_v1 import Field
+from pydantic import BaseModel as pydanticV2BaseModel  # ignore: check_pydantic
+from pydantic.v1 import BaseModel as pydanticV1BaseModel  # ignore: check_pydantic
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
 
-class Joke(BaseModel):
+class Joke(lc_pydanticV1BaseModel):
     """Joke to tell user."""
 
     setup: str = Field(description="The setup of the joke")
@@ -136,3 +140,52 @@ def test_stream_enum_incomplete(
     for chunk in structured_llm.stream("This is ignored."):
         response = chunk
     assert response is None
+
+
+@pytest.mark.parametrize(
+    "pydanticBaseModel",
+    [
+        lc_pydanticV1BaseModel,
+        pydanticV1BaseModel,
+        pydanticV2BaseModel,
+    ],
+    ids=["lc-pydantic-v1", "pydantic-v1", "pydantic-v2"],
+)
+def test_pydantic_version(
+    requests_mock: requests_mock.Mocker,
+    pydanticBaseModel: Type,
+) -> None:
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        json={
+            "id": "chatcmpl-ID",
+            "object": "chat.completion",
+            "created": 1234567890,
+            "model": "BOGUS",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": '{"name": "Sam Doe"}',
+                    },
+                    "logprobs": None,
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 22,
+                "completion_tokens": 20,
+                "total_tokens": 42,
+            },
+            "system_fingerprint": None,
+        },
+    )
+
+    class Person(pydanticBaseModel):  # type: ignore
+        name: str
+
+    llm = ChatNVIDIA(api_key="BOGUS").with_structured_output(Person)
+    response = llm.invoke("This is ignored.")
+    assert isinstance(response, Person)
+    assert response.name == "Sam Doe"
