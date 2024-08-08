@@ -7,16 +7,16 @@ all: help
 TEST_FILE ?= tests/unit_tests/
 
 test:
-	poetry run pytest $(TEST_FILE)
+	poetry run pytest $(PYTEST_ARGS) $(TEST_FILE)
 
 tests:
-	poetry run pytest $(TEST_FILE)
+	poetry run pytest $(PYTEST_ARGS) $(TEST_FILE)
 
 check_imports: $(shell find langchain_nvidia_ai_endpoints -name '*.py')
 	poetry run python ./scripts/check_imports.py $^
 
 integration_tests:
-	poetry run pytest tests/integration_tests
+	poetry run pytest tests/integration_tests $(PYTEST_ARGS)
 
 
 ######################
