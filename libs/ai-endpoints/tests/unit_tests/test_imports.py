@@ -4,6 +4,7 @@ EXPECTED_ALL = [
     "ChatNVIDIA",
     "NVIDIAEmbeddings",
     "NVIDIARerank",
+    "NVIDIA",
     "register_model",
     "Model",
 ]

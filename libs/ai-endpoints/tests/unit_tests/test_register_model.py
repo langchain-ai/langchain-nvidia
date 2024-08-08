@@ -3,6 +3,7 @@ import warnings
 import pytest
 
 from langchain_nvidia_ai_endpoints import (
+    NVIDIA,
     ChatNVIDIA,
     Model,
     NVIDIAEmbeddings,
@@ -16,12 +17,19 @@ from langchain_nvidia_ai_endpoints import (
     [
         ("chat", "NVIDIAEmbeddings"),
         ("chat", "NVIDIARerank"),
+        ("chat", "NVIDIA"),
         ("vlm", "NVIDIAEmbeddings"),
         ("vlm", "NVIDIARerank"),
+        ("vlm", "NVIDIA"),
         ("embeddings", "ChatNVIDIA"),
         ("embeddings", "NVIDIARerank"),
+        ("embeddings", "NVIDIA"),
         ("ranking", "ChatNVIDIA"),
         ("ranking", "NVIDIAEmbeddings"),
+        ("ranking", "NVIDIA"),
+        ("completions", "ChatNVIDIA"),
+        ("completions", "NVIDIAEmbeddings"),
+        ("completions", "NVIDIARerank"),
     ],
 )
 def test_mismatched_type_client(model_type: str, client: str) -> None:
@@ -53,6 +61,7 @@ def test_registered_model_usable(public_class: type) -> None:
         "ChatNVIDIA": "chat",
         "NVIDIAEmbeddings": "embedding",
         "NVIDIARerank": "ranking",
+        "NVIDIA": "completions",
     }[public_class.__name__]
     with warnings.catch_warnings():
         warnings.simplefilter("error")
@@ -112,21 +121,38 @@ def test_registered_model_is_available() -> None:
             endpoint="BOGUS",
         )
     )
+    register_model(
+        Model(
+            id="test/completions",
+            model_type="completions",
+            client="NVIDIA",
+            endpoint="BOGUS",
+        )
+    )
     chat_models = ChatNVIDIA.get_available_models(api_key="BOGUS")
     embedding_models = NVIDIAEmbeddings.get_available_models(api_key="BOGUS")
     ranking_models = NVIDIARerank.get_available_models(api_key="BOGUS")
+    completions_models = NVIDIA.get_available_models(api_key="BOGUS")
 
     assert "test/chat" in [model.id for model in chat_models]
     assert "test/chat" not in [model.id for model in embedding_models]
     assert "test/chat" not in [model.id for model in ranking_models]
+    assert "test/chat" not in [model.id for model in completions_models]
 
     assert "test/embedding" not in [model.id for model in chat_models]
     assert "test/embedding" in [model.id for model in embedding_models]
     assert "test/embedding" not in [model.id for model in ranking_models]
+    assert "test/embedding" not in [model.id for model in completions_models]
 
     assert "test/rerank" not in [model.id for model in chat_models]
     assert "test/rerank" not in [model.id for model in embedding_models]
     assert "test/rerank" in [model.id for model in ranking_models]
+    assert "test/rerank" not in [model.id for model in completions_models]
+
+    assert "test/completions" not in [model.id for model in chat_models]
+    assert "test/completions" not in [model.id for model in embedding_models]
+    assert "test/completions" not in [model.id for model in ranking_models]
+    assert "test/completions" in [model.id for model in completions_models]
 
 
 def test_registered_model_without_client_is_not_listed(public_class: type) -> None:

@@ -3,7 +3,12 @@ from typing import Any, List
 import pytest
 from langchain_core.documents import Document
 
-from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
+from langchain_nvidia_ai_endpoints import (
+    NVIDIA,
+    ChatNVIDIA,
+    NVIDIAEmbeddings,
+    NVIDIARerank,
+)
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model
 
 
@@ -38,6 +43,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         action="store",
         nargs="+",
         help="Run tests for a specific qa model or list of models",
+    )
+    parser.addoption(
+        "--completions-model-id",
+        action="store",
+        nargs="+",
+        help="Run tests for a specific completions model or list of models",
     )
     parser.addoption(
         "--embedding-model-id",
@@ -97,6 +108,18 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
                 if model.model_type == "chat" and model.supports_tools
             ]
         metafunc.parametrize("tool_model", models, ids=models)
+
+    if "completions_model" in metafunc.fixturenames:
+        models = [NVIDIA._default_model_name]
+        if model_list := metafunc.config.getoption("completions_model_id"):
+            models = model_list
+        if metafunc.config.getoption("all_models"):
+            models = [
+                model.id
+                for model in NVIDIA(**mode).available_models
+                if model.model_type == "completions"
+            ]
+        metafunc.parametrize("completions_model", models, ids=models)
 
     if "structured_model" in metafunc.fixturenames:
         models = ["meta/llama-3.1-8b-instruct"]
@@ -163,6 +186,7 @@ def mode(request: pytest.FixtureRequest) -> dict:
         ChatNVIDIA,
         NVIDIAEmbeddings,
         NVIDIARerank,
+        NVIDIA,
     ]
 )
 def public_class(request: pytest.FixtureRequest) -> type:
@@ -180,5 +204,7 @@ def contact_service() -> Any:
             instance.compress_documents(
                 documents=[Document(page_content="World")], query="Hello"
             )
+        elif isinstance(instance, NVIDIA):
+            instance.invoke("Hello")
 
     return _contact_service
