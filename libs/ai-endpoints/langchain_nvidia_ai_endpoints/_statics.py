@@ -332,6 +332,13 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "mistralai/mistral-large-2-instruct": Model(
+        id="mistralai/mistral-large-2-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
