@@ -339,6 +339,21 @@ CHAT_MODEL_TABLE = {
         supports_tools=True,
         supports_structured_output=True,
     ),
+    "mistralai/mathstral-7b-v0.1": Model(
+        id="mistralai/mathstral-7b-v0.1",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "rakuten/rakutenai-7b-instruct": Model(
+        id="rakuten/rakutenai-7b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "rakuten/rakutenai-7b-chat": Model(
+        id="rakuten/rakutenai-7b-chat",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
