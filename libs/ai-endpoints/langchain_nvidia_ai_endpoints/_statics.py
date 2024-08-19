@@ -354,6 +354,16 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "baichuan-inc/baichuan2-13b-chat": Model(
+        id="baichuan-inc/baichuan2-13b-chat",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "thudm/chatglm3-6b": Model(
+        id="thudm/chatglm3-6b",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
