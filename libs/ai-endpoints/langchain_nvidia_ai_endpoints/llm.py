@@ -103,13 +103,6 @@ class NVIDIA(LLM):
         - frequency_penalty (float): The frequency penalty to apply to the completion.
         - presence_penalty (float): The presence penalty to apply to the completion.
         - seed (int): The seed to use for generating completions.
-        - best_of (int): The number of completions to generate and return the best of.
-        - echo (bool): Whether to echo the prompt in the completion.
-        - logit_bias (Dict[str, float]): The logit bias to apply to the completion.
-        - logprobs (int): The number of logprobs to return.
-        - n (int): The number of completions to generate.
-        - suffix (str): The suffix to use for generating completions.
-        - user (str): The user ID to use for generating completions.
 
         These additional arguments can also be passed with `bind()`, e.g.
         `NVIDIA().bind(max_tokens=512)`, or pass directly to `invoke()` or `stream()`,
