@@ -86,7 +86,7 @@ class NVIDIA(LLM):
         hosted NIM.
 
         Args:
-            model (str): The model to use for reranking.
+            model (str): The model to use for completions.
             nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
             api_key (str): Alternative to nvidia_api_key.
             base_url (str): The base URL of the NIM to connect to.
@@ -142,7 +142,7 @@ class NVIDIA(LLM):
     @property
     def available_models(self) -> List[Model]:
         """
-        Get a list of available models that work with NVIDIARerank.
+        Get a list of available models that work with NVIDIA.
         """
         return self._client.get_available_models(self.__class__.__name__)
 
