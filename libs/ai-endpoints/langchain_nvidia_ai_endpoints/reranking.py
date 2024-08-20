@@ -28,7 +28,7 @@ class NVIDIARerank(BaseDocumentCompressor):
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
 
     _default_batch_size: int = 32
-    _default_model_name: str = "nv-rerank-qa-mistral-4b:1"
+    _default_model_name: str = "nvidia/nv-rerankqa-mistral-4b-v3"
     _default_base_url: str = "https://integrate.api.nvidia.com/v1"
     base_url: str = Field(
         description="Base url for model listing an invocation",

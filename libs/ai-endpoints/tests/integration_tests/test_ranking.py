@@ -196,14 +196,9 @@ def test_truncate_positive(rerank_model: str, mode: dict, truncate: str) -> None
 
 
 @pytest.mark.parametrize("truncate", [None, "NONE"])
-@pytest.mark.xfail(
-    reason=(
-        "truncation is inconsistent across models, "
-        "nv-rerank-qa-mistral-4b:1 truncates by default "
-        "while others do not"
-    )
-)
 def test_truncate_negative(rerank_model: str, mode: dict, truncate: str) -> None:
+    if rerank_model == "nv-rerank-qa-mistral-4b:1":
+        pytest.skip("nv-rerank-qa-mistral-4b:1 truncates by default")
     query = "What is acceleration?"
     documents = [
         Document(page_content="NVIDIA " * length)
