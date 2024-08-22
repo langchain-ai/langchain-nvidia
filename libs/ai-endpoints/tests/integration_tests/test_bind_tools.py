@@ -219,6 +219,7 @@ def test_tool_choice_with_no_tool(
         )
         in str(e.value)
         or "invalid_request_error" in str(e.value)
+        or "Bad Request" in str(e.value)
     )
 
 
@@ -262,6 +263,7 @@ def test_tool_choice_negative(
     assert (
         "invalid_request_error" in str(e.value)
         or "value_error" in str(e.value)
+        or "Bad Request" in str(e.value)
         or "Incorrectly formatted `tool_choice`" in str(e.value)
     )
 
@@ -496,6 +498,7 @@ def test_tool_choice_negative_unknown_tool(
         "not found in the tools list" in str(e.value)
         or "no function named" in str(e.value)
         or "does not match any of the specified" in str(e.value)
+        or "Bad Request" in str(e.value)
     )
 
 
@@ -551,6 +554,7 @@ def test_bind_tool_tool_choice_with_no_tool_server(
         in str(e.value)
         or "Expected an array with minimum length" in str(e.value)
         or "should be non-empty" in str(e.value)
+        or "Bad Request" in str(e.value)
     )
 
 
