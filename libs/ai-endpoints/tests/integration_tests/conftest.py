@@ -54,7 +54,8 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--vlm-model-id",
         action="store",
-        help="Run tests for a specific vlm model",
+        nargs="+",
+        help="Run tests for a specific vlm model or list of models",
     )
     parser.addoption(
         "--all-models",
@@ -120,8 +121,8 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
     if "vlm_model" in metafunc.fixturenames:
         models = ["nvidia/neva-22b"]
-        if model := metafunc.config.getoption("vlm_model_id"):
-            models = [model]
+        if model_list := metafunc.config.getoption("vlm_model_id"):
+            models = model_list
         if metafunc.config.getoption("all_models"):
             models = [
                 model.id
