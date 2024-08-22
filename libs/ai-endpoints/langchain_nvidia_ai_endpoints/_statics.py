@@ -364,6 +364,31 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "microsoft/phi-3.5-mini-instruct": Model(
+        id="microsoft/phi-3.5-mini-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "microsoft/phi-3.5-moe-instruct": Model(
+        id="microsoft/phi-3.5-moe-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "nvidia/nemotron-mini-4b-instruct": Model(
+        id="nvidia/nemotron-mini-4b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "ai21labs/jamba-1.5-large-instruct": Model(
+        id="ai21labs/jamba-1.5-large-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "ai21labs/jamba-1.5-mini-instruct": Model(
+        id="ai21labs/jamba-1.5-mini-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
