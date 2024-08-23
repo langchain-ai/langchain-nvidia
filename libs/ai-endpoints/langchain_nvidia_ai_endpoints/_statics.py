@@ -389,6 +389,16 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "yentinglin/llama-3-taiwan-70b-instruct": Model(
+        id="yentinglin/llama-3-taiwan-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "tokyotech-llm/llama-3-swallow-70b-instruct-v0.1": Model(
+        id="tokyotech-llm/llama-3-swallow-70b-instruct-v0.1",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
