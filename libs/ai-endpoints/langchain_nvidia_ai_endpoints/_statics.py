@@ -505,6 +505,11 @@ COMPLETION_MODEL_TABLE = {
         model_type="completions",
         client="NVIDIA",
     ),
+    "nvidia/mistral-nemo-minitron-8b-base": Model(
+        id="nvidia/mistral-nemo-minitron-8b-base",
+        model_type="completions",
+        client="NVIDIA",
+    ),
 }
 
 
