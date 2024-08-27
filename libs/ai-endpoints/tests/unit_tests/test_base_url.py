@@ -95,6 +95,7 @@ def test_param_base_url_hosted(public_class: type, base_url: str) -> None:
         "http://localhost:8888",
         "http://0.0.0.0:8888/v1",
         "http://0.0.0.0:8888/v1/",
+        "http://blah/some/other/path/v1",
     ],
 )
 def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:

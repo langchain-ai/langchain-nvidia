@@ -133,7 +133,9 @@ class _NVIDIAClient(BaseModel):
                     f"Invalid base_url format. {expected_format} Got: {base_url}"
                 )
 
-            if base_url.endswith(("/embeddings", "/completions", "/rankings")):
+            if base_url.endswith(
+                ("/embeddings", "/completions", "/rankings", "/reranking")
+            ):
                 warnings.warn(f"Using {base_url}, ignoring the rest")
 
             values["base_url"] = base_url
