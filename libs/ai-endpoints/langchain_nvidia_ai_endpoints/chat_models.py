@@ -371,6 +371,12 @@ class ChatNVIDIA(BaseChatModel):
             "additional_kwargs": {},
             "response_metadata": {},
         }
+        if token_usage := kw_left.pop("token_usage", None):
+            out_dict["usage_metadata"] = {
+                "input_tokens": token_usage.get("prompt_tokens", 0),
+                "output_tokens": token_usage.get("completion_tokens", 0),
+                "total_tokens": token_usage.get("total_tokens", 0),
+            }
         # "tool_calls" is set for invoke and stream responses
         if tool_calls := kw_left.pop("tool_calls", None):
             assert isinstance(
