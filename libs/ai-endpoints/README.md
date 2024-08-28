@@ -225,6 +225,29 @@ llm.invoke(
 )
 ```
 
+## Completions
+
+You can also work with models that support the Completions API. These models accept a `prompt` instead of `messages`.
+
+```python
+completions_llm = NVIDIA().bind(max_tokens=512)
+[model.id for model in completions_llm.get_available_models()]
+
+# [
+#   ...
+#   'bigcode/starcoder2-7b',
+#   'bigcode/starcoder2-15b',
+#   ...
+# ]
+```
+
+```python
+prompt = "# Function that does quicksort written in Rust without comments:"
+for chunk in completions_llm.stream(prompt):
+    print(chunk, end="", flush=True)
+```
+
+
 ## Embeddings
 
 You can also connect to embeddings models through this package. Below is an example:

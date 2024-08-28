@@ -10,8 +10,8 @@ class Model(BaseModel):
     Model information.
 
     id: unique identifier for the model, passed as model parameter for requests
-    model_type: API type (chat, vlm, embedding, ranking, completion)
-    client: client name, e.g. ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
+    model_type: API type (chat, vlm, embedding, ranking, completions)
+    client: client name, e.g. ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank, NVIDIA
     endpoint: custom endpoint for the model
     aliases: list of aliases for the model
     supports_tools: whether the model supports tool calling
@@ -23,9 +23,11 @@ class Model(BaseModel):
     id: str
     # why do we have a model_type? because ChatNVIDIA can speak both chat and vlm.
     model_type: Optional[
-        Literal["chat", "vlm", "embedding", "ranking", "completion", "qa"]
+        Literal["chat", "vlm", "embedding", "ranking", "completions", "qa"]
     ] = None
-    client: Optional[Literal["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank"]] = None
+    client: Optional[
+        Literal["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank", "NVIDIA"]
+    ] = None
     endpoint: Optional[str] = None
     aliases: Optional[list] = None
     supports_tools: Optional[bool] = False
@@ -42,6 +44,7 @@ class Model(BaseModel):
                 "ChatNVIDIA": ("chat", "vlm", "qa"),
                 "NVIDIAEmbeddings": ("embedding",),
                 "NVIDIARerank": ("ranking",),
+                "NVIDIA": ("completions",),
             }
             model_type = values.get("model_type")
             if model_type not in supported[client]:
@@ -536,14 +539,23 @@ RANKING_MODEL_TABLE = {
     ),
 }
 
-# COMPLETION_MODEL_TABLE = {
-#     "mistralai/mixtral-8x22b-v0.1": Model(
-#         id="mistralai/mixtral-8x22b-v0.1",
-#         model_type="completion",
-#         client="NVIDIA",
-#         aliases=["ai-mixtral-8x22b"],
-#     ),
-# }
+COMPLETION_MODEL_TABLE = {
+    "bigcode/starcoder2-7b": Model(
+        id="bigcode/starcoder2-7b",
+        model_type="completions",
+        client="NVIDIA",
+    ),
+    "bigcode/starcoder2-15b": Model(
+        id="bigcode/starcoder2-15b",
+        model_type="completions",
+        client="NVIDIA",
+    ),
+    "nvidia/mistral-nemo-minitron-8b-base": Model(
+        id="nvidia/mistral-nemo-minitron-8b-base",
+        model_type="completions",
+        client="NVIDIA",
+    ),
+}
 
 
 OPENAI_MODEL_TABLE = {
@@ -563,6 +575,7 @@ MODEL_TABLE = {
     **VLM_MODEL_TABLE,
     **EMBEDDING_MODEL_TABLE,
     **RANKING_MODEL_TABLE,
+    **COMPLETION_MODEL_TABLE,
 }
 
 if "_INCLUDE_OPENAI" in os.environ:

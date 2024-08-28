@@ -13,6 +13,7 @@ def mock_endpoints(requests_mock: Mocker) -> None:
         "/v1/embeddings",
         "/v1/chat/completions",
         "/v1/ranking",
+        "/v1/completions",
     ]:
         requests_mock.post(
             re.compile(f".*{endpoint}"),
