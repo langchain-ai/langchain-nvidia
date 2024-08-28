@@ -94,6 +94,8 @@ def test_param_base_url_hosted(public_class: type, base_url: str) -> None:
         "https://localhost",
         "http://localhost:8888",
         "http://0.0.0.0:8888/v1",
+        "http://0.0.0.0:8888/v1/",
+        "http://blah/some/other/path/v1",
     ],
 )
 def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
@@ -107,18 +109,9 @@ def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
     [
         "http://localhost:8888/embeddings",
         "http://0.0.0.0:8888/rankings",
+        "http://localhost:8888/embeddings/",
+        "http://0.0.0.0:8888/rankings/",
         "http://localhost:8888/chat/completions",
-    ],
-)
-def test_expect_error(public_class: type, base_url: str) -> None:
-    with pytest.raises(ValueError) as e:
-        public_class(model="model1", base_url=base_url)
-    assert "Expected format is" in str(e.value)
-
-
-@pytest.mark.parametrize(
-    "base_url",
-    [
         "http://localhost:8080/v1/embeddings",
         "http://0.0.0.0:8888/v1/rankings",
     ],
