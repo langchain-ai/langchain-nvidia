@@ -100,7 +100,9 @@ def test_basic(completions_model: str, mode: dict, func: Callable, count: int) -
 @pytest.mark.parametrize(
     "func, count", [(ainvoke, 0), (astream, 1)], ids=["ainvoke", "astream"]
 )
-async def test_abasic(completions_model: str, mode: dict, func: Callable, count: int) -> None:
+async def test_abasic(
+    completions_model: str, mode: dict, func: Callable, count: int
+) -> None:
     llm = NVIDIA(model=completions_model, **mode)
     response, cnt = await func(llm, "Hello, my name is")
     assert isinstance(response, str)
