@@ -74,12 +74,35 @@ def stream(llm: NVIDIA, prompt: str, **kwargs: Any) -> Tuple[str, int]:
     return response, count
 
 
+async def ainvoke(llm: NVIDIA, prompt: str, **kwargs: Any) -> Tuple[str, int]:
+    return await llm.ainvoke(prompt, **kwargs), 1
+
+
+async def astream(llm: NVIDIA, prompt: str, **kwargs: Any) -> Tuple[str, int]:
+    response = ""
+    count = 0
+    async for chunk in llm.astream(prompt, **kwargs):
+        response += chunk
+        count += 1
+    return response, count
+
+
 @pytest.mark.parametrize(
     "func, count", [(invoke, 0), (stream, 1)], ids=["invoke", "stream"]
 )
 def test_basic(completions_model: str, mode: dict, func: Callable, count: int) -> None:
     llm = NVIDIA(model=completions_model, **mode)
     response, cnt = func(llm, "Hello, my name is")
+    assert isinstance(response, str)
+    assert cnt > count, "Should have received more chunks"
+
+
+@pytest.mark.parametrize(
+    "func, count", [(ainvoke, 0), (astream, 1)], ids=["ainvoke", "astream"]
+)
+async def test_abasic(completions_model: str, mode: dict, func: Callable, count: int) -> None:
+    llm = NVIDIA(model=completions_model, **mode)
+    response, cnt = await func(llm, "Hello, my name is")
     assert isinstance(response, str)
     assert cnt > count, "Should have received more chunks"
 
