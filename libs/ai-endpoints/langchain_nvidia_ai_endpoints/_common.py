@@ -17,7 +17,7 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 import requests
 from langchain_core.pydantic_v1 import (
@@ -124,7 +124,7 @@ class _NVIDIAClient(BaseModel):
 
         ## Making sure /v1 in added to the url, followed by infer_path
         if "base_url" in values:
-            base_url = values["base_url"]
+            base_url = values["base_url"].strip("/")
             parsed = urlparse(base_url)
             expected_format = "Expected format is: http://host:port"
 
@@ -133,24 +133,11 @@ class _NVIDIAClient(BaseModel):
                     f"Invalid base_url format. {expected_format} Got: {base_url}"
                 )
 
-            if parsed.path:
-                normalized_path = parsed.path.strip("/")
-                if normalized_path == "v1":
-                    pass
-                elif normalized_path in [
-                    "v1/embeddings",
-                    "v1/completions",
-                    "v1/rankings",
-                ]:
-                    warnings.warn(f"Using {base_url}, ignoring the rest")
-                else:
-                    raise ValueError(
-                        f"Base URL path is not recognized. {expected_format}"
-                    )
+            if base_url.endswith(
+                ("/embeddings", "/completions", "/rankings", "/reranking")
+            ):
+                warnings.warn(f"Using {base_url}, ignoring the rest")
 
-            base_url = urlunparse(
-                (parsed.scheme, parsed.netloc, "v1", None, None, None)
-            )
             values["base_url"] = base_url
             values["infer_path"] = values["infer_path"].format(base_url=base_url)
 

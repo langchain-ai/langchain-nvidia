@@ -4,7 +4,7 @@ run-name: langchain-nvidia Scheduled tests
 on:
   workflow_dispatch:
   schedule:
-    - cron:  '0 13 * * *'
+    - cron:  '0 8 * * *'
 
 env:
   POETRY_VERSION: "1.7.1"

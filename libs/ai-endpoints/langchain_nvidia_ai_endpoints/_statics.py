@@ -10,8 +10,8 @@ class Model(BaseModel):
     Model information.
 
     id: unique identifier for the model, passed as model parameter for requests
-    model_type: API type (chat, vlm, embedding, ranking, completion)
-    client: client name, e.g. ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
+    model_type: API type (chat, vlm, embedding, ranking, completions)
+    client: client name, e.g. ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank, NVIDIA
     endpoint: custom endpoint for the model
     aliases: list of aliases for the model
     supports_tools: whether the model supports tool calling
@@ -23,9 +23,11 @@ class Model(BaseModel):
     id: str
     # why do we have a model_type? because ChatNVIDIA can speak both chat and vlm.
     model_type: Optional[
-        Literal["chat", "vlm", "embedding", "ranking", "completion", "qa"]
+        Literal["chat", "vlm", "embedding", "ranking", "completions", "qa"]
     ] = None
-    client: Optional[Literal["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank"]] = None
+    client: Optional[
+        Literal["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank", "NVIDIA"]
+    ] = None
     endpoint: Optional[str] = None
     aliases: Optional[list] = None
     supports_tools: Optional[bool] = False
@@ -42,6 +44,7 @@ class Model(BaseModel):
                 "ChatNVIDIA": ("chat", "vlm", "qa"),
                 "NVIDIAEmbeddings": ("embedding",),
                 "NVIDIARerank": ("ranking",),
+                "NVIDIA": ("completions",),
             }
             model_type = values.get("model_type")
             if model_type not in supported[client]:
@@ -257,6 +260,7 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-codestral-22b-instruct-v01"],
+        supports_structured_output=True,
     ),
     "google/gemma-2-9b-it": Model(
         id="google/gemma-2-9b-it",
@@ -286,6 +290,7 @@ CHAT_MODEL_TABLE = {
         id="nv-mistralai/mistral-nemo-12b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        supports_tools=True,
         supports_structured_output=True,
     ),
     "meta/llama-3.1-8b-instruct": Model(
@@ -327,6 +332,73 @@ CHAT_MODEL_TABLE = {
     ),
     "google/gemma-2-2b-it": Model(
         id="google/gemma-2-2b-it",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "mistralai/mistral-large-2-instruct": Model(
+        id="mistralai/mistral-large-2-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+    ),
+    "mistralai/mathstral-7b-v0.1": Model(
+        id="mistralai/mathstral-7b-v0.1",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "rakuten/rakutenai-7b-instruct": Model(
+        id="rakuten/rakutenai-7b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "rakuten/rakutenai-7b-chat": Model(
+        id="rakuten/rakutenai-7b-chat",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "baichuan-inc/baichuan2-13b-chat": Model(
+        id="baichuan-inc/baichuan2-13b-chat",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "thudm/chatglm3-6b": Model(
+        id="thudm/chatglm3-6b",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "microsoft/phi-3.5-mini-instruct": Model(
+        id="microsoft/phi-3.5-mini-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "microsoft/phi-3.5-moe-instruct": Model(
+        id="microsoft/phi-3.5-moe-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "nvidia/nemotron-mini-4b-instruct": Model(
+        id="nvidia/nemotron-mini-4b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "ai21labs/jamba-1.5-large-instruct": Model(
+        id="ai21labs/jamba-1.5-large-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "ai21labs/jamba-1.5-mini-instruct": Model(
+        id="ai21labs/jamba-1.5-mini-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "yentinglin/llama-3-taiwan-70b-instruct": Model(
+        id="yentinglin/llama-3-taiwan-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "tokyotech-llm/llama-3-swallow-70b-instruct-v0.1": Model(
+        id="tokyotech-llm/llama-3-swallow-70b-instruct-v0.1",
         model_type="chat",
         client="ChatNVIDIA",
     ),
@@ -467,14 +539,23 @@ RANKING_MODEL_TABLE = {
     ),
 }
 
-# COMPLETION_MODEL_TABLE = {
-#     "mistralai/mixtral-8x22b-v0.1": Model(
-#         id="mistralai/mixtral-8x22b-v0.1",
-#         model_type="completion",
-#         client="NVIDIA",
-#         aliases=["ai-mixtral-8x22b"],
-#     ),
-# }
+COMPLETION_MODEL_TABLE = {
+    "bigcode/starcoder2-7b": Model(
+        id="bigcode/starcoder2-7b",
+        model_type="completions",
+        client="NVIDIA",
+    ),
+    "bigcode/starcoder2-15b": Model(
+        id="bigcode/starcoder2-15b",
+        model_type="completions",
+        client="NVIDIA",
+    ),
+    "nvidia/mistral-nemo-minitron-8b-base": Model(
+        id="nvidia/mistral-nemo-minitron-8b-base",
+        model_type="completions",
+        client="NVIDIA",
+    ),
+}
 
 
 OPENAI_MODEL_TABLE = {
@@ -494,6 +575,7 @@ MODEL_TABLE = {
     **VLM_MODEL_TABLE,
     **EMBEDDING_MODEL_TABLE,
     **RANKING_MODEL_TABLE,
+    **COMPLETION_MODEL_TABLE,
 }
 
 if "_INCLUDE_OPENAI" in os.environ:

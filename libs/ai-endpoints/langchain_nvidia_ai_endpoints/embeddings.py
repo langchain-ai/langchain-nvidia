@@ -34,7 +34,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         validate_assignment = True
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
-    _default_model_name: str = "NV-Embed-QA"
+    _default_model_name: str = "nvidia/nv-embedqa-e5-v5"
     _default_max_batch_size: int = 50
     _default_base_url: str = "https://integrate.api.nvidia.com/v1"
     base_url: str = Field(

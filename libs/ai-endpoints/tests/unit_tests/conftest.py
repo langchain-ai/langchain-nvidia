@@ -3,7 +3,12 @@ from typing import Callable, List
 import pytest
 import requests_mock
 
-from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
+from langchain_nvidia_ai_endpoints import (
+    NVIDIA,
+    ChatNVIDIA,
+    NVIDIAEmbeddings,
+    NVIDIARerank,
+)
 
 
 @pytest.fixture(
@@ -11,6 +16,7 @@ from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARe
         ChatNVIDIA,
         NVIDIAEmbeddings,
         NVIDIARerank,
+        NVIDIA,
     ]
 )
 def public_class(request: pytest.FixtureRequest) -> type:
