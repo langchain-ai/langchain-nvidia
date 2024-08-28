@@ -327,7 +327,13 @@ class ChatNVIDIA(BaseChatModel):
             _nv_vlm_adjust_input(message)
             for message in [convert_message_to_dict(message) for message in messages]
         ]
-        payload = self._get_payload(inputs=inputs, stop=stop, stream=True, **kwargs)
+        payload = self._get_payload(
+            inputs=inputs,
+            stop=stop,
+            stream=True,
+            stream_options={"include_usage": True},
+            **kwargs,
+        )
         for response in self._client.get_req_stream(payload=payload):
             self._set_callback_out(response, run_manager)
             parsed_response = self._custom_postprocess(response, streaming=True)
