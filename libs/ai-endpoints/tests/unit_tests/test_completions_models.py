@@ -147,3 +147,8 @@ def test_params_unknown(
         func(bound_llm, "IGNORED")
     assert len(record) == 1
     assert "Unrecognized, ignored arguments: {'bind_unknown'}" in str(record[0].message)
+
+
+def test_identifying_params() -> None:
+    llm = NVIDIA(api_key="BOGUS")
+    assert set(llm._identifying_params.keys()) == {"model", "base_url"}

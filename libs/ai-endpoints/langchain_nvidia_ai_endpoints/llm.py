@@ -157,6 +157,16 @@ class NVIDIA(LLM):
         """
         return "NVIDIA"
 
+    @property
+    def _identifying_params(self) -> Dict[str, Any]:
+        """
+        Get parameters used to help identify the LLM.
+        """
+        return {
+            "model": self.model,
+            "base_url": self.base_url,
+        }
+
     def _call(
         self,
         prompt: str,
