@@ -523,7 +523,7 @@ class _NVIDIAClient(BaseModel):
         }
 
         response = self.get_session_fn().post(
-            **self.__add_authorization(self.last_inputs)
+            stream=True, **self.__add_authorization(self.last_inputs)
         )
         self._try_raise(response)
         call = self.copy()
