@@ -104,13 +104,13 @@ class NVIDIARerank(BaseDocumentCompressor):
             ]
 
         >>> client = NVIDIARerank(
-            model="nvidia/nv-rerankqa-mistral-4b-v3", 
-            api_key="$API_KEY_REQUIRED_IF_EXECUTING_OUTSIDE_NGC"
+                model="nvidia/nv-rerankqa-mistral-4b-v3", 
+                api_key="$API_KEY_REQUIRED_IF_EXECUTING_OUTSIDE_NGC"
             )
 
         >>> response = client.compress_documents(
-            query=query,
-            documents=[Document(page_content=passage) for passage in passages]
+                query=query,
+                documents=[Document(page_content=passage) for passage in passages]
             )
 
         >>> print(f"Most relevant: {response[0].page_content}\n"
