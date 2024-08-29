@@ -185,6 +185,7 @@ def test_stream_response_parsing(
                     for argument in argument_chunks
                 ],
                 'data: {"id":"ID0","object":"chat.completion.chunk","created":1234567890,"model":"BOGUS","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"tool_calls"}]}',  # noqa: E501
+                'data: {"id":"ID0","object":"chat.completion.chunk","created":1234567890,"model":"BOGUS","choices":[],"usage":{"prompt_tokens":20,"total_tokens":42,"completion_tokens":22}}',  # noqa: E501
                 "data: [DONE]",
             ]
         ),
