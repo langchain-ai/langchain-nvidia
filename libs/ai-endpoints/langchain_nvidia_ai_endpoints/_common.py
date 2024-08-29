@@ -17,7 +17,7 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 import requests
 from langchain_core.pydantic_v1 import (
@@ -138,7 +138,9 @@ class _NVIDIAClient(BaseModel):
             ):
                 warnings.warn(f"Using {base_url}, ignoring the rest")
 
-            values["base_url"] = base_url
+            values["base_url"] = base_url = urlunparse(
+                (parsed.scheme, parsed.netloc, "v1", None, None, None)
+            )
             values["infer_path"] = values["infer_path"].format(base_url=base_url)
 
         return values
@@ -523,7 +525,7 @@ class _NVIDIAClient(BaseModel):
         }
 
         response = self.get_session_fn().post(
-            **self.__add_authorization(self.last_inputs)
+            stream=True, **self.__add_authorization(self.last_inputs)
         )
         self._try_raise(response)
         call = self.copy()
