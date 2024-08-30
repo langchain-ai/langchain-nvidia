@@ -238,6 +238,14 @@ class ChatNVIDIA(BaseChatModel):
         API Key:
         - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
             environment variable.
+
+        Base URL:
+        - Connect to a self-hosted model with NVIDIA NIM using the `base_url` arg to
+            link to the local host at localhost:8000:
+            llm = ChatNVIDIA(
+                base_url="http://localhost:8000/v1",
+                model="meta-llama3-8b-instruct"
+            )
         """
         super().__init__(**kwargs)
         self._client = _NVIDIAClient(
