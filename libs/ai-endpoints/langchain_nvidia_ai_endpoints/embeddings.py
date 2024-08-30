@@ -91,7 +91,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         Base URL:
         - Connect to a self-hosted model with NVIDIA NIM using the `base_url` arg to
             link to the local host at localhost:8000:
-            `embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")`
+            embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")
         """
         super().__init__(**kwargs)
         self._client = _NVIDIAClient(
