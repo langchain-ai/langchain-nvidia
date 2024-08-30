@@ -7,6 +7,7 @@ from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
 from langchain_core.documents.compressor import BaseDocumentCompressor
 from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr, root_validator
+
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
 
