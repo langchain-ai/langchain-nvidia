@@ -80,6 +80,11 @@ class NVIDIARerank(BaseDocumentCompressor):
         - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
             environment variable.
 
+        Base URL:
+        - Connect to a self-hosted model with NVIDIA NIM using the `base_url` arg to
+            link to the local host at localhost:8000:
+            ranker = NVIDIARerank(base_url="http://localhost:8000/v1")
+
         Example:
         >>> from langchain_nvidia_ai_endpoints import NVIDIARerank
         >>> from langchain_core.documents import Document
