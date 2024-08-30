@@ -172,3 +172,10 @@ docs/docs/node_modules
 docs/docs/yarn.lock
 _dist
 docs/docs/templates
+.trunk/trunk.yaml
+.trunk/configs/.isort.cfg
+.gitignore
+.trunk/configs/.shellcheckrc
+.trunk/configs/.yamllint.yaml
+.gitignore
+.trunk/configs/ruff.toml
