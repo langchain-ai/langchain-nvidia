@@ -383,6 +383,7 @@ class _NVIDIAClient(BaseModel):
                 "NVCF-REQID" in response.headers
             ), "Received 202 response with no request id to follow"
             request_id = response.headers.get("NVCF-REQID")
+            warnings.warn(f"Polling for response: {request_id}")  # todo: remove
             payload = {
                 "url": self.polling_url_tmpl.format(request_id=request_id),
                 "headers": self.headers_tmpl["call"],
