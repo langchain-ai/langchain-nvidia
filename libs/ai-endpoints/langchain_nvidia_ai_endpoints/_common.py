@@ -372,9 +372,7 @@ class _NVIDIAClient(BaseModel):
         start_time = time.time()
         # note: the local NIM does not return a 202 status code
         #       (per RL 22may2024 circa 24.05)
-        while (
-            response.status_code == 202
-        ):  # todo: there are no tests that reach this point
+        while response.status_code == 202:
             time.sleep(self.interval)
             if (time.time() - start_time) > self.timeout:
                 raise TimeoutError(
@@ -385,10 +383,12 @@ class _NVIDIAClient(BaseModel):
                 "NVCF-REQID" in response.headers
             ), "Received 202 response with no request id to follow"
             request_id = response.headers.get("NVCF-REQID")
-            # todo: this needs testing, missing auth header update
+            payload = {
+                "url": self.polling_url_tmpl.format(request_id=request_id),
+                "headers": self.headers_tmpl["call"],
+            }
             self.last_response = response = session.get(
-                self.polling_url_tmpl.format(request_id=request_id),
-                headers=self.headers_tmpl["call"],
+                **self.__add_authorization(payload)
             )
         self._try_raise(response)
         return response
