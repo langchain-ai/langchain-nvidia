@@ -23,7 +23,7 @@ class Model(BaseModel):
     id: str
     # why do we have a model_type? because ChatNVIDIA can speak both chat and vlm.
     model_type: Optional[
-        Literal["chat", "vlm", "embedding", "ranking", "completions", "qa"]
+        Literal["chat", "vlm", "nv-vlm", "embedding", "ranking", "completions", "qa"]
     ] = None
     client: Optional[
         Literal["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank", "NVIDIA"]
@@ -41,7 +41,7 @@ class Model(BaseModel):
     def validate_client(cls, client: str, values: dict) -> str:
         if client:
             supported = {
-                "ChatNVIDIA": ("chat", "vlm", "qa"),
+                "ChatNVIDIA": ("chat", "vlm", "nv-vlm", "qa"),
                 "NVIDIAEmbeddings": ("embedding",),
                 "NVIDIARerank": ("ranking",),
                 "NVIDIA": ("completions",),
@@ -422,45 +422,50 @@ QA_MODEL_TABLE = {
 VLM_MODEL_TABLE = {
     "adept/fuyu-8b": Model(
         id="adept/fuyu-8b",
-        model_type="vlm",
+        model_type="nv-vlm",
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/vlm/adept/fuyu-8b",
         aliases=["ai-fuyu-8b", "playground_fuyu_8b", "fuyu_8b"],
     ),
     "google/deplot": Model(
         id="google/deplot",
-        model_type="vlm",
+        model_type="nv-vlm",
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/vlm/google/deplot",
         aliases=["ai-google-deplot", "playground_deplot", "deplot"],
     ),
     "microsoft/kosmos-2": Model(
         id="microsoft/kosmos-2",
-        model_type="vlm",
+        model_type="nv-vlm",
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/vlm/microsoft/kosmos-2",
         aliases=["ai-microsoft-kosmos-2", "playground_kosmos_2", "kosmos_2"],
     ),
     "nvidia/neva-22b": Model(
         id="nvidia/neva-22b",
-        model_type="vlm",
+        model_type="nv-vlm",
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/vlm/nvidia/neva-22b",
         aliases=["ai-neva-22b", "playground_neva_22b", "neva_22b"],
     ),
     "google/paligemma": Model(
         id="google/paligemma",
-        model_type="vlm",
+        model_type="nv-vlm",
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/vlm/google/paligemma",
         aliases=["ai-google-paligemma"],
     ),
     "microsoft/phi-3-vision-128k-instruct": Model(
         id="microsoft/phi-3-vision-128k-instruct",
-        model_type="vlm",
+        model_type="nv-vlm",
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/vlm/microsoft/phi-3-vision-128k-instruct",
         aliases=["ai-phi-3-vision-128k-instruct"],
+    ),
+    "microsoft/phi-3.5-vision-instruct": Model(
+        id="microsoft/phi-3.5-vision-instruct",
+        model_type="vlm",
+        client="ChatNVIDIA",
     ),
 }
 

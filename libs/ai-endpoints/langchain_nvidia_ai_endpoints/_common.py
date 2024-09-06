@@ -332,11 +332,15 @@ class _NVIDIAClient(BaseModel):
         self,
         invoke_url: str,
         payload: Optional[dict] = {},
+        extra_headers: dict = {},
     ) -> Tuple[Response, requests.Session]:
         """Method for posting to the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
-            "headers": self.headers_tmpl["call"],
+            "headers": {
+                **self.headers_tmpl["call"],
+                **extra_headers,
+            },
             "json": payload,
         }
         session = self.get_session_fn()
@@ -444,9 +448,12 @@ class _NVIDIAClient(BaseModel):
     def get_req(
         self,
         payload: dict = {},
+        extra_headers: dict = {},
     ) -> Response:
         """Post to the API."""
-        response, session = self._post(self.infer_url, payload)
+        response, session = self._post(
+            self.infer_url, payload, extra_headers=extra_headers
+        )
         return self._wait(response, session)
 
     def postprocess(
@@ -517,10 +524,14 @@ class _NVIDIAClient(BaseModel):
     def get_req_stream(
         self,
         payload: dict,
+        extra_headers: dict = {},
     ) -> Iterator[Dict]:
         self.last_inputs = {
             "url": self.infer_url,
-            "headers": self.headers_tmpl["stream"],
+            "headers": {
+                **self.headers_tmpl["stream"],
+                **extra_headers,
+            },
             "json": payload,
         }
 

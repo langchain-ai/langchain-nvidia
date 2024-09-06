@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import base64
 import enum
-import io
 import logging
 import os
-import sys
+import re
 import urllib.parse
 import warnings
 from typing import (
@@ -19,11 +18,11 @@ from typing import (
     Literal,
     Optional,
     Sequence,
+    Tuple,
     Type,
     Union,
 )
 
-import requests
 from langchain_core.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
@@ -60,13 +59,6 @@ _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun
 _DictOrPydanticOrEnumClass = Union[Dict[str, Any], Type[BaseModel], Type[enum.Enum]]
 _DictOrPydanticOrEnum = Union[Dict, BaseModel, enum.Enum]
 
-try:
-    import PIL.Image
-
-    has_pillow = True
-except ImportError:
-    has_pillow = False
-
 logger = logging.getLogger(__name__)
 
 
@@ -79,46 +71,56 @@ def _is_url(s: str) -> bool:
         return False
 
 
-def _resize_image(img_data: bytes, max_dim: int = 1024) -> str:
-    if not has_pillow:
-        print(  # noqa: T201
-            "Pillow is required to resize images down to reasonable scale."
-            " Please install it using `pip install pillow`."
-            " For now, not resizing; may cause NVIDIA API to fail."
-        )
-        return base64.b64encode(img_data).decode("utf-8")
-    image = PIL.Image.open(io.BytesIO(img_data))
-    max_dim_size = max(image.size)
-    aspect_ratio = max_dim / max_dim_size
-    new_h = int(image.size[1] * aspect_ratio)
-    new_w = int(image.size[0] * aspect_ratio)
-    resized_image = image.resize((new_w, new_h), PIL.Image.Resampling.LANCZOS)
-    output_buffer = io.BytesIO()
-    resized_image.save(output_buffer, format="JPEG")
-    output_buffer.seek(0)
-    resized_b64_string = base64.b64encode(output_buffer.read()).decode("utf-8")
-    return resized_b64_string
-
-
 def _url_to_b64_string(image_source: str) -> str:
-    b64_template = "data:image/png;base64,{b64_string}"
     try:
         if _is_url(image_source):
-            response = requests.get(
-                image_source, headers={"User-Agent": "langchain-nvidia-ai-endpoints"}
-            )
-            response.raise_for_status()
-            encoded = base64.b64encode(response.content).decode("utf-8")
-            if sys.getsizeof(encoded) > 200000:
-                ## (VK) Temporary fix. NVIDIA API has a limit of 250KB for the input.
-                encoded = _resize_image(response.content)
-            return b64_template.format(b64_string=encoded)
+            return image_source
+            # import sys
+            # import io
+            # try:
+            #     import PIL.Image
+            #     has_pillow = True
+            # except ImportError:
+            #     has_pillow = False
+            # def _resize_image(img_data: bytes, max_dim: int = 1024) -> str:
+            #     if not has_pillow:
+            #         print(  # noqa: T201
+            #             "Pillow is required to resize images down to reasonable scale."  # noqa: E501
+            #             " Please install it using `pip install pillow`."
+            #             " For now, not resizing; may cause NVIDIA API to fail."
+            #         )
+            #         return base64.b64encode(img_data).decode("utf-8")
+            #     image = PIL.Image.open(io.BytesIO(img_data))
+            #     max_dim_size = max(image.size)
+            #     aspect_ratio = max_dim / max_dim_size
+            #     new_h = int(image.size[1] * aspect_ratio)
+            #     new_w = int(image.size[0] * aspect_ratio)
+            #     resized_image = image.resize((new_w, new_h), PIL.Image.Resampling.LANCZOS)  # noqa: E501
+            #     output_buffer = io.BytesIO()
+            #     resized_image.save(output_buffer, format="JPEG")
+            #     output_buffer.seek(0)
+            #     resized_b64_string = base64.b64encode(output_buffer.read()).decode("utf-8")  # noqa: E501
+            #     return resized_b64_string
+            # b64_template = "data:image/png;base64,{b64_string}"
+            # response = requests.get(
+            #     image_source, headers={"User-Agent": "langchain-nvidia-ai-endpoints"}
+            # )
+            # response.raise_for_status()
+            # encoded = base64.b64encode(response.content).decode("utf-8")
+            # if sys.getsizeof(encoded) > 200000:
+            #     ## (VK) Temporary fix. NVIDIA API has a limit of 250KB for the input.
+            #     encoded = _resize_image(response.content)
+            # return b64_template.format(b64_string=encoded)
         elif image_source.startswith("data:image"):
             return image_source
         elif os.path.exists(image_source):
             with open(image_source, "rb") as f:
-                encoded = base64.b64encode(f.read()).decode("utf-8")
-                return b64_template.format(b64_string=encoded)
+                image_data = f.read()
+                import imghdr
+
+                image_type = imghdr.what(None, image_data)
+                encoded = base64.b64encode(image_data).decode("utf-8")
+                return f"data:image/{image_type};base64,{encoded}"
         else:
             raise ValueError(
                 "The provided string is not a valid URL, base64, or file path."
@@ -127,7 +129,9 @@ def _url_to_b64_string(image_source: str) -> str:
         raise ValueError(f"Unable to process the provided image source: {e}")
 
 
-def _nv_vlm_adjust_input(message_dict: Dict[str, Any]) -> Dict[str, Any]:
+def _nv_vlm_adjust_input(
+    message_dict: Dict[str, Any], model_type: str
+) -> Dict[str, Any]:
     """
     The NVIDIA VLM API input message.content:
         {
@@ -170,8 +174,68 @@ def _nv_vlm_adjust_input(message_dict: Dict[str, Any]) -> Dict[str, Any]:
                         isinstance(part["image_url"], dict)
                         and "url" in part["image_url"]
                     ):
-                        part["image_url"] = _url_to_b64_string(part["image_url"]["url"])
+                        url = _url_to_b64_string(part["image_url"]["url"])
+                        if model_type == "nv-vlm":
+                            part["image_url"] = url
+                        else:
+                            part["image_url"]["url"] = url
     return message_dict
+
+
+def _nv_vlm_get_asset_ids(
+    content: Union[str, List[Union[str, Dict[str, Any]]]],
+) -> List[str]:
+    """
+    VLM APIs accept asset IDs as input in two forms:
+     - content = [{"image_url": {"url": "data:image/{type};asset_id,{asset_id}"}}*]
+     - content = .*<img src="data:image/{type};asset_id,{asset_id}"/>.*
+
+    This function extracts asset IDs from the message content.
+    """
+
+    def extract_asset_id(data: str) -> List[str]:
+        pattern = re.compile(r'data:image/[^;]+;asset_id,([^"\'\s]+)')
+        return pattern.findall(data)
+
+    asset_ids = []
+    if isinstance(content, str):
+        asset_ids.extend(extract_asset_id(content))
+    elif isinstance(content, list):
+        for part in content:
+            if isinstance(part, str):
+                asset_ids.extend(extract_asset_id(part))
+            elif isinstance(part, dict) and "image_url" in part:
+                image_url = part["image_url"]
+                if isinstance(image_url, dict) and "url" in image_url:
+                    asset_ids.extend(extract_asset_id(image_url["url"]))
+
+    return asset_ids
+
+
+def _process_for_vlm(
+    inputs: List[Dict[str, Any]],
+    model: Optional[Model],  # not optional, Optional for type alignment
+) -> Tuple[List[Dict[str, Any]], Dict[str, str]]:
+    """
+    Process inputs for NVIDIA VLM models.
+
+    This function processes the input messages for NVIDIA VLM models.
+    It extracts asset IDs from the input messages and adds them to the
+    headers for the NVIDIA VLM API.
+    """
+    if not model or not model.model_type:
+        return inputs, {}
+
+    extra_headers = {}
+    if "vlm" in model.model_type:
+        asset_ids = []
+        for input in inputs:
+            if "content" in input:
+                asset_ids.extend(_nv_vlm_get_asset_ids(input["content"]))
+        if asset_ids:
+            extra_headers["NVCF-INPUT-ASSET-REFERENCES"] = ",".join(asset_ids)
+        inputs = [_nv_vlm_adjust_input(message, model.model_type) for message in inputs]
+    return inputs, extra_headers
 
 
 class ChatNVIDIA(BaseChatModel):
@@ -290,11 +354,12 @@ class ChatNVIDIA(BaseChatModel):
         **kwargs: Any,
     ) -> ChatResult:
         inputs = [
-            _nv_vlm_adjust_input(message)
+            message
             for message in [convert_message_to_dict(message) for message in messages]
         ]
+        inputs, extra_headers = _process_for_vlm(inputs, self._client.model)
         payload = self._get_payload(inputs=inputs, stop=stop, stream=False, **kwargs)
-        response = self._client.get_req(payload=payload)
+        response = self._client.get_req(payload=payload, extra_headers=extra_headers)
         responses, _ = self._client.postprocess(response)
         self._set_callback_out(responses, run_manager)
         parsed_response = self._custom_postprocess(responses, streaming=False)
@@ -313,11 +378,14 @@ class ChatNVIDIA(BaseChatModel):
     ) -> Iterator[ChatGenerationChunk]:
         """Allows streaming to model!"""
         inputs = [
-            _nv_vlm_adjust_input(message)
+            message
             for message in [convert_message_to_dict(message) for message in messages]
         ]
+        inputs, extra_headers = _process_for_vlm(inputs, self._client.model)
         payload = self._get_payload(inputs=inputs, stop=stop, stream=True, **kwargs)
-        for response in self._client.get_req_stream(payload=payload):
+        for response in self._client.get_req_stream(
+            payload=payload, extra_headers=extra_headers
+        ):
             self._set_callback_out(response, run_manager)
             parsed_response = self._custom_postprocess(response, streaming=True)
             # for pre 0.2 compatibility w/ ChatMessageChunk
