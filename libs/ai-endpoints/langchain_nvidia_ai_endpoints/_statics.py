@@ -467,6 +467,12 @@ VLM_MODEL_TABLE = {
         model_type="vlm",
         client="ChatNVIDIA",
     ),
+    "nvidia/vila": Model(
+        id="nvidia/vila",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/vlm/nvidia/vila",
+    ),
 }
 
 EMBEDDING_MODEL_TABLE = {
