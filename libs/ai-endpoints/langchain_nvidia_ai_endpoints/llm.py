@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterator, List, Optional
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM
 from langchain_core.outputs import GenerationChunk
-from langchain_core.pydantic_v1 import Field, PrivateAttr, root_validator
+from pydantic import ConfigDict, Field, PrivateAttr, model_validator
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
@@ -18,8 +18,9 @@ class NVIDIA(LLM):
     LangChain LLM that uses the Completions API with NVIDIA NIMs.
     """
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(
+        validate_assignment=True,
+    )
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model_name: str = "nvidia/mistral-nemo-minitron-8b-base"
@@ -29,14 +30,15 @@ class NVIDIA(LLM):
     )
     model: Optional[str] = Field(description="The model to use for completions.")
 
-    _base_url_var = "NVIDIA_BASE_URL"
+    _base_url_var: str = "NVIDIA_BASE_URL"
 
     _init_args: Dict[str, Any] = PrivateAttr()
     """Stashed arguments given to the constructor that can be passed to
     the Completions API endpoint."""
 
-    @root_validator(pre=True)
-    def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_base_url(cls, values: Dict[str, Any]) -> Any:
         values["base_url"] = (
             values.get(cls._base_url_var.lower())
             or values.get("base_url")

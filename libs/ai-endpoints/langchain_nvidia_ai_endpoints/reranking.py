@@ -6,7 +6,13 @@ from typing import Any, Dict, Generator, List, Literal, Optional, Sequence
 from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
 from langchain_core.documents.compressor import BaseDocumentCompressor
-from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr, root_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PrivateAttr,
+    model_validator,
+)
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
@@ -22,14 +28,15 @@ class NVIDIARerank(BaseDocumentCompressor):
     LangChain Document Compressor that uses the NVIDIA NeMo Retriever Reranking API.
     """
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(
+        validate_assignment=True,
+    )
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
 
-    _default_batch_size: int = 32
-    _default_model_name: str = "nvidia/nv-rerankqa-mistral-4b-v3"
-    _default_base_url: str = "https://integrate.api.nvidia.com/v1"
+    _default_batch_size: int = PrivateAttr(32)
+    _default_model_name: str = PrivateAttr("nvidia/nv-rerankqa-mistral-4b-v3")
+    _default_base_url: str = PrivateAttr("https://integrate.api.nvidia.com/v1")
     base_url: str = Field(
         description="Base url for model listing an invocation",
     )
@@ -46,10 +53,11 @@ class NVIDIARerank(BaseDocumentCompressor):
         _default_batch_size, ge=1, description="The maximum batch size."
     )
 
-    _base_url_var = "NVIDIA_BASE_URL"
+    _base_url_var: str = PrivateAttr("NVIDIA_BASE_URL")
 
-    @root_validator(pre=True)
-    def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_base_url(cls, values: Dict[str, Any]) -> Any:
         values["base_url"] = (
             values.get(cls._base_url_var.lower())
             or values.get("base_url")

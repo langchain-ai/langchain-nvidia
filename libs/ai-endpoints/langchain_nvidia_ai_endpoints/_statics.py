@@ -2,7 +2,7 @@ import os
 import warnings
 from typing import Literal, Optional
 
-from langchain_core.pydantic_v1 import BaseModel, validator
+from pydantic import BaseModel, validator
 
 
 class Model(BaseModel):

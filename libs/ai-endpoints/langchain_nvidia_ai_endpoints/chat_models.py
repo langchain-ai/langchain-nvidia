@@ -46,11 +46,11 @@ from langchain_core.outputs import (
     ChatResult,
     Generation,
 )
-from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr, root_validator
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_core.utils.pydantic import is_basemodel_subclass
+from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
@@ -193,24 +193,27 @@ class ChatNVIDIA(BaseChatModel):
     base_url: str = Field(
         description="Base url for model listing an invocation",
     )
-    model: Optional[str] = Field(description="Name of the model to invoke")
-    temperature: Optional[float] = Field(description="Sampling temperature in [0, 1]")
+    model: Optional[str] = Field(None, description="Name of the model to invoke")
+    temperature: Optional[float] = Field(
+        None, description="Sampling temperature in [0, 1]"
+    )
     max_tokens: Optional[int] = Field(
         1024, description="Maximum # of tokens to generate"
     )
-    top_p: Optional[float] = Field(description="Top-p for distribution sampling")
-    seed: Optional[int] = Field(description="The seed for deterministic results")
-    stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
+    top_p: Optional[float] = Field(None, description="Top-p for distribution sampling")
+    seed: Optional[int] = Field(None, description="The seed for deterministic results")
+    stop: Optional[Sequence[str]] = Field(None, description="Stop words (cased)")
 
-    _base_url_var = "NVIDIA_BASE_URL"
+    _base_url_var: str = "NVIDIA_BASE_URL"
 
-    @root_validator(pre=True)
-    def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_base_url(cls, values: Dict[str, Any]) -> Any:
         values["base_url"] = (
-            values.get(cls._base_url_var.lower())
+            values.get(cls.__private_attributes__["_base_url_var"].default.lower())
             or values.get("base_url")
-            or os.getenv(cls._base_url_var)
-            or cls._default_base_url
+            or os.getenv(cls.__private_attributes__["_base_url_var"].default)
+            or cls.__private_attributes__["_default_base_url"].default
         )
         return values
 

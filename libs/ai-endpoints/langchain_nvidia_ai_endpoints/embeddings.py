@@ -6,12 +6,13 @@ from typing import Any, Dict, List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.outputs.llm_result import LLMResult
-from langchain_core.pydantic_v1 import (
+from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     PrivateAttr,
-    root_validator,
-    validator,
+    field_validator,
+    model_validator,
 )
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
@@ -30,13 +31,14 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         too long.
     """
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(
+        validate_assignment=True,
+    )
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
-    _default_model_name: str = "nvidia/nv-embedqa-e5-v5"
-    _default_max_batch_size: int = 50
-    _default_base_url: str = "https://integrate.api.nvidia.com/v1"
+    _default_model_name: str = PrivateAttr("nvidia/nv-embedqa-e5-v5")
+    _default_max_batch_size: int = PrivateAttr(50)
+    _default_base_url: str = PrivateAttr("https://integrate.api.nvidia.com/v1")
     base_url: str = Field(
         description="Base url for model listing an invocation",
     )
@@ -53,10 +55,11 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         None, description="(DEPRECATED) The type of text to be embedded."
     )
 
-    _base_url_var = "NVIDIA_BASE_URL"
+    _base_url_var: str = "NVIDIA_BASE_URL"
 
-    @root_validator(pre=True)
-    def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_base_url(cls, values: Dict[str, Any]) -> Any:
         values["base_url"] = (
             values.get(cls._base_url_var.lower())
             or values.get("base_url")
@@ -116,7 +119,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             )
             self.truncate = "END"
 
-    @validator("model_type")
+    @field_validator("model_type")
     def _validate_model_type(
         cls, v: Optional[Literal["passage", "query"]]
     ) -> Optional[Literal["passage", "query"]]:

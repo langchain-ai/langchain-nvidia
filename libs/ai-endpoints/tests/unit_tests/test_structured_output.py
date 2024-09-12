@@ -4,9 +4,9 @@ from typing import Callable, List, Optional, Type
 
 import pytest
 import requests_mock
-from langchain_core.pydantic_v1 import BaseModel as lc_pydanticV1BaseModel
-from langchain_core.pydantic_v1 import Field
+from pydantic import BaseModel as lc_pydanticV1BaseModel
 from pydantic import BaseModel as pydanticV2BaseModel  # ignore: check_pydantic
+from pydantic import Field
 from pydantic.v1 import BaseModel as pydanticV1BaseModel  # ignore: check_pydantic
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA

@@ -20,13 +20,14 @@ from typing import (
 from urllib.parse import urlparse, urlunparse
 
 import requests
-from langchain_core.pydantic_v1 import (
+from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     PrivateAttr,
     SecretStr,
-    root_validator,
-    validator,
+    field_validator,
+    model_validator,
 )
 from requests.models import Response
 
@@ -48,11 +49,12 @@ class _NVIDIAClient(BaseModel):
 
     # todo: add a validator for requests.Response (last_response attribute) and
     #       remove arbitrary_types_allowed=True
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+    )
 
     ## Core defaults. These probably should not be changed
-    _api_key_var = "NVIDIA_API_KEY"
+    _api_key_var: str = PrivateAttr("NVIDIA_API_KEY")
     base_url: str = Field(
         ...,
         description="Base URL for standard inference",
@@ -103,7 +105,7 @@ class _NVIDIAClient(BaseModel):
     ###################################################################################
     ################### Validation and Initialization #################################
 
-    @validator("base_url")
+    @field_validator("base_url")
     def _validate_base_url(cls, v: str) -> str:
         if v is not None:
             result = urlparse(v)
@@ -113,8 +115,9 @@ class _NVIDIAClient(BaseModel):
                 raise ValueError(f"Invalid base_url format. {expected_format} Got: {v}")
         return v
 
-    @root_validator(pre=True)
-    def _preprocess_args(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def _preprocess_args(cls, values: Dict[str, Any]) -> Any:
         values["api_key"] = (
             values.get(cls._api_key_var.lower())
             or values.get("api_key")
