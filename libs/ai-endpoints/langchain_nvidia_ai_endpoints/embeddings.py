@@ -62,7 +62,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             values.get(_BASE_URL_VAR.lower())
             or values.get("base_url")
             or os.getenv(_BASE_URL_VAR.upper())
-            or cls._default_base_url
+            or cls._default_base_url.default
         )
         return values
 
