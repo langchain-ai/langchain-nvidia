@@ -115,12 +115,12 @@ class _NVIDIAClient(BaseModel):
 
     @root_validator(pre=True)
     def _preprocess_args(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        values["api_key"] = (
-            values.get(cls._api_key_var.lower())
-            or values.get("api_key")
-            or os.getenv(cls._api_key_var)
-            or None
-        )
+        # if api_key is not provided or None,
+        #  try to get it from the environment
+        # we can't use Field(default_factory=...)
+        #  because construction may happen with api_key=None
+        if values.get("api_key") is None:
+            values["api_key"] = os.getenv(cls._api_key_var)
 
         ## Making sure /v1 in added to the url, followed by infer_path
         if "base_url" in values:
