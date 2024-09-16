@@ -35,6 +35,7 @@ from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, determine
 
 logger = logging.getLogger(__name__)
 
+_API_KEY_VAR = "NVIDIA_API_KEY"
 
 class _NVIDIAClient(BaseModel):
     """
@@ -54,7 +55,6 @@ class _NVIDIAClient(BaseModel):
     )
 
     ## Core defaults. These probably should not be changed
-    _api_key_var: str = PrivateAttr("NVIDIA_API_KEY")
     base_url: str = Field(
         ...,
         description="Base URL for standard inference",
@@ -119,9 +119,9 @@ class _NVIDIAClient(BaseModel):
     @classmethod
     def _preprocess_args(cls, values: Dict[str, Any]) -> Any:
         values["api_key"] = (
-            values.get(cls._api_key_var.lower())
+            values.get(_API_KEY_VAR.lower())
             or values.get("api_key")
-            or os.getenv(cls._api_key_var)
+            or os.getenv(_API_KEY_VAR.upper())
             or None
         )
 
@@ -236,7 +236,7 @@ class _NVIDIAClient(BaseModel):
 
     @property
     def lc_secrets(self) -> Dict[str, str]:
-        return {"api_key": self._api_key_var}
+        return {"api_key": _API_KEY_VAR}
 
     @property
     def lc_attributes(self) -> Dict[str, Any]:
