@@ -24,6 +24,7 @@ class Ranking(BaseModel):
 
 
 _DEFAULT_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+_DEFAULT_MODEL_NAME: str = "nvidia/nv-rerankqa-mistral-4b-v3"
 
 
 class NVIDIARerank(BaseDocumentCompressor):
@@ -38,7 +39,6 @@ class NVIDIARerank(BaseDocumentCompressor):
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
 
     _default_batch_size: int = PrivateAttr(32)
-    _default_model_name: str = PrivateAttr("nvidia/nv-rerankqa-mistral-4b-v3")
     base_url: Optional[str] = Field(
         description="Base url for model listing an invocation",
     )
@@ -145,7 +145,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         self._client = _NVIDIAClient(
             base_url=self.base_url,
             model_name=self.model,
-            default_hosted_model_name=self._default_model_name,
+            default_hosted_model_name=_DEFAULT_MODEL_NAME,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
             infer_path="{base_url}/ranking",
             cls=self.__class__.__name__,

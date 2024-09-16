@@ -175,6 +175,7 @@ def _nv_vlm_adjust_input(message_dict: Dict[str, Any]) -> Dict[str, Any]:
 
 
 _DEFAULT_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+_DEFAULT_MODEL_NAME: str = "meta/llama3-8b-instruct"
 
 
 class ChatNVIDIA(BaseChatModel):
@@ -191,7 +192,6 @@ class ChatNVIDIA(BaseChatModel):
     """
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
-    _default_model_name: str = "meta/llama3-8b-instruct"
     base_url: Optional[str] = Field(
         description="Base url for model listing an invocation",
     )
@@ -254,7 +254,7 @@ class ChatNVIDIA(BaseChatModel):
         self._client = _NVIDIAClient(
             base_url=self.base_url,
             model_name=self.model,
-            default_hosted_model_name=self._default_model_name,
+            default_hosted_model_name=_DEFAULT_MODEL_NAME,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
             infer_path="{base_url}/chat/completions",
             cls=self.__class__.__name__,

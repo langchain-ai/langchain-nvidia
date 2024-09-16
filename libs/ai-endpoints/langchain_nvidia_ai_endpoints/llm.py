@@ -13,6 +13,7 @@ from langchain_nvidia_ai_endpoints._common import _BASE_URL_VAR, _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
 
 _DEFAULT_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+_DEFAULT_MODEL_NAME: str = "nvidia/mistral-nemo-minitron-8b-base"
 
 
 class NVIDIA(LLM):
@@ -25,7 +26,6 @@ class NVIDIA(LLM):
     )
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
-    _default_model_name: str = "nvidia/mistral-nemo-minitron-8b-base"
     base_url: Optional[str] = Field(
         description="Base url for model listing and invocation",
     )
@@ -113,7 +113,7 @@ class NVIDIA(LLM):
         self._client = _NVIDIAClient(
             base_url=self.base_url,
             model_name=self.model,
-            default_hosted_model_name=self._default_model_name,
+            default_hosted_model_name=_DEFAULT_MODEL_NAME,
             api_key=kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None)),
             infer_path="{base_url}/completions",
             cls=self.__class__.__name__,

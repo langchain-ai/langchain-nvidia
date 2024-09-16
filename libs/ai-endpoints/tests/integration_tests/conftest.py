@@ -10,6 +10,18 @@ from langchain_nvidia_ai_endpoints import (
     NVIDIARerank,
 )
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model
+from langchain_nvidia_ai_endpoints.chat_models import (
+    _DEFAULT_MODEL_NAME as DEFAULT_CHAT_MODEL,
+)
+from langchain_nvidia_ai_endpoints.embeddings import (
+    _DEFAULT_MODEL_NAME as DEFAULT_EMBEDDINGS_MODEL,
+)
+from langchain_nvidia_ai_endpoints.llm import (
+    _DEFAULT_MODEL_NAME as DEFAULT_COMPLETIONS_MODEL,
+)
+from langchain_nvidia_ai_endpoints.reranking import (
+    _DEFAULT_MODEL_NAME as DEFAULT_RERANKING_MODEL,
+)
 
 
 def get_mode(config: pytest.Config) -> dict:
@@ -87,7 +99,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         return list(MODEL_TABLE.values())
 
     if "chat_model" in metafunc.fixturenames:
-        models = [ChatNVIDIA._default_model_name]
+        models = [DEFAULT_CHAT_MODEL]
         if model_list := metafunc.config.getoption("chat_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):
@@ -111,7 +123,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("tool_model", models, ids=models)
 
     if "completions_model" in metafunc.fixturenames:
-        models = [NVIDIA._default_model_name]
+        models = [DEFAULT_COMPLETIONS_MODEL]
         if model_list := metafunc.config.getoption("completions_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):
@@ -135,7 +147,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("structured_model", models, ids=models)
 
     if "rerank_model" in metafunc.fixturenames:
-        models = [NVIDIARerank._default_model_name]
+        models = [DEFAULT_RERANKING_MODEL]
         if model_list := metafunc.config.getoption("rerank_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):
@@ -167,7 +179,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("qa_model", models, ids=models)
 
     if "embedding_model" in metafunc.fixturenames:
-        models = [NVIDIAEmbeddings._default_model_name]
+        models = [DEFAULT_EMBEDDINGS_MODEL]
         if metafunc.config.getoption("all_models"):
             models = [model.id for model in NVIDIAEmbeddings(**mode).available_models]
         if model_list := metafunc.config.getoption("embedding_model_id"):
