@@ -80,8 +80,8 @@ class _NVIDIAClient(BaseModel):
     ## Generation arguments
     timeout: float = Field(60, ge=0, description="Timeout for waiting on response (s)")
     interval: float = Field(0.02, ge=0, description="Interval for pulling response")
-    last_inputs: Optional[dict] = Field(
-        description="Last inputs sent over to the server"
+    last_inputs: dict = Field(
+        default={}, description="Last inputs sent over to the server"
     )
     last_response: Response = Field(
         None, description="Last response sent from the server"
