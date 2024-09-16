@@ -39,7 +39,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     _default_model_name: str = PrivateAttr("nvidia/nv-embedqa-e5-v5")
     _default_max_batch_size: int = PrivateAttr(50)
     _default_base_url: str = PrivateAttr("https://integrate.api.nvidia.com/v1")
-    base_url: str = Field(
+    base_url: Optional[str] = Field(
         description="Base url for model listing an invocation",
     )
     model: Optional[str] = Field(description="Name of the model to invoke")

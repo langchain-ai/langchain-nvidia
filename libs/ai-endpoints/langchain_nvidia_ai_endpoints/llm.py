@@ -25,7 +25,7 @@ class NVIDIA(LLM):
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model_name: str = "nvidia/mistral-nemo-minitron-8b-base"
     _default_base_url: str = "https://integrate.api.nvidia.com/v1"
-    base_url: str = Field(
+    base_url: Optional[str] = Field(
         description="Base url for model listing and invocation",
     )
     model: Optional[str] = Field(description="The model to use for completions.")

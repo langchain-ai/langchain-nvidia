@@ -190,7 +190,7 @@ class ChatNVIDIA(BaseChatModel):
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model_name: str = "meta/llama3-8b-instruct"
     _default_base_url: str = "https://integrate.api.nvidia.com/v1"
-    base_url: str = Field(
+    base_url: Optional[str] = Field(
         description="Base url for model listing an invocation",
     )
     model: Optional[str] = Field(None, description="Name of the model to invoke")

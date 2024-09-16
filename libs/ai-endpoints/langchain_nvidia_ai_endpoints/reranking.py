@@ -37,7 +37,7 @@ class NVIDIARerank(BaseDocumentCompressor):
     _default_batch_size: int = PrivateAttr(32)
     _default_model_name: str = PrivateAttr("nvidia/nv-rerankqa-mistral-4b-v3")
     _default_base_url: str = PrivateAttr("https://integrate.api.nvidia.com/v1")
-    base_url: str = Field(
+    base_url: Optional[str] = Field(
         description="Base url for model listing an invocation",
     )
     top_n: int = Field(5, ge=0, description="The number of documents to return.")
