@@ -43,7 +43,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     base_url: Optional[str] = Field(
         description="Base url for model listing an invocation",
     )
-    model: Optional[str] = Field(description="Name of the model to invoke")
+    model: Optional[str] = Field(None, description="Name of the model to invoke")
     truncate: Literal["NONE", "START", "END"] = Field(
         default="NONE",
         description=(

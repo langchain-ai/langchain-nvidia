@@ -43,7 +43,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         description="Base url for model listing an invocation",
     )
     top_n: int = Field(5, ge=0, description="The number of documents to return.")
-    model: Optional[str] = Field(description="The model to use for reranking.")
+    model: Optional[str] = Field(None, description="The model to use for reranking.")
     truncate: Optional[Literal["NONE", "END"]] = Field(
         description=(
             "Truncate input text if it exceeds the model's maximum token length. "

@@ -29,7 +29,7 @@ class NVIDIA(LLM):
     base_url: Optional[str] = Field(
         description="Base url for model listing and invocation",
     )
-    model: Optional[str] = Field(description="The model to use for completions.")
+    model: Optional[str] = Field(None, description="The model to use for completions.")
 
     _init_args: Dict[str, Any] = PrivateAttr()
     """Stashed arguments given to the constructor that can be passed to
