@@ -52,7 +52,7 @@ from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_core.utils.pydantic import is_basemodel_subclass
 from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
-from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._common import _BASE_URL_VAR, _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
 from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
 
@@ -204,16 +204,14 @@ class ChatNVIDIA(BaseChatModel):
     seed: Optional[int] = Field(None, description="The seed for deterministic results")
     stop: Optional[Sequence[str]] = Field(None, description="Stop words (cased)")
 
-    _base_url_var: str = "NVIDIA_BASE_URL"
-
     @model_validator(mode="before")
     @classmethod
     def _validate_base_url(cls, values: Dict[str, Any]) -> Any:
         values["base_url"] = (
-            values.get(cls.__private_attributes__["_base_url_var"].default.lower())
+            values.get(_BASE_URL_VAR.lower())
             or values.get("base_url")
-            or os.getenv(cls.__private_attributes__["_base_url_var"].default)
-            or cls.__private_attributes__["_default_base_url"].default
+            or os.getenv(_BASE_URL_VAR.upper())
+            or cls._default_base_url
         )
         return values
 

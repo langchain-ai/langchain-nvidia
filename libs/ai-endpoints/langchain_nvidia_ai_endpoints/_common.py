@@ -36,6 +36,8 @@ from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, determine
 logger = logging.getLogger(__name__)
 
 _API_KEY_VAR = "NVIDIA_API_KEY"
+_BASE_URL_VAR = "NVIDIA_BASE_URL"
+
 
 class _NVIDIAClient(BaseModel):
     """

@@ -14,7 +14,7 @@ from pydantic import (
     model_validator,
 )
 
-from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._common import _BASE_URL_VAR, _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
 
 
@@ -53,15 +53,13 @@ class NVIDIARerank(BaseDocumentCompressor):
         _default_batch_size, ge=1, description="The maximum batch size."
     )
 
-    _base_url_var: str = PrivateAttr("NVIDIA_BASE_URL")
-
     @model_validator(mode="before")
     @classmethod
     def _validate_base_url(cls, values: Dict[str, Any]) -> Any:
         values["base_url"] = (
-            values.get(cls._base_url_var.lower())
+            values.get(_BASE_URL_VAR.lower())
             or values.get("base_url")
-            or os.getenv(cls._base_url_var)
+            or os.getenv(_BASE_URL_VAR.upper())
             or cls._default_base_url
         )
         return values
