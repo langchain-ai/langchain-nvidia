@@ -19,6 +19,8 @@ from langchain_nvidia_ai_endpoints._common import _BASE_URL_VAR, _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
 from langchain_nvidia_ai_endpoints.callbacks import usage_callback_var
 
+_DEFAULT_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+
 
 class NVIDIAEmbeddings(BaseModel, Embeddings):
     """
@@ -38,7 +40,6 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model_name: str = PrivateAttr("nvidia/nv-embedqa-e5-v5")
     _default_max_batch_size: int = PrivateAttr(50)
-    _default_base_url: str = PrivateAttr("https://integrate.api.nvidia.com/v1")
     base_url: Optional[str] = Field(
         description="Base url for model listing an invocation",
     )
@@ -62,7 +63,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             values.get(_BASE_URL_VAR.lower())
             or values.get("base_url")
             or os.getenv(_BASE_URL_VAR.upper())
-            or cls._default_base_url.default
+            or _DEFAULT_BASE_URL
         )
         return values
 

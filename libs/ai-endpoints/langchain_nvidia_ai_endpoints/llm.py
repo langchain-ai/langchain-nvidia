@@ -12,6 +12,8 @@ from pydantic import ConfigDict, Field, PrivateAttr, model_validator
 from langchain_nvidia_ai_endpoints._common import _BASE_URL_VAR, _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
 
+_DEFAULT_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+
 
 class NVIDIA(LLM):
     """
@@ -24,7 +26,6 @@ class NVIDIA(LLM):
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model_name: str = "nvidia/mistral-nemo-minitron-8b-base"
-    _default_base_url: str = "https://integrate.api.nvidia.com/v1"
     base_url: Optional[str] = Field(
         description="Base url for model listing and invocation",
     )
@@ -41,7 +42,7 @@ class NVIDIA(LLM):
             values.get(_BASE_URL_VAR.lower())
             or values.get("base_url")
             or os.getenv(_BASE_URL_VAR.upper())
-            or cls._default_base_url.default
+            or _DEFAULT_BASE_URL
         )
         return values
 

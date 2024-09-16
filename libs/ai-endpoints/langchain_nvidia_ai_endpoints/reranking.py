@@ -23,6 +23,9 @@ class Ranking(BaseModel):
     logit: float
 
 
+_DEFAULT_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+
+
 class NVIDIARerank(BaseDocumentCompressor):
     """
     LangChain Document Compressor that uses the NVIDIA NeMo Retriever Reranking API.
@@ -36,7 +39,6 @@ class NVIDIARerank(BaseDocumentCompressor):
 
     _default_batch_size: int = PrivateAttr(32)
     _default_model_name: str = PrivateAttr("nvidia/nv-rerankqa-mistral-4b-v3")
-    _default_base_url: str = PrivateAttr("https://integrate.api.nvidia.com/v1")
     base_url: Optional[str] = Field(
         description="Base url for model listing an invocation",
     )
@@ -60,7 +62,7 @@ class NVIDIARerank(BaseDocumentCompressor):
             values.get(_BASE_URL_VAR.lower())
             or values.get("base_url")
             or os.getenv(_BASE_URL_VAR.upper())
-            or cls._default_base_url.default
+            or _DEFAULT_BASE_URL
         )
         return values
 
