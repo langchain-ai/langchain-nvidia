@@ -402,6 +402,11 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "abacusai/dracarys-llama-3.1-70b-instruct": Model(
+        id="abacusai/dracarys-llama-3.1-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
