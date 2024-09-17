@@ -577,7 +577,7 @@ class ChatNVIDIA(BaseChatModel):
         1. If a Pydantic schema is provided, the model will return a Pydantic object.
            Example:
         ```
-        from langchain_core.pydantic_v1 import BaseModel, Field
+        from pydantic import BaseModel, Field
         class Joke(BaseModel):
             setup: str = Field(description="The setup of the joke")
             punchline: str = Field(description="The punchline to the joke")
