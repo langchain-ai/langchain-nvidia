@@ -57,8 +57,6 @@ from langchain_nvidia_ai_endpoints._statics import Model
 from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
 
 _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
-_DictOrPydanticOrEnumClass = Union[Dict[str, Any], Type[BaseModel], Type[enum.Enum]]
-_DictOrPydanticOrEnum = Union[Dict, BaseModel, enum.Enum]
 
 try:
     import PIL.Image
@@ -536,11 +534,11 @@ class ChatNVIDIA(BaseChatModel):
     # as a result need to type ignore for the schema parameter and return type.
     def with_structured_output(  # type: ignore
         self,
-        schema: _DictOrPydanticOrEnumClass,
+        schema: Union[Dict, Type],
         *,
         include_raw: bool = False,
         **kwargs: Any,
-    ) -> Runnable[LanguageModelInput, _DictOrPydanticOrEnum]:
+    ) -> Runnable[LanguageModelInput, Union[Dict, BaseModel]]:
         """
         Bind a structured output schema to the model.
 
