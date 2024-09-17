@@ -493,7 +493,10 @@ class _NVIDIAClient(BaseModel):
             usage_holder = msg.get("usage", {})  ####
             if "choices" in msg:
                 ## Tease out ['choices'][0]...['delta'/'message']
-                msg = msg.get("choices", [{}])[0]
+                # when streaming w/ usage info, we may get a response
+                #  w/ choices: [] that includes final usage info
+                choices = msg.get("choices", [{}])
+                msg = choices[0] if choices else {}
                 # todo: this meeds to be fixed, the fact we only
                 #       use the first choice breaks the interface
                 finish_reason_holder = msg.get("finish_reason", None)
