@@ -149,7 +149,6 @@ class _NVIDIAClient(BaseModel):
             values["base_url"] = base_url = urlunparse(
                 (parsed.scheme, parsed.netloc, "v1", None, None, None)
             )
-            values["infer_path"] = values["infer_path"].format(base_url=base_url)
 
         return values
 
