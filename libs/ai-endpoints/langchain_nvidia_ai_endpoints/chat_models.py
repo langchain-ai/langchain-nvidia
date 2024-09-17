@@ -735,7 +735,11 @@ class ChatNVIDIA(BaseChatModel):
                     return None
 
             output_parser = ForgivingPydanticOutputParser(pydantic_object=schema)
-            nvext_param = {"guided_json": schema.schema()}
+            if hasattr(schema, "model_json_schema"):
+                json_schema = schema.model_json_schema()
+            else:
+                json_schema = schema.schema()
+            nvext_param = {"guided_json": json_schema}
 
         else:
             raise ValueError(
