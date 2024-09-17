@@ -4,7 +4,6 @@ from typing import Callable, List, Optional, Type
 
 import pytest
 import requests_mock
-from pydantic import BaseModel as lc_pydanticV1BaseModel
 from pydantic import BaseModel as pydanticV2BaseModel  # ignore: check_pydantic
 from pydantic import Field
 from pydantic.v1 import BaseModel as pydanticV1BaseModel  # ignore: check_pydantic
@@ -12,7 +11,7 @@ from pydantic.v1 import BaseModel as pydanticV1BaseModel  # ignore: check_pydant
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
 
-class Joke(lc_pydanticV1BaseModel):
+class Joke(pydanticV2BaseModel):
     """Joke to tell user."""
 
     setup: str = Field(description="The setup of the joke")
@@ -145,11 +144,10 @@ def test_stream_enum_incomplete(
 @pytest.mark.parametrize(
     "pydanticBaseModel",
     [
-        lc_pydanticV1BaseModel,
         pydanticV1BaseModel,
         pydanticV2BaseModel,
     ],
-    ids=["lc-pydantic-v1", "pydantic-v1", "pydantic-v2"],
+    ids=["pydantic-v1", "pydantic-v2"],
 )
 def test_pydantic_version(
     requests_mock: requests_mock.Mocker,
