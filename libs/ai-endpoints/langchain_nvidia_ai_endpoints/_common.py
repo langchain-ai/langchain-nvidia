@@ -113,12 +113,22 @@ class _NVIDIAClient(BaseModel):
 
     @validator("base_url")
     def _validate_base_url(cls, v: str) -> str:
+        ## Making sure /v1 in added to the url
         if v is not None:
-            result = urlparse(v)
-            expected_format = "Expected format is 'http://host:port'."
+            parsed = urlparse(v)
+
             # Ensure scheme and netloc (domain name) are present
-            if not (result.scheme and result.netloc):
+            if not (parsed.scheme and parsed.netloc):
+                expected_format = "Expected format is: http://host:port"
                 raise ValueError(f"Invalid base_url format. {expected_format} Got: {v}")
+
+            if v.strip("/").endswith(
+                ("/embeddings", "/completions", "/rankings", "/reranking")
+            ):
+                warnings.warn(f"Using {v}, ignoring the rest")
+
+            v = urlunparse((parsed.scheme, parsed.netloc, "v1", None, None, None))
+
         return v
 
     @root_validator(pre=True)
@@ -129,26 +139,6 @@ class _NVIDIAClient(BaseModel):
         #  because construction may happen with api_key=None
         if values.get("api_key") is None:
             values["api_key"] = os.getenv(cls._api_key_var)
-
-        ## Making sure /v1 in added to the url, followed by infer_path
-        if "base_url" in values:
-            base_url = values["base_url"].strip("/")
-            parsed = urlparse(base_url)
-            expected_format = "Expected format is: http://host:port"
-
-            if not (parsed.scheme and parsed.netloc):
-                raise ValueError(
-                    f"Invalid base_url format. {expected_format} Got: {base_url}"
-                )
-
-            if base_url.endswith(
-                ("/embeddings", "/completions", "/rankings", "/reranking")
-            ):
-                warnings.warn(f"Using {base_url}, ignoring the rest")
-
-            values["base_url"] = base_url = urlunparse(
-                (parsed.scheme, parsed.netloc, "v1", None, None, None)
-            )
 
         return values
 
