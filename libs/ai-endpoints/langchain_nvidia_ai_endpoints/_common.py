@@ -125,7 +125,7 @@ class _NVIDIAClient(BaseModel):
         # we can't use Field(default_factory=...)
         #  because construction may happen with api_key=None
         if values.get("api_key") is None:
-            values["api_key"] = os.getenv(cls._api_key_var)
+            values["api_key"] = os.getenv(_API_KEY_VAR)
 
         ## Making sure /v1 in added to the url, followed by infer_path
         if "base_url" in values:
