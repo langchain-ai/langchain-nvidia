@@ -317,7 +317,21 @@ class ChatNVIDIA(BaseChatModel):
             _nv_vlm_adjust_input(message)
             for message in [convert_message_to_dict(message) for message in messages]
         ]
-        payload = self._get_payload(inputs=inputs, stop=stop, stream=True, **kwargs)
+        payload = self._get_payload(
+            inputs=inputs,
+            stop=stop,
+            stream=True,
+            stream_options={"include_usage": True},
+            **kwargs,
+        )
+        # todo: get vlm endpoints fixed and remove this
+        #       vlm endpoints do not accept standard stream_options parameter
+        if (
+            self._client.model
+            and self._client.model.model_type
+            and self._client.model.model_type == "vlm"
+        ):
+            payload.pop("stream_options")
         for response in self._client.get_req_stream(payload=payload):
             self._set_callback_out(response, run_manager)
             parsed_response = self._custom_postprocess(response, streaming=True)
@@ -355,6 +369,12 @@ class ChatNVIDIA(BaseChatModel):
             "additional_kwargs": {},
             "response_metadata": {},
         }
+        if token_usage := kw_left.pop("token_usage", None):
+            out_dict["usage_metadata"] = {
+                "input_tokens": token_usage.get("prompt_tokens", 0),
+                "output_tokens": token_usage.get("completion_tokens", 0),
+                "total_tokens": token_usage.get("total_tokens", 0),
+            }
         # "tool_calls" is set for invoke and stream responses
         if tool_calls := kw_left.pop("tool_calls", None):
             assert isinstance(

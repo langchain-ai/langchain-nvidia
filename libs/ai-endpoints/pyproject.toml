@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "langchain-nvidia-ai-endpoints"
-version = "0.2.2"
+version = "0.3.0"
 description = "An integration package connecting NVIDIA AI Endpoints and LangChain"
 authors = []
 readme = "README.md"
@@ -12,7 +12,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
-langchain-core = { git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core", branch = "v0.3rc" }
+langchain-core = ">=0.3.0,<0.4"
 aiohttp = "^3.9.1"
 pillow = ">=10.0.0,<11.0.0"
 
@@ -26,6 +26,7 @@ pytest-mock = "^3.10.0"
 syrupy = "^4.0.2"
 pytest-watcher = "^0.3.4"
 pytest-asyncio = "^0.21.1"
+langchain-core = ">=0.3.0,<0.4"
 requests-mock = "^1.11.0"
 faker = "^24.4.0"
 
@@ -51,11 +52,13 @@ ruff = "^0.1.5"
 mypy = "^0.991"
 types-requests = "^2.31.0.10"
 types-pillow = "^10.2.0.20240125"
+langchain-core = ">=0.3.0,<0.4"
 
 [tool.poetry.group.dev]
 optional = true
 
 [tool.poetry.group.dev.dependencies]
+langchain-core = ">=0.3.0,<0.4"
 
 [tool.ruff.lint]
 select = [
