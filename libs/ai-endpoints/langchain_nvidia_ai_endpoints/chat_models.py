@@ -323,6 +323,14 @@ class ChatNVIDIA(BaseChatModel):
             stream_options={"include_usage": True},
             **kwargs,
         )
+        # todo: get vlm endpoints fixed and remove this
+        #       vlm endpoints do not accept standard stream_options parameter
+        if (
+            self._client.model
+            and self._client.model.model_type
+            and self._client.model.model_type == "vlm"
+        ):
+            payload.pop("stream_options")
         for response in self._client.get_req_stream(payload=payload):
             self._set_callback_out(response, run_manager)
             parsed_response = self._custom_postprocess(response, streaming=True)
