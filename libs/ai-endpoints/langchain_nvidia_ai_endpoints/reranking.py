@@ -25,6 +25,7 @@ class Ranking(BaseModel):
 
 _DEFAULT_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
 _DEFAULT_MODEL_NAME: str = "nvidia/nv-rerankqa-mistral-4b-v3"
+_DEFAULT_BATCH_SIZE: int = 32
 
 
 class NVIDIARerank(BaseDocumentCompressor):
@@ -38,7 +39,6 @@ class NVIDIARerank(BaseDocumentCompressor):
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
 
-    _default_batch_size: int = PrivateAttr(32)
     base_url: Optional[str] = Field(
         description="Base url for model listing an invocation",
     )
@@ -53,7 +53,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         ),
     )
     max_batch_size: int = Field(
-        _default_batch_size, ge=1, description="The maximum batch size."
+        _DEFAULT_BATCH_SIZE, ge=1, description="The maximum batch size."
     )
 
     @model_validator(mode="before")
