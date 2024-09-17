@@ -74,8 +74,16 @@ class _NVIDIAClient(BaseModel):
     api_key: Optional[SecretStr] = Field(description="API Key for service of choice")
 
     ## Generation arguments
-    timeout: float = Field(60, ge=0, description="Timeout for waiting on response (s)")
-    interval: float = Field(0.02, ge=0, description="Interval for pulling response")
+    timeout: float = Field(
+        60,
+        ge=0,
+        description="The minimum amount of time (in sec) to poll after a 202 response",
+    )
+    interval: float = Field(
+        0.02,
+        ge=0,
+        description="Interval (in sec) between polling attempts after a 202 response",
+    )
     last_inputs: Optional[dict] = Field(
         description="Last inputs sent over to the server"
     )
@@ -372,9 +380,7 @@ class _NVIDIAClient(BaseModel):
         start_time = time.time()
         # note: the local NIM does not return a 202 status code
         #       (per RL 22may2024 circa 24.05)
-        while (
-            response.status_code == 202
-        ):  # todo: there are no tests that reach this point
+        while response.status_code == 202:
             time.sleep(self.interval)
             if (time.time() - start_time) > self.timeout:
                 raise TimeoutError(
@@ -385,10 +391,12 @@ class _NVIDIAClient(BaseModel):
                 "NVCF-REQID" in response.headers
             ), "Received 202 response with no request id to follow"
             request_id = response.headers.get("NVCF-REQID")
-            # todo: this needs testing, missing auth header update
+            payload = {
+                "url": self.polling_url_tmpl.format(request_id=request_id),
+                "headers": self.headers_tmpl["call"],
+            }
             self.last_response = response = session.get(
-                self.polling_url_tmpl.format(request_id=request_id),
-                headers=self.headers_tmpl["call"],
+                **self.__add_authorization(payload)
             )
         self._try_raise(response)
         return response
