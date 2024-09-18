@@ -44,7 +44,8 @@ class _NVIDIAClient(BaseModel):
     """
 
     default_hosted_model_name: str = Field(..., description="Default model name to use")
-    model_name: Optional[str] = Field(..., description="Name of the model to invoke")
+    # "mdl_name" because "model_" is a protected namespace in pydantic
+    mdl_name: Optional[str] = Field(..., description="Name of the model to invoke")
     model: Optional[Model] = Field(None, description="The model to invoke")
     is_hosted: bool = Field(True)
     cls: str = Field(..., description="Class Name")
@@ -163,10 +164,10 @@ class _NVIDIAClient(BaseModel):
                 )
 
             # set default model for hosted endpoint
-            if not self.model_name:
-                self.model_name = self.default_hosted_model_name
+            if not self.mdl_name:
+                self.mdl_name = self.default_hosted_model_name
 
-            if model := determine_model(self.model_name):
+            if model := determine_model(self.mdl_name):
                 if not model.client:
                     warnings.warn(f"Unable to determine validity of {model.id}")
                 elif model.client != self.cls:
@@ -184,27 +185,27 @@ class _NVIDIAClient(BaseModel):
                 candidates = [
                     model
                     for model in self.available_models
-                    if model.id == self.model_name
+                    if model.id == self.mdl_name
                 ]
                 assert len(candidates) <= 1, (
-                    f"Multiple candidates for {self.model_name} "
+                    f"Multiple candidates for {self.mdl_name} "
                     f"in `available_models`: {candidates}"
                 )
                 if candidates:
                     model = candidates[0]
                     warnings.warn(
-                        f"Found {self.model_name} in available_models, but type is "
+                        f"Found {self.mdl_name} in available_models, but type is "
                         "unknown and inference may fail."
                     )
                 else:
                     raise ValueError(
-                        f"Model {self.model_name} is unknown, check `available_models`"
+                        f"Model {self.mdl_name} is unknown, check `available_models`"
                     )
             self.model = model
-            self.model_name = self.model.id  # name may change because of aliasing
+            self.mdl_name = self.model.id  # name may change because of aliasing
         else:
             # set default model
-            if not self.model_name:
+            if not self.mdl_name:
                 valid_models = [
                     model
                     for model in self.available_models
@@ -212,9 +213,9 @@ class _NVIDIAClient(BaseModel):
                 ]
                 self.model = next(iter(valid_models), None)
                 if self.model:
-                    self.model_name = self.model.id
+                    self.mdl_name = self.model.id
                     warnings.warn(
-                        f"Default model is set as: {self.model_name}. \n"
+                        f"Default model is set as: {self.mdl_name}. \n"
                         "Set model using model parameter. \n"
                         "To get available models use available_models property.",
                         UserWarning,
@@ -238,8 +239,8 @@ class _NVIDIAClient(BaseModel):
         attributes: Dict[str, Any] = {}
         attributes["base_url"] = self.base_url
 
-        if self.model_name:
-            attributes["model"] = self.model_name
+        if self.mdl_name:
+            attributes["model"] = self.mdl_name
 
         return attributes
 

@@ -244,7 +244,7 @@ class ChatNVIDIA(BaseChatModel):
         api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
         self._client = _NVIDIAClient(
             **({"base_url": base_url} if base_url else {}),  # only pass if set
-            model_name=self.model,
+            mdl_name=self.model,
             default_hosted_model_name=_DEFAULT_MODEL_NAME,
             **({"api_key": api_key} if api_key else {}),  # only pass if set
             infer_path="{base_url}/chat/completions",
@@ -252,7 +252,7 @@ class ChatNVIDIA(BaseChatModel):
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
-        self.model = self._client.model_name
+        self.model = self._client.mdl_name
         # same for base_url
         self.base_url = self._client.base_url
 
