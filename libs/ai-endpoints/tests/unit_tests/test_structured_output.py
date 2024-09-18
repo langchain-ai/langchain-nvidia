@@ -38,7 +38,7 @@ def test_include_raw() -> None:
 
     with pytest.raises(NotImplementedError):
         ChatNVIDIA(api_key="BOGUS").with_structured_output(
-            Joke.schema(), include_raw=True
+            Joke.model_json_schema(), include_raw=True
         )
 
 
