@@ -183,6 +183,7 @@ def test_pydantic_version(
     class Person(pydanticBaseModel):  # type: ignore
         name: str
 
+    warnings.filterwarnings("ignore", r".*not known to support structured output.*")
     llm = ChatNVIDIA(api_key="BOGUS").with_structured_output(Person)
     response = llm.invoke("This is ignored.")
     assert isinstance(response, Person)
