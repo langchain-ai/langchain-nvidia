@@ -578,33 +578,38 @@ name = "langchain-core"
 version = "0.3.1"
 description = "Building applications with LLMs through composability"
 optional = false
-python-versions = "<4.0,>=3.9"
-files = [
-    {file = "langchain_core-0.3.1-py3-none-any.whl", hash = "sha256:52656baafd9f14163f112c2828b4c3099170a99861479cdbb8e8949f4153b5c5"},
-    {file = "langchain_core-0.3.1.tar.gz", hash = "sha256:c4609eba3969df633fb3e3f3378f51bac8b85cdea18f7cb09a1f44c6a1d07723"},
-]
+python-versions = ">=3.9,<4.0"
+files = []
+develop = false
 
 [package.dependencies]
-jsonpatch = ">=1.33,<2.0"
-langsmith = ">=0.1.117,<0.2.0"
+jsonpatch = "^1.33"
+langsmith = "^0.1.117"
 packaging = ">=23.2,<25"
 pydantic = [
     {version = ">=2.5.2,<3.0.0", markers = "python_full_version < \"3.12.4\""},
     {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
 ]
 PyYAML = ">=5.3"
-tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<9.0.0"
+tenacity = "^8.1.0,!=8.4.0"
 typing-extensions = ">=4.7"
+
+[package.source]
+type = "git"
+url = "https://github.com/langchain-ai/langchain.git"
+reference = "HEAD"
+resolved_reference = "84b831356c5e67ca2defdeb4c839d189a7c51a41"
+subdirectory = "libs/core"
 
 [[package]]
 name = "langsmith"
-version = "0.1.121"
+version = "0.1.122"
 description = "Client library to connect to the LangSmith LLM Tracing and Evaluation Platform."
 optional = false
 python-versions = "<4.0,>=3.8.1"
 files = [
-    {file = "langsmith-0.1.121-py3-none-any.whl", hash = "sha256:fdb1ac8a671d3904201bfeea197d87bded46a10d08f1034af464211872e29893"},
-    {file = "langsmith-0.1.121.tar.gz", hash = "sha256:e9381b82a5bd484af9a51c3e96faea572746b8d617b070c1cda40cbbe48e33df"},
+    {file = "langsmith-0.1.122-py3-none-any.whl", hash = "sha256:9c9cde442d7321e8557f5c45c14b1b643b8aa28acc3f844d3a0021a9571aad7c"},
+    {file = "langsmith-0.1.122.tar.gz", hash = "sha256:56dff727ca529fe8df300e6e4759dc920efe10ab8cd602b4d6b51e33599214e6"},
 ]
 
 [package.dependencies]
@@ -1571,4 +1576,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4.0"
-content-hash = "2cc1ebf6215e5b0e53c5b37dee304f21f489e5481d16845165fedf2db0cedd79"
+content-hash = "fd55cec7f60515783c4b8f1cfcb696c8cd241979ac2f50323ba568a7ae2de039"
