@@ -529,7 +529,7 @@ class _NVIDIAClient(BaseModel):
             stream=True, **self.__add_authorization(self.last_inputs)
         )
         self._try_raise(response)
-        call = self.copy()
+        call: _NVIDIAClient = self.model_copy()
 
         def out_gen() -> Generator[dict, Any, Any]:
             ## Good for client, since it allows self.last_inputs
