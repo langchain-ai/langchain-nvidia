@@ -163,7 +163,7 @@ def test_invoke_response_parsing(
             r'"{\""',
             r'"input\""',
             r'"\":"',
-            r"3",
+            r'"3"',
             r'"}"',
         ],
         [r'"{\"intput\": 3}"'],
