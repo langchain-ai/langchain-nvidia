@@ -501,8 +501,6 @@ EMBEDDING_MODEL_TABLE = {
         endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/embeddings",
         aliases=[
             "ai-embed-qa-4",
-            "playground_nvolveqa_40k",
-            "nvolveqa_40k",
         ],
     ),
     "nvidia/nv-embed-v1": Model(
