@@ -1,3 +1,5 @@
+import warnings
+
 import requests_mock
 from langchain_core.messages import AIMessage
 
@@ -32,6 +34,7 @@ def test_polling_auth_header(
         },
     )
 
+    warnings.filterwarnings("ignore", r".*type is unknown and inference may fail.*")
     client = ChatNVIDIA(model=mock_model, api_key="BOGUS")
     response = client.invoke("IGNORED")
 
