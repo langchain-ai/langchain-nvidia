@@ -3,7 +3,7 @@ from typing import Any, Callable, Optional, Union
 
 import pytest
 from langchain_core.messages import HumanMessage
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 

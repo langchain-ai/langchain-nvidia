@@ -46,19 +46,17 @@ from langchain_core.outputs import (
     ChatResult,
     Generation,
 )
-from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_core.utils.pydantic import is_basemodel_subclass
+from pydantic import BaseModel, Field, PrivateAttr
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
 from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
 
 _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
-_DictOrPydanticOrEnumClass = Union[Dict[str, Any], Type[BaseModel], Type[enum.Enum]]
-_DictOrPydanticOrEnum = Union[Dict, BaseModel, enum.Enum]
 
 try:
     import PIL.Image
@@ -174,6 +172,9 @@ def _nv_vlm_adjust_input(message_dict: Dict[str, Any]) -> Dict[str, Any]:
     return message_dict
 
 
+_DEFAULT_MODEL_NAME: str = "meta/llama3-8b-instruct"
+
+
 class ChatNVIDIA(BaseChatModel):
     """NVIDIA chat model.
 
@@ -188,19 +189,20 @@ class ChatNVIDIA(BaseChatModel):
     """
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
-    _default_model_name: str = "meta/llama3-8b-instruct"
     base_url: Optional[str] = Field(
         default=None,
         description="Base url for model listing an invocation",
     )
-    model: Optional[str] = Field(description="Name of the model to invoke")
-    temperature: Optional[float] = Field(description="Sampling temperature in [0, 1]")
+    model: Optional[str] = Field(None, description="Name of the model to invoke")
+    temperature: Optional[float] = Field(
+        None, description="Sampling temperature in [0, 1]"
+    )
     max_tokens: Optional[int] = Field(
         1024, description="Maximum # of tokens to generate"
     )
-    top_p: Optional[float] = Field(description="Top-p for distribution sampling")
-    seed: Optional[int] = Field(description="The seed for deterministic results")
-    stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
+    top_p: Optional[float] = Field(None, description="Top-p for distribution sampling")
+    seed: Optional[int] = Field(None, description="The seed for deterministic results")
+    stop: Optional[Sequence[str]] = Field(None, description="Stop words (cased)")
 
     def __init__(self, **kwargs: Any):
         """
@@ -242,15 +244,15 @@ class ChatNVIDIA(BaseChatModel):
         api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
         self._client = _NVIDIAClient(
             **({"base_url": base_url} if base_url else {}),  # only pass if set
-            model_name=self.model,
-            default_hosted_model_name=self._default_model_name,
+            mdl_name=self.model,
+            default_hosted_model_name=_DEFAULT_MODEL_NAME,
             **({"api_key": api_key} if api_key else {}),  # only pass if set
             infer_path="{base_url}/chat/completions",
             cls=self.__class__.__name__,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
-        self.model = self._client.model_name
+        self.model = self._client.mdl_name
         # same for base_url
         self.base_url = self._client.base_url
 
@@ -461,7 +463,7 @@ class ChatNVIDIA(BaseChatModel):
 
     def bind_tools(
         self,
-        tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]],
+        tools: Sequence[Union[Dict[str, Any], Type, Callable, BaseTool]],
         *,
         tool_choice: Optional[
             Union[dict, str, Literal["auto", "none", "any", "required"], bool]
@@ -547,11 +549,11 @@ class ChatNVIDIA(BaseChatModel):
     # as a result need to type ignore for the schema parameter and return type.
     def with_structured_output(  # type: ignore
         self,
-        schema: _DictOrPydanticOrEnumClass,
+        schema: Union[Dict, Type],
         *,
         include_raw: bool = False,
         **kwargs: Any,
-    ) -> Runnable[LanguageModelInput, _DictOrPydanticOrEnum]:
+    ) -> Runnable[LanguageModelInput, Union[Dict, BaseModel]]:
         """
         Bind a structured output schema to the model.
 
@@ -588,7 +590,7 @@ class ChatNVIDIA(BaseChatModel):
         1. If a Pydantic schema is provided, the model will return a Pydantic object.
            Example:
         ```
-        from langchain_core.pydantic_v1 import BaseModel, Field
+        from pydantic import BaseModel, Field
         class Joke(BaseModel):
             setup: str = Field(description="The setup of the joke")
             punchline: str = Field(description="The punchline to the joke")
@@ -746,7 +748,11 @@ class ChatNVIDIA(BaseChatModel):
                     return None
 
             output_parser = ForgivingPydanticOutputParser(pydantic_object=schema)
-            nvext_param = {"guided_json": schema.schema()}
+            if hasattr(schema, "model_json_schema"):
+                json_schema = schema.model_json_schema()
+            else:
+                json_schema = schema.schema()
+            nvext_param = {"guided_json": json_schema}
 
         else:
             raise ValueError(
