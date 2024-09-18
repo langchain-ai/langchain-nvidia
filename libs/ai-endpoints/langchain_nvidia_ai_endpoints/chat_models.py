@@ -50,9 +50,9 @@ from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_core.utils.pydantic import is_basemodel_subclass
-from pydantic import BaseModel, Field, PrivateAttr, model_validator
+from pydantic import BaseModel, Field, PrivateAttr
 
-from langchain_nvidia_ai_endpoints._common import _BASE_URL_VAR, _NVIDIAClient
+from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
 from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
 
@@ -172,7 +172,6 @@ def _nv_vlm_adjust_input(message_dict: Dict[str, Any]) -> Dict[str, Any]:
     return message_dict
 
 
-_DEFAULT_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
 _DEFAULT_MODEL_NAME: str = "meta/llama3-8b-instruct"
 
 
@@ -191,6 +190,7 @@ class ChatNVIDIA(BaseChatModel):
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     base_url: Optional[str] = Field(
+        default=None,
         description="Base url for model listing an invocation",
     )
     model: Optional[str] = Field(None, description="Name of the model to invoke")
@@ -203,17 +203,6 @@ class ChatNVIDIA(BaseChatModel):
     top_p: Optional[float] = Field(None, description="Top-p for distribution sampling")
     seed: Optional[int] = Field(None, description="The seed for deterministic results")
     stop: Optional[Sequence[str]] = Field(None, description="Stop words (cased)")
-
-    @model_validator(mode="before")
-    @classmethod
-    def _validate_base_url(cls, values: Dict[str, Any]) -> Any:
-        values["base_url"] = (
-            values.get(_BASE_URL_VAR.lower())
-            or values.get("base_url")
-            or os.getenv(_BASE_URL_VAR.upper())
-            or _DEFAULT_BASE_URL
-        )
-        return values
 
     def __init__(self, **kwargs: Any):
         """
@@ -249,17 +238,23 @@ class ChatNVIDIA(BaseChatModel):
             )
         """
         super().__init__(**kwargs)
+        # allow nvidia_base_url as an alternative for base_url
+        base_url = kwargs.pop("nvidia_base_url", self.base_url)
+        # allow nvidia_api_key as an alternative for api_key
+        api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
         self._client = _NVIDIAClient(
-            base_url=self.base_url,
+            **({"base_url": base_url} if base_url else {}),  # only pass if set
             model_name=self.model,
             default_hosted_model_name=_DEFAULT_MODEL_NAME,
-            api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
+            **({"api_key": api_key} if api_key else {}),  # only pass if set
             infer_path="{base_url}/chat/completions",
             cls=self.__class__.__name__,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
         self.model = self._client.model_name
+        # same for base_url
+        self.base_url = self._client.base_url
 
     @property
     def available_models(self) -> List[Model]:

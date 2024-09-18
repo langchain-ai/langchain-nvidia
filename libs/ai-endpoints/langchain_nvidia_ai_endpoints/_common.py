@@ -27,7 +27,6 @@ from pydantic import (
     PrivateAttr,
     SecretStr,
     field_validator,
-    model_validator,
 )
 from requests.models import Response
 
@@ -58,7 +57,9 @@ class _NVIDIAClient(BaseModel):
 
     ## Core defaults. These probably should not be changed
     base_url: str = Field(
-        ...,
+        default_factory=lambda: os.getenv(
+            _BASE_URL_VAR, "https://integrate.api.nvidia.com/v1"
+        ),
         description="Base URL for standard inference",
     )
     infer_path: str = Field(
@@ -75,7 +76,14 @@ class _NVIDIAClient(BaseModel):
     )
     get_session_fn: Callable = Field(requests.Session)
 
-    api_key: Optional[SecretStr] = Field(description="API Key for service of choice")
+    api_key: Optional[SecretStr] = Field(
+        default_factory=lambda: SecretStr(
+            os.getenv(_API_KEY_VAR, "INTERNAL_LCNVAIE_ERROR")
+        )
+        if _API_KEY_VAR in os.environ
+        else None,
+        description="API Key for service of choice",
+    )
 
     ## Generation arguments
     timeout: float = Field(
@@ -89,8 +97,7 @@ class _NVIDIAClient(BaseModel):
         description="Interval (in sec) between polling attempts after a 202 response",
     )
     last_inputs: Optional[dict] = Field(
-        default={},
-        description="Last inputs sent over to the server"
+        default={}, description="Last inputs sent over to the server"
     )
     last_response: Response = Field(
         None, description="Last response sent from the server"
@@ -135,18 +142,6 @@ class _NVIDIAClient(BaseModel):
             v = urlunparse((parsed.scheme, parsed.netloc, "v1", None, None, None))
 
         return v
-
-    @model_validator(mode="before")
-    @classmethod
-    def _preprocess_args(cls, values: Dict[str, Any]) -> Any:
-        # if api_key is not provided or None,
-        #  try to get it from the environment
-        # we can't use Field(default_factory=...)
-        #  because construction may happen with api_key=None
-        if values.get("api_key") is None:
-            values["api_key"] = os.getenv(_API_KEY_VAR)
-
-        return values
 
     # final validation after model is constructed
     # todo: when pydantic v2 is available,
