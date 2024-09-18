@@ -238,11 +238,13 @@ class ChatNVIDIA(BaseChatModel):
         super().__init__(**kwargs)
         # allow nvidia_base_url as an alternative for base_url
         base_url = kwargs.pop("nvidia_base_url", self.base_url)
+        # allow nvidia_api_key as an alternative for api_key
+        api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
         self._client = _NVIDIAClient(
             **({"base_url": base_url} if base_url else {}),  # only pass if set
             model_name=self.model,
             default_hosted_model_name=self._default_model_name,
-            api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
+            **({"api_key": api_key} if api_key else {}),  # only pass if set
             infer_path="{base_url}/chat/completions",
             cls=self.__class__.__name__,
         )

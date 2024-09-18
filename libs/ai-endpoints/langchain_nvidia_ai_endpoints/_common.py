@@ -25,7 +25,6 @@ from langchain_core.pydantic_v1 import (
     Field,
     PrivateAttr,
     SecretStr,
-    root_validator,
     validator,
 )
 from requests.models import Response
@@ -52,7 +51,6 @@ class _NVIDIAClient(BaseModel):
         arbitrary_types_allowed = True
 
     ## Core defaults. These probably should not be changed
-    _api_key_var = "NVIDIA_API_KEY"
     base_url: str = Field(
         default_factory=lambda: os.getenv(
             "NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"
@@ -73,7 +71,14 @@ class _NVIDIAClient(BaseModel):
     )
     get_session_fn: Callable = Field(requests.Session)
 
-    api_key: Optional[SecretStr] = Field(description="API Key for service of choice")
+    api_key: Optional[SecretStr] = Field(
+        default_factory=lambda: SecretStr(
+            os.getenv("NVIDIA_API_KEY", "INTERNAL_LCNVAIE_ERROR")
+        )
+        if "NVIDIA_API_KEY" in os.environ
+        else None,
+        description="API Key for service of choice",
+    )
 
     ## Generation arguments
     timeout: float = Field(
@@ -132,17 +137,6 @@ class _NVIDIAClient(BaseModel):
             v = urlunparse((parsed.scheme, parsed.netloc, "v1", None, None, None))
 
         return v
-
-    @root_validator(pre=True)
-    def _preprocess_args(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        # if api_key is not provided or None,
-        #  try to get it from the environment
-        # we can't use Field(default_factory=...)
-        #  because construction may happen with api_key=None
-        if values.get("api_key") is None:
-            values["api_key"] = os.getenv(cls._api_key_var)
-
-        return values
 
     # final validation after model is constructed
     # todo: when pydantic v2 is available,
@@ -232,7 +226,7 @@ class _NVIDIAClient(BaseModel):
 
     @property
     def lc_secrets(self) -> Dict[str, str]:
-        return {"api_key": self._api_key_var}
+        return {"api_key": "NVIDIA_API_KEY"}
 
     @property
     def lc_attributes(self) -> Dict[str, Any]:
