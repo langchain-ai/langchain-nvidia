@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import os
-from typing import Any, Dict, Generator, List, Literal, Optional, Sequence
+from typing import Any, Generator, List, Literal, Optional, Sequence
 
 from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
 from langchain_core.documents.compressor import BaseDocumentCompressor
-from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr, root_validator
+from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
@@ -29,8 +28,8 @@ class NVIDIARerank(BaseDocumentCompressor):
 
     _default_batch_size: int = 32
     _default_model_name: str = "nvidia/nv-rerankqa-mistral-4b-v3"
-    _default_base_url: str = "https://integrate.api.nvidia.com/v1"
-    base_url: str = Field(
+    base_url: Optional[str] = Field(
+        default=None,
         description="Base url for model listing an invocation",
     )
     top_n: int = Field(5, ge=0, description="The number of documents to return.")
@@ -45,18 +44,6 @@ class NVIDIARerank(BaseDocumentCompressor):
     max_batch_size: int = Field(
         _default_batch_size, ge=1, description="The maximum batch size."
     )
-
-    _base_url_var = "NVIDIA_BASE_URL"
-
-    @root_validator(pre=True)
-    def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        values["base_url"] = (
-            values.get(cls._base_url_var.lower())
-            or values.get("base_url")
-            or os.getenv(cls._base_url_var)
-            or cls._default_base_url
-        )
-        return values
 
     def __init__(self, **kwargs: Any):
         """
@@ -134,8 +121,10 @@ class NVIDIARerank(BaseDocumentCompressor):
         """
 
         super().__init__(**kwargs)
+        # allow nvidia_base_url as an alternative for base_url
+        base_url = kwargs.pop("nvidia_base_url", self.base_url)
         self._client = _NVIDIAClient(
-            base_url=self.base_url,
+            **({"base_url": base_url} if base_url else {}),  # only pass if set
             model_name=self.model,
             default_hosted_model_name=self._default_model_name,
             api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
@@ -145,6 +134,8 @@ class NVIDIARerank(BaseDocumentCompressor):
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
         self.model = self._client.model_name
+        # same for base_url
+        self.base_url = self._client.base_url
 
     @property
     def available_models(self) -> List[Model]:

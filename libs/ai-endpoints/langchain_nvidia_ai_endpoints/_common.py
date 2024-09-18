@@ -54,7 +54,9 @@ class _NVIDIAClient(BaseModel):
     ## Core defaults. These probably should not be changed
     _api_key_var = "NVIDIA_API_KEY"
     base_url: str = Field(
-        ...,
+        default_factory=lambda: os.getenv(
+            "NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"
+        ),
         description="Base URL for standard inference",
     )
     infer_path: str = Field(

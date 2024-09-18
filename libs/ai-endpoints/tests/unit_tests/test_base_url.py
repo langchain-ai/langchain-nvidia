@@ -28,10 +28,9 @@ def mock_v1_local_models(requests_mock: Mocker) -> None:
 
 def test_create_without_base_url(public_class: type) -> None:
     with no_env_var("NVIDIA_BASE_URL"):
-        assert (
-            public_class(api_key="BOGUS").base_url
-            == "https://integrate.api.nvidia.com/v1"
-        )
+        x = public_class(api_key="BOGUS")
+        assert x.base_url == "https://integrate.api.nvidia.com/v1"
+        assert x._client.base_url == "https://integrate.api.nvidia.com/v1"
 
 
 @pytest.mark.parametrize(
