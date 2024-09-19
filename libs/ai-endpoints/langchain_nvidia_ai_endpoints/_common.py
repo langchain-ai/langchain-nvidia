@@ -17,7 +17,7 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 import requests
 from langchain_core.pydantic_v1 import (
@@ -74,8 +74,16 @@ class _NVIDIAClient(BaseModel):
     api_key: Optional[SecretStr] = Field(description="API Key for service of choice")
 
     ## Generation arguments
-    timeout: float = Field(60, ge=0, description="Timeout for waiting on response (s)")
-    interval: float = Field(0.02, ge=0, description="Interval for pulling response")
+    timeout: float = Field(
+        60,
+        ge=0,
+        description="The minimum amount of time (in sec) to poll after a 202 response",
+    )
+    interval: float = Field(
+        0.02,
+        ge=0,
+        description="Interval (in sec) between polling attempts after a 202 response",
+    )
     last_inputs: Optional[dict] = Field(
         description="Last inputs sent over to the server"
     )
@@ -105,41 +113,32 @@ class _NVIDIAClient(BaseModel):
 
     @validator("base_url")
     def _validate_base_url(cls, v: str) -> str:
+        ## Making sure /v1 in added to the url
         if v is not None:
-            result = urlparse(v)
-            expected_format = "Expected format is 'http://host:port'."
+            parsed = urlparse(v)
+
             # Ensure scheme and netloc (domain name) are present
-            if not (result.scheme and result.netloc):
+            if not (parsed.scheme and parsed.netloc):
+                expected_format = "Expected format is: http://host:port"
                 raise ValueError(f"Invalid base_url format. {expected_format} Got: {v}")
+
+            if v.strip("/").endswith(
+                ("/embeddings", "/completions", "/rankings", "/reranking")
+            ):
+                warnings.warn(f"Using {v}, ignoring the rest")
+
+            v = urlunparse((parsed.scheme, parsed.netloc, "v1", None, None, None))
+
         return v
 
     @root_validator(pre=True)
     def _preprocess_args(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        values["api_key"] = (
-            values.get(cls._api_key_var.lower())
-            or values.get("api_key")
-            or os.getenv(cls._api_key_var)
-            or None
-        )
-
-        ## Making sure /v1 in added to the url, followed by infer_path
-        if "base_url" in values:
-            base_url = values["base_url"].strip("/")
-            parsed = urlparse(base_url)
-            expected_format = "Expected format is: http://host:port"
-
-            if not (parsed.scheme and parsed.netloc):
-                raise ValueError(
-                    f"Invalid base_url format. {expected_format} Got: {base_url}"
-                )
-
-            if base_url.endswith(
-                ("/embeddings", "/completions", "/rankings", "/reranking")
-            ):
-                warnings.warn(f"Using {base_url}, ignoring the rest")
-
-            values["base_url"] = base_url
-            values["infer_path"] = values["infer_path"].format(base_url=base_url)
+        # if api_key is not provided or None,
+        #  try to get it from the environment
+        # we can't use Field(default_factory=...)
+        #  because construction may happen with api_key=None
+        if values.get("api_key") is None:
+            values["api_key"] = os.getenv(cls._api_key_var)
 
         return values
 
@@ -370,9 +369,7 @@ class _NVIDIAClient(BaseModel):
         start_time = time.time()
         # note: the local NIM does not return a 202 status code
         #       (per RL 22may2024 circa 24.05)
-        while (
-            response.status_code == 202
-        ):  # todo: there are no tests that reach this point
+        while response.status_code == 202:
             time.sleep(self.interval)
             if (time.time() - start_time) > self.timeout:
                 raise TimeoutError(
@@ -383,10 +380,12 @@ class _NVIDIAClient(BaseModel):
                 "NVCF-REQID" in response.headers
             ), "Received 202 response with no request id to follow"
             request_id = response.headers.get("NVCF-REQID")
-            # todo: this needs testing, missing auth header update
+            payload = {
+                "url": self.polling_url_tmpl.format(request_id=request_id),
+                "headers": self.headers_tmpl["call"],
+            }
             self.last_response = response = session.get(
-                self.polling_url_tmpl.format(request_id=request_id),
-                headers=self.headers_tmpl["call"],
+                **self.__add_authorization(payload)
             )
         self._try_raise(response)
         return response
@@ -483,7 +482,10 @@ class _NVIDIAClient(BaseModel):
             usage_holder = msg.get("usage", {})  ####
             if "choices" in msg:
                 ## Tease out ['choices'][0]...['delta'/'message']
-                msg = msg.get("choices", [{}])[0]
+                # when streaming w/ usage info, we may get a response
+                #  w/ choices: [] that includes final usage info
+                choices = msg.get("choices", [{}])
+                msg = choices[0] if choices else {}
                 # todo: this meeds to be fixed, the fact we only
                 #       use the first choice breaks the interface
                 finish_reason_holder = msg.get("finish_reason", None)
@@ -523,7 +525,7 @@ class _NVIDIAClient(BaseModel):
         }
 
         response = self.get_session_fn().post(
-            **self.__add_authorization(self.last_inputs)
+            stream=True, **self.__add_authorization(self.last_inputs)
         )
         self._try_raise(response)
         call = self.copy()

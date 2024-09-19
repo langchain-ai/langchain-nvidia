@@ -185,6 +185,7 @@ def test_stream_response_parsing(
                     for argument in argument_chunks
                 ],
                 'data: {"id":"ID0","object":"chat.completion.chunk","created":1234567890,"model":"BOGUS","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"tool_calls"}]}',  # noqa: E501
+                'data: {"id":"ID0","object":"chat.completion.chunk","created":1234567890,"model":"BOGUS","choices":[],"usage":{"prompt_tokens":20,"total_tokens":42,"completion_tokens":22}}',  # noqa: E501
                 "data: [DONE]",
             ]
         ),
@@ -260,3 +261,31 @@ def test_regression_ai_null_content(
     assistant.content = None  # type: ignore
     llm.invoke([assistant])
     llm.stream([assistant])
+
+
+def test_stream_usage_metadata(
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        text="\n\n".join(
+            [
+                r'data: {"id":"ID0","object":"chat.completion.chunk","created":1234567890,"model":"BOGUS","system_fingerprint":null,"usage":null,"choices":[{"index":0,"delta":{"role":"assistant","content":null},"logprobs":null,"finish_reason":null}]}',  # noqa: E501
+                r'data: {"id":"ID0","object":"chat.completion.chunk","created":1234567890,"model":"BOGUS","system_fingerprint":null,"usage":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"ID1","type":"function","function":{"name":"magic_function","arguments":""}}]},"logprobs":null,"finish_reason":null}]}',  # noqa: E501
+                r'data: {"id":"ID0","object":"chat.completion.chunk","created":1234567890,"model":"BOGUS","system_fingerprint":null,"usage":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"in"}}]},"logprobs":null,"finish_reason":null}]}',  # noqa: E501
+                r'data: {"id":"ID0","object":"chat.completion.chunk","created":1234567890,"model":"BOGUS","system_fingerprint":null,"usage":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"put\":"}}]},"logprobs":null,"finish_reason":null}]}',  # noqa: E501
+                r'data: {"id":"ID0","object":"chat.completion.chunk","created":1234567890,"model":"BOGUS","system_fingerprint":null,"usage":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":" 3}"}}]},"logprobs":null,"finish_reason":null}]}',  # noqa: E501
+                r'data: {"id":"ID0","object":"chat.completion.chunk","created":1234567890,"model":"BOGUS","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"tool_calls"}],"usage":null}',  # noqa: E501
+                r'data: {"id":"ID0","object":"chat.completion.chunk","created":1234567890,"model":"BOGUS","system_fingerprint":null,"choices":[],"usage":{"prompt_tokens":76,"completion_tokens":29,"total_tokens":105}}',  # noqa: E501
+                r"data: [DONE]",
+            ]
+        ),
+    )
+
+    llm = ChatNVIDIA(api_key="BOGUS")
+    response = reduce(add, llm.stream("IGNROED"))
+    assert isinstance(response, AIMessage)
+    assert response.usage_metadata is not None
+    assert response.usage_metadata["input_tokens"] == 76
+    assert response.usage_metadata["output_tokens"] == 29
+    assert response.usage_metadata["total_tokens"] == 105
