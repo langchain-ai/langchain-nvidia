@@ -402,6 +402,11 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "abacusai/dracarys-llama-3.1-70b-instruct": Model(
+        id="abacusai/dracarys-llama-3.1-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
@@ -511,6 +516,11 @@ EMBEDDING_MODEL_TABLE = {
     ),
     "baai/bge-m3": Model(
         id="baai/bge-m3",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+    ),
+    "nvidia/embed-qa-4": Model(
+        id="nvidia/embed-qa-4",
         model_type="embedding",
         client="NVIDIAEmbeddings",
     ),

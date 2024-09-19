@@ -1,8 +1,7 @@
 """Embeddings Components Derived from NVEModel/Embeddings"""
 
-import os
 import warnings
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.outputs.llm_result import LLMResult
@@ -10,7 +9,6 @@ from langchain_core.pydantic_v1 import (
     BaseModel,
     Field,
     PrivateAttr,
-    root_validator,
     validator,
 )
 
@@ -36,8 +34,8 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model_name: str = "nvidia/nv-embedqa-e5-v5"
     _default_max_batch_size: int = 50
-    _default_base_url: str = "https://integrate.api.nvidia.com/v1"
-    base_url: str = Field(
+    base_url: Optional[str] = Field(
+        default=None,
         description="Base url for model listing an invocation",
     )
     model: Optional[str] = Field(description="Name of the model to invoke")
@@ -52,18 +50,6 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     model_type: Optional[Literal["passage", "query"]] = Field(
         None, description="(DEPRECATED) The type of text to be embedded."
     )
-
-    _base_url_var = "NVIDIA_BASE_URL"
-
-    @root_validator(pre=True)
-    def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        values["base_url"] = (
-            values.get(cls._base_url_var.lower())
-            or values.get("base_url")
-            or os.getenv(cls._base_url_var)
-            or cls._default_base_url
-        )
-        return values
 
     def __init__(self, **kwargs: Any):
         """
@@ -94,17 +80,23 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")
         """
         super().__init__(**kwargs)
+        # allow nvidia_base_url as an alternative for base_url
+        base_url = kwargs.pop("nvidia_base_url", self.base_url)
+        # allow nvidia_api_key as an alternative for api_key
+        api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
         self._client = _NVIDIAClient(
-            base_url=self.base_url,
+            **({"base_url": base_url} if base_url else {}),  # only pass if set
             model_name=self.model,
             default_hosted_model_name=self._default_model_name,
-            api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
+            **({"api_key": api_key} if api_key else {}),  # only pass if set
             infer_path="{base_url}/embeddings",
             cls=self.__class__.__name__,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
         self.model = self._client.model_name
+        # same for base_url
+        self.base_url = self._client.base_url
 
         # todo: remove when nvolveqa_40k is removed from MODEL_TABLE
         if "model" in kwargs and kwargs["model"] in [
