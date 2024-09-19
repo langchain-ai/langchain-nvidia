@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from typing import Any, Generator
 
 import pytest
-from langchain_core.pydantic_v1 import SecretStr
+from pydantic import SecretStr
 from requests_mock import Mocker
 
 

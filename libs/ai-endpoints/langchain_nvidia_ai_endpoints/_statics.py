@@ -2,7 +2,7 @@ import os
 import warnings
 from typing import Literal, Optional
 
-from langchain_core.pydantic_v1 import BaseModel, validator
+from pydantic import BaseModel, model_validator
 
 
 class Model(BaseModel):
@@ -37,21 +37,21 @@ class Model(BaseModel):
     def __hash__(self) -> int:
         return hash(self.id)
 
-    @validator("client", always=True)
-    def validate_client(cls, client: str, values: dict) -> str:
-        if client:
+    @model_validator(mode="after")
+    def validate_client(self) -> "Model":
+        if self.client:
             supported = {
                 "ChatNVIDIA": ("chat", "vlm", "nv-vlm", "qa"),
                 "NVIDIAEmbeddings": ("embedding",),
                 "NVIDIARerank": ("ranking",),
                 "NVIDIA": ("completions",),
             }
-            model_type = values.get("model_type")
-            if model_type not in supported[client]:
+            if self.model_type not in supported.get(self.client, ()):
                 raise ValueError(
-                    f"Model type '{model_type}' not supported by client '{client}'"
+                    f"Model type '{self.model_type}' not supported "
+                    f"by client '{self.client}'"
                 )
-        return client
+        return self
 
 
 CHAT_MODEL_TABLE = {

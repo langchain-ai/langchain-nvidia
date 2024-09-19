@@ -11,8 +11,8 @@ from langchain_core.messages import (
     BaseMessage,
     BaseMessageChunk,
 )
-from langchain_core.pydantic_v1 import Field
 from langchain_core.tools import tool
+from pydantic import Field
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
