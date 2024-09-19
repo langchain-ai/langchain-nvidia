@@ -292,12 +292,16 @@ class ChatNVIDIA(BaseChatModel):
         params = self._get_invocation_params(stop=stop, **kwargs)
         return LangSmithParams(
             ls_provider="NVIDIA",
-            ls_model_name=self.model,
+            # error: Incompatible types (expression has type "Optional[str]",
+            #  TypedDict item "ls_model_name" has type "str")  [typeddict-item]
+            ls_model_name=self.model or "UNKNOWN",
             ls_model_type="chat",
             ls_temperature=params.get("temperature", self.temperature),
             ls_max_tokens=params.get("max_tokens", self.max_tokens),
-            ls_top_p=params.get("top_p", self.top_p),
-            ls_seed=params.get("seed", self.seed),
+            # mypy error: Extra keys ("ls_top_p", "ls_seed")
+            #  for TypedDict "LangSmithParams"  [typeddict-item]
+            # ls_top_p=params.get("top_p", self.top_p),
+            # ls_seed=params.get("seed", self.seed),
             ls_stop=params.get("stop", self.stop),
         )
 
