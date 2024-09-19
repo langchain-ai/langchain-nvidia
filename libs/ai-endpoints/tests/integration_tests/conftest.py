@@ -162,7 +162,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             models = [
                 model.id
                 for model in get_all_known_models()
-                if model.model_type == "vlm"
+                if model.model_type in {"vlm", "nv-vlm"}
             ]
         metafunc.parametrize("vlm_model", models, ids=models)
 
