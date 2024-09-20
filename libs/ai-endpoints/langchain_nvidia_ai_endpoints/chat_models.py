@@ -564,6 +564,10 @@ class ChatNVIDIA(BaseChatModel):
         """
         Bind tools to the model.
 
+        Notes:
+         - The `strict` mode is always in effect, if you need it disabled,
+            please file an issue.
+
         Args:
             tools (list): A list of tools to bind to the model.
             tool_choice (Optional[Union[dict,
@@ -587,6 +591,9 @@ class ChatNVIDIA(BaseChatModel):
                 f"Model '{self.model}' is not known to support tools. "
                 "Your tool binding may fail at inference time."
             )
+
+        if kwargs.get("strict", True) is not True:
+            warnings.warn("The `strict` parameter is not necessary and is ignored.")
 
         tool_name = None
         if isinstance(tool_choice, bool):
@@ -647,6 +654,16 @@ class ChatNVIDIA(BaseChatModel):
     ) -> Runnable[LanguageModelInput, Union[Dict, BaseModel]]:
         """
         Bind a structured output schema to the model.
+
+        Args:
+            schema (Union[Dict, Type]): The schema to bind to the model.
+            include_raw (bool): Always False. Passing True raises an error.
+            **kwargs: Additional keyword arguments.
+
+        Notes:
+            - `strict` mode is always in effect, if you need it disabled, please file an issue.
+            - if you need `include_raw=True` consider using an unstructured model and
+               output formatter, or file an issue.
 
         The schema can be -
          0. a dictionary representing a JSON schema
@@ -761,6 +778,13 @@ class ChatNVIDIA(BaseChatModel):
                 "The 'method' parameter is unnecessary and is ignored. "
                 "The appropriate method will be chosen automatically depending "
                 "on the type of schema provided."
+            )
+
+        if kwargs.get("strict", True) is not True:
+            warnings.warn(
+                "Structured output always follows strict validation. "
+                "`strict` is ignored. Please file an issue if you "
+                "need strict validation disabled."
             )
 
         if include_raw:

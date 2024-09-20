@@ -188,3 +188,45 @@ def test_pydantic_version(
     response = llm.invoke("This is ignored.")
     assert isinstance(response, Person)
     assert response.name == "Sam Doe"
+
+
+@pytest.mark.parametrize(
+    "strict",
+    [False, None, "BOGUS"],
+)
+def test_strict_warns(strict: Optional[bool]) -> None:
+    warnings.filterwarnings("error")  # no warnings should be raised
+
+    # acceptable warnings
+    warnings.filterwarnings(
+        "ignore", category=UserWarning, message=".*not known to support.*"
+    )
+
+    # warnings under test
+    strict_warning = ".*`strict` is ignored.*"
+    warnings.filterwarnings("default", category=UserWarning, message=strict_warning)
+
+    with pytest.warns(UserWarning, match=strict_warning):
+        ChatNVIDIA(api_key="BOGUS").with_structured_output(
+            Joke,
+            strict=strict,
+        )
+
+
+@pytest.mark.parametrize(
+    "strict",
+    [True, None],
+    ids=["strict-True", "no-strict"],
+)
+def test_strict_no_warns(strict: Optional[bool]) -> None:
+    warnings.filterwarnings("error")  # no warnings should be raised
+
+    # acceptable warnings
+    warnings.filterwarnings(
+        "ignore", category=UserWarning, message=".*not known to support.*"
+    )
+
+    ChatNVIDIA(api_key="BOGUS").with_structured_output(
+        Joke,
+        **({"strict": strict} if strict is not None else {}),
+    )
