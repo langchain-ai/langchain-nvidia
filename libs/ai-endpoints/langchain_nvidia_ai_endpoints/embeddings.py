@@ -10,7 +10,6 @@ from pydantic import (
     ConfigDict,
     Field,
     PrivateAttr,
-    field_validator,
 )
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
@@ -50,9 +49,6 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         ),
     )
     max_batch_size: int = Field(default=_DEFAULT_BATCH_SIZE)
-    model_type: Optional[Literal["passage", "query"]] = Field(
-        None, description="(DEPRECATED) The type of text to be embedded."
-    )
 
     def __init__(self, **kwargs: Any):
         """
@@ -111,18 +107,6 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             )
             self.truncate = "END"
 
-    @field_validator("model_type")
-    def _validate_model_type(
-        cls, v: Optional[Literal["passage", "query"]]
-    ) -> Optional[Literal["passage", "query"]]:
-        if v:
-            warnings.warn(
-                "Warning: `model_type` is deprecated and will be removed "
-                "in a future release. Please use `embed_query` or "
-                "`embed_documents` appropriately."
-            )
-        return v
-
     @property
     def available_models(self) -> List[Model]:
         """
@@ -175,7 +159,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
 
     def embed_query(self, text: str) -> List[float]:
         """Input pathway for query embeddings."""
-        return self._embed([text], model_type=self.model_type or "query")[0]
+        return self._embed([text], model_type="query")[0]
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Input pathway for document embeddings."""
@@ -187,9 +171,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         all_embeddings = []
         for i in range(0, len(texts), self.max_batch_size):
             batch = texts[i : i + self.max_batch_size]
-            all_embeddings.extend(
-                self._embed(batch, model_type=self.model_type or "passage")
-            )
+            all_embeddings.extend(self._embed(batch, model_type="passage"))
         return all_embeddings
 
     def _invoke_callback_vars(self, response: dict) -> None:

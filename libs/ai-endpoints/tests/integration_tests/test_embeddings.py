@@ -112,7 +112,5 @@ def test_embed_nvolveqa_40k_compat(nvolveqa_40k: str, mode: dict) -> None:
     assert len(output) > 3
 
 
-# todo: test model_type ("passage" and embed_query,
-#                        "query" and embed_documents; compare results)
 # todo: test max_length > max length accepted by the model
 # todo: test max_batch_size > max batch size accepted by the model
