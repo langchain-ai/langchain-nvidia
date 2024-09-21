@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-import os
 import warnings
 from typing import Any, Dict, Iterator, List, Optional
 
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM
 from langchain_core.outputs import GenerationChunk
-from langchain_core.pydantic_v1 import Field, PrivateAttr, root_validator
+from pydantic import ConfigDict, Field, PrivateAttr
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
+
+_DEFAULT_MODEL_NAME: str = "nvidia/mistral-nemo-minitron-8b-base"
 
 
 class NVIDIA(LLM):
@@ -18,32 +19,21 @@ class NVIDIA(LLM):
     LangChain LLM that uses the Completions API with NVIDIA NIMs.
     """
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(
+        validate_assignment=True,
+    )
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
     _default_model_name: str = "nvidia/mistral-nemo-minitron-8b-base"
-    _default_base_url: str = "https://integrate.api.nvidia.com/v1"
-    base_url: str = Field(
+    base_url: Optional[str] = Field(
+        default=None,
         description="Base url for model listing and invocation",
     )
-    model: Optional[str] = Field(description="The model to use for completions.")
-
-    _base_url_var = "NVIDIA_BASE_URL"
+    model: Optional[str] = Field(None, description="The model to use for completions.")
 
     _init_args: Dict[str, Any] = PrivateAttr()
     """Stashed arguments given to the constructor that can be passed to
     the Completions API endpoint."""
-
-    @root_validator(pre=True)
-    def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        values["base_url"] = (
-            values.get(cls._base_url_var.lower())
-            or values.get("base_url")
-            or os.getenv(cls._base_url_var)
-            or cls._default_base_url
-        )
-        return values
 
     def __check_kwargs(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -109,17 +99,23 @@ class NVIDIA(LLM):
         e.g. `NVIDIA().invoke("prompt", max_tokens=512)`.
         """
         super().__init__(**kwargs)
+        # allow nvidia_base_url as an alternative for base_url
+        base_url = kwargs.pop("nvidia_base_url", self.base_url)
+        # allow nvidia_api_key as an alternative for api_key
+        api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
         self._client = _NVIDIAClient(
-            base_url=self.base_url,
-            model_name=self.model,
-            default_hosted_model_name=self._default_model_name,
-            api_key=kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None)),
+            **({"base_url": base_url} if base_url else {}),  # only pass if set
+            mdl_name=self.model,
+            default_hosted_model_name=_DEFAULT_MODEL_NAME,
+            **({"api_key": api_key} if api_key else {}),  # only pass if set
             infer_path="{base_url}/completions",
             cls=self.__class__.__name__,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
-        self.model = self._client.model_name
+        self.model = self._client.mdl_name
+        # same for base_url
+        self.base_url = self._client.base_url
 
         # stash all additional args that can be passed to the Completions API,
         # but first make sure we pull out any args that are processed elsewhere.

@@ -1,5 +1,7 @@
 import json
 import warnings
+from functools import reduce
+from operator import add
 from typing import Any, Callable, List, Literal, Optional, Union
 
 import pytest
@@ -9,8 +11,8 @@ from langchain_core.messages import (
     BaseMessage,
     BaseMessageChunk,
 )
-from langchain_core.pydantic_v1 import Field
 from langchain_core.tools import tool
+from pydantic import Field
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
@@ -736,3 +738,52 @@ def test_accuracy_parallel_tool_calls_easy(
     tool_call1 = response.tool_calls[1]
     assert tool_call1["name"] == "get_current_weather"
     assert tool_call1["args"]["location"] in valid_args
+
+
+@pytest.mark.xfail(reason="Server producing invalid response")
+def test_stream_usage_metadata(
+    tool_model: str,
+    mode: dict,
+) -> None:
+    """
+    This is a regression test for the server. The server was returning
+    usage metadata multiple times resulting in incorrect aggregate
+    usage data.
+
+    We use invoke to get the baseline usage metadata and then compare
+    the usage metadata from the stream to the baseline.
+    """
+
+    @tool
+    def magic(
+        num: int = Field(..., description="Number to magic"),
+    ) -> int:
+        """Magic a number"""
+        return (num**num) % num
+
+    prompt = "What is magic(42)?"
+    llm = ChatNVIDIA(model=tool_model, **mode).bind_tools(
+        [magic], tool_choice="required"
+    )
+    baseline = llm.invoke(prompt)
+    assert isinstance(baseline, AIMessage)
+    assert baseline.usage_metadata is not None
+    baseline_in, baseline_out, baseline_total = (
+        baseline.usage_metadata["input_tokens"],
+        baseline.usage_metadata["output_tokens"],
+        baseline.usage_metadata["total_tokens"],
+    )
+    assert baseline_in + baseline_out == baseline_total
+    response = reduce(add, llm.stream(prompt))
+    assert isinstance(response, AIMessage)
+    assert response.usage_metadata is not None
+    tolerance = 1.25  # allow for streaming to be 25% higher than invoke
+    response_in, response_out, response_total = (
+        response.usage_metadata["input_tokens"],
+        response.usage_metadata["output_tokens"],
+        response.usage_metadata["total_tokens"],
+    )
+    assert response_in + response_out == response_total
+    assert response_in < baseline_in * tolerance
+    assert response_out < baseline_out * tolerance
+    assert response_total < baseline_total * tolerance

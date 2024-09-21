@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import base64
 import enum
-import io
 import logging
 import os
-import sys
+import re
 import urllib.parse
 import warnings
 from typing import (
@@ -19,17 +18,18 @@ from typing import (
     Literal,
     Optional,
     Sequence,
+    Tuple,
     Type,
     Union,
 )
 
-import requests
 from langchain_core.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
 )
 from langchain_core.exceptions import OutputParserException
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
+from langchain_core.language_models.chat_models import LangSmithParams
 from langchain_core.messages import (
     AIMessage,
     AIMessageChunk,
@@ -46,26 +46,17 @@ from langchain_core.outputs import (
     ChatResult,
     Generation,
 )
-from langchain_core.pydantic_v1 import BaseModel, Field, PrivateAttr, root_validator
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_core.utils.pydantic import is_basemodel_subclass
+from pydantic import BaseModel, Field, PrivateAttr
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
 from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
 
 _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
-_DictOrPydanticOrEnumClass = Union[Dict[str, Any], Type[BaseModel], Type[enum.Enum]]
-_DictOrPydanticOrEnum = Union[Dict, BaseModel, enum.Enum]
-
-try:
-    import PIL.Image
-
-    has_pillow = True
-except ImportError:
-    has_pillow = False
 
 logger = logging.getLogger(__name__)
 
@@ -79,46 +70,56 @@ def _is_url(s: str) -> bool:
         return False
 
 
-def _resize_image(img_data: bytes, max_dim: int = 1024) -> str:
-    if not has_pillow:
-        print(  # noqa: T201
-            "Pillow is required to resize images down to reasonable scale."
-            " Please install it using `pip install pillow`."
-            " For now, not resizing; may cause NVIDIA API to fail."
-        )
-        return base64.b64encode(img_data).decode("utf-8")
-    image = PIL.Image.open(io.BytesIO(img_data))
-    max_dim_size = max(image.size)
-    aspect_ratio = max_dim / max_dim_size
-    new_h = int(image.size[1] * aspect_ratio)
-    new_w = int(image.size[0] * aspect_ratio)
-    resized_image = image.resize((new_w, new_h), PIL.Image.Resampling.LANCZOS)
-    output_buffer = io.BytesIO()
-    resized_image.save(output_buffer, format="JPEG")
-    output_buffer.seek(0)
-    resized_b64_string = base64.b64encode(output_buffer.read()).decode("utf-8")
-    return resized_b64_string
-
-
 def _url_to_b64_string(image_source: str) -> str:
-    b64_template = "data:image/png;base64,{b64_string}"
     try:
         if _is_url(image_source):
-            response = requests.get(
-                image_source, headers={"User-Agent": "langchain-nvidia-ai-endpoints"}
-            )
-            response.raise_for_status()
-            encoded = base64.b64encode(response.content).decode("utf-8")
-            if sys.getsizeof(encoded) > 200000:
-                ## (VK) Temporary fix. NVIDIA API has a limit of 250KB for the input.
-                encoded = _resize_image(response.content)
-            return b64_template.format(b64_string=encoded)
+            return image_source
+            # import sys
+            # import io
+            # try:
+            #     import PIL.Image
+            #     has_pillow = True
+            # except ImportError:
+            #     has_pillow = False
+            # def _resize_image(img_data: bytes, max_dim: int = 1024) -> str:
+            #     if not has_pillow:
+            #         print(  # noqa: T201
+            #             "Pillow is required to resize images down to reasonable scale."  # noqa: E501
+            #             " Please install it using `pip install pillow`."
+            #             " For now, not resizing; may cause NVIDIA API to fail."
+            #         )
+            #         return base64.b64encode(img_data).decode("utf-8")
+            #     image = PIL.Image.open(io.BytesIO(img_data))
+            #     max_dim_size = max(image.size)
+            #     aspect_ratio = max_dim / max_dim_size
+            #     new_h = int(image.size[1] * aspect_ratio)
+            #     new_w = int(image.size[0] * aspect_ratio)
+            #     resized_image = image.resize((new_w, new_h), PIL.Image.Resampling.LANCZOS)  # noqa: E501
+            #     output_buffer = io.BytesIO()
+            #     resized_image.save(output_buffer, format="JPEG")
+            #     output_buffer.seek(0)
+            #     resized_b64_string = base64.b64encode(output_buffer.read()).decode("utf-8")  # noqa: E501
+            #     return resized_b64_string
+            # b64_template = "data:image/png;base64,{b64_string}"
+            # response = requests.get(
+            #     image_source, headers={"User-Agent": "langchain-nvidia-ai-endpoints"}
+            # )
+            # response.raise_for_status()
+            # encoded = base64.b64encode(response.content).decode("utf-8")
+            # if sys.getsizeof(encoded) > 200000:
+            #     ## (VK) Temporary fix. NVIDIA API has a limit of 250KB for the input.
+            #     encoded = _resize_image(response.content)
+            # return b64_template.format(b64_string=encoded)
         elif image_source.startswith("data:image"):
             return image_source
         elif os.path.exists(image_source):
             with open(image_source, "rb") as f:
-                encoded = base64.b64encode(f.read()).decode("utf-8")
-                return b64_template.format(b64_string=encoded)
+                image_data = f.read()
+                import imghdr
+
+                image_type = imghdr.what(None, image_data)
+                encoded = base64.b64encode(image_data).decode("utf-8")
+                return f"data:image/{image_type};base64,{encoded}"
         else:
             raise ValueError(
                 "The provided string is not a valid URL, base64, or file path."
@@ -127,7 +128,9 @@ def _url_to_b64_string(image_source: str) -> str:
         raise ValueError(f"Unable to process the provided image source: {e}")
 
 
-def _nv_vlm_adjust_input(message_dict: Dict[str, Any]) -> Dict[str, Any]:
+def _nv_vlm_adjust_input(
+    message_dict: Dict[str, Any], model_type: str
+) -> Dict[str, Any]:
     """
     The NVIDIA VLM API input message.content:
         {
@@ -170,8 +173,71 @@ def _nv_vlm_adjust_input(message_dict: Dict[str, Any]) -> Dict[str, Any]:
                         isinstance(part["image_url"], dict)
                         and "url" in part["image_url"]
                     ):
-                        part["image_url"] = _url_to_b64_string(part["image_url"]["url"])
+                        url = _url_to_b64_string(part["image_url"]["url"])
+                        if model_type == "nv-vlm":
+                            part["image_url"] = url
+                        else:
+                            part["image_url"]["url"] = url
     return message_dict
+
+
+def _nv_vlm_get_asset_ids(
+    content: Union[str, List[Union[str, Dict[str, Any]]]],
+) -> List[str]:
+    """
+    VLM APIs accept asset IDs as input in two forms:
+     - content = [{"image_url": {"url": "data:image/{type};asset_id,{asset_id}"}}*]
+     - content = .*<img src="data:image/{type};asset_id,{asset_id}"/>.*
+
+    This function extracts asset IDs from the message content.
+    """
+
+    def extract_asset_id(data: str) -> List[str]:
+        pattern = re.compile(r'data:image/[^;]+;asset_id,([^"\'\s]+)')
+        return pattern.findall(data)
+
+    asset_ids = []
+    if isinstance(content, str):
+        asset_ids.extend(extract_asset_id(content))
+    elif isinstance(content, list):
+        for part in content:
+            if isinstance(part, str):
+                asset_ids.extend(extract_asset_id(part))
+            elif isinstance(part, dict) and "image_url" in part:
+                image_url = part["image_url"]
+                if isinstance(image_url, dict) and "url" in image_url:
+                    asset_ids.extend(extract_asset_id(image_url["url"]))
+
+    return asset_ids
+
+
+def _process_for_vlm(
+    inputs: List[Dict[str, Any]],
+    model: Optional[Model],  # not optional, Optional for type alignment
+) -> Tuple[List[Dict[str, Any]], Dict[str, str]]:
+    """
+    Process inputs for NVIDIA VLM models.
+
+    This function processes the input messages for NVIDIA VLM models.
+    It extracts asset IDs from the input messages and adds them to the
+    headers for the NVIDIA VLM API.
+    """
+    if not model or not model.model_type:
+        return inputs, {}
+
+    extra_headers = {}
+    if "vlm" in model.model_type:
+        asset_ids = []
+        for input in inputs:
+            if "content" in input:
+                asset_ids.extend(_nv_vlm_get_asset_ids(input["content"]))
+        if asset_ids:
+            extra_headers["NVCF-INPUT-ASSET-REFERENCES"] = ",".join(asset_ids)
+        inputs = [_nv_vlm_adjust_input(message, model.model_type) for message in inputs]
+    return inputs, extra_headers
+
+
+_DEFAULT_MODEL_NAME: str = "meta/llama3-8b-instruct"
 
 
 class ChatNVIDIA(BaseChatModel):
@@ -188,31 +254,20 @@ class ChatNVIDIA(BaseChatModel):
     """
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
-    _default_model_name: str = "meta/llama3-8b-instruct"
-    _default_base_url: str = "https://integrate.api.nvidia.com/v1"
-    base_url: str = Field(
+    base_url: Optional[str] = Field(
+        default=None,
         description="Base url for model listing an invocation",
     )
-    model: Optional[str] = Field(description="Name of the model to invoke")
-    temperature: Optional[float] = Field(description="Sampling temperature in [0, 1]")
+    model: Optional[str] = Field(None, description="Name of the model to invoke")
+    temperature: Optional[float] = Field(
+        None, description="Sampling temperature in [0, 1]"
+    )
     max_tokens: Optional[int] = Field(
         1024, description="Maximum # of tokens to generate"
     )
-    top_p: Optional[float] = Field(description="Top-p for distribution sampling")
-    seed: Optional[int] = Field(description="The seed for deterministic results")
-    stop: Optional[Sequence[str]] = Field(description="Stop words (cased)")
-
-    _base_url_var = "NVIDIA_BASE_URL"
-
-    @root_validator(pre=True)
-    def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        values["base_url"] = (
-            values.get(cls._base_url_var.lower())
-            or values.get("base_url")
-            or os.getenv(cls._base_url_var)
-            or cls._default_base_url
-        )
-        return values
+    top_p: Optional[float] = Field(None, description="Top-p for distribution sampling")
+    seed: Optional[int] = Field(None, description="The seed for deterministic results")
+    stop: Optional[Sequence[str]] = Field(None, description="Stop words (cased)")
 
     def __init__(self, **kwargs: Any):
         """
@@ -248,17 +303,23 @@ class ChatNVIDIA(BaseChatModel):
             )
         """
         super().__init__(**kwargs)
+        # allow nvidia_base_url as an alternative for base_url
+        base_url = kwargs.pop("nvidia_base_url", self.base_url)
+        # allow nvidia_api_key as an alternative for api_key
+        api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
         self._client = _NVIDIAClient(
-            base_url=self.base_url,
-            model_name=self.model,
-            default_hosted_model_name=self._default_model_name,
-            api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
+            **({"base_url": base_url} if base_url else {}),  # only pass if set
+            mdl_name=self.model,
+            default_hosted_model_name=_DEFAULT_MODEL_NAME,
+            **({"api_key": api_key} if api_key else {}),  # only pass if set
             infer_path="{base_url}/chat/completions",
             cls=self.__class__.__name__,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
-        self.model = self._client.model_name
+        self.model = self._client.mdl_name
+        # same for base_url
+        self.base_url = self._client.base_url
 
     @property
     def available_models(self) -> List[Model]:
@@ -282,6 +343,28 @@ class ChatNVIDIA(BaseChatModel):
         """Return type of NVIDIA AI Foundation Model Interface."""
         return "chat-nvidia-ai-playground"
 
+    def _get_ls_params(
+        self,
+        stop: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> LangSmithParams:
+        """Get standard LangSmith parameters for tracing."""
+        params = self._get_invocation_params(stop=stop, **kwargs)
+        return LangSmithParams(
+            ls_provider="NVIDIA",
+            # error: Incompatible types (expression has type "Optional[str]",
+            #  TypedDict item "ls_model_name" has type "str")  [typeddict-item]
+            ls_model_name=self.model or "UNKNOWN",
+            ls_model_type="chat",
+            ls_temperature=params.get("temperature", self.temperature),
+            ls_max_tokens=params.get("max_tokens", self.max_tokens),
+            # mypy error: Extra keys ("ls_top_p", "ls_seed")
+            #  for TypedDict "LangSmithParams"  [typeddict-item]
+            # ls_top_p=params.get("top_p", self.top_p),
+            # ls_seed=params.get("seed", self.seed),
+            ls_stop=params.get("stop", self.stop),
+        )
+
     def _generate(
         self,
         messages: List[BaseMessage],
@@ -290,11 +373,12 @@ class ChatNVIDIA(BaseChatModel):
         **kwargs: Any,
     ) -> ChatResult:
         inputs = [
-            _nv_vlm_adjust_input(message)
+            message
             for message in [convert_message_to_dict(message) for message in messages]
         ]
+        inputs, extra_headers = _process_for_vlm(inputs, self._client.model)
         payload = self._get_payload(inputs=inputs, stop=stop, stream=False, **kwargs)
-        response = self._client.get_req(payload=payload)
+        response = self._client.get_req(payload=payload, extra_headers=extra_headers)
         responses, _ = self._client.postprocess(response)
         self._set_callback_out(responses, run_manager)
         parsed_response = self._custom_postprocess(responses, streaming=False)
@@ -313,11 +397,28 @@ class ChatNVIDIA(BaseChatModel):
     ) -> Iterator[ChatGenerationChunk]:
         """Allows streaming to model!"""
         inputs = [
-            _nv_vlm_adjust_input(message)
+            message
             for message in [convert_message_to_dict(message) for message in messages]
         ]
-        payload = self._get_payload(inputs=inputs, stop=stop, stream=True, **kwargs)
-        for response in self._client.get_req_stream(payload=payload):
+        inputs, extra_headers = _process_for_vlm(inputs, self._client.model)
+        payload = self._get_payload(
+            inputs=inputs,
+            stop=stop,
+            stream=True,
+            stream_options={"include_usage": True},
+            **kwargs,
+        )
+        # todo: get vlm endpoints fixed and remove this
+        #       vlm endpoints do not accept standard stream_options parameter
+        if (
+            self._client.model
+            and self._client.model.model_type
+            and self._client.model.model_type == "nv-vlm"
+        ):
+            payload.pop("stream_options")
+        for response in self._client.get_req_stream(
+            payload=payload, extra_headers=extra_headers
+        ):
             self._set_callback_out(response, run_manager)
             parsed_response = self._custom_postprocess(response, streaming=True)
             # for pre 0.2 compatibility w/ ChatMessageChunk
@@ -354,6 +455,12 @@ class ChatNVIDIA(BaseChatModel):
             "additional_kwargs": {},
             "response_metadata": {},
         }
+        if token_usage := kw_left.pop("token_usage", None):
+            out_dict["usage_metadata"] = {
+                "input_tokens": token_usage.get("prompt_tokens", 0),
+                "output_tokens": token_usage.get("completion_tokens", 0),
+                "total_tokens": token_usage.get("total_tokens", 0),
+            }
         # "tool_calls" is set for invoke and stream responses
         if tool_calls := kw_left.pop("tool_calls", None):
             assert isinstance(
@@ -447,7 +554,7 @@ class ChatNVIDIA(BaseChatModel):
 
     def bind_tools(
         self,
-        tools: Sequence[Union[Dict[str, Any], Type[BaseModel], Callable, BaseTool]],
+        tools: Sequence[Union[Dict[str, Any], Type, Callable, BaseTool]],
         *,
         tool_choice: Optional[
             Union[dict, str, Literal["auto", "none", "any", "required"], bool]
@@ -533,11 +640,11 @@ class ChatNVIDIA(BaseChatModel):
     # as a result need to type ignore for the schema parameter and return type.
     def with_structured_output(  # type: ignore
         self,
-        schema: _DictOrPydanticOrEnumClass,
+        schema: Union[Dict, Type],
         *,
         include_raw: bool = False,
         **kwargs: Any,
-    ) -> Runnable[LanguageModelInput, _DictOrPydanticOrEnum]:
+    ) -> Runnable[LanguageModelInput, Union[Dict, BaseModel]]:
         """
         Bind a structured output schema to the model.
 
@@ -574,7 +681,7 @@ class ChatNVIDIA(BaseChatModel):
         1. If a Pydantic schema is provided, the model will return a Pydantic object.
            Example:
         ```
-        from langchain_core.pydantic_v1 import BaseModel, Field
+        from pydantic import BaseModel, Field
         class Joke(BaseModel):
             setup: str = Field(description="The setup of the joke")
             punchline: str = Field(description="The punchline to the joke")
@@ -732,7 +839,11 @@ class ChatNVIDIA(BaseChatModel):
                     return None
 
             output_parser = ForgivingPydanticOutputParser(pydantic_object=schema)
-            nvext_param = {"guided_json": schema.schema()}
+            if hasattr(schema, "model_json_schema"):
+                json_schema = schema.model_json_schema()
+            else:
+                json_schema = schema.schema()
+            nvext_param = {"guided_json": json_schema}
 
         else:
             raise ValueError(

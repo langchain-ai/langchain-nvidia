@@ -1,21 +1,23 @@
 """Embeddings Components Derived from NVEModel/Embeddings"""
 
-import os
 import warnings
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.outputs.llm_result import LLMResult
-from langchain_core.pydantic_v1 import (
+from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     PrivateAttr,
-    root_validator,
 )
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
 from langchain_nvidia_ai_endpoints.callbacks import usage_callback_var
+
+_DEFAULT_MODEL_NAME: str = "nvidia/nv-embedqa-e5-v5"
+_DEFAULT_BATCH_SIZE: int = 50
 
 
 class NVIDIAEmbeddings(BaseModel, Embeddings):
@@ -29,17 +31,16 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         too long.
     """
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(
+        validate_assignment=True,
+    )
 
     _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
-    _default_model_name: str = "nvidia/nv-embedqa-e5-v5"
-    _default_max_batch_size: int = 50
-    _default_base_url: str = "https://integrate.api.nvidia.com/v1"
-    base_url: str = Field(
+    base_url: Optional[str] = Field(
+        default=None,
         description="Base url for model listing an invocation",
     )
-    model: Optional[str] = Field(description="Name of the model to invoke")
+    model: Optional[str] = Field(None, description="Name of the model to invoke")
     truncate: Literal["NONE", "START", "END"] = Field(
         default="NONE",
         description=(
@@ -47,19 +48,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             "Default is 'NONE', which raises an error if an input is too long."
         ),
     )
-    max_batch_size: int = Field(default=_default_max_batch_size)
-
-    _base_url_var = "NVIDIA_BASE_URL"
-
-    @root_validator(pre=True)
-    def _validate_base_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        values["base_url"] = (
-            values.get(cls._base_url_var.lower())
-            or values.get("base_url")
-            or os.getenv(cls._base_url_var)
-            or cls._default_base_url
-        )
-        return values
+    max_batch_size: int = Field(default=_DEFAULT_BATCH_SIZE)
 
     def __init__(self, **kwargs: Any):
         """
@@ -90,17 +79,23 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")
         """
         super().__init__(**kwargs)
+        # allow nvidia_base_url as an alternative for base_url
+        base_url = kwargs.pop("nvidia_base_url", self.base_url)
+        # allow nvidia_api_key as an alternative for api_key
+        api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
         self._client = _NVIDIAClient(
-            base_url=self.base_url,
-            model_name=self.model,
-            default_hosted_model_name=self._default_model_name,
-            api_key=kwargs.get("nvidia_api_key", kwargs.get("api_key", None)),
+            **({"base_url": base_url} if base_url else {}),  # only pass if set
+            mdl_name=self.model,
+            default_hosted_model_name=_DEFAULT_MODEL_NAME,
+            **({"api_key": api_key} if api_key else {}),  # only pass if set
             infer_path="{base_url}/embeddings",
             cls=self.__class__.__name__,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
-        self.model = self._client.model_name
+        self.model = self._client.mdl_name
+        # same for base_url
+        self.base_url = self._client.base_url
 
         # todo: remove when nvolveqa_40k is removed from MODEL_TABLE
         if "model" in kwargs and kwargs["model"] in [
