@@ -1,6 +1,5 @@
 """Embeddings Components Derived from NVEModel/Embeddings"""
 
-import warnings
 from typing import Any, List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
@@ -96,16 +95,6 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         self.model = self._client.mdl_name
         # same for base_url
         self.base_url = self._client.base_url
-
-        # todo: remove when nvolveqa_40k is removed from MODEL_TABLE
-        if "model" in kwargs and kwargs["model"] in [
-            "playground_nvolveqa_40k",
-            "nvolveqa_40k",
-        ]:
-            warnings.warn(
-                'Setting truncate="END" for nvolveqa_40k backward compatibility'
-            )
-            self.truncate = "END"
 
     @property
     def available_models(self) -> List[Model]:

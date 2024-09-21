@@ -53,8 +53,6 @@ async def test_embed_documents_multiple_async(embedding_model: str, mode: dict) 
 
 
 def test_embed_query_long_text(embedding_model: str, mode: dict) -> None:
-    if embedding_model in ["playground_nvolveqa_40k", "nvolveqa_40k"]:
-        pytest.skip("Skip test for nvolveqa-40k due to compat override of truncate")
     embedding = NVIDIAEmbeddings(model=embedding_model, **mode)
     text = "nvidia " * 10240
     with pytest.raises(Exception):
@@ -71,8 +69,6 @@ def test_embed_documents_batched_texts(embedding_model: str, mode: dict) -> None
 
 
 def test_embed_documents_mixed_long_texts(embedding_model: str, mode: dict) -> None:
-    if embedding_model in ["playground_nvolveqa_40k", "nvolveqa_40k"]:
-        pytest.skip("Skip test for nvolveqa-40k due to compat override of truncate")
     embedding = NVIDIAEmbeddings(model=embedding_model, **mode)
     count = _DEFAULT_BATCH_SIZE * 2 - 1
     texts = ["nvidia " * 32] * count
@@ -99,17 +95,6 @@ def test_embed_documents_truncate(
     texts[len(texts) // 2] = "nvidia " * 10240
     output = embedding.embed_documents(texts)
     assert len(output) == count
-
-
-@pytest.mark.parametrize("nvolveqa_40k", ["playground_nvolveqa_40k", "nvolveqa_40k"])
-def test_embed_nvolveqa_40k_compat(nvolveqa_40k: str, mode: dict) -> None:
-    if mode:
-        pytest.skip("Test only relevant for API Catalog")
-    with pytest.warns(UserWarning):
-        embedding = NVIDIAEmbeddings(model=nvolveqa_40k, truncate="NONE", **mode)
-    text = "nvidia " * 2048
-    output = embedding.embed_query(text)
-    assert len(output) > 3
 
 
 # todo: test max_length > max length accepted by the model
