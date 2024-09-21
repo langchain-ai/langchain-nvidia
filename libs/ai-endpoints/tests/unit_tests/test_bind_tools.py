@@ -2,7 +2,7 @@ import json
 import warnings
 from functools import reduce
 from operator import add
-from typing import Any, List
+from typing import Annotated, Any, List
 
 import pytest
 import requests_mock
@@ -13,8 +13,8 @@ from langchain_core.messages import (
     HumanMessage,
     ToolMessage,
 )
-from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.tools import tool
+from pydantic import BaseModel, Field
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
@@ -32,9 +32,18 @@ class xxyyzz_cls(BaseModel):
 
 
 @tool
-def xxyyzz_tool(
+def xxyyzz_tool_field(
     a: int = Field(..., description="First number"),
     b: int = Field(..., description="Second number"),
+) -> int:
+    """xxyyzz two numbers"""
+    return 42
+
+
+@tool
+def xxyyzz_tool_annotated(
+    a: Annotated[int, "First number"],
+    b: Annotated[int, "Second number"],
 ) -> int:
     """xxyyzz two numbers"""
     return 42
@@ -45,9 +54,10 @@ def xxyyzz_tool(
     [
         ([xxyyzz_func], "xxyyzz_func"),
         ([xxyyzz_cls], "xxyyzz_cls"),
-        ([xxyyzz_tool], "xxyyzz_tool"),
+        ([xxyyzz_tool_field], "xxyyzz_tool_field"),
+        ([xxyyzz_tool_annotated], "xxyyzz_tool_annotated"),
     ],
-    ids=["func", "cls", "tool"],
+    ids=["func", "cls", "tool_field", "tool_annotated"],
 )
 def test_bind_tool_and_select(tools: Any, choice: str) -> None:
     warnings.filterwarnings(
@@ -62,9 +72,10 @@ def test_bind_tool_and_select(tools: Any, choice: str) -> None:
         ([], "wrong"),
         ([xxyyzz_func], "wrong_xxyyzz_func"),
         ([xxyyzz_cls], "wrong_xxyyzz_cls"),
-        ([xxyyzz_tool], "wrong_xxyyzz_tool"),
+        ([xxyyzz_tool_field], "wrong_xxyyzz_tool_field"),
+        ([xxyyzz_tool_annotated], "wrong_xxyyzz_tool_annotated"),
     ],
-    ids=["empty", "func", "cls", "tool"],
+    ids=["empty", "func", "cls", "tool_field", "tool_annotated"],
 )
 def test_bind_tool_and_select_negative(tools: Any, choice: str) -> None:
     warnings.filterwarnings(
@@ -163,7 +174,7 @@ def test_invoke_response_parsing(
             r'"{\""',
             r'"input\""',
             r'"\":"',
-            r"3",
+            r'"3"',
             r'"}"',
         ],
         [r'"{\"intput\": 3}"'],

@@ -20,19 +20,22 @@ from typing import (
 from urllib.parse import urlparse, urlunparse
 
 import requests
-from langchain_core.pydantic_v1 import (
+from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     PrivateAttr,
     SecretStr,
-    root_validator,
-    validator,
+    field_validator,
 )
 from requests.models import Response
 
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, determine_model
 
 logger = logging.getLogger(__name__)
+
+_API_KEY_VAR = "NVIDIA_API_KEY"
+_BASE_URL_VAR = "NVIDIA_BASE_URL"
 
 
 class _NVIDIAClient(BaseModel):
@@ -41,21 +44,22 @@ class _NVIDIAClient(BaseModel):
     """
 
     default_hosted_model_name: str = Field(..., description="Default model name to use")
-    model_name: Optional[str] = Field(..., description="Name of the model to invoke")
+    # "mdl_name" because "model_" is a protected namespace in pydantic
+    mdl_name: Optional[str] = Field(..., description="Name of the model to invoke")
     model: Optional[Model] = Field(None, description="The model to invoke")
     is_hosted: bool = Field(True)
     cls: str = Field(..., description="Class Name")
 
     # todo: add a validator for requests.Response (last_response attribute) and
     #       remove arbitrary_types_allowed=True
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+    )
 
     ## Core defaults. These probably should not be changed
-    _api_key_var = "NVIDIA_API_KEY"
     base_url: str = Field(
         default_factory=lambda: os.getenv(
-            "NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"
+            _BASE_URL_VAR, "https://integrate.api.nvidia.com/v1"
         ),
         description="Base URL for standard inference",
     )
@@ -73,7 +77,14 @@ class _NVIDIAClient(BaseModel):
     )
     get_session_fn: Callable = Field(requests.Session)
 
-    api_key: Optional[SecretStr] = Field(description="API Key for service of choice")
+    api_key: Optional[SecretStr] = Field(
+        default_factory=lambda: SecretStr(
+            os.getenv(_API_KEY_VAR, "INTERNAL_LCNVAIE_ERROR")
+        )
+        if _API_KEY_VAR in os.environ
+        else None,
+        description="API Key for service of choice",
+    )
 
     ## Generation arguments
     timeout: float = Field(
@@ -87,7 +98,7 @@ class _NVIDIAClient(BaseModel):
         description="Interval (in sec) between polling attempts after a 202 response",
     )
     last_inputs: Optional[dict] = Field(
-        description="Last inputs sent over to the server"
+        default={}, description="Last inputs sent over to the server"
     )
     last_response: Response = Field(
         None, description="Last response sent from the server"
@@ -113,7 +124,7 @@ class _NVIDIAClient(BaseModel):
     ###################################################################################
     ################### Validation and Initialization #################################
 
-    @validator("base_url")
+    @field_validator("base_url")
     def _validate_base_url(cls, v: str) -> str:
         ## Making sure /v1 in added to the url
         if v is not None:
@@ -132,17 +143,6 @@ class _NVIDIAClient(BaseModel):
             v = urlunparse((parsed.scheme, parsed.netloc, "v1", None, None, None))
 
         return v
-
-    @root_validator(pre=True)
-    def _preprocess_args(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        # if api_key is not provided or None,
-        #  try to get it from the environment
-        # we can't use Field(default_factory=...)
-        #  because construction may happen with api_key=None
-        if values.get("api_key") is None:
-            values["api_key"] = os.getenv(cls._api_key_var)
-
-        return values
 
     # final validation after model is constructed
     # todo: when pydantic v2 is available,
@@ -164,10 +164,10 @@ class _NVIDIAClient(BaseModel):
                 )
 
             # set default model for hosted endpoint
-            if not self.model_name:
-                self.model_name = self.default_hosted_model_name
+            if not self.mdl_name:
+                self.mdl_name = self.default_hosted_model_name
 
-            if model := determine_model(self.model_name):
+            if model := determine_model(self.mdl_name):
                 if not model.client:
                     warnings.warn(f"Unable to determine validity of {model.id}")
                 elif model.client != self.cls:
@@ -185,27 +185,27 @@ class _NVIDIAClient(BaseModel):
                 candidates = [
                     model
                     for model in self.available_models
-                    if model.id == self.model_name
+                    if model.id == self.mdl_name
                 ]
                 assert len(candidates) <= 1, (
-                    f"Multiple candidates for {self.model_name} "
+                    f"Multiple candidates for {self.mdl_name} "
                     f"in `available_models`: {candidates}"
                 )
                 if candidates:
                     model = candidates[0]
                     warnings.warn(
-                        f"Found {self.model_name} in available_models, but type is "
+                        f"Found {self.mdl_name} in available_models, but type is "
                         "unknown and inference may fail."
                     )
                 else:
                     raise ValueError(
-                        f"Model {self.model_name} is unknown, check `available_models`"
+                        f"Model {self.mdl_name} is unknown, check `available_models`"
                     )
             self.model = model
-            self.model_name = self.model.id  # name may change because of aliasing
+            self.mdl_name = self.model.id  # name may change because of aliasing
         else:
             # set default model
-            if not self.model_name:
+            if not self.mdl_name:
                 valid_models = [
                     model
                     for model in self.available_models
@@ -213,9 +213,9 @@ class _NVIDIAClient(BaseModel):
                 ]
                 self.model = next(iter(valid_models), None)
                 if self.model:
-                    self.model_name = self.model.id
+                    self.mdl_name = self.model.id
                     warnings.warn(
-                        f"Default model is set as: {self.model_name}. \n"
+                        f"Default model is set as: {self.mdl_name}. \n"
                         "Set model using model parameter. \n"
                         "To get available models use available_models property.",
                         UserWarning,
@@ -232,15 +232,15 @@ class _NVIDIAClient(BaseModel):
 
     @property
     def lc_secrets(self) -> Dict[str, str]:
-        return {"api_key": self._api_key_var}
+        return {"api_key": _API_KEY_VAR}
 
     @property
     def lc_attributes(self) -> Dict[str, Any]:
         attributes: Dict[str, Any] = {}
         attributes["base_url"] = self.base_url
 
-        if self.model_name:
-            attributes["model"] = self.model_name
+        if self.mdl_name:
+            attributes["model"] = self.mdl_name
 
         return attributes
 
@@ -331,11 +331,15 @@ class _NVIDIAClient(BaseModel):
         self,
         invoke_url: str,
         payload: Optional[dict] = {},
+        extra_headers: dict = {},
     ) -> Tuple[Response, requests.Session]:
         """Method for posting to the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
-            "headers": self.headers_tmpl["call"],
+            "headers": {
+                **self.headers_tmpl["call"],
+                **extra_headers,
+            },
             "json": payload,
         }
         session = self.get_session_fn()
@@ -443,9 +447,12 @@ class _NVIDIAClient(BaseModel):
     def get_req(
         self,
         payload: dict = {},
+        extra_headers: dict = {},
     ) -> Response:
         """Post to the API."""
-        response, session = self._post(self.infer_url, payload)
+        response, session = self._post(
+            self.infer_url, payload, extra_headers=extra_headers
+        )
         return self._wait(response, session)
 
     def postprocess(
@@ -519,10 +526,14 @@ class _NVIDIAClient(BaseModel):
     def get_req_stream(
         self,
         payload: dict,
+        extra_headers: dict = {},
     ) -> Iterator[Dict]:
         self.last_inputs = {
             "url": self.infer_url,
-            "headers": self.headers_tmpl["stream"],
+            "headers": {
+                **self.headers_tmpl["stream"],
+                **extra_headers,
+            },
             "json": payload,
         }
 
@@ -530,7 +541,7 @@ class _NVIDIAClient(BaseModel):
             stream=True, **self.__add_authorization(self.last_inputs)
         )
         self._try_raise(response)
-        call = self.copy()
+        call: _NVIDIAClient = self.model_copy()
 
         def out_gen() -> Generator[dict, Any, Any]:
             ## Good for client, since it allows self.last_inputs

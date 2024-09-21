@@ -6,6 +6,7 @@ Note: These tests are designed to validate the functionality of NVIDIAEmbeddings
 import pytest
 
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
+from langchain_nvidia_ai_endpoints.embeddings import _DEFAULT_BATCH_SIZE
 
 
 def test_embed_query(embedding_model: str, mode: dict) -> None:
@@ -60,7 +61,7 @@ def test_embed_query_long_text(embedding_model: str, mode: dict) -> None:
 
 def test_embed_documents_batched_texts(embedding_model: str, mode: dict) -> None:
     embedding = NVIDIAEmbeddings(model=embedding_model, **mode)
-    count = NVIDIAEmbeddings._default_max_batch_size * 2 + 1
+    count = _DEFAULT_BATCH_SIZE * 2 + 1
     texts = ["nvidia " * 32] * count
     output = embedding.embed_documents(texts)
     assert len(output) == count
@@ -69,7 +70,7 @@ def test_embed_documents_batched_texts(embedding_model: str, mode: dict) -> None
 
 def test_embed_documents_mixed_long_texts(embedding_model: str, mode: dict) -> None:
     embedding = NVIDIAEmbeddings(model=embedding_model, **mode)
-    count = NVIDIAEmbeddings._default_max_batch_size * 2 - 1
+    count = _DEFAULT_BATCH_SIZE * 2 - 1
     texts = ["nvidia " * 32] * count
     texts[len(texts) // 2] = "nvidia " * 10240
     with pytest.raises(Exception):
@@ -96,7 +97,5 @@ def test_embed_documents_truncate(
     assert len(output) == count
 
 
-# todo: test model_type ("passage" and embed_query,
-#                        "query" and embed_documents; compare results)
 # todo: test max_length > max length accepted by the model
 # todo: test max_batch_size > max batch size accepted by the model

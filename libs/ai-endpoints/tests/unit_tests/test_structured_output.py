@@ -4,15 +4,14 @@ from typing import Callable, List, Optional, Type
 
 import pytest
 import requests_mock
-from langchain_core.pydantic_v1 import BaseModel as lc_pydanticV1BaseModel
-from langchain_core.pydantic_v1 import Field
 from pydantic import BaseModel as pydanticV2BaseModel  # ignore: check_pydantic
+from pydantic import Field
 from pydantic.v1 import BaseModel as pydanticV1BaseModel  # ignore: check_pydantic
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
 
-class Joke(lc_pydanticV1BaseModel):
+class Joke(pydanticV2BaseModel):
     """Joke to tell user."""
 
     setup: str = Field(description="The setup of the joke")
@@ -39,7 +38,7 @@ def test_include_raw() -> None:
 
     with pytest.raises(NotImplementedError):
         ChatNVIDIA(api_key="BOGUS").with_structured_output(
-            Joke.schema(), include_raw=True
+            Joke.model_json_schema(), include_raw=True
         )
 
 
@@ -145,11 +144,10 @@ def test_stream_enum_incomplete(
 @pytest.mark.parametrize(
     "pydanticBaseModel",
     [
-        lc_pydanticV1BaseModel,
         pydanticV1BaseModel,
         pydanticV2BaseModel,
     ],
-    ids=["lc-pydantic-v1", "pydantic-v1", "pydantic-v2"],
+    ids=["pydantic-v1", "pydantic-v2"],
 )
 def test_pydantic_version(
     requests_mock: requests_mock.Mocker,
@@ -185,6 +183,7 @@ def test_pydantic_version(
     class Person(pydanticBaseModel):  # type: ignore
         name: str
 
+    warnings.filterwarnings("ignore", r".*not known to support structured output.*")
     llm = ChatNVIDIA(api_key="BOGUS").with_structured_output(Person)
     response = llm.invoke("This is ignored.")
     assert isinstance(response, Person)

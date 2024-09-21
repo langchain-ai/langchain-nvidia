@@ -11,8 +11,8 @@ license = "MIT"
 "Source Code" = "https://github.com/langchain-ai/langchain-nvidia/tree/main/libs/ai-endpoints"
 
 [tool.poetry.dependencies]
-python = ">=3.8.1,<4.0"
-langchain-core = ">=0.2.22,<0.3"
+python = ">=3.9,<4.0"
+langchain-core = ">=0.3.0,<0.4"
 aiohttp = "^3.9.1"
 pillow = ">=10.0.0,<11.0.0"
 
@@ -26,8 +26,9 @@ pytest-mock = "^3.10.0"
 syrupy = "^4.0.2"
 pytest-watcher = "^0.3.4"
 pytest-asyncio = "^0.21.1"
-langchain-core = { git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core", tag = "langchain-core==0.2.40" }
+langchain-core = { git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core" }
 requests-mock = "^1.11.0"
+langchain-standard-tests = { git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/standard-tests" }
 faker = "^24.4.0"
 
 [tool.poetry.group.codespell]
@@ -52,13 +53,13 @@ ruff = "^0.1.5"
 mypy = "^0.991"
 types-requests = "^2.31.0.10"
 types-pillow = "^10.2.0.20240125"
-langchain-core = { git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core", tag = "langchain-core==0.2.40" }
+langchain-core = { git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core" }
 
 [tool.poetry.group.dev]
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-langchain-core = { git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core", tag = "langchain-core==0.2.40" }
+langchain-core = { git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core" }
 
 [tool.ruff.lint]
 select = [
