@@ -266,8 +266,13 @@ def asset_id() -> str:
     [
         [
             {
-                "type": "image_url",
-                "image_url": {"url": "data:image/jpg;asset_id,{asset_id}"},
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "data:image/jpg;asset_id,{asset_id}"},
+                    }
+                ],
             }
         ],
         [
@@ -288,22 +293,29 @@ def test_vlm_asset_id(
     func: str,
     asset_id: str,
 ) -> None:
-    if isinstance(content, str):
-        content = content.format(asset_id=asset_id)
-    elif isinstance(content, list):
-        for item in content:
-            if isinstance(item, str):
-                item = item.format(asset_id=asset_id)
-            elif isinstance(item, dict):
-                item["image_url"]["url"] = item["image_url"]["url"].format(
-                    asset_id=asset_id
-                )
+    def fill(
+        item: Any,
+        asset_id: str,
+    ) -> Union[str, Any]:
+        # do not mutate item, mutation will cause cross test contamination
+        result: Any
+        if isinstance(item, str):
+            result = item.format(asset_id=asset_id)
+        elif isinstance(item, BaseMessage):
+            result = item.model_copy(update={"content": fill(item.content, asset_id)})
+        elif isinstance(item, list):
+            result = [fill(sub_item, asset_id) for sub_item in item]
+        elif isinstance(item, dict):
+            result = {key: fill(value, asset_id) for key, value in item.items()}
+        return result
+
+    content = fill(content, asset_id)
 
     chat = ChatNVIDIA(model=vlm_model, **mode)
     if func == "invoke":
-        response = chat.invoke([HumanMessage(content=content)])
+        response = chat.invoke(content)
         assert isinstance(response, BaseMessage)
         assert isinstance(response.content, str)
     if func == "stream":
-        for token in chat.stream([HumanMessage(content=content)]):
+        for token in chat.stream(content):
             assert isinstance(token.content, str)
