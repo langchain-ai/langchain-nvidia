@@ -2,7 +2,7 @@ import os
 import warnings
 from typing import Literal, Optional
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class Model(BaseModel):
@@ -19,6 +19,12 @@ class Model(BaseModel):
 
     All aliases are deprecated and will trigger a warning when used.
     """
+
+    # https://docs.pydantic.dev/latest/api/config/#protected-namespaces
+    # we disable this protection to avoid warnings from `model_type`
+    model_config = ConfigDict(
+        protected_namespaces=(),
+    )
 
     id: str
     # why do we have a model_type? because ChatNVIDIA can speak both chat and vlm.
