@@ -418,6 +418,11 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "nvidia/llama-3.1-nemotron-51b-instruct": Model(
+        id="nvidia/llama-3.1-nemotron-51b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
