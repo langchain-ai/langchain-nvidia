@@ -413,6 +413,11 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "qwen/qwen2-7b-instruct": Model(
+        id="qwen/qwen2-7b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
