@@ -1,10 +1,7 @@
 import warnings
-from typing import Any, Generator
-
-import pytest
+from typing import Any
 
 from langchain_nvidia_ai_endpoints import Model, register_model
-from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE
 
 
 def test_model_listing(public_class: Any, mock_model: str) -> None:
@@ -14,19 +11,9 @@ def test_model_listing(public_class: Any, mock_model: str) -> None:
     assert any(model.id == mock_model for model in models)
 
 
-@pytest.fixture
-def model_table() -> Generator[None, None, None]:
-    """
-    Reset MODEL_TABLE between tests.
-    """
-    original = MODEL_TABLE.copy()
-    yield
-    MODEL_TABLE.clear()
-    MODEL_TABLE.update(original)
-
-
 def test_model_listing_hosted(
-    public_class: Any, mock_model: str, model_table: None
+    public_class: Any,
+    mock_model: str,
 ) -> None:
     model = Model(
         id=mock_model,

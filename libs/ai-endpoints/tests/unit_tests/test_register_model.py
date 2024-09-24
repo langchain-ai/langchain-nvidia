@@ -36,7 +36,7 @@ def test_mismatched_type_client(model_type: str, client: str) -> None:
     with pytest.raises(ValueError) as e:
         register_model(
             Model(
-                id=f"{model_type}-{client}",
+                id="model",
                 model_type=model_type,
                 client=client,
                 endpoint="BOGUS",
@@ -56,7 +56,7 @@ def test_duplicate_model_warns() -> None:
     assert "Overriding" in str(record[0].message)
 
 
-def test_registered_model_usable(public_class: type) -> None:
+def test_registered_model_usable(public_class: type, mock_model: str) -> None:
     model_type = {
         "ChatNVIDIA": "chat",
         "NVIDIAEmbeddings": "embedding",
@@ -65,20 +65,19 @@ def test_registered_model_usable(public_class: type) -> None:
     }[public_class.__name__]
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        id = f"registered-model-{model_type}"
         model = Model(
-            id=id,
+            id=mock_model,
             model_type=model_type,
             client=public_class.__name__,
             endpoint="BOGUS",
         )
         register_model(model)
-        x = public_class(model=id, nvidia_api_key="a-bogus-key")
-        assert x.model == id
+        x = public_class(model=mock_model, nvidia_api_key="a-bogus-key")
+        assert x.model == mock_model
 
 
 def test_registered_model_without_client_usable(public_class: type) -> None:
-    id = f"test/no-client-{public_class.__name__}"
+    id = "test/no-client"
     model = Model(id=id, endpoint="BOGUS")
     register_model(model)
     with pytest.warns(UserWarning) as record:
@@ -156,7 +155,7 @@ def test_registered_model_is_available() -> None:
 
 
 def test_registered_model_without_client_is_not_listed(public_class: type) -> None:
-    model_name = f"test/{public_class.__name__}"
+    model_name = "test/model"
     register_model(Model(id=model_name, endpoint="BOGUS"))
     models = public_class.get_available_models(api_key="BOGUS")  # type: ignore
     assert model_name not in [model.id for model in models]

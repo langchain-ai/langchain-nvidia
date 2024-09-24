@@ -1,5 +1,5 @@
 import re
-from typing import Callable, List
+from typing import Callable, Generator, List
 
 import pytest
 import requests_mock
@@ -10,6 +10,7 @@ from langchain_nvidia_ai_endpoints import (
     NVIDIAEmbeddings,
     NVIDIARerank,
 )
+from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE
 
 
 @pytest.fixture(
@@ -44,6 +45,17 @@ def mock_v1_models(requests_mock: requests_mock.Mocker, mock_model: str) -> None
             ]
         },
     )
+
+
+@pytest.fixture(autouse=True)
+def reset_model_table() -> Generator[None, None, None]:
+    """
+    Reset MODEL_TABLE between tests.
+    """
+    original = MODEL_TABLE.copy()
+    yield
+    MODEL_TABLE.clear()
+    MODEL_TABLE.update(original)
 
 
 @pytest.fixture
