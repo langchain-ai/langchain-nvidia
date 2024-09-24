@@ -1,3 +1,4 @@
+import re
 from typing import Callable, List
 
 import pytest
@@ -36,7 +37,7 @@ def mock_model() -> str:
 @pytest.fixture(autouse=True)
 def mock_v1_models(requests_mock: requests_mock.Mocker, mock_model: str) -> None:
     requests_mock.get(
-        "https://integrate.api.nvidia.com/v1/models",
+        re.compile(".*/v1/models"),
         json={
             "data": [
                 {"id": mock_model},
