@@ -423,6 +423,19 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "meta/llama-3.2-1b-instruct": Model(
+        id="meta/llama-3.2-1b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_structured_output=True,
+    ),
+    "meta/llama-3.2-3b-instruct": Model(
+        id="meta/llama-3.2-3b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
@@ -493,6 +506,18 @@ VLM_MODEL_TABLE = {
         model_type="vlm",
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/vlm/nvidia/vila",
+    ),
+    "meta/llama-3.2-11b-vision-instruct": Model(
+        id="meta/llama-3.2-11b-vision-instruct",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/gr/meta/llama-3.2-11b-vision-instruct/chat/completions",
+    ),
+    "meta/llama-3.2-90b-vision-instruct": Model(
+        id="meta/llama-3.2-90b-vision-instruct",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        endpoint="https://ai.api.nvidia.com/v1/gr/meta/llama-3.2-90b-vision-instruct/chat/completions",
     ),
 }
 
