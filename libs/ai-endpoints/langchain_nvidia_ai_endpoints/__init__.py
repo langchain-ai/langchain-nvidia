@@ -1,4 +1,6 @@
 """
+**NOTE: You can `import langchain_nvidia` instead.**
+
 **LangChain NVIDIA AI Foundation Model Playground Integration**
 
 This comprehensive module integrates NVIDIA's state-of-the-art AI Foundation Models, featuring advanced models for conversational AI and semantic embeddings, into the LangChain framework. It provides robust classes for seamless interaction with NVIDIA's AI models, particularly tailored for enriching conversational experiences and enhancing semantic understanding in various applications.
