@@ -155,7 +155,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("rerank_model", models, ids=models)
 
     if "vlm_model" in metafunc.fixturenames:
-        models = ["nvidia/neva-22b"]
+        models = ["microsoft/phi-3.5-vision-instruct"]
         if model_list := metafunc.config.getoption("vlm_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):
