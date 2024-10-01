@@ -770,7 +770,7 @@ class ChatNVIDIA(BaseChatModel):
         # Output: None
         ```
 
-        For more, see https://python.langchain.com/v0.2/docs/how_to/structured_output/
+        For more, see https://python.langchain.com/docs/how_to/structured_output/
         """  # noqa: E501
 
         if "method" in kwargs:
@@ -790,7 +790,7 @@ class ChatNVIDIA(BaseChatModel):
         if include_raw:
             raise NotImplementedError(
                 "include_raw=True is not implemented, consider "
-                "https://python.langchain.com/v0.2/docs/how_to/"
+                "https://python.langchain.com/docs/how_to/"
                 "structured_output/#prompting-and-parsing-model"
                 "-outputs-directly or rely on the structured response "
                 "being None when the LLM produces an incomplete response."
