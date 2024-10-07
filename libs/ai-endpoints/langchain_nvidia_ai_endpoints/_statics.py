@@ -436,6 +436,12 @@ CHAT_MODEL_TABLE = {
         supports_tools=True,
         supports_structured_output=True,
     ),
+    "nvidia/mistral-nemo-minitron-8b-8k-instruct": Model(
+        id="nvidia/mistral-nemo-minitron-8b-8k-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_structured_output=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
