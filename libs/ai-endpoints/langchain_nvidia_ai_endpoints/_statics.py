@@ -442,6 +442,18 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_structured_output=True,
     ),
+    "institute-of-science-tokyo/llama-3.1-swallow-8b-instruct-v0.1": Model(
+        id="institute-of-science-tokyo/llama-3.1-swallow-8b-instruct-v0.1",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_structured_output=True,
+    ),
+    "institute-of-science-tokyo/llama-3.1-swallow-70b-instruct-v0.1": Model(
+        id="institute-of-science-tokyo/llama-3.1-swallow-70b-instruct-v0.1",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_structured_output=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
