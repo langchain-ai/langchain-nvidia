@@ -1,13 +1,15 @@
 """Test ChatNVIDIA chat model."""
 
-from typing import List
+from typing import AsyncIterator, List, Optional
 
 import pytest
 from langchain_core.load.dump import dumps
 from langchain_core.load.load import loads
 from langchain_core.messages import (
     AIMessage,
+    AIMessageChunk,
     BaseMessage,
+    BaseMessageChunk,
     HumanMessage,
     SystemMessage,
 )
@@ -441,3 +443,62 @@ def test_stop(
             assert isinstance(token.content, str)
             result += f"{token.content}|"
     assert all(target not in result for target in targets)
+
+
+async def test_astream() -> None:
+    """Test streaming tokens from OpenAI."""
+
+    async def _test_stream(stream: AsyncIterator, expect_usage: bool) -> None:
+        full: Optional[BaseMessageChunk] = None
+        chunks_with_token_counts = 0
+        chunks_with_response_metadata = 0
+        async for chunk in stream:
+            assert isinstance(chunk.content, str)
+            full = chunk if full is None else full + chunk
+            assert isinstance(chunk, AIMessageChunk)
+            if chunk.usage_metadata is not None:
+                chunks_with_token_counts += 1
+            if chunk.response_metadata:
+                chunks_with_response_metadata += 1
+        assert isinstance(full, AIMessageChunk)
+        if chunks_with_response_metadata != 1:
+            raise AssertionError(
+                "Expected exactly one chunk with metadata. "
+                "AIMessageChunk aggregation can add these metadata. Check that "
+                "this is behaving properly."
+            )
+        assert full.response_metadata.get("finish_reason") is not None
+        assert full.response_metadata.get("model_name") is not None
+        if expect_usage:
+            if chunks_with_token_counts != 1:
+                raise AssertionError(
+                    "Expected exactly one chunk with token counts. "
+                    "AIMessageChunk aggregation adds counts. Check that "
+                    "this is behaving properly."
+                )
+            assert full.usage_metadata is not None
+            assert full.usage_metadata["input_tokens"] > 0
+            assert full.usage_metadata["output_tokens"] > 0
+            assert full.usage_metadata["total_tokens"] > 0
+        else:
+            assert chunks_with_token_counts == 0
+            assert full.usage_metadata is None
+
+    llm = ChatNVIDIA(temperature=0, max_tokens=5)
+    await _test_stream(llm.astream("Hello"), expect_usage=False)
+    await _test_stream(
+        llm.astream("Hello", stream_options={"include_usage": True}), expect_usage=True
+    )
+    await _test_stream(llm.astream("Hello", stream_usage=True), expect_usage=True)
+    llm = ChatNVIDIA(
+        temperature=0,
+        max_tokens=5,
+        model_kwargs={"stream_options": {"include_usage": True}},
+    )
+    await _test_stream(
+        llm.astream("Hello", stream_options={"include_usage": False}),
+        expect_usage=False,
+    )
+    llm = ChatNVIDIA(temperature=0, max_tokens=5, stream_usage=True)
+    await _test_stream(llm.astream("Hello"), expect_usage=True)
+    await _test_stream(llm.astream("Hello", stream_usage=False), expect_usage=False)
