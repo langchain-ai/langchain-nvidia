@@ -454,6 +454,11 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_structured_output=True,
     ),
+    "zyphra/zamba2-7b-instruct": Model(
+        id="zyphra/zamba2-7b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
