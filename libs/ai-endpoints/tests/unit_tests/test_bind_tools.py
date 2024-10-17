@@ -342,3 +342,39 @@ def test_strict_no_warns(strict: Optional[bool]) -> None:
         tools=[xxyyzz_tool_annotated],
         **({"strict": strict} if strict is not None else {}),
     )
+
+
+def test_json_mode(
+    requests_mock: requests_mock.Mocker,
+    mock_v1_models: None,
+) -> None:
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        json={
+            "id": "chatcmpl-ID",
+            "object": "chat.completion",
+            "created": 1234567890,
+            "model": "BOGUS",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": '{"a": 1}',
+                    },
+                    "logprobs": None,
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 22,
+                "completion_tokens": 20,
+                "total_tokens": 42,
+            },
+            "system_fingerprint": None,
+        },
+    )
+
+    llm = ChatNVIDIA(api_key="BOGUS").bind(response_format={"type": "json_object"})
+    response = llm.invoke("Return this as json: {'a': 1}")
+    assert isinstance(response, AIMessage)
+    assert json.loads(str(response.content)) == {"a": 1}
