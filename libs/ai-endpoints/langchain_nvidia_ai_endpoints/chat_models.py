@@ -313,7 +313,8 @@ class ChatNVIDIA(BaseChatModel):
             default_hosted_model_name=_DEFAULT_MODEL_NAME,
             **({"api_key": api_key} if api_key else {}),  # only pass if set
             infer_path="{base_url}/chat/completions",
-            cls=self.__class__.__name__,
+            # instead of self.__class__.__name__ to assist in subclassing ChatNVIDIA
+            cls="ChatNVIDIA",
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
