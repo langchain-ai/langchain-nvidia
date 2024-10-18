@@ -268,6 +268,13 @@ class ChatNVIDIA(BaseChatModel):
     top_p: Optional[float] = Field(None, description="Top-p for distribution sampling")
     seed: Optional[int] = Field(None, description="The seed for deterministic results")
     stop: Optional[Sequence[str]] = Field(None, description="Stop words (cased)")
+    stream_usage: bool = Field(
+        False,
+        description="""Whether to include usage metadata in streaming output. 
+        If True, additional message chunks will be generated during the 
+        stream including usage metadata.
+        """,
+    )
 
     def __init__(self, **kwargs: Any):
         """
@@ -381,18 +388,38 @@ class ChatNVIDIA(BaseChatModel):
         response = self._client.get_req(payload=payload, extra_headers=extra_headers)
         responses, _ = self._client.postprocess(response)
         self._set_callback_out(responses, run_manager)
-        parsed_response = self._custom_postprocess(responses, streaming=False)
+        parsed_response = self._custom_postprocess(
+            responses, streaming=False, stream_usage=False
+        )
         # for pre 0.2 compatibility w/ ChatMessage
         # ChatMessage had a role property that was not present in AIMessage
         parsed_response.update({"role": "assistant"})
         generation = ChatGeneration(message=AIMessage(**parsed_response))
         return ChatResult(generations=[generation], llm_output=responses)
 
+    def _should_stream_usage(
+        self, stream_usage: Optional[bool] = None, **kwargs: Any
+    ) -> bool:
+        """Determine whether to include usage metadata in streaming output.
+        For backwards compatibility, we check for `stream_options` passed
+        explicitly to kwargs or in the model_kwargs and override self.stream_usage.
+        """
+        stream_usage_sources = [  # order of preference
+            stream_usage,
+            kwargs.get("stream_options", {}).get("include_usage"),
+            self.stream_usage,
+        ]
+        for source in stream_usage_sources:
+            if isinstance(source, bool):
+                return source
+        return self.stream_usage
+
     def _stream(
         self,
         messages: List[BaseMessage],
         stop: Optional[Sequence[str]] = None,
         run_manager: Optional[CallbackManagerForLLMRun] = None,
+        stream_usage: Optional[bool] = None,
         **kwargs: Any,
     ) -> Iterator[ChatGenerationChunk]:
         """Allows streaming to model!"""
@@ -401,11 +428,16 @@ class ChatNVIDIA(BaseChatModel):
             for message in [convert_message_to_dict(message) for message in messages]
         ]
         inputs, extra_headers = _process_for_vlm(inputs, self._client.model)
+
+        # check stream_usage, stream_options params to
+        # include token_usage for streaming.
+        stream_usage = self._should_stream_usage(stream_usage, **kwargs)
+        kwargs["stream_options"] = {"include_usage": stream_usage}
+
         payload = self._get_payload(
             inputs=inputs,
             stop=stop,
             stream=True,
-            stream_options={"include_usage": True},
             **kwargs,
         )
         # todo: get vlm endpoints fixed and remove this
@@ -420,7 +452,9 @@ class ChatNVIDIA(BaseChatModel):
             payload=payload, extra_headers=extra_headers
         ):
             self._set_callback_out(response, run_manager)
-            parsed_response = self._custom_postprocess(response, streaming=True)
+            parsed_response = self._custom_postprocess(
+                response, streaming=True, stream_usage=stream_usage
+            )
             # for pre 0.2 compatibility w/ ChatMessageChunk
             # ChatMessageChunk had a role property that was not
             # present in AIMessageChunk
@@ -444,7 +478,7 @@ class ChatNVIDIA(BaseChatModel):
                     cb.llm_output = result
 
     def _custom_postprocess(
-        self, msg: dict, streaming: bool = False
+        self, msg: dict, streaming: bool = False, stream_usage: bool = False
     ) -> dict:  # todo: remove
         kw_left = msg.copy()
         out_dict = {
@@ -456,11 +490,12 @@ class ChatNVIDIA(BaseChatModel):
             "response_metadata": {},
         }
         if token_usage := kw_left.pop("token_usage", None):
-            out_dict["usage_metadata"] = {
-                "input_tokens": token_usage.get("prompt_tokens", 0),
-                "output_tokens": token_usage.get("completion_tokens", 0),
-                "total_tokens": token_usage.get("total_tokens", 0),
-            }
+            if (streaming and stream_usage) or not streaming:
+                out_dict["usage_metadata"] = {
+                    "input_tokens": token_usage.get("prompt_tokens", 0),
+                    "output_tokens": token_usage.get("completion_tokens", 0),
+                    "total_tokens": token_usage.get("total_tokens", 0),
+                }
         # "tool_calls" is set for invoke and stream responses
         if tool_calls := kw_left.pop("tool_calls", None):
             assert isinstance(
