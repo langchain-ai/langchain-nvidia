@@ -11,6 +11,7 @@ from langchain_core.messages import (
     HumanMessage,
     SystemMessage,
 )
+from langchain_core.outputs import ChatGeneration, LLMResult
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
@@ -441,3 +442,33 @@ def test_stop(
             assert isinstance(token.content, str)
             result += f"{token.content}|"
     assert all(target not in result for target in targets)
+
+
+def test_generate() -> None:
+    """Test generate method of anthropic."""
+    chat = ChatNVIDIA()  # type: ignore[call-arg]
+    chat_messages: List[List[BaseMessage]] = [
+        [HumanMessage(content="How many toes do dogs have?")]
+    ]
+    messages_copy = [messages.copy() for messages in chat_messages]
+    result: LLMResult = chat.generate(chat_messages)
+    assert isinstance(result, LLMResult)
+    for response in result.generations[0]:
+        assert isinstance(response, ChatGeneration)
+        assert isinstance(response.text, str)
+        assert response.text == response.message.content
+    assert chat_messages == messages_copy
+
+
+# @pytest.mark.scheduled
+async def test_async_generate() -> None:
+    """Test async generation."""
+    llm = ChatNVIDIA()
+    message = HumanMessage(content="Hello")
+    response = await llm.agenerate([[message]])
+    assert isinstance(response, LLMResult)
+    for generations in response.generations:
+        for generation in generations:
+            assert isinstance(generation, ChatGeneration)
+            assert isinstance(generation.text, str)
+            assert generation.text == generation.message.content
