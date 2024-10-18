@@ -445,7 +445,7 @@ def test_stop(
     assert all(target not in result for target in targets)
 
 
-def test_ai_endpoints_stream_token_usage() -> None:
+def test_ai_endpoints_stream_token_usage(chat_model: str, mode: dict) -> None:
     """Test streaming tokens from NVIDIA Endpoints."""
 
     def _test_stream(stream: Iterator, expect_usage: bool) -> None:
@@ -484,27 +484,31 @@ def test_ai_endpoints_stream_token_usage() -> None:
             assert chunks_with_token_counts == 0
             assert full.usage_metadata is None
 
-    llm = ChatNVIDIA(temperature=0, max_tokens=5)
+    llm = ChatNVIDIA(model=chat_model, temperature=0, max_tokens=5, **mode)
     _test_stream(llm.stream("Hello"), expect_usage=False)
     _test_stream(
         llm.stream("Hello", stream_options={"include_usage": True}), expect_usage=True
     )
     _test_stream(llm.stream("Hello", stream_usage=True), expect_usage=True)
     llm = ChatNVIDIA(
+        model=chat_model,
         temperature=0,
         max_tokens=5,
         model_kwargs={"stream_options": {"include_usage": True}},
+        **mode,
     )
     _test_stream(
         llm.stream("Hello", stream_options={"include_usage": False}),
         expect_usage=False,
     )
-    llm = ChatNVIDIA(temperature=0, max_tokens=5, stream_usage=True)
+    llm = ChatNVIDIA(
+        model=chat_model, temperature=0, max_tokens=5, stream_usage=True, **mode
+    )
     _test_stream(llm.stream("Hello"), expect_usage=True)
     _test_stream(llm.stream("Hello", stream_usage=False), expect_usage=False)
 
 
-async def test_ai_endpoints_astream_token_usage() -> None:
+async def test_ai_endpoints_astream_token_usage(chat_model: str, mode: dict) -> None:
     """Test async streaming tokens from NVIDIA Endpoints."""
 
     async def _test_stream(stream: AsyncIterator, expect_usage: bool) -> None:
@@ -543,21 +547,25 @@ async def test_ai_endpoints_astream_token_usage() -> None:
             assert chunks_with_token_counts == 0
             assert full.usage_metadata is None
 
-    llm = ChatNVIDIA(temperature=0, max_tokens=5)
+    llm = ChatNVIDIA(model=chat_model, temperature=0, max_tokens=5, **mode)
     await _test_stream(llm.astream("Hello"), expect_usage=False)
     await _test_stream(
         llm.astream("Hello", stream_options={"include_usage": True}), expect_usage=True
     )
     await _test_stream(llm.astream("Hello", stream_usage=True), expect_usage=True)
     llm = ChatNVIDIA(
+        model=chat_model,
         temperature=0,
         max_tokens=5,
         model_kwargs={"stream_options": {"include_usage": True}},
+        **mode,
     )
     await _test_stream(
         llm.astream("Hello", stream_options={"include_usage": False}),
         expect_usage=False,
     )
-    llm = ChatNVIDIA(temperature=0, max_tokens=5, stream_usage=True)
+    llm = ChatNVIDIA(
+        model=chat_model, temperature=0, max_tokens=5, stream_usage=True, **mode
+    )
     await _test_stream(llm.astream("Hello"), expect_usage=True)
     await _test_stream(llm.astream("Hello", stream_usage=False), expect_usage=False)
