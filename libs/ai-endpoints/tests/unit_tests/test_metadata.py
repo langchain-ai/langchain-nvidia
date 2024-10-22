@@ -1,39 +1,46 @@
-from typing import Optional, cast
+from typing import Any, Optional, cast
 
 import pytest
 import requests_mock
-from langchain_core.messages import BaseMessageChunk, HumanMessage
+from langchain_core.messages import AIMessage, BaseMessageChunk, HumanMessage
 
+# from langchain_core.messages.ai import UsageMetadata
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+
+mock_response = {
+    "id": "chat-c891882b0c4448a5b258c63d2b031c82",
+    "object": "chat.completion",
+    "created": 1729173278,
+    "model": "meta/llama-3.2-3b-instruct",
+    "choices": [
+        {
+            "index": 0,
+            "message": {"role": "assistant", "content": "A simple yet"},
+            "logprobs": "",
+            "finish_reason": "tool_calls",
+            "stop_reason": "",
+        }
+    ],
+    "usage": {"prompt_tokens": 12, "total_tokens": 15, "completion_tokens": 3},
+    "prompt_logprobs": "",
+}
 
 
 @pytest.fixture
 def mock_local_models_metadata(requests_mock: requests_mock.Mocker) -> None:
-    requests_mock.post(
-        "http://localhost:8888/v1/chat/completions",
-        json={
-            "id": "unknown_model",
-            "created": 1234567890,
-            "object": "chat.completion",
-            "model": "mock-model",
-            "choices": [
-                {
-                    "index": 0,
-                    "message": {"role": "assistant", "content": "WORKED"},
+    mock_response["tool_calls"] = (
+        [
+            {
+                "id": "tool-ID",
+                "type": "function",
+                "function": {
+                    "name": "magic",
+                    "arguments": [],
                 },
-            ],
-            "response_metadata": {
-                "role": "user",
-                "token_usage": {
-                    "prompt_tokens": 20,
-                    "total_tokens": 486,
-                    "completion_tokens": 466,
-                },
-                "finish_reason": "stop",
-                "model_name": "meta",
-            },
-        },
+            }
+        ],
     )
+    requests_mock.post("http://localhost:8888/v1/chat/completions", json=mock_response)
 
 
 @pytest.fixture
@@ -60,42 +67,35 @@ def mock_local_models_stream_metadata(requests_mock: requests_mock.Mocker) -> No
     )
 
 
-async def test_ainvoke(mock_local_models_metadata: None) -> None:
-    """Test invoke tokens from ChatNVIDIA."""
-    llm = ChatNVIDIA(model="unknown_model", base_url="http://localhost:8888/v1/")
+def response_metadata_checks(result: Any) -> None:
+    assert isinstance(result, AIMessage)
+    assert result.response_metadata
+    assert all(
+        k in result.response_metadata for k in ("model_name", "role", "token_usage")
+    )
 
-    result = await llm.ainvoke("I'm Pickle Rick", config={"tags": ["foo"]})
     assert isinstance(result.content, str)
     assert result.response_metadata.get("model_name") is not None
 
+    if result.usage_metadata is not None:
+        assert isinstance(result.usage_metadata, dict)
+        usage_metadata = result.usage_metadata
 
-def test_invoke(mock_local_models_metadata: None) -> None:
-    """Test invoke tokens from ChatNVIDIA."""
-    llm = ChatNVIDIA(base_url="http://localhost:8888/v1")
-
-    result = llm.invoke("I'm Pickle Rick", config=dict(tags=["foo"]))
-    assert isinstance(result.content, str)
-    assert result.response_metadata.get("model_name") is not None
+        assert usage_metadata["input_tokens"] > 0
+        assert usage_metadata["output_tokens"] > 0
+        assert usage_metadata["total_tokens"] > 0
 
 
 def test_response_metadata(mock_local_models_metadata: None) -> None:
     llm = ChatNVIDIA(base_url="http://localhost:8888/v1")
     result = llm.invoke([HumanMessage(content="I'm PickleRick")])
-    assert result.response_metadata
-    assert all(k in result.response_metadata for k in ("model_name", "role"))
+    response_metadata_checks(result)
 
 
 async def test_async_response_metadata(mock_local_models_metadata: None) -> None:
     llm = ChatNVIDIA(base_url="http://localhost:8888/v1")
     result = await llm.ainvoke([HumanMessage(content="I'm PickleRick")], logprobs=True)
-    assert result.response_metadata
-    assert all(
-        k in result.response_metadata
-        for k in (
-            "model_name",
-            "role",
-        )
-    )
+    response_metadata_checks(result)
 
 
 def test_response_metadata_streaming(mock_local_models_stream_metadata: None) -> None:
@@ -122,3 +122,23 @@ async def test_async_response_metadata_streaming(
         k in cast(BaseMessageChunk, full).response_metadata
         for k in ("model_name", "finish_reason")
     )
+
+
+def test_stream_tool_calls(
+    mock_local_models_stream_metadata: None,
+) -> None:
+    llm = ChatNVIDIA(base_url="http://localhost:8888/v1")
+    generator = llm.stream(
+        "What is 11 xxyyzz 3 zzyyxx 5?",
+    )
+    response = next(generator)
+    for chunk in generator:
+        response += chunk
+    assert isinstance(response, AIMessage)
+    assert len(response.tool_calls) == 2
+    tool_call0 = response.tool_calls[0]
+    assert tool_call0["name"] == "xxyyzz"
+    assert tool_call0["args"] == {"b": 3, "a": 11}
+    tool_call1 = response.tool_calls[1]
+    assert tool_call1["name"] == "zzyyxx"
+    assert tool_call1["args"] == {"b": 3, "a": 5}
