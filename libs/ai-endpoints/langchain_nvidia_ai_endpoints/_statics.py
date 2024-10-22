@@ -459,6 +459,16 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "ibm/granite-3.0-8b-instruct": Model(
+        id="ibm/granite-3.0-8b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "ibm/granite-3.0-3b-a800m-instruct": Model(
+        id="ibm/granite-3.0-3b-a800m-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
