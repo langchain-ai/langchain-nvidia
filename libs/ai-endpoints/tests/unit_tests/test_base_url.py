@@ -1,5 +1,6 @@
 import os
 import re
+import warnings
 from typing import Any
 
 import pytest
@@ -98,6 +99,7 @@ def test_param_base_url_hosted(public_class: type, base_url: str) -> None:
     ],
 )
 def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
+    warnings.filterwarnings("ignore", r".*does not end in /v1.*")
     with no_env_var("NVIDIA_BASE_URL"):
         client = public_class(model="model1", base_url=base_url)
         assert not client._client.is_hosted
@@ -119,9 +121,42 @@ def test_expect_warn(public_class: type, base_url: str) -> None:
     with pytest.warns(UserWarning) as record:
         public_class(model="model1", base_url=base_url)
     assert len(record) == 1
-    assert "ignoring the rest" in str(record[0].message)
+    assert "does not end in /v1" in str(record[0].message)
 
 
 def test_default_hosted(public_class: type) -> None:
     x = public_class(api_key="BOGUS")
     assert x._client.is_hosted
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://host/path0/path1/path2/v1",
+        "http://host:123/path0/path1/path2/v1/",
+    ],
+)
+def test_proxy_base_url(
+    public_class: type, base_url: str, requests_mock: Mocker
+) -> None:
+    with no_env_var("NVIDIA_BASE_URL"):
+        client = public_class(model="model1", base_url=base_url)
+        assert base_url.startswith(client.base_url)
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://host/path0/path1/path2/v1",
+        "http://host:123/path0/path1/path2/v1/",
+    ],
+)
+def test_proxy_base_url_models(
+    public_class: type, base_url: str, requests_mock: Mocker
+) -> None:
+    with no_env_var("NVIDIA_BASE_URL"):
+        client = public_class(model="model1", base_url=base_url)
+        client.available_models
+        models_url = base_url.rstrip("/") + "/models"
+        assert requests_mock.last_request
+        assert requests_mock.last_request.url == models_url
