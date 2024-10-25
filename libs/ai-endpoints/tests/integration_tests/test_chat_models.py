@@ -444,9 +444,9 @@ def test_stop(
     assert all(target not in result for target in targets)
 
 
-def test_generate() -> None:
+def test_generate(chat_model: str, mode: dict) -> None:
     """Test generate method of anthropic."""
-    chat = ChatNVIDIA()  # type: ignore[call-arg]
+    chat = ChatNVIDIA(model=chat_model, **mode)  # type: ignore[call-arg]
     chat_messages: List[List[BaseMessage]] = [
         [HumanMessage(content="How many toes do dogs have?")]
     ]
@@ -461,9 +461,9 @@ def test_generate() -> None:
 
 
 # @pytest.mark.scheduled
-async def test_async_generate() -> None:
+async def test_async_generate(chat_model: str, mode: dict) -> None:
     """Test async generation."""
-    llm = ChatNVIDIA()
+    llm = ChatNVIDIA(model=chat_model, **mode)
     message = HumanMessage(content="Hello")
     response = await llm.agenerate([[message]])
     assert isinstance(response, LLMResult)
