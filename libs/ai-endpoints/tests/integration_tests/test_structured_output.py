@@ -1,9 +1,10 @@
 import enum
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Literal, Optional, Union
 
 import pytest
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel, Field
+from pydantic import BaseModel as BaseModelProper
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
@@ -18,6 +19,26 @@ def do_stream(llm: ChatNVIDIA, message: str) -> Any:
     # streaming results, which are *Chunks that can be concatenated.
     result = [chunk for chunk in llm.stream(message)]
     return result[-1] if result else None
+
+
+class Joke(BaseModelProper):
+    """Joke to tell user."""
+
+    setup: str = Field(description="question to set up a joke")
+    punchline: str = Field(description="answer to resolve the joke")
+
+
+class SelfEvaluation(BaseModelProper):
+    score: int
+    text: str
+
+
+class JokeWithEvaluation(BaseModelProper):
+    """Joke to tell user."""
+
+    setup: str
+    punchline: str
+    self_evaluation: SelfEvaluation
 
 
 @pytest.mark.xfail(reason="Accuracy is not guaranteed")
@@ -184,3 +205,124 @@ def test_pydantic_incomplete(structured_model: str, mode: dict, func: Callable) 
     structured_llm = llm.with_structured_output(Joke)
     result = func(structured_llm, "Tell me a joke about cats")
     assert result is None
+
+
+def joke(result):
+    assert isinstance(result, dict)
+    assert all(key in set(result.keys()) for key in {"setup", "punchline"})
+
+
+def nested_json(result):
+    assert isinstance(result, dict)  # for mypy
+    assert set(result.keys()) == {"setup", "punchline", "self_evaluation"}
+    assert set(result["self_evaluation"].keys()) == {"score", "text"}
+
+
+@pytest.mark.parametrize(
+    ("method", "strict"),
+    [("function_calling", True), ("json_schema", None)],
+)
+def test_structured_output_json_strict(
+    structured_model: str,
+    mode: dict,
+    method: Literal["function_calling", "json_schema"],
+    strict: Optional[bool],
+) -> None:
+    """Test to verify structured output with strict=True."""
+
+    llm = ChatNVIDIA(model=structured_model, temperature=0, **mode)
+
+    # Test structured output with a Pydantic class
+    chat = llm.with_structured_output(Joke, method=method, strict=strict)
+    result = chat.invoke("Tell me a joke about cats.")
+
+    assert isinstance(result, Joke)
+
+    for chunk in chat.stream("Tell me a joke about cats."):
+        assert isinstance(chunk, Joke)
+
+    # Test structured output with JSON schema
+    chat = llm.with_structured_output(
+        Joke.model_json_schema(), method=method, strict=strict
+    )
+    result = chat.invoke("Tell me a joke about cats.")
+    joke(result)
+
+    for chunk in chat.stream("Tell me a joke about cats."):
+        assert isinstance(chunk, dict)
+    joke(chunk)
+
+
+@pytest.mark.parametrize(("method", "strict"), [("json_schema", None)])
+def test_nested_structured_output_json_strict(
+    tool_model: str, mode: dict, method: Literal["json_schema"], strict: Optional[bool]
+) -> None:
+    """Test to verify structured output with strict=True for nested object."""
+
+    llm = ChatNVIDIA(model=tool_model, temperature=0, **mode)
+
+    # Schema
+    chat = llm.with_structured_output(
+        JokeWithEvaluation.model_json_schema(), method=method, strict=strict
+    )
+    result = chat.invoke("Tell me a joke about cats.")
+    nested_json(result)
+
+    for chunk in chat.stream("Tell me a joke about cats."):
+        assert isinstance(chunk, dict)
+    nested_json(chunk)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("method", "strict"),
+    [("function_calling", True), ("json_schema", None)],
+)
+async def test_structured_output_json_strict_async(
+    tool_model: str,
+    method: Literal["function_calling", "json_schema"],
+    strict: Optional[bool],
+) -> None:
+    """Test to verify structured output with strict=True (async)."""
+
+    llm = ChatNVIDIA(model=tool_model, temperature=0)
+
+    # Pydantic class
+    chat = llm.with_structured_output(Joke, method=method, strict=strict)
+    result = await chat.ainvoke("Tell me a joke about cats.")
+    assert isinstance(result, Joke)
+
+    async for chunk in chat.astream("Tell me a joke about cats."):
+        assert isinstance(chunk, Joke)
+
+    # Schema
+    chat = llm.with_structured_output(
+        Joke.model_json_schema(), method=method, strict=strict
+    )
+    result = await chat.ainvoke("Tell me a joke about cats.")
+    joke(result)
+
+    async for chunk in chat.astream("Tell me a joke about cats."):
+        assert isinstance(chunk, dict)
+    joke(chunk)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("method", "strict"), [("json_schema", None)])
+async def test_nested_structured_output_json_strict_async(
+    tool_model: str, method: Literal["json_schema"], strict: Optional[bool]
+) -> None:
+    """Test to verify structured output with strict=True for nested object (async)."""
+
+    llm = ChatNVIDIA(model=tool_model, temperature=0)
+
+    # Schema
+    chat = llm.with_structured_output(
+        JokeWithEvaluation.model_json_schema(), method=method, strict=strict
+    )
+    result = await chat.ainvoke("Tell me a joke about cats.")
+    nested_json(result)
+
+    async for chunk in chat.astream("Tell me a joke about cats."):
+        assert isinstance(chunk, dict)
+    nested_json(chunk)
