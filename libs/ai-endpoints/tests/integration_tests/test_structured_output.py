@@ -87,14 +87,6 @@ def test_accuracy(structured_model: str, mode: dict) -> None:
     assert person.birthplace == "Tainan, Taiwan"
 
 
-class Joke(BaseModel):
-    """Joke to tell user."""
-
-    setup: str = Field(description="The setup of the joke")
-    punchline: str = Field(description="The punchline to the joke")
-    rating: Optional[int] = Field(description="How funny the joke is, from 1 to 10")
-
-
 @pytest.mark.parametrize("func", [do_invoke, do_stream], ids=["invoke", "stream"])
 def test_pydantic(structured_model: str, mode: dict, func: Callable) -> None:
     llm = ChatNVIDIA(model=structured_model, temperature=0, **mode)
@@ -207,12 +199,12 @@ def test_pydantic_incomplete(structured_model: str, mode: dict, func: Callable) 
     assert result is None
 
 
-def joke(result):
+def joke(result: Any) -> None:
     assert isinstance(result, dict)
     assert all(key in set(result.keys()) for key in {"setup", "punchline"})
 
 
-def nested_json(result):
+def nested_json(result: Any) -> None:
     assert isinstance(result, dict)  # for mypy
     assert set(result.keys()) == {"setup", "punchline", "self_evaluation"}
     assert set(result["self_evaluation"].keys()) == {"score", "text"}
@@ -220,12 +212,12 @@ def nested_json(result):
 
 @pytest.mark.parametrize(
     ("method", "strict"),
-    [("function_calling", True), ("json_schema", None)],
+    [("function_calling", True), ("json_schema", None), ("json_mode", None)],
 )
 def test_structured_output_json_strict(
     structured_model: str,
     mode: dict,
-    method: Literal["function_calling", "json_schema"],
+    method: Literal["function_calling", "json_schema", "json_mode"],
     strict: Optional[bool],
 ) -> None:
     """Test to verify structured output with strict=True."""
@@ -253,7 +245,9 @@ def test_structured_output_json_strict(
     joke(chunk)
 
 
-@pytest.mark.parametrize(("method", "strict"), [("json_schema", None)])
+@pytest.mark.parametrize(
+    ("method", "strict"), [("json_schema", None), ("json_mode", None)]
+)
 def test_nested_structured_output_json_strict(
     tool_model: str, mode: dict, method: Literal["json_schema"], strict: Optional[bool]
 ) -> None:
@@ -276,7 +270,7 @@ def test_nested_structured_output_json_strict(
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("method", "strict"),
-    [("function_calling", True), ("json_schema", None)],
+    [("function_calling", True), ("json_schema", None), ("json_mode", None)],
 )
 async def test_structured_output_json_strict_async(
     tool_model: str,
@@ -308,7 +302,9 @@ async def test_structured_output_json_strict_async(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(("method", "strict"), [("json_schema", None)])
+@pytest.mark.parametrize(
+    ("method", "strict"), [("json_schema", None), ("json_mode", None)]
+)
 async def test_nested_structured_output_json_strict_async(
     tool_model: str, method: Literal["json_schema"], strict: Optional[bool]
 ) -> None:
