@@ -214,9 +214,12 @@ class _NVIDIAClient(BaseModel):
                         "unknown and inference may fail."
                     )
                 else:
-                    raise ValueError(
-                        f"Model {self.mdl_name} is unknown, check `available_models`"
-                    )
+                    if self.mdl_name.startswith("nvdev/"):  # assume valid
+                        model = Model(id=self.mdl_name)
+                    else:
+                        raise ValueError(
+                            f"Model {self.mdl_name} is unknown, check `available_models`"
+                        )
             self.model = model
             self.mdl_name = self.model.id  # name may change because of aliasing
         else:
