@@ -218,7 +218,8 @@ class _NVIDIAClient(BaseModel):
                         model = Model(id=self.mdl_name)
                     else:
                         raise ValueError(
-                            f"Model {self.mdl_name} is unknown, check `available_models`"
+                            f"Model {self.mdl_name} is unknown, "
+                            "check `available_models`"
                         )
             self.model = model
             self.mdl_name = self.model.id  # name may change because of aliasing
