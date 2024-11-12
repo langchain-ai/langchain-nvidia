@@ -773,13 +773,6 @@ class ChatNVIDIA(BaseChatModel):
         For more, see https://python.langchain.com/docs/how_to/structured_output/
         """  # noqa: E501
 
-        if "method" in kwargs:
-            warnings.warn(
-                "The 'method' parameter is unnecessary and is ignored. "
-                "The appropriate method will be chosen automatically depending "
-                "on the type of schema provided."
-            )
-
         if kwargs.get("strict", True) is not True:
             warnings.warn(
                 "Structured output always follows strict validation. "
