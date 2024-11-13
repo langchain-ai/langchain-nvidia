@@ -3,7 +3,6 @@ from typing import Any, Callable, Literal, Optional, Union
 
 import pytest
 from langchain_core.messages import HumanMessage
-
 from pydantic import BaseModel, Field
 from pydantic import BaseModel as BaseModelProper
 
