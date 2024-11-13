@@ -214,7 +214,4 @@ def test_strict_no_warns(strict: Optional[bool]) -> None:
     )
 
     if strict:
-        ChatNVIDIA(api_key="BOGUS").with_structured_output(
-            Joke,
-            strict=strict
-        )
+        ChatNVIDIA(api_key="BOGUS").with_structured_output(Joke, strict=strict)

@@ -686,6 +686,15 @@ class ChatNVIDIA(BaseChatModel):
         Args:
             schema (Union[Dict, Type]): The schema to bind to the model.
             include_raw (bool): Always False. Passing True raises an error.
+            method: The method for steering model generation, one of:
+                - "function_calling":
+                    Uses tool-calling (formerly called function calling)
+                - "json_schema":
+                    Uses Structured Output API for supported models.
+                - "json_mode":
+                    Uses JSON mode. Note that if using JSON mode then you
+                    must include instructions for formatting the output into the
+                    desired schema into the model call:
             **kwargs: Additional keyword arguments.
 
         Notes:
@@ -697,6 +706,7 @@ class ChatNVIDIA(BaseChatModel):
          0. a dictionary representing a JSON schema
          1. a Pydantic object
          2. an Enum
+         3. None is case of method=json_mode
 
         0. If a dictionary is provided, the model will return a dictionary. Example:
         ```
@@ -749,6 +759,14 @@ class ChatNVIDIA(BaseChatModel):
         structured_llm = llm.with_structured_output(Choices)
         structured_llm.invoke("What is the first letter in this list? [X, Y, Z, C]")
         # Output: <Choices.C: 'C'>
+        ```
+
+        3. If a dictionary is provided, the model will return a dictionary. Example:
+        ```
+        structured_llm = llm.with_structured_output(method="json_mode")
+        structured_llm.invoke("Make sure to retrun json with keys setup and punchline. Tell me a joke about NVIDIA")
+        # Output: {'setup': 'Why did NVIDIA go broke? The hardware ate all the software.',
+        #          'punchline': 'It took a big bite out of their main board.'}
         ```
 
         Note about streaming: Unlike other streaming responses, the streamed chunks
@@ -837,8 +855,8 @@ class ChatNVIDIA(BaseChatModel):
                 f"Model '{self.model}' is not known to support structured output. "
                 "Your output may fail at inference time."
             )
-        output_parser: BaseOutputParser
-        
+        output_parser: BaseOutputParser  # create a common type
+
         if method == "json_mode":
             llm = self.bind(response_format={"type": "json_object"})
             output_parser = (
@@ -860,6 +878,7 @@ class ChatNVIDIA(BaseChatModel):
                 else JsonOutputParser()
             )
         elif method == "function_calling":
+            # handled below as schema will be present
             pass
         else:
             raise ValueError(

@@ -217,14 +217,14 @@ def nested_json(result: Any) -> None:
     [("json_schema", None), ("json_mode", None)],
 )
 def test_structured_output_json_strict(
-    tool_model: str,
+    structured_model: str,
     mode: dict,
     method: Literal["function_calling", "json_mode", "json_schema"],
     strict: Optional[bool],
 ) -> None:
     """Test to verify structured output with strict=True."""
 
-    llm = ChatNVIDIA(model=tool_model, temperature=0, **mode)
+    llm = ChatNVIDIA(model=structured_model, temperature=0, **mode)
 
     # Test structured output with a Pydantic class
     chat = llm.with_structured_output(Joke, method=method, strict=strict)
@@ -251,14 +251,14 @@ def test_structured_output_json_strict(
     ("method", "strict"), [("json_schema", None), ("json_mode", None)]
 )
 def test_nested_structured_output_json_strict(
-    tool_model: str,
+    structured_model: str,
     mode: dict,
     method: Literal["function_calling", "json_schema", "json_mode"],
     strict: Optional[bool],
 ) -> None:
     """Test to verify structured output with strict=True for nested object."""
 
-    llm = ChatNVIDIA(model=tool_model, temperature=0, **mode)
+    llm = ChatNVIDIA(model=structured_model, temperature=0, **mode)
 
     # Schema
     chat = llm.with_structured_output(
@@ -278,13 +278,13 @@ def test_nested_structured_output_json_strict(
     [("function_calling", True), ("json_schema", None), ("json_mode", None)],
 )
 async def test_structured_output_json_strict_async(
-    tool_model: str,
+    structured_model: str,
     method: Literal["function_calling", "json_schema", "json_mode"],
     strict: Optional[bool],
 ) -> None:
     """Test to verify structured output with strict=True (async)."""
 
-    llm = ChatNVIDIA(model=tool_model, temperature=0)
+    llm = ChatNVIDIA(model=structured_model, temperature=0)
 
     # Pydantic class
     chat = llm.with_structured_output(Joke, method=method, strict=strict)
@@ -311,11 +311,11 @@ async def test_structured_output_json_strict_async(
     ("method", "strict"), [("json_schema", None), ("json_mode", None)]
 )
 async def test_nested_structured_output_json_strict_async(
-    tool_model: str, method: Literal["json_schema"], strict: Optional[bool]
+    structured_model: str, method: Literal["json_schema"], strict: Optional[bool]
 ) -> None:
     """Test to verify structured output with strict=True for nested object (async)."""
 
-    llm = ChatNVIDIA(model=tool_model, temperature=0)
+    llm = ChatNVIDIA(model=structured_model, temperature=0)
 
     # Schema
     chat = llm.with_structured_output(
@@ -329,23 +329,31 @@ async def test_nested_structured_output_json_strict_async(
     nested_json(chunk)
 
 
-def test_json_mode_with_dict(tool_model: str) -> None:
+def test_json_mode_with_dict(structured_model: str) -> None:
     """Test json_mode with a dictionary schema."""
     schema = {
         "type": "object",
         "properties": {"name": {"type": "string"}, "age": {"type": "integer"}},
     }
 
-    llm = ChatNVIDIA(tool_model=tool_model)
-    llm.with_structured_output(schema, method="json_mode")
+    llm = ChatNVIDIA(model=structured_model)
+    structured_llm = llm.with_structured_output(schema, method="json_mode")
     # assert isinstance(structured_llm.steps[-1], JsonOutputParser)
 
 
-def test_json_schema_with_none_schema(tool_model: str) -> None:
+def test_json_schema_with_none_schema(structured_model: str) -> None:
     """Test json_schema method with None schema raises error."""
-    llm = ChatNVIDIA(tool_model=tool_model)
+    llm = ChatNVIDIA(model=structured_model)
 
     with pytest.raises(
         ValueError, match="schema must be specified when method is not 'json_mode'"
     ):
         llm.with_structured_output(schema=None, method="json_schema")
+
+
+def test_json_mode_with_none_schema(structured_model: str) -> None:
+    """Test json_schema method with None schema raises error."""
+    llm = ChatNVIDIA(model=structured_model)
+
+    structured_llm = llm.with_structured_output(schema=None, method="json_mode")
+    structured_llm.invoke("Make sure to return a JSON blob with keys id and joke.")
