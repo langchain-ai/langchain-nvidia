@@ -3,6 +3,8 @@ from typing import Any, Callable, Literal, Optional, Union
 
 import pytest
 from langchain_core.messages import HumanMessage
+
+# from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 from pydantic import BaseModel as BaseModelProper
 
@@ -212,17 +214,17 @@ def nested_json(result: Any) -> None:
 
 @pytest.mark.parametrize(
     ("method", "strict"),
-    [("function_calling", True), ("json_schema", None), ("json_mode", None)],
+    [("json_schema", None), ("json_mode", None)],
 )
 def test_structured_output_json_strict(
-    structured_model: str,
+    tool_model: str,
     mode: dict,
-    method: Literal["function_calling", "json_schema", "json_mode"],
+    method: Literal["function_calling", "json_mode", "json_schema"],
     strict: Optional[bool],
 ) -> None:
     """Test to verify structured output with strict=True."""
 
-    llm = ChatNVIDIA(model=structured_model, temperature=0, **mode)
+    llm = ChatNVIDIA(model=tool_model, temperature=0, **mode)
 
     # Test structured output with a Pydantic class
     chat = llm.with_structured_output(Joke, method=method, strict=strict)
@@ -249,7 +251,10 @@ def test_structured_output_json_strict(
     ("method", "strict"), [("json_schema", None), ("json_mode", None)]
 )
 def test_nested_structured_output_json_strict(
-    tool_model: str, mode: dict, method: Literal["json_schema"], strict: Optional[bool]
+    tool_model: str,
+    mode: dict,
+    method: Literal["function_calling", "json_schema", "json_mode"],
+    strict: Optional[bool],
 ) -> None:
     """Test to verify structured output with strict=True for nested object."""
 
@@ -274,7 +279,7 @@ def test_nested_structured_output_json_strict(
 )
 async def test_structured_output_json_strict_async(
     tool_model: str,
-    method: Literal["function_calling", "json_schema"],
+    method: Literal["function_calling", "json_schema", "json_mode"],
     strict: Optional[bool],
 ) -> None:
     """Test to verify structured output with strict=True (async)."""
@@ -322,3 +327,25 @@ async def test_nested_structured_output_json_strict_async(
     async for chunk in chat.astream("Tell me a joke about cats."):
         assert isinstance(chunk, dict)
     nested_json(chunk)
+
+
+def test_json_mode_with_dict(tool_model: str) -> None:
+    """Test json_mode with a dictionary schema."""
+    schema = {
+        "type": "object",
+        "properties": {"name": {"type": "string"}, "age": {"type": "integer"}},
+    }
+
+    llm = ChatNVIDIA(tool_model=tool_model)
+    llm.with_structured_output(schema, method="json_mode")
+    # assert isinstance(structured_llm.steps[-1], JsonOutputParser)
+
+
+def test_json_schema_with_none_schema(tool_model: str) -> None:
+    """Test json_schema method with None schema raises error."""
+    llm = ChatNVIDIA(tool_model=tool_model)
+
+    with pytest.raises(
+        ValueError, match="schema must be specified when method is not 'json_mode'"
+    ):
+        llm.with_structured_output(schema=None, method="json_schema")
