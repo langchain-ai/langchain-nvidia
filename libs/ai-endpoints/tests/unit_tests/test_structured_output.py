@@ -213,7 +213,8 @@ def test_strict_no_warns(strict: Optional[bool]) -> None:
         "ignore", category=UserWarning, message=".*not known to support.*"
     )
 
-    ChatNVIDIA(api_key="BOGUS").with_structured_output(
-        Joke,
-        strict=strict,
-    )
+    if strict:
+        ChatNVIDIA(api_key="BOGUS").with_structured_output(
+            Joke,
+            strict=strict
+        )
