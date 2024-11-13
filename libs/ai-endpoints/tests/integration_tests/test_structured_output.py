@@ -339,21 +339,3 @@ def test_json_mode_with_dict(structured_model: str) -> None:
     llm = ChatNVIDIA(model=structured_model)
     structured_llm = llm.with_structured_output(schema, method="json_mode")
     # assert isinstance(structured_llm.steps[-1], JsonOutputParser)
-
-
-def test_json_schema_with_none_schema(structured_model: str) -> None:
-    """Test json_schema method with None schema raises error."""
-    llm = ChatNVIDIA(model=structured_model)
-
-    with pytest.raises(
-        ValueError, match="schema must be specified when method is not 'json_mode'"
-    ):
-        llm.with_structured_output(schema=None, method="json_schema")
-
-
-def test_json_mode_with_none_schema(structured_model: str) -> None:
-    """Test json_schema method with None schema raises error."""
-    llm = ChatNVIDIA(model=structured_model)
-
-    structured_llm = llm.with_structured_output(schema=None, method="json_mode")
-    structured_llm.invoke("Make sure to return a JSON blob with keys id and joke.")

@@ -672,7 +672,7 @@ class ChatNVIDIA(BaseChatModel):
     # as a result need to type ignore for the schema parameter and return type.
     def with_structured_output(  # type: ignore
         self,
-        schema: Optional[Union[Dict, Type]] = None,
+        schema: Union[Dict, Type],
         *,
         method: Literal[
             "function_calling", "json_mode", "json_schema"
@@ -706,7 +706,6 @@ class ChatNVIDIA(BaseChatModel):
          0. a dictionary representing a JSON schema
          1. a Pydantic object
          2. an Enum
-         3. None is case of method=json_mode
 
         0. If a dictionary is provided, the model will return a dictionary. Example:
         ```
@@ -759,14 +758,6 @@ class ChatNVIDIA(BaseChatModel):
         structured_llm = llm.with_structured_output(Choices)
         structured_llm.invoke("What is the first letter in this list? [X, Y, Z, C]")
         # Output: <Choices.C: 'C'>
-        ```
-
-        3. If a dictionary is provided, the model will return a dictionary. Example:
-        ```
-        structured_llm = llm.with_structured_output(method="json_mode")
-        structured_llm.invoke("Make sure to retrun json with keys setup and punchline. Tell me a joke about NVIDIA")
-        # Output: {'setup': 'Why did NVIDIA go broke? The hardware ate all the software.',
-        #          'punchline': 'It took a big bite out of their main board.'}
         ```
 
         Note about streaming: Unlike other streaming responses, the streamed chunks
@@ -865,11 +856,6 @@ class ChatNVIDIA(BaseChatModel):
                 else JsonOutputParser()
             )
         elif method == "json_schema":
-            if schema is None:
-                raise ValueError(
-                    "schema must be specified when method is not 'json_mode'. "
-                    "Received None."
-                )
             response_format = _convert_to_openai_response_format(schema)
             llm = self.bind(response_format=response_format)
             output_parser = (
@@ -878,7 +864,7 @@ class ChatNVIDIA(BaseChatModel):
                 else JsonOutputParser()
             )
         elif method == "function_calling":
-            # handled below as schema will be present
+            # handled below 
             pass
         else:
             raise ValueError(
@@ -886,64 +872,63 @@ class ChatNVIDIA(BaseChatModel):
                 f"'json_mode'. Received: '{method}'"
             )
 
-        if schema:
-            if isinstance(schema, dict):
-                output_parser = JsonOutputParser()
-                llm = self.bind(nvext={"guided_json": schema})
-            elif issubclass(schema, enum.Enum):
-                # langchain's EnumOutputParser is not in langchain_core
-                # and doesn't support streaming. this is a simple implementation
-                # that supports streaming with our semantics of returning None
-                # if no complete object can be constructed.
-                class EnumOutputParser(BaseOutputParser):
-                    enum: Type[enum.Enum]
+        if isinstance(schema, dict):
+            output_parser = JsonOutputParser()
+            llm = self.bind(nvext={"guided_json": schema})
+        elif issubclass(schema, enum.Enum):
+            # langchain's EnumOutputParser is not in langchain_core
+            # and doesn't support streaming. this is a simple implementation
+            # that supports streaming with our semantics of returning None
+            # if no complete object can be constructed.
+            class EnumOutputParser(BaseOutputParser):
+                enum: Type[enum.Enum]
 
-                    def parse(self, response: str) -> Any:
-                        try:
-                            return self.enum(response.strip())
-                        except ValueError:
-                            pass
-                        return None
+                def parse(self, response: str) -> Any:
+                    try:
+                        return self.enum(response.strip())
+                    except ValueError:
+                        pass
+                    return None
 
-                # guided_choice only supports string choices
-                choices = [choice.value for choice in schema]
-                if not all(isinstance(choice, str) for choice in choices):
-                    # instead of erroring out we could coerce the enum values to
-                    # strings, but would then need to coerce them back to their
-                    # original type for Enum construction.
-                    raise ValueError(
-                        "Enum schema must only contain string choices. "
-                        "Use StrEnum or ensure all member values are strings."
-                    )
-                output_parser = EnumOutputParser(enum=schema)
-                llm = self.bind(nvext={"guided_choice": choices})
-
-            elif is_basemodel_subclass(schema):
-                # PydanticOutputParser does not support streaming. what we do
-                # instead is ignore all inputs that are incomplete wrt the
-                # underlying Pydantic schema. if the entire input is invalid,
-                # we return None.
-                class ForgivingPydanticOutputParser(PydanticOutputParser):
-                    def parse_result(
-                        self, result: List[Generation], *, partial: bool = False
-                    ) -> Any:
-                        try:
-                            return super().parse_result(result, partial=partial)
-                        except OutputParserException:
-                            pass
-                        return None
-
-                output_parser = ForgivingPydanticOutputParser(pydantic_object=schema)
-                if hasattr(schema, "model_json_schema"):
-                    json_schema = schema.model_json_schema()
-                else:
-                    json_schema = schema.schema()
-                llm = self.bind(nvext={"guided_json": json_schema})
-
-            else:
+            # guided_choice only supports string choices
+            choices = [choice.value for choice in schema]
+            if not all(isinstance(choice, str) for choice in choices):
+                # instead of erroring out we could coerce the enum values to
+                # strings, but would then need to coerce them back to their
+                # original type for Enum construction.
                 raise ValueError(
-                    "Schema must be a Pydantic object, a dictionary "
-                    "representing a JSON schema, or an Enum."
+                    "Enum schema must only contain string choices. "
+                    "Use StrEnum or ensure all member values are strings."
                 )
+            output_parser = EnumOutputParser(enum=schema)
+            llm = self.bind(nvext={"guided_choice": choices})
+
+        elif is_basemodel_subclass(schema):
+            # PydanticOutputParser does not support streaming. what we do
+            # instead is ignore all inputs that are incomplete wrt the
+            # underlying Pydantic schema. if the entire input is invalid,
+            # we return None.
+            class ForgivingPydanticOutputParser(PydanticOutputParser):
+                def parse_result(
+                    self, result: List[Generation], *, partial: bool = False
+                ) -> Any:
+                    try:
+                        return super().parse_result(result, partial=partial)
+                    except OutputParserException:
+                        pass
+                    return None
+
+            output_parser = ForgivingPydanticOutputParser(pydantic_object=schema)
+            if hasattr(schema, "model_json_schema"):
+                json_schema = schema.model_json_schema()
+            else:
+                json_schema = schema.schema()
+            llm = self.bind(nvext={"guided_json": json_schema})
+
+        else:
+            raise ValueError(
+                "Schema must be a Pydantic object, a dictionary "
+                "representing a JSON schema, or an Enum."
+            )
 
         return llm | output_parser
