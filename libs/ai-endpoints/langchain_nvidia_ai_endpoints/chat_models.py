@@ -864,7 +864,7 @@ class ChatNVIDIA(BaseChatModel):
                 else JsonOutputParser()
             )
         elif method == "function_calling":
-            # handled below 
+            # handled below
             pass
         else:
             raise ValueError(

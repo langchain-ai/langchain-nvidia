@@ -4,7 +4,6 @@ from typing import Any, Callable, Literal, Optional, Union
 import pytest
 from langchain_core.messages import HumanMessage
 
-# from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 from pydantic import BaseModel as BaseModelProper
 
@@ -337,5 +336,4 @@ def test_json_mode_with_dict(structured_model: str) -> None:
     }
 
     llm = ChatNVIDIA(model=structured_model)
-    structured_llm = llm.with_structured_output(schema, method="json_mode")
-    # assert isinstance(structured_llm.steps[-1], JsonOutputParser)
+    llm.with_structured_output(schema, method="json_mode")
