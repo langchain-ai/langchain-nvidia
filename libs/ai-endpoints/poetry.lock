@@ -575,63 +575,53 @@ files = [
 
 [[package]]
 name = "langchain-core"
-version = "0.3.1"
+version = "0.3.19"
 description = "Building applications with LLMs through composability"
 optional = false
-python-versions = ">=3.9,<4.0"
-files = []
-develop = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "langchain_core-0.3.19-py3-none-any.whl", hash = "sha256:562b7cc3c15dfaa9270cb1496990c1f3b3e0b660c4d6a3236d7f693346f2a96c"},
+    {file = "langchain_core-0.3.19.tar.gz", hash = "sha256:126d9e8cadb2a5b8d1793a228c0783a3b608e36064d5a2ef1a4d38d07a344523"},
+]
 
 [package.dependencies]
-jsonpatch = "^1.33"
-langsmith = "^0.1.117"
+jsonpatch = ">=1.33,<2.0"
+langsmith = ">=0.1.125,<0.2.0"
 packaging = ">=23.2,<25"
 pydantic = [
     {version = ">=2.5.2,<3.0.0", markers = "python_full_version < \"3.12.4\""},
     {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
 ]
 PyYAML = ">=5.3"
-tenacity = "^8.1.0,!=8.4.0"
+tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<10.0.0"
 typing-extensions = ">=4.7"
 
-[package.source]
-type = "git"
-url = "https://github.com/langchain-ai/langchain.git"
-reference = "HEAD"
-resolved_reference = "eef18dec442eabb2c2532bd67cc2efa12a43d406"
-subdirectory = "libs/core"
-
 [[package]]
-name = "langchain-standard-tests"
-version = "0.1.1"
+name = "langchain-tests"
+version = "0.3.1"
 description = "Standard tests for LangChain implementations"
 optional = false
-python-versions = ">=3.9,<4.0"
-files = []
-develop = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "langchain_tests-0.3.1-py3-none-any.whl", hash = "sha256:c62fc827247ec0a1ec73303cda8062b84581663d8f9c6e6081b1362ff822f538"},
+    {file = "langchain_tests-0.3.1.tar.gz", hash = "sha256:9a221351f4c9de00d0c731e80d2dd3281ef3ba0786193d7a566a70d480cc109f"},
+]
 
 [package.dependencies]
-httpx = "^0.27.0"
-langchain-core = "^0.3.0"
+httpx = ">=0.27.0,<0.28.0"
+langchain-core = ">=0.3.15,<0.4.0"
 pytest = ">=7,<9"
-syrupy = "^4"
-
-[package.source]
-type = "git"
-url = "https://github.com/langchain-ai/langchain.git"
-reference = "HEAD"
-resolved_reference = "eef18dec442eabb2c2532bd67cc2efa12a43d406"
-subdirectory = "libs/standard-tests"
+syrupy = ">=4,<5"
 
 [[package]]
 name = "langsmith"
-version = "0.1.123"
+version = "0.1.143"
 description = "Client library to connect to the LangSmith LLM Tracing and Evaluation Platform."
 optional = false
 python-versions = "<4.0,>=3.8.1"
 files = [
-    {file = "langsmith-0.1.123-py3-none-any.whl", hash = "sha256:ee30c96e69038af92487c6229870b9ccc1fba43eb1b84fb4132a013af7212c6e"},
-    {file = "langsmith-0.1.123.tar.gz", hash = "sha256:5d4ad7bb57351f0fc492debf2d7d0b96f2eed41b5545cd36f3043c5f4d42aa6b"},
+    {file = "langsmith-0.1.143-py3-none-any.whl", hash = "sha256:ba0d827269e9b03a90fababe41fa3e4e3f833300b95add10184f7e67167dde6f"},
+    {file = "langsmith-0.1.143.tar.gz", hash = "sha256:4c5159e5cd84b3f8499433009e72d2076dd2daf6c044ac8a3611b30d0d0161c5"},
 ]
 
 [package.dependencies]
@@ -642,6 +632,7 @@ pydantic = [
     {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
 ]
 requests = ">=2,<3"
+requests-toolbelt = ">=1.0.0,<2.0.0"
 
 [[package]]
 name = "multidict"
@@ -1308,6 +1299,20 @@ requests = ">=2.22,<3"
 fixture = ["fixtures"]
 
 [[package]]
+name = "requests-toolbelt"
+version = "1.0.0"
+description = "A utility belt for advanced users of python-requests"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+files = [
+    {file = "requests-toolbelt-1.0.0.tar.gz", hash = "sha256:7681a0a3d047012b5bdc0ee37d7f8f07ebe76ab08caeccfc3921ce23c88d5bc6"},
+    {file = "requests_toolbelt-1.0.0-py2.py3-none-any.whl", hash = "sha256:cccfdd665f0a24fcf4726e690f65639d272bb0637b9b92dfd91a5568ccf6bd06"},
+]
+
+[package.dependencies]
+requests = ">=2.0.1,<3.0.0"
+
+[[package]]
 name = "ruff"
 version = "0.1.15"
 description = "An extremely fast Python linter and code formatter, written in Rust."
@@ -1598,4 +1603,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4.0"
-content-hash = "7a08e2786a8b70e328e92fbf014c8910fb64c0c55476c0dd050d61ffa636a4e5"
+content-hash = "6ee817a4c00e718ed760e5a7d74d4e57038a619543c52cde38ed9f853c87ec64"
