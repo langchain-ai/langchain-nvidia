@@ -675,8 +675,8 @@ class ChatNVIDIA(BaseChatModel):
         schema: Union[Dict, Type],
         *,
         method: Literal[
-            "function_calling", "json_mode", "json_schema"
-        ] = "function_calling",
+            "json_mode", "json_schema"
+        ] = "json_schema",
         include_raw: bool = False,
         **kwargs: Any,
     ) -> Runnable[LanguageModelInput, Union[Dict, BaseModel]]:
@@ -687,8 +687,6 @@ class ChatNVIDIA(BaseChatModel):
             schema (Union[Dict, Type]): The schema to bind to the model.
             include_raw (bool): Always False. Passing True raises an error.
             method: The method for steering model generation, one of:
-                - "function_calling":
-                    Uses tool-calling (formerly called function calling)
                 - "json_schema":
                     Uses Structured Output API for supported models.
                 - "json_mode":
@@ -863,9 +861,6 @@ class ChatNVIDIA(BaseChatModel):
                 if is_pydantic_schema
                 else JsonOutputParser()
             )
-        elif method == "function_calling":
-            # handled below
-            pass
         else:
             raise ValueError(
                 f"Unrecognized method argument. Expected one of 'json_scheme' or "

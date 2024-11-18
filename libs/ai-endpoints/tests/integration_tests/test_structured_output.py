@@ -217,7 +217,7 @@ def nested_json(result: Any) -> None:
 def test_structured_output_json_strict(
     structured_model: str,
     mode: dict,
-    method: Literal["function_calling", "json_mode", "json_schema"],
+    method: Literal["json_mode", "json_schema"],
     strict: Optional[bool],
 ) -> None:
     """Test to verify structured output with strict=True."""
@@ -251,7 +251,7 @@ def test_structured_output_json_strict(
 def test_nested_structured_output_json_strict(
     structured_model: str,
     mode: dict,
-    method: Literal["function_calling", "json_schema", "json_mode"],
+    method: Literal["json_schema", "json_mode"],
     strict: Optional[bool],
 ) -> None:
     """Test to verify structured output with strict=True for nested object."""
@@ -273,11 +273,11 @@ def test_nested_structured_output_json_strict(
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("method", "strict"),
-    [("function_calling", True), ("json_schema", None), ("json_mode", None)],
+    [("json_schema", None), ("json_mode", None)],
 )
 async def test_structured_output_json_strict_async(
     structured_model: str,
-    method: Literal["function_calling", "json_schema", "json_mode"],
+    method: str,
     strict: Optional[bool],
 ) -> None:
     """Test to verify structured output with strict=True (async)."""
