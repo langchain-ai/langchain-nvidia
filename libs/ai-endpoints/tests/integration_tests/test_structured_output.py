@@ -277,7 +277,7 @@ def test_nested_structured_output_json_strict(
 )
 async def test_structured_output_json_strict_async(
     structured_model: str,
-    method: str,
+    method: Literal["json_schema", "json_mode"],
     strict: Optional[bool],
 ) -> None:
     """Test to verify structured output with strict=True (async)."""
