@@ -674,9 +674,7 @@ class ChatNVIDIA(BaseChatModel):
         self,
         schema: Union[Dict, Type],
         *,
-        method: Literal[
-            "json_mode", "json_schema"
-        ] = "json_schema",
+        method: Literal["json_mode", "json_schema"] = "json_schema",
         include_raw: bool = False,
         **kwargs: Any,
     ) -> Runnable[LanguageModelInput, Union[Dict, BaseModel]]:
