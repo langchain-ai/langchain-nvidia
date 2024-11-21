@@ -1,8 +1,10 @@
 from typing import Any, Optional, cast
 
+import httpx
 import pytest
 import requests_mock
 from langchain_core.messages import AIMessage, BaseMessageChunk, HumanMessage
+from pytest_httpx import HTTPXMock
 
 # from langchain_core.messages.ai import UsageMetadata
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
@@ -41,6 +43,49 @@ def mock_local_models_metadata(requests_mock: requests_mock.Mocker) -> None:
         ],
     )
     requests_mock.post("http://localhost:8888/v1/chat/completions", json=mock_response)
+
+
+@pytest.fixture
+def mock_local_models_httpx(httpx_mock: HTTPXMock) -> None:
+    # Mock the POST request for the given URL
+    mock_response["tool_calls"] = (
+        [
+            {
+                "id": "tool-ID",
+                "type": "function",
+                "function": {
+                    "name": "magic",
+                    "arguments": [],
+                },
+            }
+        ],
+    )
+    httpx_mock.add_response(
+        method="POST",
+        url="http://localhost:8888/v1/chat/completions",
+        json=mock_response,
+    )
+
+
+@pytest.fixture
+async def mock_httpx_post():
+    async with httpx.AsyncClient() as client:
+        client.post = lambda url, **kwargs: httpx.Response(
+            200,
+            json={
+                "tool_calls": [
+                    {
+                        "id": "tool-ID",
+                        "type": "function",
+                        "function": {
+                            "name": "magic",
+                            "arguments": [],
+                        },
+                    }
+                ],
+            },
+        )
+        yield client
 
 
 @pytest.fixture
@@ -92,7 +137,7 @@ def test_response_metadata(mock_local_models_metadata: None) -> None:
     response_metadata_checks(result)
 
 
-async def test_async_response_metadata(mock_local_models_metadata: None) -> None:
+async def test_async_response_metadata(mock_local_models_httpx: None) -> None:
     llm = ChatNVIDIA(base_url="http://localhost:8888/v1")
     result = await llm.ainvoke([HumanMessage(content="I'm PickleRick")], logprobs=True)
     response_metadata_checks(result)
