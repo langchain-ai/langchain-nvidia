@@ -129,6 +129,17 @@ class _NVIDIAClient(BaseModel):
 
     @field_validator("base_url")
     def _validate_base_url(cls, v: str) -> str:
+        """
+        validate the base_url.
+
+        if the base_url is not a url, raise an error
+
+        if the base_url does not end in /v1, e.g. /embeddings, /completions, /rankings,
+        or /reranking, emit a warning. old documentation told users to pass in the full
+        inference url, which is incorrect and prevents model listing from working.
+
+        normalize base_url to end in /v1
+        """
         ## Making sure /v1 in added to the url
         if v is not None:
             parsed = urlparse(v)
@@ -138,12 +149,17 @@ class _NVIDIAClient(BaseModel):
                 expected_format = "Expected format is: http://host:port"
                 raise ValueError(f"Invalid base_url format. {expected_format} Got: {v}")
 
-            if v.strip("/").endswith(
-                ("/embeddings", "/completions", "/rankings", "/reranking")
-            ):
-                warnings.warn(f"Using {v}, ignoring the rest")
+            normalized_path = parsed.path.rstrip("/")
+            if not normalized_path.endswith("/v1"):
+                warnings.warn(
+                    f"{v} does not end in /v1, you may "
+                    "have inference and listing issues"
+                )
+                normalized_path += "/v1"
 
-            v = urlunparse((parsed.scheme, parsed.netloc, "v1", None, None, None))
+            v = urlunparse(
+                (parsed.scheme, parsed.netloc, normalized_path, None, None, None)
+            )
 
         return v
 
@@ -201,9 +217,13 @@ class _NVIDIAClient(BaseModel):
                         "unknown and inference may fail."
                     )
                 else:
-                    raise ValueError(
-                        f"Model {self.mdl_name} is unknown, check `available_models`"
-                    )
+                    if self.mdl_name.startswith("nvdev/"):  # assume valid
+                        model = Model(id=self.mdl_name)
+                    else:
+                        raise ValueError(
+                            f"Model {self.mdl_name} is unknown, "
+                            "check `available_models`"
+                        )
             self.model = model
             self.mdl_name = self.model.id  # name may change because of aliasing
         else:
