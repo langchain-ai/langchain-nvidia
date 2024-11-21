@@ -34,7 +34,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         validate_assignment=True,
     )
 
-    _client: _NVIDIAClient = PrivateAttr(default=_NVIDIAClient())
+    _client: _NVIDIAClient = PrivateAttr()
 
     base_url: Optional[str] = Field(
         default=None,
