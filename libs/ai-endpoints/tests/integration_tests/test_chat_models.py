@@ -237,6 +237,7 @@ def test_ai_endpoints_invoke_max_tokens_negative_a(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
         llm.invoke("Show me the tokens")
+    assert llm._client.last_response
     assert llm._client.last_response.status_code in [400, 422]
     assert "max_tokens" in str(llm._client.last_response.content)
 
@@ -251,6 +252,7 @@ def test_ai_endpoints_invoke_max_tokens_negative_b(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
         llm.invoke("Show me the tokens")
+    assert llm._client.last_response
     assert llm._client.last_response.status_code in [400, 422]
     # custom error string -
     #    model inference failed -- ValueError: A requested length of the model output
@@ -259,6 +261,7 @@ def test_ai_endpoints_invoke_max_tokens_negative_b(
     #  or
     #    body -> max_tokens
     #    Input should be less than or equal to 2048 (type=less_than_equal; le=2048)
+    assert llm._client.last_response
     assert "length" in str(llm._client.last_response.content) or (
         "max_tokens" in str(llm._client.last_response.content)
         and "less_than_equal" in str(llm._client.last_response.content)
@@ -307,6 +310,7 @@ def test_ai_endpoints_invoke_seed_default(chat_model: str, mode: dict) -> None:
 def test_ai_endpoints_invoke_seed_range(chat_model: str, mode: dict, seed: int) -> None:
     llm = ChatNVIDIA(model=chat_model, seed=seed, **mode)
     llm.invoke("What's in a seed?")
+    assert llm._client.last_response
     assert llm._client.last_response.status_code == 200
 
 
@@ -333,6 +337,7 @@ def test_ai_endpoints_invoke_temperature_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, temperature=temperature, **mode)
         llm.invoke("What's in a temperature?")
+    assert llm._client.last_response
     assert llm._client.last_response.status_code in [400, 422]
     assert "temperature" in str(llm._client.last_response.content)
 
@@ -361,6 +366,7 @@ def test_ai_endpoints_invoke_top_p_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, top_p=top_p, **mode)
         llm.invoke("What's in a top_p?")
+    assert llm._client.last_response
     assert llm._client.last_response.status_code in [400, 422]
     assert "top_p" in str(llm._client.last_response.content)
 
