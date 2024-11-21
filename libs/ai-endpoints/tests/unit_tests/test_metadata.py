@@ -1,6 +1,5 @@
 from typing import Any, Optional, cast
 
-import httpx
 import pytest
 import requests_mock
 from langchain_core.messages import AIMessage, BaseMessageChunk, HumanMessage
