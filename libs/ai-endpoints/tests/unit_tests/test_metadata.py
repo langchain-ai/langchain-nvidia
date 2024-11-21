@@ -68,27 +68,6 @@ def mock_local_models_httpx(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.fixture
-async def mock_httpx_post():
-    async with httpx.AsyncClient() as client:
-        client.post = lambda url, **kwargs: httpx.Response(
-            200,
-            json={
-                "tool_calls": [
-                    {
-                        "id": "tool-ID",
-                        "type": "function",
-                        "function": {
-                            "name": "magic",
-                            "arguments": [],
-                        },
-                    }
-                ],
-            },
-        )
-        yield client
-
-
-@pytest.fixture
 def mock_local_models_stream_metadata(requests_mock: requests_mock.Mocker) -> None:
     response_contents = "\n\n".join(
         [
