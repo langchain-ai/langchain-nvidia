@@ -388,6 +388,33 @@ class ChatNVIDIA(BaseChatModel):
         generation = ChatGeneration(message=AIMessage(**parsed_response))
         return ChatResult(generations=[generation], llm_output=responses)
 
+    async def _agenerate(
+        self,
+        messages: List[BaseMessage],
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> ChatResult:
+        inputs = [
+            message
+            for message in [convert_message_to_dict(message) for message in messages]
+        ]
+        inputs, extra_headers = _process_for_vlm(inputs, self._client.model)
+        payload = self._get_payload(inputs=inputs, stop=stop, stream=False, **kwargs)
+        if payload.get("stream", False) is True:
+            payload = {**payload, "stream": False}
+        response, _ = await self._client.aget_req(
+            payload=payload, extra_headers=extra_headers
+        )
+        responses, _ = self._client.postprocess(response)
+        self._set_callback_out(responses, run_manager)
+        parsed_response = self._custom_postprocess(responses, streaming=False)
+        # for pre 0.2 compatibility w/ ChatMessage
+        # ChatMessage had a role property that was not present in AIMessage
+        parsed_response.update({"role": "assistant"})
+        generation = ChatGeneration(message=AIMessage(**responses))
+        return ChatResult(generations=[generation], llm_output=responses)
+
     def _stream(
         self,
         messages: List[BaseMessage],

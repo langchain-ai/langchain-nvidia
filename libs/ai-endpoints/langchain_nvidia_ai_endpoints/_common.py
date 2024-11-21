@@ -19,7 +19,9 @@ from typing import (
 )
 from urllib.parse import urlparse, urlunparse
 
+import httpx
 import requests
+from httpx import AsyncClient
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -76,6 +78,7 @@ class _NVIDIAClient(BaseModel):
         description="Path for polling after HTTP 202 responses",
     )
     get_session_fn: Callable = Field(requests.Session)
+    get_asession_fn: Callable = Field(AsyncClient)
 
     api_key: Optional[SecretStr] = Field(
         default_factory=lambda: SecretStr(
@@ -349,6 +352,26 @@ class _NVIDIAClient(BaseModel):
         self._try_raise(response)
         return response, session
 
+    async def _apost(
+        self,
+        invoke_url: str,
+        payload: Optional[dict] = {},
+        extra_headers: dict = {},
+    ) -> Tuple[httpx.Response, Any]:
+        """Async Method for posting to the AI Foundation Model Function API."""
+        self.last_inputs = {
+            "url": invoke_url,
+            "headers": {
+                **self.headers_tmpl["call"],
+                **extra_headers,
+            },
+            "json": payload,
+        }
+        async with self.get_asession_fn() as session:
+            response = await session.post(**self.__add_authorization(self.last_inputs))
+        self._try_raise(response)
+        return response, session
+
     def _get(
         self,
         invoke_url: str,
@@ -455,9 +478,16 @@ class _NVIDIAClient(BaseModel):
         )
         return self._wait(response, session)
 
+    async def aget_req(
+        self,
+        payload: dict = {},
+        extra_headers: dict = {},
+    ) -> Tuple[httpx.Response, Any]:
+        return await self._apost(self.infer_url, payload, extra_headers=extra_headers)
+
     def postprocess(
         self,
-        response: Union[str, Response],
+        response: Union[str, Any[Response, httpx.Response]],
     ) -> Tuple[dict, bool]:
         """Parses a response from the AI Foundation Model Function API.
         Strongly assumes that the API will return a single response.
