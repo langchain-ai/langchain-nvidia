@@ -1,5 +1,7 @@
 """Test ChatNVIDIA chat model."""
 
+import asyncio
+import time
 from typing import List
 
 import pytest
@@ -11,6 +13,7 @@ from langchain_core.messages import (
     HumanMessage,
     SystemMessage,
 )
+from langchain_core.outputs import ChatGeneration, LLMResult
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
@@ -236,6 +239,7 @@ def test_ai_endpoints_invoke_max_tokens_negative_a(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
         llm.invoke("Show me the tokens")
+    assert llm._client.last_response
     assert llm._client.last_response.status_code in [400, 422]
     assert "max_tokens" in str(llm._client.last_response.content)
 
@@ -250,6 +254,7 @@ def test_ai_endpoints_invoke_max_tokens_negative_b(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
         llm.invoke("Show me the tokens")
+    assert llm._client.last_response
     assert llm._client.last_response.status_code in [400, 422]
     # custom error string -
     #    model inference failed -- ValueError: A requested length of the model output
@@ -258,6 +263,7 @@ def test_ai_endpoints_invoke_max_tokens_negative_b(
     #  or
     #    body -> max_tokens
     #    Input should be less than or equal to 2048 (type=less_than_equal; le=2048)
+    assert llm._client.last_response
     assert "length" in str(llm._client.last_response.content) or (
         "max_tokens" in str(llm._client.last_response.content)
         and "less_than_equal" in str(llm._client.last_response.content)
@@ -306,6 +312,7 @@ def test_ai_endpoints_invoke_seed_default(chat_model: str, mode: dict) -> None:
 def test_ai_endpoints_invoke_seed_range(chat_model: str, mode: dict, seed: int) -> None:
     llm = ChatNVIDIA(model=chat_model, seed=seed, **mode)
     llm.invoke("What's in a seed?")
+    assert llm._client.last_response
     assert llm._client.last_response.status_code == 200
 
 
@@ -332,6 +339,7 @@ def test_ai_endpoints_invoke_temperature_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, temperature=temperature, **mode)
         llm.invoke("What's in a temperature?")
+    assert llm._client.last_response
     assert llm._client.last_response.status_code in [400, 422]
     assert "temperature" in str(llm._client.last_response.content)
 
@@ -360,6 +368,7 @@ def test_ai_endpoints_invoke_top_p_negative(
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, top_p=top_p, **mode)
         llm.invoke("What's in a top_p?")
+    assert llm._client.last_response
     assert llm._client.last_response.status_code in [400, 422]
     assert "top_p" in str(llm._client.last_response.content)
 
@@ -441,3 +450,42 @@ def test_stop(
             assert isinstance(token.content, str)
             result += f"{token.content}|"
     assert all(target not in result for target in targets)
+
+
+def test_generate(chat_model: str, mode: dict) -> None:
+    """Test generate method of ChatNVIDIA."""
+    chat = ChatNVIDIA(model=chat_model, **mode)  # type: ignore[call-arg]
+    chat_messages: List[List[BaseMessage]] = [
+        [HumanMessage(content="How many toes do dogs have?")]
+    ]
+    messages_copy = [messages.copy() for messages in chat_messages]
+    result: LLMResult = chat.generate(chat_messages)
+    assert isinstance(result, LLMResult)
+    for response in result.generations[0]:
+        assert isinstance(response, ChatGeneration)
+        assert isinstance(response.text, str)
+        assert response.text == response.message.content
+    assert chat_messages == messages_copy
+
+
+async def test_async_generate(chat_model: str, mode: dict) -> None:
+    """Test async generation."""
+    llm = ChatNVIDIA(model=chat_model, **mode)
+    message = HumanMessage(content="Hello")
+
+    async def request(message: HumanMessage) -> LLMResult:
+        return await llm.agenerate([[message]])
+
+    start_time = time.time()
+    task1, task2 = request(message), request(message)
+    _, _ = await asyncio.gather(task1, task2)
+
+    assert (time.time() - start_time) < 2, "Tasks did not run concurrently"
+
+    response = await llm.agenerate([[message]])
+    assert isinstance(response, LLMResult)
+    for generations in response.generations:
+        for generation in generations:
+            assert isinstance(generation, ChatGeneration)
+            assert isinstance(generation.text, str)
+            assert generation.text == generation.message.content

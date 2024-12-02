@@ -23,7 +23,7 @@ class NVIDIA(LLM):
         validate_assignment=True,
     )
 
-    _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
+    _client: _NVIDIAClient = PrivateAttr()
     _default_model_name: str = "nvidia/mistral-nemo-minitron-8b-base"
     base_url: Optional[str] = Field(
         default=None,
