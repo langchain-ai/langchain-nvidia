@@ -1,5 +1,7 @@
 """Test ChatNVIDIA chat model."""
 
+import asyncio
+import time
 from typing import List
 
 import pytest
@@ -451,7 +453,7 @@ def test_stop(
 
 
 def test_generate(chat_model: str, mode: dict) -> None:
-    """Test generate method of anthropic."""
+    """Test generate method of ChatNVIDIA."""
     chat = ChatNVIDIA(model=chat_model, **mode)  # type: ignore[call-arg]
     chat_messages: List[List[BaseMessage]] = [
         [HumanMessage(content="How many toes do dogs have?")]
@@ -466,11 +468,20 @@ def test_generate(chat_model: str, mode: dict) -> None:
     assert chat_messages == messages_copy
 
 
-# @pytest.mark.scheduled
 async def test_async_generate(chat_model: str, mode: dict) -> None:
     """Test async generation."""
     llm = ChatNVIDIA(model=chat_model, **mode)
     message = HumanMessage(content="Hello")
+
+    async def request(message: HumanMessage) -> LLMResult:
+        return await llm.agenerate([[message]])
+
+    start_time = time.time()
+    task1, task2 = request(message), request(message)
+    _, _ = await asyncio.gather(task1, task2)
+
+    assert (time.time() - start_time) < 2, "Tasks did not run concurrently"
+
     response = await llm.agenerate([[message]])
     assert isinstance(response, LLMResult)
     for generations in response.generations:
