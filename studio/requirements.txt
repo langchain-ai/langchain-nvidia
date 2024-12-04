@@ -1,0 +1,8 @@
+langchain-nvidia-ai-endpoints
+langchain-chroma
+langchain-community
+langchain
+langgraph
+tavily-python
+beautifulsoup4
+lxml

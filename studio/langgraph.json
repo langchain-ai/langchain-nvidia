@@ -1,0 +1,11 @@
+{
+    "dockerfile_lines": [],
+    "graphs": {
+      "agentic_rag_nvidia": "./agentic_rag_nvidia.py:graph"
+    },
+    "python_version": "3.11",
+    "env": "./.env",
+    "dependencies": [
+      "."
+    ]
+  }
