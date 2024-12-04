@@ -17,3 +17,7 @@ See the notebooks in the [cookbook](./cookbook) directory for examples of using 
 See the [studio](./studio) directory to test the agentic RAG workflow in LangGraph Studio.
 
 Simply load the `studio` directory in [LangGraph Studio](https://github.com/langchain-ai/langgraph-studio?tab=readme-ov-file#download) and click the "Run" button with an input question.
+
+This will run agentic RAG where it first reflects on the question to decide whether to use web search or vectorstore retrieval. It also grades retrieved documents as well as generated answers.
+
+![Screenshot 2024-12-04 at 11 19 54 AM](https://github.com/user-attachments/assets/736544ff-6597-4eb4-89d1-e1e5863baad4)
