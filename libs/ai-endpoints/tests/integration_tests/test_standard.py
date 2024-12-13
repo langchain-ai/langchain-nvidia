@@ -20,8 +20,10 @@ class TestNVIDIAStandard(ChatModelIntegrationTests):
         return {"model": "meta/llama-3.1-8b-instruct"}
 
     @pytest.mark.xfail(reason="anthropic-style list content not supported")
-    def test_tool_message_histories_list_content(self, model: BaseChatModel) -> None:
-        return super().test_tool_message_histories_list_content(model)
+    def test_tool_message_histories_list_content(
+        self, model: BaseChatModel, my_adder_tool: BaseTool
+    ) -> None:
+        return super().test_tool_message_histories_list_content(model, my_adder_tool)
 
     @pytest.mark.xfail(reason="Empty AIMessage content not supported")
     def test_tool_message_error_status(
