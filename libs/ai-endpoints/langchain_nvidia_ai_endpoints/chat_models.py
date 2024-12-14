@@ -253,7 +253,7 @@ class ChatNVIDIA(BaseChatModel):
             response = model.invoke("Hello")
     """
 
-    _client: _NVIDIAClient = PrivateAttr(_NVIDIAClient)
+    _client: _NVIDIAClient = PrivateAttr()
     base_url: Optional[str] = Field(
         default=None,
         description="Base url for model listing an invocation",

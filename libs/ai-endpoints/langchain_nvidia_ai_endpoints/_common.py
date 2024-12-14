@@ -100,8 +100,8 @@ class _NVIDIAClient(BaseModel):
     last_inputs: Optional[dict] = Field(
         default={}, description="Last inputs sent over to the server"
     )
-    last_response: Response = Field(
-        None, description="Last response sent from the server"
+    last_response: Optional[Response] = Field(
+        Response(), description="Last response sent from the server"
     )
     headers_tmpl: dict = Field(
         {
