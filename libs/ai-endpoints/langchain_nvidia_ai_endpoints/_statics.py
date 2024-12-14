@@ -481,6 +481,17 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_structured_output=True,
     ),
+    "nvidia/usdcode-llama-3.1-70b-instruct": Model(
+        id="nvidia/usdcode-llama-3.1-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "meta/llama-3.3-70b-instruct": Model(
+        id="meta/llama-3.3-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_structured_output=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
