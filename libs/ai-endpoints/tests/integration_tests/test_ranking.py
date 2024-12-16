@@ -202,7 +202,7 @@ def test_truncate_negative(rerank_model: str, mode: dict, truncate: str) -> None
     query = "What is acceleration?"
     documents = [
         Document(page_content="NVIDIA " * length)
-        for length in [32, 1024, 64, 128, 2048, 256, 512]
+        for length in [32, 1024, 64, 128, 10240, 256, 512]
     ]
     truncate_param = {}
     if truncate:
