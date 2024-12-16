@@ -624,6 +624,11 @@ EMBEDDING_MODEL_TABLE = {
         model_type="embedding",
         client="NVIDIAEmbeddings",
     ),
+    "nvidia/llama-3.2-nv-embedqa-1b-v2": Model(
+        id="nvidia/llama-3.2-nv-embedqa-1b-v2",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+    ),
 }
 
 RANKING_MODEL_TABLE = {
@@ -645,6 +650,12 @@ RANKING_MODEL_TABLE = {
         model_type="ranking",
         client="NVIDIARerank",
         endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-3_2-nv-rerankqa-1b-v1/reranking",
+    ),
+    "nvidia/llama-3.2-nv-rerankqa-1b-v2": Model(
+        id="nvidia/llama-3.2-nv-rerankqa-1b-v2",
+        model_type="ranking",
+        client="NVIDIARerank",
+        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-3_2-nv-rerankqa-1b-v2/reranking",
     ),
 }
 
