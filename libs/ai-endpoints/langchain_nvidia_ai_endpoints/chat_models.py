@@ -48,8 +48,11 @@ from langchain_core.outputs import (
 )
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
-from langchain_core.utils.function_calling import convert_to_openai_tool
-from langchain_core.utils.pydantic import is_basemodel_subclass
+from langchain_core.utils.function_calling import (
+    convert_to_openai_function,
+    convert_to_openai_tool,
+)
+from langchain_core.utils.pydantic import TypeBaseModel, is_basemodel_subclass
 from pydantic import BaseModel, Field, PrivateAttr
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
@@ -235,6 +238,28 @@ def _process_for_vlm(
             extra_headers["NVCF-INPUT-ASSET-REFERENCES"] = ",".join(asset_ids)
         inputs = [_nv_vlm_adjust_input(message, model.model_type) for message in inputs]
     return inputs, extra_headers
+
+
+def _convert_to_openai_response_format(
+    schema: Union[Dict[str, Any], Type],
+) -> Union[Dict, TypeBaseModel]:
+    if isinstance(schema, type) and is_basemodel_subclass(schema):
+        return schema
+
+    if (
+        isinstance(schema, dict)
+        and "json_schema" in schema
+        and schema.get("type") == "json_schema"
+    ):
+        response_format = schema
+    elif isinstance(schema, dict) and "name" in schema and "schema" in schema:
+        response_format = {"type": "json_schema", "json_schema": schema}
+    else:
+        function = convert_to_openai_function(schema)
+        function["schema"] = function.pop("parameters")
+        response_format = {"type": "json_schema", "json_schema": function}
+
+    return response_format
 
 
 _DEFAULT_MODEL_NAME: str = "meta/llama3-8b-instruct"
@@ -650,6 +675,7 @@ class ChatNVIDIA(BaseChatModel):
         self,
         schema: Union[Dict, Type],
         *,
+        method: Literal["json_mode", "json_schema"] = "json_schema",
         include_raw: bool = False,
         **kwargs: Any,
     ) -> Runnable[LanguageModelInput, Union[Dict, BaseModel]]:
@@ -659,6 +685,13 @@ class ChatNVIDIA(BaseChatModel):
         Args:
             schema (Union[Dict, Type]): The schema to bind to the model.
             include_raw (bool): Always False. Passing True raises an error.
+            method: The method for steering model generation, one of:
+                - "json_schema":
+                    Uses Structured Output API for supported models.
+                - "json_mode":
+                    Uses JSON mode. Note that if using JSON mode then you
+                    must include instructions for formatting the output into the
+                    desired schema into the model call:
             **kwargs: Additional keyword arguments.
 
         Notes:
@@ -774,13 +807,6 @@ class ChatNVIDIA(BaseChatModel):
         For more, see https://python.langchain.com/docs/how_to/structured_output/
         """  # noqa: E501
 
-        if "method" in kwargs:
-            warnings.warn(
-                "The 'method' parameter is unnecessary and is ignored. "
-                "The appropriate method will be chosen automatically depending "
-                "on the type of schema provided."
-            )
-
         if kwargs.get("strict", True) is not True:
             warnings.warn(
                 "Structured output always follows strict validation. "
@@ -796,6 +822,8 @@ class ChatNVIDIA(BaseChatModel):
                 "-outputs-directly or rely on the structured response "
                 "being None when the LLM produces an incomplete response."
             )
+
+        is_pydantic_schema = isinstance(schema, type) and is_basemodel_subclass(schema)
 
         # check if the model supports structured output, warn if it does not
         known_good = False
@@ -815,11 +843,32 @@ class ChatNVIDIA(BaseChatModel):
                 f"Model '{self.model}' is not known to support structured output. "
                 "Your output may fail at inference time."
             )
+        output_parser: BaseOutputParser  # create a common type
+
+        if method == "json_mode":
+            llm = self.bind(response_format={"type": "json_object"})
+            output_parser = (
+                PydanticOutputParser(pydantic_object=schema)  # type: ignore[arg-type]
+                if is_pydantic_schema
+                else JsonOutputParser()
+            )
+        elif method == "json_schema":
+            response_format = _convert_to_openai_response_format(schema)
+            llm = self.bind(response_format=response_format)
+            output_parser = (
+                PydanticOutputParser(pydantic_object=schema)  # type: ignore[arg-type]
+                if is_pydantic_schema
+                else JsonOutputParser()
+            )
+        else:
+            raise ValueError(
+                f"Unrecognized method argument. Expected one of 'json_scheme' or "
+                f"'json_mode'. Received: '{method}'"
+            )
 
         if isinstance(schema, dict):
-            output_parser: BaseOutputParser = JsonOutputParser()
-            nvext_param: Dict[str, Any] = {"guided_json": schema}
-
+            output_parser = JsonOutputParser()
+            llm = self.bind(nvext={"guided_json": schema})
         elif issubclass(schema, enum.Enum):
             # langchain's EnumOutputParser is not in langchain_core
             # and doesn't support streaming. this is a simple implementation
@@ -846,7 +895,7 @@ class ChatNVIDIA(BaseChatModel):
                     "Use StrEnum or ensure all member values are strings."
                 )
             output_parser = EnumOutputParser(enum=schema)
-            nvext_param = {"guided_choice": choices}
+            llm = self.bind(nvext={"guided_choice": choices})
 
         elif is_basemodel_subclass(schema):
             # PydanticOutputParser does not support streaming. what we do
@@ -868,7 +917,7 @@ class ChatNVIDIA(BaseChatModel):
                 json_schema = schema.model_json_schema()
             else:
                 json_schema = schema.schema()
-            nvext_param = {"guided_json": json_schema}
+            llm = self.bind(nvext={"guided_json": json_schema})
 
         else:
             raise ValueError(
@@ -876,4 +925,4 @@ class ChatNVIDIA(BaseChatModel):
                 "representing a JSON schema, or an Enum."
             )
 
-        return super().bind(nvext=nvext_param) | output_parser
+        return llm | output_parser

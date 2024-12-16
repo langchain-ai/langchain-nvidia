@@ -11,6 +11,7 @@ from langchain_core.messages import (
     BaseMessage,
     BaseMessageChunk,
 )
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import tool
 from pydantic import Field
 
@@ -787,3 +788,35 @@ def test_stream_usage_metadata(
     assert response_in < baseline_in * tolerance
     assert response_out < baseline_out * tolerance
     assert response_total < baseline_total * tolerance
+
+
+def test_json_mode(tool_model: str) -> None:
+    llm = ChatNVIDIA(model=tool_model).bind(response_format={"type": "json_object"})
+    response = llm.invoke(
+        "Return this as json: {'a': 1}",
+    )
+    assert isinstance(response.content, str)
+    assert json.loads(response.content) == {"a": 1}
+
+    # Test streaming
+    full: Optional[Union[BaseMessage, ChatPromptTemplate]] = None
+    for chunk in llm.stream("Return this as json: {'a': 1}"):
+        full = chunk if full is None else full + chunk
+    assert isinstance(full, AIMessageChunk)
+    assert isinstance(full.content, str)
+    assert json.loads(full.content) == {"a": 1}
+
+
+async def test_json_mode_async(tool_model: str) -> None:
+    llm = ChatNVIDIA(model=tool_model).bind(response_format={"type": "json_object"})
+    response = await llm.ainvoke("Return this as json: {'a': 1}")
+    assert isinstance(response.content, str)
+    assert json.loads(response.content) == {"a": 1}
+
+    # Test streaming
+    full: Optional[Union[BaseMessage, ChatPromptTemplate]] = None
+    async for chunk in llm.astream("Return this as json: {'a': 1}"):
+        full = chunk if full is None else full + chunk
+    assert isinstance(full, AIMessageChunk)
+    assert isinstance(full.content, str)
+    assert json.loads(full.content) == {"a": 1}
