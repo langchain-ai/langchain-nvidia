@@ -1,5 +1,3 @@
-"""Embeddings Components Derived from NVEModel/Embeddings"""
-
 from typing import Any, List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
@@ -28,6 +26,8 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     - truncate: "NONE", "START", "END", truncate input text if it exceeds the model's
         maximum token length. Default is "NONE", which raises an error if an input is
         too long.
+    - dimensions: int, the number of dimensions for the embeddings. This parameter is
+                  not supported by all models.
     """
 
     model_config = ConfigDict(
@@ -45,6 +45,13 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         description=(
             "Truncate input text if it exceeds the model's maximum token length. "
             "Default is 'NONE', which raises an error if an input is too long."
+        ),
+    )
+    dimensions: Optional[int] = Field(
+        default=None,
+        description=(
+            "The number of dimensions for the embeddings. This parameter is not "
+            "supported by all models."
         ),
     )
     max_batch_size: int = Field(default=_DEFAULT_BATCH_SIZE)
@@ -67,6 +74,8 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             trucate (str): "NONE", "START", "END", truncate input text if it exceeds
                             the model's context length. Default is "NONE", which raises
                             an error if an input is too long.
+            dimensions (int): The number of dimensions for the embeddings. This parameter
+                              is not supported by all models.
 
         API Key:
         - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
@@ -125,6 +134,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         #  user: str                           -- ignored
         #  truncate: "NONE" | "START" | "END"  -- default "NONE", error raised if
         #                                         an input is too long
+        #  dimensions: int                     -- not supported by all models
         payload = {
             "input": texts,
             "model": self.model,
@@ -133,6 +143,8 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         }
         if self.truncate:
             payload["truncate"] = self.truncate
+        if self.dimensions:
+            payload["dimensions"] = self.dimensions
 
         response = self._client.get_req(
             payload=payload,
