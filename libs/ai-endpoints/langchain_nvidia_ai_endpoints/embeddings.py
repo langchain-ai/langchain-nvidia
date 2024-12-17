@@ -1,4 +1,4 @@
-from typing import Any, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.outputs.llm_result import LLMResult
@@ -74,8 +74,8 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             trucate (str): "NONE", "START", "END", truncate input text if it exceeds
                             the model's context length. Default is "NONE", which raises
                             an error if an input is too long.
-            dimensions (int): The number of dimensions for the embeddings. This parameter
-                              is not supported by all models.
+            dimensions (int): The number of dimensions for the embeddings. This
+                              parameter is not supported by all models.
 
         API Key:
         - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
@@ -135,7 +135,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         #  truncate: "NONE" | "START" | "END"  -- default "NONE", error raised if
         #                                         an input is too long
         #  dimensions: int                     -- not supported by all models
-        payload = {
+        payload: Dict[str, Any] = {
             "input": texts,
             "model": self.model,
             "encoding_format": "float",
