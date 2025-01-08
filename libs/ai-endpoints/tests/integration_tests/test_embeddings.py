@@ -97,5 +97,81 @@ def test_embed_documents_truncate(
     assert len(output) == count
 
 
+@pytest.mark.parametrize("dimensions", [32, 64, 128, 2048])
+def test_embed_query_with_dimensions(
+    embedding_model: str, mode: dict, dimensions: int
+) -> None:
+    if embedding_model != "nvidia/llama-3.2-nv-embedqa-1b-v2":
+        pytest.skip("Model does not support custom dimensions.")
+    query = "foo bar"
+    embedding = NVIDIAEmbeddings(model=embedding_model, dimensions=dimensions, **mode)
+    assert len(embedding.embed_query(query)) == dimensions
+
+
+@pytest.mark.parametrize("dimensions", [32, 64, 128, 2048])
+def test_embed_documents_with_dimensions(
+    embedding_model: str, mode: dict, dimensions: int
+) -> None:
+    if embedding_model != "nvidia/llama-3.2-nv-embedqa-1b-v2":
+        pytest.skip("Model does not support custom dimensions.")
+    documents = ["foo bar", "bar foo"]
+    embedding = NVIDIAEmbeddings(model=embedding_model, dimensions=dimensions, **mode)
+    output = embedding.embed_documents(documents)
+    assert len(output) == len(documents)
+    assert all(len(doc) == dimensions for doc in output)
+
+
+@pytest.mark.parametrize("dimensions", [102400])
+def test_embed_query_with_large_dimensions(
+    embedding_model: str, mode: dict, dimensions: int
+) -> None:
+    if embedding_model != "nvidia/llama-3.2-nv-embedqa-1b-v2":
+        pytest.skip("Model does not support custom dimensions.")
+    query = "foo bar"
+    embedding = NVIDIAEmbeddings(model=embedding_model, dimensions=dimensions, **mode)
+    assert 2048 <= len(embedding.embed_query(query)) < dimensions
+
+
+@pytest.mark.parametrize("dimensions", [102400])
+def test_embed_documents_with_large_dimensions(
+    embedding_model: str, mode: dict, dimensions: int
+) -> None:
+    if embedding_model != "nvidia/llama-3.2-nv-embedqa-1b-v2":
+        pytest.skip("Model does not support custom dimensions.")
+    documents = ["foo bar", "bar foo"]
+    embedding = NVIDIAEmbeddings(model=embedding_model, dimensions=dimensions, **mode)
+    output = embedding.embed_documents(documents)
+    assert len(output) == len(documents)
+    assert all(2048 <= len(doc) < dimensions for doc in output)
+
+
+@pytest.mark.parametrize("dimensions", [-1])
+def test_embed_query_invalid_dimensions(
+    embedding_model: str, mode: dict, dimensions: int
+) -> None:
+    if embedding_model != "nvidia/llama-3.2-nv-embedqa-1b-v2":
+        pytest.skip("Model does not support custom dimensions.")
+    query = "foo bar"
+    with pytest.raises(Exception) as exc:
+        NVIDIAEmbeddings(
+            model=embedding_model, dimensions=dimensions, **mode
+        ).embed_query(query)
+    assert "400" in str(exc.value)
+
+
+@pytest.mark.parametrize("dimensions", [-1])
+def test_embed_documents_invalid_dimensions(
+    embedding_model: str, mode: dict, dimensions: int
+) -> None:
+    if embedding_model != "nvidia/llama-3.2-nv-embedqa-1b-v2":
+        pytest.skip("Model does not support custom dimensions.")
+    documents = ["foo bar", "bar foo"]
+    with pytest.raises(Exception) as exc:
+        NVIDIAEmbeddings(
+            model=embedding_model, dimensions=dimensions, **mode
+        ).embed_documents(documents)
+    assert "400" in str(exc.value)
+
+
 # todo: test max_length > max length accepted by the model
 # todo: test max_batch_size > max batch size accepted by the model
