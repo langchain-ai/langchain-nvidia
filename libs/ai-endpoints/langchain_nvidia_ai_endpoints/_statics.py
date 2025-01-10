@@ -490,6 +490,7 @@ CHAT_MODEL_TABLE = {
         id="meta/llama-3.3-70b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        supports_tools=True,
         supports_structured_output=True,
     ),
 }
