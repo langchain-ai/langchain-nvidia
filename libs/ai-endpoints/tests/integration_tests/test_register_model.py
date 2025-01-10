@@ -37,8 +37,8 @@ from langchain_nvidia_ai_endpoints import (
         ),
         (
             NVIDIA,
-            "bigcode/starcoder2-7b",
-            "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/dd7b01e7-732d-4da5-8e8d-315f79165a23",
+            "bigcode/starcoder2-15b",
+            "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/d9cfe8a2-44df-44a0-ba51-3fc4a202c11c",
         ),
     ],
 )
