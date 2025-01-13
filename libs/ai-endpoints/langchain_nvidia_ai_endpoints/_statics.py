@@ -493,6 +493,21 @@ CHAT_MODEL_TABLE = {
         supports_tools=True,
         supports_structured_output=True,
     ),
+    "qwen/qwen2.5-coder-32b-instruct": Model(
+        id="qwen/qwen2.5-coder-32b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "qwen/qwen2.5-coder-7b-instruct": Model(
+        id="qwen/qwen2.5-coder-7b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "nvidia/llama-3.1-nemotron-70b-reward": Model(
+        id="nvidia/llama-3.1-nemotron-70b-reward",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
