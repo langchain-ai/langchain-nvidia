@@ -135,7 +135,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("completions_model", models, ids=models)
 
     if "structured_model" in metafunc.fixturenames:
-        models = ["meta/llama-3.1-8b-instruct"]
+        models = ["meta/llama-3.3-70b-instruct"]
         if model_list := metafunc.config.getoption("structured_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):
