@@ -1,8 +1,11 @@
 """Test ChatNVIDIA chat model."""
 
+import asyncio
+import time
 from typing import List
 
 import pytest
+import requests_mock
 from langchain_core.load.dump import dumps
 from langchain_core.load.load import loads
 from langchain_core.messages import (
@@ -11,6 +14,7 @@ from langchain_core.messages import (
     HumanMessage,
     SystemMessage,
 )
+from langchain_core.outputs import ChatGeneration, LLMResult
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
@@ -260,6 +264,7 @@ def test_ai_endpoints_invoke_max_tokens_negative_b(
     #  or
     #    body -> max_tokens
     #    Input should be less than or equal to 2048 (type=less_than_equal; le=2048)
+    assert llm._client.last_response
     assert "length" in str(llm._client.last_response.content) or (
         "max_tokens" in str(llm._client.last_response.content)
         and "less_than_equal" in str(llm._client.last_response.content)
@@ -446,3 +451,93 @@ def test_stop(
             assert isinstance(token.content, str)
             result += f"{token.content}|"
     assert all(target not in result for target in targets)
+
+
+def test_generate(chat_model: str, mode: dict) -> None:
+    """Test generate method of ChatNVIDIA."""
+    chat = ChatNVIDIA(model=chat_model, **mode)  # type: ignore[call-arg]
+    chat_messages: List[List[BaseMessage]] = [
+        [HumanMessage(content="How many toes do dogs have?")]
+    ]
+    messages_copy = [messages.copy() for messages in chat_messages]
+    result: LLMResult = chat.generate(chat_messages)
+    assert isinstance(result, LLMResult)
+    for response in result.generations[0]:
+        assert isinstance(response, ChatGeneration)
+        assert isinstance(response.text, str)
+        assert response.text == response.message.content
+    assert chat_messages == messages_copy
+
+
+@pytest.fixture()
+def mock_async_resp():
+    mock_response = {
+        "id": "chat-c891882b0c4448a5b258c63d2b031c82",
+        "object": "chat.completion",
+        "created": 1729173278,
+        "model": "meta/llama-3.2-3b-instruct",
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": "A simple yet"},
+                "logprobs": "",
+                "finish_reason": "tool_calls",
+                "stop_reason": "",
+            }
+        ],
+        "usage": {"prompt_tokens": 12, "total_tokens": 15, "completion_tokens": 3},
+        "prompt_logprobs": "",
+    }
+    requests_mock.Mocker().post(
+        "https://integrate.api.nvidia.com/v1/chat/completions", json=mock_response
+    )
+
+
+async def test_async_generate_func(
+    chat_model: str, mode: dict, mock_async_resp
+) -> None:
+    """Test async generation functionality."""
+    llm = ChatNVIDIA(model=chat_model, **mode)
+    message = HumanMessage(content="Hello")
+
+    async def request(message: HumanMessage) -> LLMResult:
+        await asyncio.sleep(1)
+        return await llm.agenerate([[message]])
+
+    start_time = time.time()
+    task1, task2 = request(message), request(message)
+    _, _ = await asyncio.gather(task1, task2)
+
+    assert (time.time() - start_time) < 2, "Tasks did not run concurrently"
+
+
+async def test_async_generate(chat_model: str, mode: dict) -> None:
+    """Test async generate method of ChatNVIDIA."""
+    llm = ChatNVIDIA(model=chat_model, **mode)
+    message = HumanMessage(content="Hello")
+
+    response = await llm.agenerate([[message]])
+    assert isinstance(response, LLMResult)
+    for generations in response.generations:
+        for generation in generations:
+            assert isinstance(generation, ChatGeneration)
+            assert isinstance(generation.text, str)
+            assert generation.text == generation.message.content
+
+
+async def test_async_generate_fail(
+    chat_model: str, mode: dict, mock_async_resp
+) -> None:
+    """Test async generation functionality."""
+    llm = ChatNVIDIA(model=chat_model, **mode)
+    message = HumanMessage(content="Hello")
+
+    def request(message: HumanMessage) -> LLMResult:
+        time.sleep(1)  # execute synchronously
+        return llm.agenerate([[message]])
+
+    start_time = time.time()
+    task1, task2 = request(message), request(message)
+    _, _ = await asyncio.gather(task1, task2)
+
+    assert (time.time() - start_time) > 2, "Tasks did run concurrently"
