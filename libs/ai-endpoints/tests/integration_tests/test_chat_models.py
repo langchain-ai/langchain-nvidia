@@ -5,6 +5,7 @@ import time
 from typing import List
 
 import pytest
+import requests_mock
 from langchain_core.load.dump import dumps
 from langchain_core.load.load import loads
 from langchain_core.messages import (
@@ -468,12 +469,34 @@ def test_generate(chat_model: str, mode: dict) -> None:
     assert chat_messages == messages_copy
 
 
-async def test_async_generate(chat_model: str, mode: dict) -> None:
-    """Test async generation."""
+async def test_async_generate_func(chat_model: str, mode: dict) -> None:
+    """Test async generation functionality."""
     llm = ChatNVIDIA(model=chat_model, **mode)
     message = HumanMessage(content="Hello")
 
+    mock_response = {
+        "id": "chat-c891882b0c4448a5b258c63d2b031c82",
+        "object": "chat.completion",
+        "created": 1729173278,
+        "model": "meta/llama-3.2-3b-instruct",
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": "A simple yet"},
+                "logprobs": "",
+                "finish_reason": "tool_calls",
+                "stop_reason": "",
+            }
+        ],
+        "usage": {"prompt_tokens": 12, "total_tokens": 15, "completion_tokens": 3},
+        "prompt_logprobs": "",
+    }
+    requests_mock.Mocker().post(
+        "https://integrate.api.nvidia.com/v1/chat/completions", json=mock_response
+    )
+
     async def request(message: HumanMessage) -> LLMResult:
+        await asyncio.sleep(1)
         return await llm.agenerate([[message]])
 
     start_time = time.time()
@@ -481,6 +504,12 @@ async def test_async_generate(chat_model: str, mode: dict) -> None:
     _, _ = await asyncio.gather(task1, task2)
 
     assert (time.time() - start_time) < 2, "Tasks did not run concurrently"
+
+
+async def test_async_generate(chat_model: str, mode: dict) -> None:
+    """Test async generate method of ChatNVIDIA."""
+    llm = ChatNVIDIA(model=chat_model, **mode)
+    message = HumanMessage(content="Hello")
 
     response = await llm.agenerate([[message]])
     assert isinstance(response, LLMResult)
