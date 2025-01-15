@@ -481,6 +481,33 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_structured_output=True,
     ),
+    "nvidia/usdcode-llama-3.1-70b-instruct": Model(
+        id="nvidia/usdcode-llama-3.1-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "meta/llama-3.3-70b-instruct": Model(
+        id="meta/llama-3.3-70b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+    ),
+    "qwen/qwen2.5-coder-32b-instruct": Model(
+        id="qwen/qwen2.5-coder-32b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "qwen/qwen2.5-coder-7b-instruct": Model(
+        id="qwen/qwen2.5-coder-7b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "nvidia/llama-3.1-nemotron-70b-reward": Model(
+        id="nvidia/llama-3.1-nemotron-70b-reward",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
@@ -613,6 +640,11 @@ EMBEDDING_MODEL_TABLE = {
         model_type="embedding",
         client="NVIDIAEmbeddings",
     ),
+    "nvidia/llama-3.2-nv-embedqa-1b-v2": Model(
+        id="nvidia/llama-3.2-nv-embedqa-1b-v2",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+    ),
 }
 
 RANKING_MODEL_TABLE = {
@@ -634,6 +666,12 @@ RANKING_MODEL_TABLE = {
         model_type="ranking",
         client="NVIDIARerank",
         endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-3_2-nv-rerankqa-1b-v1/reranking",
+    ),
+    "nvidia/llama-3.2-nv-rerankqa-1b-v2": Model(
+        id="nvidia/llama-3.2-nv-rerankqa-1b-v2",
+        model_type="ranking",
+        client="NVIDIARerank",
+        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-3_2-nv-rerankqa-1b-v2/reranking",
     ),
 }
 
