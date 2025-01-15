@@ -469,11 +469,8 @@ def test_generate(chat_model: str, mode: dict) -> None:
     assert chat_messages == messages_copy
 
 
-async def test_async_generate_func(chat_model: str, mode: dict) -> None:
-    """Test async generation functionality."""
-    llm = ChatNVIDIA(model=chat_model, **mode)
-    message = HumanMessage(content="Hello")
-
+@pytest.fixture()
+def mock_async_resp():
     mock_response = {
         "id": "chat-c891882b0c4448a5b258c63d2b031c82",
         "object": "chat.completion",
@@ -494,6 +491,14 @@ async def test_async_generate_func(chat_model: str, mode: dict) -> None:
     requests_mock.Mocker().post(
         "https://integrate.api.nvidia.com/v1/chat/completions", json=mock_response
     )
+
+
+async def test_async_generate_func(
+    chat_model: str, mode: dict, mock_async_resp
+) -> None:
+    """Test async generation functionality."""
+    llm = ChatNVIDIA(model=chat_model, **mode)
+    message = HumanMessage(content="Hello")
 
     async def request(message: HumanMessage) -> LLMResult:
         await asyncio.sleep(1)
@@ -518,3 +523,21 @@ async def test_async_generate(chat_model: str, mode: dict) -> None:
             assert isinstance(generation, ChatGeneration)
             assert isinstance(generation.text, str)
             assert generation.text == generation.message.content
+
+
+async def test_async_generate_fail(
+    chat_model: str, mode: dict, mock_async_resp
+) -> None:
+    """Test async generation functionality."""
+    llm = ChatNVIDIA(model=chat_model, **mode)
+    message = HumanMessage(content="Hello")
+
+    def request(message: HumanMessage) -> LLMResult:
+        time.sleep(1)  # execute synchronously
+        return llm.agenerate([[message]])
+
+    start_time = time.time()
+    task1, task2 = request(message), request(message)
+    _, _ = await asyncio.gather(task1, task2)
+
+    assert (time.time() - start_time) > 2, "Tasks did run concurrently"
