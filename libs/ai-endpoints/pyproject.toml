@@ -18,7 +18,6 @@ packages = [
 python = ">=3.9,<4.0"
 langchain-core = ">=0.3.0,<0.4"
 aiohttp = "^3.9.1"
-pillow = ">=10.0.0,<11.0.0"
 
 [tool.poetry.group.test]
 optional = true
@@ -56,11 +55,6 @@ ruff = "^0.1.5"
 mypy = "^0.991"
 types-requests = "^2.31.0.10"
 types-pillow = "^10.2.0.20240125"
-
-[tool.poetry.group.dev]
-optional = true
-
-[tool.poetry.group.dev.dependencies]
 
 [tool.ruff.lint]
 select = [
