@@ -508,6 +508,11 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "deepseek-ai/deepseek-r1": Model(
+        id="deepseek-ai/deepseek-r1",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
