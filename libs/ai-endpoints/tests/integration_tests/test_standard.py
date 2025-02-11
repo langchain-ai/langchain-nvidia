@@ -17,7 +17,7 @@ class TestNVIDIAStandard(ChatModelIntegrationTests):
 
     @property
     def chat_model_params(self) -> dict:
-        return {"model": "meta/llama-3.1-8b-instruct"}
+        return {"model": "meta/llama-3.3-70b-instruct"}
 
     @pytest.mark.xfail(reason="anthropic-style list content not supported")
     def test_tool_message_histories_list_content(
