@@ -18,6 +18,7 @@ packages = [
 python = ">=3.9,<4.0"
 langchain-core = ">=0.3.0,<0.4"
 aiohttp = "^3.9.1"
+filetype = "^1.2.0"
 
 [tool.poetry.group.test]
 optional = true
