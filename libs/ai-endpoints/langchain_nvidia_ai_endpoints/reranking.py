@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Generator, List, Literal, Optional, Sequence
 
+import httpx
 from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
 from langchain_core.documents.compressor import BaseDocumentCompressor
@@ -32,6 +33,7 @@ class NVIDIARerank(BaseDocumentCompressor):
 
     model_config = ConfigDict(
         validate_assignment=True,
+        arbitrary_types_allowed=True,
     )
 
     _client: _NVIDIAClient = PrivateAttr()
@@ -54,6 +56,10 @@ class NVIDIARerank(BaseDocumentCompressor):
         _DEFAULT_BATCH_SIZE, ge=1, description="The maximum batch size."
     )
 
+    http_client: Optional[httpx.Client] = Field(
+        None, description="Custom HTTP client for making requests"
+    )
+
     def __init__(self, **kwargs: Any):
         """
         Create a new NVIDIARerank document compressor.
@@ -68,6 +74,7 @@ class NVIDIARerank(BaseDocumentCompressor):
             nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
             api_key (str): Alternative to nvidia_api_key.
             base_url (str): The base URL of the NIM to connect to.
+            http_client (httpx.Client): Optional custom HTTP client for making requests.
             truncate (str): "NONE", "END", truncate input text if it exceeds
                             the model's context length. Default is model dependent and
                             is likely to raise an error if an input is too long.
@@ -141,6 +148,7 @@ class NVIDIARerank(BaseDocumentCompressor):
             **({"api_key": api_key} if api_key else {}),  # only pass if set
             infer_path="{base_url}/ranking",
             cls=self.__class__.__name__,
+            http_client=self.http_client,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
