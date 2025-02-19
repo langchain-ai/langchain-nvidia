@@ -1,4 +1,5 @@
 import warnings
+from typing import List
 
 import pytest
 
@@ -50,10 +51,11 @@ def test_duplicate_model_warns() -> None:
     register_model(model)
     with pytest.warns(UserWarning) as record:
         register_model(model)
-    assert len(record) == 1
-    assert isinstance(record[0].message, UserWarning)
-    assert "already registered" in str(record[0].message)
-    assert "Overriding" in str(record[0].message)
+    record_list: List[warnings.WarningMessage] = list(record)
+    assert len(record_list) == 1
+    assert isinstance(record_list[0].message, UserWarning)
+    assert "already registered" in str(record_list[0].message)
+    assert "Overriding" in str(record_list[0].message)
 
 
 def test_registered_model_usable(public_class: type, mock_model: str) -> None:
@@ -82,9 +84,10 @@ def test_registered_model_without_client_usable(public_class: type) -> None:
     register_model(model)
     with pytest.warns(UserWarning) as record:
         public_class(model=id, nvidia_api_key="a-bogus-key")
-    assert len(record) == 1
-    assert isinstance(record[0].message, UserWarning)
-    assert "Unable to determine validity" in str(record[0].message)
+    record_list: List[warnings.WarningMessage] = list(record)
+    assert len(record_list) == 1
+    assert isinstance(record_list[0].message, UserWarning)
+    assert "Unable to determine validity" in str(record_list[0].message)
 
 
 def test_missing_endpoint() -> None:

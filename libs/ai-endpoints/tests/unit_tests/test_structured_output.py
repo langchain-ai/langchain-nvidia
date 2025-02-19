@@ -28,8 +28,9 @@ def test_method() -> None:
                 message=".*not known to support structured output.*",
             )
             ChatNVIDIA(api_key="BOGUS").with_structured_output(Joke, method="json_mode")
-        assert len(record) == 1
-        assert "unnecessary" in str(record[0].message)
+        record_list: List[warnings.WarningMessage] = list(record)
+        assert len(record_list) == 1
+        assert "unnecessary" in str(record_list[0].message)
 
 
 def test_include_raw() -> None:
@@ -69,8 +70,9 @@ def test_unknown_warns(empty_v1_models: None) -> None:
         ChatNVIDIA(
             api_key="BOGUS", model=unstructured_model[0].id
         ).with_structured_output(Joke)
-    assert len(record) == 1
-    assert "not known to support structured output" in str(record[0].message)
+    record_list: List[warnings.WarningMessage] = list(record)
+    assert len(record_list) == 1
+    assert "not known to support structured output" in str(record_list[0].message)
 
 
 def test_enum_negative() -> None:
@@ -86,9 +88,9 @@ def test_enum_negative() -> None:
             category=UserWarning,
             message=".*not known to support structured output.*",
         )
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(ValueError) as exc_info:
             llm.with_structured_output(Choices)
-    assert "only contain string choices" in str(e.value)
+    assert "only contain string choices" in str(exc_info.value)
 
 
 class Choices(enum.Enum):

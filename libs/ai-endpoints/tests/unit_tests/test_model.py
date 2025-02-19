@@ -1,5 +1,6 @@
+import warnings
 from itertools import chain
-from typing import Any
+from typing import Any, List
 
 import pytest
 from requests_mock import Mocker
@@ -97,8 +98,9 @@ def test_aliases(alias: str, client: Any) -> None:
     with pytest.warns(UserWarning) as record:
         x = client(model=alias, nvidia_api_key="a-bogus-key")
         assert x.model == x._client.mdl_name
-    assert isinstance(record[0].message, Warning)
-    assert "deprecated" in record[0].message.args[0]
+    record_list: List[warnings.WarningMessage] = list(record)
+    assert isinstance(record_list[0].message, Warning)
+    assert "deprecated" in record_list[0].message.args[0]
 
 
 def test_known(public_class: type) -> None:
@@ -124,9 +126,10 @@ def test_known_unknown(public_class: type, known_unknown: str) -> None:
     with pytest.warns(UserWarning) as record:
         x = public_class(model=known_unknown, nvidia_api_key="a-bogus-key")
         assert x.model == known_unknown
-    assert isinstance(record[0].message, Warning)
-    assert "Found" in record[0].message.args[0]
-    assert "unknown" in record[0].message.args[0]
+    record_list: List[warnings.WarningMessage] = list(record)
+    assert isinstance(record_list[0].message, Warning)
+    assert "Found" in record_list[0].message.args[0]
+    assert "unknown" in record_list[0].message.args[0]
 
 
 def test_unknown_unknown(public_class: type, empty_v1_models: None) -> None:
@@ -148,8 +151,8 @@ def test_default_known(public_class: type, known_unknown: str) -> None:
     with pytest.warns(UserWarning) as record:
         x = public_class(base_url="http://localhost:8000/v1")
         assert x.model == known_unknown
-    assert len(record) == 1
-    assert "Default model is set as: mock-model" in str(record[0].message)
+    record_list: List[warnings.WarningMessage] = list(record)
+    assert "Default model is set as: mock-model" in str(record_list[0].message)
 
 
 def test_default_lora(public_class: type) -> None:

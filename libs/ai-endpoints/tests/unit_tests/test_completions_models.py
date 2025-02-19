@@ -1,4 +1,5 @@
 import json
+import warnings
 from functools import reduce
 from operator import add
 from typing import Any, Callable, List
@@ -130,23 +131,32 @@ def test_params_unknown(
     request: pytest.FixtureRequest,
 ) -> None:
     request.getfixturevalue(mock_name)
+    record_list: List[warnings.WarningMessage]
 
     with pytest.warns(UserWarning) as record:
         llm = NVIDIA(api_key="BOGUS", init_unknown="INIT")
-    assert len(record) == 1
-    assert "Unrecognized, ignored arguments: {'init_unknown'}" in str(record[0].message)
+    record_list = list(record)
+    assert len(record_list) == 1
+    assert "Unrecognized, ignored arguments: {'init_unknown'}" in str(
+        record_list[0].message
+    )
 
     with pytest.warns(UserWarning) as record:
         func(llm, "IGNORED", arg_unknown="ARG")
-    assert len(record) == 1
-    assert "Unrecognized, ignored arguments: {'arg_unknown'}" in str(record[0].message)
+    record_list = list(record)
+    assert len(record_list) == 1
+    assert "Unrecognized, ignored arguments: {'arg_unknown'}" in str(
+        record_list[0].message
+    )
 
     bound_llm = llm.bind(bind_unknown="BIND")
 
     with pytest.warns(UserWarning) as record:
         func(bound_llm, "IGNORED")
-    assert len(record) == 1
-    assert "Unrecognized, ignored arguments: {'bind_unknown'}" in str(record[0].message)
+    assert len(record_list) == 1
+    assert "Unrecognized, ignored arguments: {'bind_unknown'}" in str(
+        record_list[0].message
+    )
 
 
 def test_identifying_params() -> None:

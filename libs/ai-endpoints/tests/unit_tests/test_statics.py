@@ -1,4 +1,5 @@
-from typing import Any
+import warnings
+from typing import Any, List
 
 import pytest
 
@@ -29,5 +30,6 @@ def test_model_table_integrity_name_id(entry: str) -> None:
 def test_determine_model_deprecated_alternative_warns(alias: str) -> None:
     with pytest.warns(UserWarning) as record:
         determine_model(alias)
-    assert len(record) == 1
-    assert f"Model {alias} is deprecated" in str(record[0].message)
+    record_list: List[warnings.WarningMessage] = list(record)
+    assert len(record_list) == 1
+    assert f"Model {alias} is deprecated" in str(record_list[0].message)

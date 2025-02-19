@@ -1,4 +1,5 @@
-from typing import Any, Generator
+import warnings
+from typing import Any, Generator, List
 
 import pytest
 from requests_mock import Mocker
@@ -40,8 +41,9 @@ def embedding(requests_mock: Mocker) -> Generator[NVIDIAEmbeddings, None, None]:
     )
     with pytest.warns(UserWarning) as record:
         yield NVIDIAEmbeddings(model=model, nvidia_api_key="a-bogus-key")
-    assert len(record) == 1
-    assert "type is unknown and inference may fail" in str(record[0].message)
+    record_list: List[warnings.WarningMessage] = list(record)
+    assert len(record_list) == 1
+    assert "type is unknown and inference may fail" in str(record_list[0].message)
 
 
 def test_embed_documents_negative_input_int(embedding: NVIDIAEmbeddings) -> None:

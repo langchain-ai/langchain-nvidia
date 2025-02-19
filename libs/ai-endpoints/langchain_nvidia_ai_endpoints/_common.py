@@ -38,6 +38,9 @@ logger = logging.getLogger(__name__)
 _API_KEY_VAR = "NVIDIA_API_KEY"
 _BASE_URL_VAR = "NVIDIA_BASE_URL"
 
+ResponseType = Union[Response, httpx.Response]
+ClientType = Union[requests.Session, httpx.Client]
+
 
 class _NVIDIAClient(BaseModel):
     """
@@ -101,7 +104,7 @@ class _NVIDIAClient(BaseModel):
     last_inputs: Optional[dict] = Field(
         default={}, description="Last inputs sent over to the server"
     )
-    last_response: Optional[Response] = Field(
+    last_response: Optional[ResponseType] = Field(
         None, description="Last response sent from the server"
     )
     headers_tmpl: dict = Field(
@@ -368,9 +371,13 @@ class _NVIDIAClient(BaseModel):
 
     def _make_request(
         self, method: str, url: str, **kwargs: Any
-    ) -> Union[requests.Response, httpx.Response]:
+    ) -> Tuple[ResponseType, ClientType]:
         """Make HTTP request using either requests or httpx."""
         if self.use_httpx:
+            if (
+                self.http_client is None
+            ):  # or self.client if using an instance attribute
+                raise RuntimeError("Client is not initialized!")
             response = self.http_client.request(method, url, **kwargs)
         else:
             session = self.get_session_fn()
@@ -378,16 +385,17 @@ class _NVIDIAClient(BaseModel):
                 response = session.get(url, **kwargs)
             else:
                 response = session.post(url, **kwargs)
-        return response
+        return (
+            response,
+            self.http_client if self.http_client is not None else self.get_session_fn(),
+        )
 
     def _post(
         self,
         invoke_url: str,
         payload: Optional[dict] = {},
         extra_headers: dict = {},
-    ) -> Tuple[
-        Union[requests.Response, httpx.Response], Union[requests.Session, httpx.Client]
-    ]:
+    ) -> Tuple[ResponseType, ClientType]:
         """Method for posting to the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
@@ -398,33 +406,31 @@ class _NVIDIAClient(BaseModel):
             "json": payload,
         }
 
-        response = self._make_request(
+        response, client = self._make_request(
             "post", **self.__add_authorization(self.last_inputs)
         )
         self.last_response = response
         self._try_raise(response)
-        return response, self.http_client if self.use_httpx else self.get_session_fn()
+        return response, client
 
     def _get(
         self,
         invoke_url: str,
-    ) -> Tuple[
-        Union[requests.Response, httpx.Response], Union[requests.Session, httpx.Client]
-    ]:
+    ) -> Tuple[ResponseType, ClientType]:
         """Method for getting from the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
             "headers": self.headers_tmpl["call"],
         }
 
-        response = self._make_request(
+        response, client = self._make_request(
             "get", **self.__add_authorization(self.last_inputs)
         )
         self.last_response = response
         self._try_raise(response)
-        return response, self.http_client if self.use_httpx else self.get_session_fn()
+        return response, client
 
-    def _wait(self, response: Response, session: requests.Session) -> Response:
+    def _wait(self, response: ResponseType, client: ClientType) -> ResponseType:
         """
         Any request may return a 202 status code, which means the request is still
         processing. This method will wait for a response using the request id.
@@ -449,7 +455,7 @@ class _NVIDIAClient(BaseModel):
                 "url": self.polling_url_tmpl.format(request_id=request_id),
                 "headers": self.headers_tmpl["call"],
             }
-            self.last_response = response = session.get(
+            self.last_response = response = client.get(
                 **self.__add_authorization(payload)
             )
         self._try_raise(response)
@@ -507,7 +513,7 @@ class _NVIDIAClient(BaseModel):
         self,
         payload: dict = {},
         extra_headers: dict = {},
-    ) -> Response:
+    ) -> ResponseType:
         """Post to the API."""
         response, session = self._post(
             self.infer_url, payload, extra_headers=extra_headers
@@ -516,23 +522,26 @@ class _NVIDIAClient(BaseModel):
 
     def postprocess(
         self,
-        response: Union[str, Response],
+        response: ResponseType,
     ) -> Tuple[dict, bool]:
         """Parses a response from the AI Foundation Model Function API.
         Strongly assumes that the API will return a single response.
         """
         return self._aggregate_msgs(self._process_response(response))
 
-    def _process_response(self, response: Union[str, Response]) -> List[dict]:
+    def _process_response(self, response: ResponseType) -> List[dict]:
         """General-purpose response processing for single responses and streams"""
+        response_data: Union[
+            ResponseType, str
+        ] = response  # new variable to hold the data
         if hasattr(response, "json"):  ## For single response (i.e. non-streaming)
             try:
                 return [response.json()]
             except json.JSONDecodeError:
-                response = str(response.__dict__)
-        if isinstance(response, str):  ## For set of responses (i.e. streaming)
+                response_data = str(response.__dict__)
+        if isinstance(response_data, str):  ## For set of responses (i.e. streaming)
             msg_list = []
-            for msg in response.split("\n\n"):
+            for msg in response_data.split("\n\n"):
                 if "{" not in msg:
                     continue
                 msg_list += [json.loads(msg[msg.find("{") :])]
