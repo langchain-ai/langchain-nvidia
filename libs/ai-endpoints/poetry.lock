@@ -439,6 +439,17 @@ files = [
 python-dateutil = ">=2.4"
 
 [[package]]
+name = "filetype"
+version = "1.2.0"
+description = "Infer file type and MIME type of any file/buffer. No external dependencies."
+optional = false
+python-versions = "*"
+files = [
+    {file = "filetype-1.2.0-py2.py3-none-any.whl", hash = "sha256:7ce71b6880181241cf7ac8697a2f1eb6a8bd9b429f7ad6d27b8db9ba5f1c2d25"},
+    {file = "filetype-1.2.0.tar.gz", hash = "sha256:66b56cd6474bf41d8c54660347d37afcc3f7d1970648de365c102ef77548aadb"},
+]
+
+[[package]]
 name = "freezegun"
 version = "1.5.1"
 description = "Let your Python tests travel through time"
@@ -1616,17 +1627,6 @@ files = [
 ]
 
 [[package]]
-name = "standard-imghdr"
-version = "3.13.0"
-description = "Standard library imghdr redistribution. \"dead battery\"."
-optional = false
-python-versions = "*"
-files = [
-    {file = "standard_imghdr-3.13.0-py3-none-any.whl", hash = "sha256:30a1bff5465605bb496f842a6ac3cc1f2131bf3025b0da28d4877d6d4b7cc8e9"},
-    {file = "standard_imghdr-3.13.0.tar.gz", hash = "sha256:8d9c68058d882f6fc3542a8d39ef9ff94d2187dc90bd0c851e0902776b7b7a42"},
-]
-
-[[package]]
 name = "syrupy"
 version = "4.8.1"
 description = "Pytest Snapshot Test Utility"
@@ -2002,4 +2002,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4.0"
-content-hash = "38f41ffae2e0224bd530837ad841716d7959ed2900fee9d6d7f3728b3b2d7623"
+content-hash = "d96a857df0e693637fc11b38f6ad6a0a2aa3b1a1256fe5cdf1a1ba9079552818"

@@ -115,9 +115,9 @@ def _url_to_b64_string(image_source: str) -> str:
         elif os.path.exists(image_source):
             with open(image_source, "rb") as f:
                 image_data = f.read()
-                import imghdr
-
-                image_type = imghdr.what(None, image_data)
+                import filetype  # type: ignore
+                kind = filetype.guess(image_data)  
+                image_type = kind.extension if kind else 'unknown'
                 encoded = base64.b64encode(image_data).decode("utf-8")
                 return f"data:image/{image_type};base64,{encoded}"
         else:
