@@ -19,6 +19,7 @@ from typing import (
 )
 from urllib.parse import urlparse, urlunparse
 
+import httpx
 import requests
 from pydantic import (
     BaseModel,
@@ -121,6 +122,14 @@ class _NVIDIAClient(BaseModel):
     )
     _available_models: Optional[List[Model]] = PrivateAttr(default=None)
 
+    # todo: update client to use httpx client instead of requests
+    http_client: Optional[httpx.Client] = Field(
+        None, description="Custom HTTP client for making requests"
+    )
+    use_httpx: bool = Field(
+        False, description="Whether to use httpx instead of requests"
+    )
+
     ###################################################################################
     ################### Validation and Initialization #################################
 
@@ -164,7 +173,17 @@ class _NVIDIAClient(BaseModel):
     # todo: when pydantic v2 is available,
     #       use __post_init__ or model_validator(method="after")
     def __init__(self, **kwargs: Any):
+        # Initialize httpx client if provided
+        http_client = kwargs.pop("http_client", None)
+        if http_client is not None:
+            kwargs["use_httpx"] = True
+            kwargs["http_client"] = http_client
+
         super().__init__(**kwargs)
+
+        # Create default httpx client if using httpx but no client provided
+        if self.use_httpx and not self.http_client:
+            self.http_client = httpx.Client()
 
         self.is_hosted = urlparse(self.base_url).netloc in [
             "integrate.api.nvidia.com",
@@ -347,12 +366,28 @@ class _NVIDIAClient(BaseModel):
     ###################################################################################
     ## Core utilities for posting and getting from NV Endpoints #######################
 
+    def _make_request(
+        self, method: str, url: str, **kwargs: Any
+    ) -> Union[requests.Response, httpx.Response]:
+        """Make HTTP request using either requests or httpx."""
+        if self.use_httpx:
+            response = self.http_client.request(method, url, **kwargs)
+        else:
+            session = self.get_session_fn()
+            if method.lower() == "get":
+                response = session.get(url, **kwargs)
+            else:
+                response = session.post(url, **kwargs)
+        return response
+
     def _post(
         self,
         invoke_url: str,
         payload: Optional[dict] = {},
         extra_headers: dict = {},
-    ) -> Tuple[Response, requests.Session]:
+    ) -> Tuple[
+        Union[requests.Response, httpx.Response], Union[requests.Session, httpx.Client]
+    ]:
         """Method for posting to the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
@@ -362,28 +397,32 @@ class _NVIDIAClient(BaseModel):
             },
             "json": payload,
         }
-        session = self.get_session_fn()
-        self.last_response = response = session.post(
-            **self.__add_authorization(self.last_inputs)
+
+        response = self._make_request(
+            "post", **self.__add_authorization(self.last_inputs)
         )
+        self.last_response = response
         self._try_raise(response)
-        return response, session
+        return response, self.http_client if self.use_httpx else self.get_session_fn()
 
     def _get(
         self,
         invoke_url: str,
-    ) -> Tuple[Response, requests.Session]:
+    ) -> Tuple[
+        Union[requests.Response, httpx.Response], Union[requests.Session, httpx.Client]
+    ]:
         """Method for getting from the AI Foundation Model Function API."""
         self.last_inputs = {
             "url": invoke_url,
             "headers": self.headers_tmpl["call"],
         }
-        session = self.get_session_fn()
-        self.last_response = response = session.get(
-            **self.__add_authorization(self.last_inputs)
+
+        response = self._make_request(
+            "get", **self.__add_authorization(self.last_inputs)
         )
+        self.last_response = response
         self._try_raise(response)
-        return response, session
+        return response, self.http_client if self.use_httpx else self.get_session_fn()
 
     def _wait(self, response: Response, session: requests.Session) -> Response:
         """
@@ -416,11 +455,11 @@ class _NVIDIAClient(BaseModel):
         self._try_raise(response)
         return response
 
-    def _try_raise(self, response: Response) -> None:
+    def _try_raise(self, response: Union[requests.Response, httpx.Response]) -> None:
         """Try to raise an error from a response"""
         try:
             response.raise_for_status()
-        except requests.HTTPError:
+        except (requests.HTTPError, httpx.HTTPError):
             try:
                 rd = response.json()
                 if "detail" in rd and "reqId" in rd.get("detail", ""):
