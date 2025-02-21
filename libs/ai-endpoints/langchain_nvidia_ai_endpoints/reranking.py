@@ -53,6 +53,10 @@ class NVIDIARerank(BaseDocumentCompressor):
     max_batch_size: int = Field(
         _DEFAULT_BATCH_SIZE, ge=1, description="The maximum batch size."
     )
+    extra_headers: dict = Field(
+        default_factory=dict,
+        description="Extra headers to include in the request.",
+    )
 
     def __init__(self, **kwargs: Any):
         """
@@ -174,7 +178,9 @@ class NVIDIARerank(BaseDocumentCompressor):
         }
         if self.truncate:
             payload["truncate"] = self.truncate
-        response = self._client.get_req(payload=payload)
+        response = self._client.get_req(
+            payload=payload, extra_headers=self.extra_headers
+        )
         if response.status_code != 200:
             response.raise_for_status()
         # todo: handle errors

@@ -75,3 +75,16 @@ def test_truncate(
 def test_truncate_invalid(truncate: Any) -> None:
     with pytest.raises(ValueError):
         NVIDIARerank(truncate=truncate)
+
+
+def test_extra_headers(requests_mock: Mocker) -> None:
+    client = NVIDIARerank(
+        api_key="BOGUS", model="mock-model", extra_headers={"X-Test": "test"}
+    )
+    assert client.extra_headers == {"X-Test": "test"}
+
+    _ = client.compress_documents(
+        documents=[Document(page_content="Nothing really.")], query="What is it?"
+    )
+    assert requests_mock.last_request is not None
+    assert requests_mock.last_request.headers["X-Test"] == "test"
