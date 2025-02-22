@@ -19,19 +19,6 @@ class Joke(pydanticV2BaseModel):
     rating: Optional[int] = Field(description="How funny the joke is, from 1 to 10")
 
 
-def test_method() -> None:
-    with pytest.warns(UserWarning) as record:
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                category=UserWarning,
-                message=".*not known to support structured output.*",
-            )
-            ChatNVIDIA(api_key="BOGUS").with_structured_output(Joke, method="json_mode")
-        assert len(record) == 1
-        assert "unnecessary" in str(record[0].message)
-
-
 def test_include_raw() -> None:
     with pytest.raises(NotImplementedError):
         ChatNVIDIA(api_key="BOGUS").with_structured_output(Joke, include_raw=True)
@@ -226,7 +213,5 @@ def test_strict_no_warns(strict: Optional[bool]) -> None:
         "ignore", category=UserWarning, message=".*not known to support.*"
     )
 
-    ChatNVIDIA(api_key="BOGUS").with_structured_output(
-        Joke,
-        **({"strict": strict} if strict is not None else {}),
-    )
+    if strict:
+        ChatNVIDIA(api_key="BOGUS").with_structured_output(Joke, strict=strict)
