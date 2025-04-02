@@ -415,7 +415,7 @@ class ChatNVIDIA(BaseChatModel):
         if (
             self._client.model
             and self._client.model.model_type
-            and self._client.model.model_type == "nv-vlm"
+            and self._client.model.model_type in ["nv-vlm", "qa"]
         ):
             payload.pop("stream_options")
         for response in self._client.get_req_stream(
