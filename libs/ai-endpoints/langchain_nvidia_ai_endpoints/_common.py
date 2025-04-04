@@ -147,9 +147,9 @@ class _NVIDIAClient(BaseModel):
                 raise ValueError(f"Invalid base_url format. {expected_format} Got: {v}")
 
             normalized_path = parsed.path.rstrip("/")
-            if not normalized_path.endswith("/v1"):
+            if not "/v1" in normalized_path:
                 warnings.warn(
-                    f"{v} does not end in /v1, you may "
+                    f"{v} does not contain in /v1, you may "
                     "have inference and listing issues"
                 )
                 normalized_path += "/v1"
@@ -157,7 +157,7 @@ class _NVIDIAClient(BaseModel):
             v = urlunparse(
                 (parsed.scheme, parsed.netloc, normalized_path, None, None, None)
             )
-
+        print(v)
         return v
 
     # final validation after model is constructed
