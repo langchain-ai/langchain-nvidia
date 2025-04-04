@@ -112,7 +112,7 @@ def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
         "http://0.0.0.0:8888/rankings",
         "http://localhost:8888/embeddings/",
         "http://0.0.0.0:8888/rankings/",
-        "http://localhost:8888/chat/completions"
+        "http://localhost:8888/chat/completions",
     ],
 )
 def test_expect_warn(public_class: type, base_url: str) -> None:
