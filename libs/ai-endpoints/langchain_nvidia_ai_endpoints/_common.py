@@ -149,7 +149,7 @@ class _NVIDIAClient(BaseModel):
             normalized_path = parsed.path.rstrip("/")
             if "/v1" not in normalized_path:
                 warnings.warn(
-                    f"{v} does not contain in /v1, you may "
+                    f"{v} does not contain /v1, you may "
                     "have inference and listing issues"
                 )
                 normalized_path += "/v1"

@@ -99,7 +99,7 @@ def test_param_base_url_hosted(public_class: type, base_url: str) -> None:
     ],
 )
 def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
-    warnings.filterwarnings("ignore", r".*does not end in /v1.*")
+    warnings.filterwarnings("ignore", r".*does not contain /v1.*")
     with no_env_var("NVIDIA_BASE_URL"):
         client = public_class(model="model1", base_url=base_url)
         assert not client._client.is_hosted
@@ -112,16 +112,14 @@ def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
         "http://0.0.0.0:8888/rankings",
         "http://localhost:8888/embeddings/",
         "http://0.0.0.0:8888/rankings/",
-        "http://localhost:8888/chat/completions",
-        "http://localhost:8080/v1/embeddings",
-        "http://0.0.0.0:8888/v1/rankings",
+        "http://localhost:8888/chat/completions"
     ],
 )
 def test_expect_warn(public_class: type, base_url: str) -> None:
     with pytest.warns(UserWarning) as record:
         public_class(model="model1", base_url=base_url)
     assert len(record) == 1
-    assert "does not end in /v1" in str(record[0].message)
+    assert "does not contain /v1" in str(record[0].message)
 
 
 def test_default_hosted(public_class: type) -> None:
