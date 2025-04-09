@@ -513,6 +513,16 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "meta/llama-4-maverick-17b-128e-instruct": Model(
+        id="meta/llama-4-maverick-17b-128e-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "meta/llama-4-scout-17b-16e-instruct": Model(
+        id="meta/llama-4-scout-17b-16e-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
