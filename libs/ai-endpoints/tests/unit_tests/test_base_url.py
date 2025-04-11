@@ -71,11 +71,11 @@ def test_base_url_priority(public_class: type) -> None:
         "http:/oops",
     ],
 )
-def test_param_base_url_negative(public_class: type, base_url: str) -> None:
-    with no_env_var("NVIDIA_BASE_URL"):
-        with pytest.raises(ValueError) as e:
-            public_class(base_url=base_url)
-        assert "Invalid base_url" in str(e.value)
+def test_expect_warn_base_url(public_class: type, base_url: str) -> None:
+    with pytest.warns(UserWarning) as record:
+        public_class(model="model1", base_url=base_url)
+    assert len(record) > 0
+    assert "url appears incorrect" in str(record[0].message)
 
 
 @pytest.mark.parametrize(
