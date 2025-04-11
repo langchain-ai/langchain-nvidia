@@ -596,6 +596,16 @@ VLM_MODEL_TABLE = {
         client="ChatNVIDIA",
         endpoint="https://ai.api.nvidia.com/v1/gr/meta/llama-3.2-90b-vision-instruct/chat/completions",
     ),
+    "meta/llama-4-maverick-17b-128e-instruct": Model(
+        id="meta/llama-4-maverick-17b-128e-instruct",
+        model_type="vlm",
+        client="ChatNVIDIA",
+    ),
+    "meta/llama-4-scout-17b-16e-instruct": Model(
+        id="meta/llama-4-scout-17b-16e-instruct",
+        model_type="vlm",
+        client="ChatNVIDIA",
+    ),
 }
 
 EMBEDDING_MODEL_TABLE = {
