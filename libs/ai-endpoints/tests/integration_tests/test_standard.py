@@ -1,6 +1,6 @@
 """Standard LangChain interface tests"""
 
-from typing import Type
+from typing import Any, Coroutine, Type
 
 import pytest
 from langchain_core.language_models import BaseChatModel
@@ -45,20 +45,18 @@ class TestNVIDIAStandard(ChatModelIntegrationTests):
 
     @pytest.mark.parametrize("schema_type", ["typeddict"])
     @pytest.mark.xfail(reason="TypedDict schema type not supported")
-    def test_structured_output(
-        self, model: BaseChatModel, schema_type: str
-    ) -> None:
+    def test_structured_output(self, model: BaseChatModel, schema_type: str) -> None:
         return super().test_structured_output(model, schema_type)
-    
+
     @pytest.mark.parametrize("schema_type", ["typeddict"])
     @pytest.mark.xfail(reason="TypedDict schema type not supported")
-    def test_structured_output_async(
+    async def test_structured_output_async(
         self, model: BaseChatModel, schema_type: str
-    ) -> None:
+    ) -> Coroutine[Any, Any, None]:
+        # Return the coroutine directly without awaiting it
         return super().test_structured_output_async(model, schema_type)
-    
+
     @pytest.mark.xfail(reason="TypedDict schema type not supported")
-    def test_structured_output_optional_param(
-        self, model: BaseChatModel
-    ) -> None:
-        return super().test_structured_output_optional_param(model)
+    def test_structured_output_optional_param(self, model: BaseChatModel) -> None:
+        # Don't return anything since the return type is None
+        super().test_structured_output_optional_param(model)
