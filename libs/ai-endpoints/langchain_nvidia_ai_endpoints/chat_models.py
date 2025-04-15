@@ -883,4 +883,9 @@ class ChatNVIDIA(BaseChatModel):
             "schema": guided_schema,
         }
 
-        return super().bind(nvext=nvext_param, ls_structured_output_format=ls_structured_output_format) | output_parser
+        return (
+            super().bind(
+                nvext=nvext_param,
+                ls_structured_output_format=ls_structured_output_format
+            ) | output_parser
+        )
