@@ -42,3 +42,23 @@ class TestNVIDIAStandard(ChatModelIntegrationTests):
     )
     def test_usage_metadata_streaming(self, model: BaseChatModel) -> None:
         return super().test_usage_metadata_streaming(model)
+
+    @pytest.mark.parametrize("schema_type", ["typeddict"])
+    @pytest.mark.xfail(reason="TypedDict schema type not supported")
+    def test_structured_output(
+        self, model: BaseChatModel, schema_type: str
+    ) -> None:
+        return super().test_structured_output(model, schema_type)
+    
+    @pytest.mark.parametrize("schema_type", ["typeddict"])
+    @pytest.mark.xfail(reason="TypedDict schema type not supported")
+    def test_structured_output_async(
+        self, model: BaseChatModel, schema_type: str
+    ) -> None:
+        return super().test_structured_output_async(model, schema_type)
+    
+    @pytest.mark.xfail(reason="TypedDict schema type not supported")
+    def test_structured_output_optional_param(
+        self, model: BaseChatModel
+    ) -> None:
+        return super().test_structured_output_optional_param(model)
