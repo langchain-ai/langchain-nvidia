@@ -800,7 +800,7 @@ class ChatNVIDIA(BaseChatModel):
 
         # check if the model supports structured output, warn if it does not
         known_good = False
-        guided_schema = schema
+        guided_schema: Union[Dict[str, Any], Any] = schema
         # todo: we need to store model: Model in this class
         #       instead of model: str (= Model.id)
         #  this should be: if not self.model.supports_tools: warnings.warn...
