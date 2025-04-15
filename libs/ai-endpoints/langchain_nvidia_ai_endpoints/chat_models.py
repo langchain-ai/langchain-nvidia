@@ -879,13 +879,14 @@ class ChatNVIDIA(BaseChatModel):
                 "representing a JSON schema, or an Enum."
             )
 
-        ls_structured_output_format={
+        ls_structured_output_format = {
             "schema": guided_schema,
         }
 
         return (
             super().bind(
                 nvext=nvext_param,
-                ls_structured_output_format=ls_structured_output_format
-            ) | output_parser
+                ls_structured_output_format=ls_structured_output_format,
+            )
+            | output_parser
         )
