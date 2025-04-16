@@ -144,13 +144,18 @@ class _NVIDIAClient(BaseModel):
             # Ensure scheme and netloc (domain name) are present
             if not (parsed.scheme and parsed.netloc):
                 expected_format = "Expected format is: http://host:port"
-                raise ValueError(f"Invalid base_url format. {expected_format} Got: {v}")
+                warnings.warn(
+                    "The provided url appears incorrect. "
+                    f"Expected: {expected_format} Got: {v}"
+                )
 
             normalized_path = parsed.path.rstrip("/")
             if not normalized_path.endswith("/v1"):
                 warnings.warn(
-                    f"{v} does not end in /v1, you may "
-                    "have inference and listing issues"
+                    f"{v} does not end in /v1, "
+                    "you may have inference and listing issues. "
+                    "This check will be deprecated in the next release. "
+                    "Please ensure /v1 is appended to the provided URL",
                 )
                 normalized_path += "/v1"
 
