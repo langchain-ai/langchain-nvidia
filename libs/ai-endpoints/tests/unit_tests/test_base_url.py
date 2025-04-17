@@ -124,6 +124,32 @@ def test_expect_warn(public_class: type, base_url: str) -> None:
     assert "does not end in /v1" in str(record[0].message)
 
 
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://localhost:8888/embeddings",
+        "http://0.0.0.0:8888/rankings",
+        "http://localhost:8888/embeddings/",
+        "http://0.0.0.0:8888/rankings/",
+        "http://localhost:8888/chat/completions",
+        "http://localhost:8080/v1/embeddings",
+        "http://0.0.0.0:8888/v1/rankings",
+    ],
+)
+def test_expect_skip_check(public_class: type, base_url: str) -> None:
+    orig = os.environ.get("NVIDIA_APPEND_API_VERSION", None)
+    warnings.filterwarnings("error")
+
+    os.environ["NVIDIA_APPEND_API_VERSION"] = "false"
+    public_class(model="model1", base_url=base_url)
+
+    warnings.resetwarnings()
+    if orig is None:
+        del os.environ["NVIDIA_APPEND_API_VERSION"]
+    else:
+        os.environ["NVIDIA_APPEND_API_VERSION"] = orig
+
+
 def test_default_hosted(public_class: type) -> None:
     x = public_class(api_key="BOGUS")
     assert x._client.is_hosted
