@@ -137,7 +137,7 @@ def test_unknown_unknown(public_class: type, empty_v1_models: None) -> None:
     # todo: make this work for local NIM
     with pytest.raises(ValueError) as e:
         public_class(model="test/unknown-unknown", nvidia_api_key="a-bogus-key")
-    assert "unknown" in str(e.value)
+    assert "Unable to find" in str(e.value)
 
 
 def test_default_known(public_class: type, known_unknown: str) -> None:
@@ -174,8 +174,8 @@ def test_all_incompatible(public_class: type, model: str, client: str) -> None:
     if client == public_class.__name__:
         pytest.skip("Compatibility expected.")
 
-    with pytest.raises(ValueError) as err_msg:
+    with pytest.warns(UserWarning) as record:
         public_class(model=model, nvidia_api_key="a-bogus-key")
-    assert f"Model {model} is incompatible with client {public_class.__name__}" in str(
-        err_msg.value
-    )
+
+    assert len(record) == 1
+    assert "incompatible with client" in str(record[0].message)
