@@ -228,7 +228,9 @@ class _NVIDIAClient(BaseModel):
                         )
 
             if model is None:
-                raise ValueError(f"Unable to find {self.mdl_name}. Please verify configuration.")
+                raise ValueError(
+                    f"Unable to find {self.mdl_name}. Please verify configuration."
+                )
             self.model = model
             self.mdl_name = self.model.id  # name may change because of aliasing
         else:
