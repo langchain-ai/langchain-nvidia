@@ -192,7 +192,7 @@ class _NVIDIAClient(BaseModel):
                 if not model.client:
                     warnings.warn(f"Unable to determine validity of {model.id}")
                 elif model.client != self.cls:
-                    raise ValueError(
+                    warnings.warn(
                         f"Model {model.id} is incompatible with client {self.cls}. "
                         f"Please check `{self.cls}.get_available_models()`."
                     )
@@ -222,10 +222,13 @@ class _NVIDIAClient(BaseModel):
                     if self.mdl_name.startswith("nvdev/"):  # assume valid
                         model = Model(id=self.mdl_name)
                     else:
-                        raise ValueError(
+                        warnings.warn(
                             f"Model {self.mdl_name} is unknown, "
                             "check `available_models`"
                         )
+
+            if model is None:
+                raise ValueError(f"Unable to find {self.mdl_name}. Please verify configuration.")
             self.model = model
             self.mdl_name = self.model.id  # name may change because of aliasing
         else:
@@ -246,7 +249,7 @@ class _NVIDIAClient(BaseModel):
                         UserWarning,
                     )
                 else:
-                    raise ValueError("No locally hosted model was found.")
+                    warnings.warn("No locally hosted model was found.")
 
     ###################################################################################
     ################### LangChain functions ###########################################
