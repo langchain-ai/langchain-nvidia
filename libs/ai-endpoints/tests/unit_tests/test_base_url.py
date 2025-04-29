@@ -164,15 +164,22 @@ def test_expect_skip_check(public_class: type, base_url: str, false_value: str) 
         "http://0.0.0.0:8888/v1/rankings",
     ],
 )
-@pytest.mark.parametrize("true_value", ["true", "True", "yes", "1", "anything", "enabled", "on", ""])
-def test_expect_not_skip_check(public_class: type, base_url: str, true_value: str) -> None:
+@pytest.mark.parametrize(
+    "true_value",
+    ["true", "True", "yes", "1", "anything", "enabled", "on", ""],
+)
+def test_expect_not_skip_check(
+    public_class: type, base_url: str, true_value: str
+) -> None:
     warnings.filterwarnings("ignore", r".*does not end in /v1.*")
     orig = os.environ.get("NVIDIA_APPEND_API_VERSION", None)
 
     try:
         os.environ["NVIDIA_APPEND_API_VERSION"] = true_value
         obj = public_class(model="model1", base_url=base_url)
-        assert obj.base_url.rstrip("/").endswith("/v1"), f"Expected {obj.base_url} to end with '/v1'"
+        assert obj.base_url.rstrip("/").endswith(
+            "/v1"
+        ), f"Expected {obj.base_url} to end with '/v1'"
     finally:
         warnings.resetwarnings()
         if orig is None:
