@@ -131,13 +131,12 @@ def test_known_unknown(public_class: type, known_unknown: str) -> None:
 
 def test_unknown_unknown(public_class: type, empty_v1_models: None) -> None:
     """
-    Test that a model not in /v1/models and not in known model table will be
-    rejected.
+    Test that a model not in /v1/models, not in known model table, and not internal
+    will be rejected.
     """
     # todo: make this work for local NIM
-    with pytest.raises(ValueError) as e:
+    with pytest.warns(UserWarning, match="Model test/unknown-unknown is unknown"):
         public_class(model="test/unknown-unknown", nvidia_api_key="a-bogus-key")
-    assert "Unable to find" in str(e.value)
 
 
 def test_default_known(public_class: type, known_unknown: str) -> None:

@@ -219,18 +219,14 @@ class _NVIDIAClient(BaseModel):
                         "unknown and inference may fail."
                     )
                 else:
-                    if self.mdl_name.startswith("nvdev/"):  # assume valid
-                        model = Model(id=self.mdl_name)
-                    else:
+                    # we will assume validity, but warn users
+                    if not self.mdl_name.startswith("nvdev/"):
                         warnings.warn(
                             f"Model {self.mdl_name} is unknown, "
-                            "check `available_models`"
+                            "check `available_models`. Inference may fail."
                         )
+                    model = Model(id=self.mdl_name)
 
-            if model is None:
-                raise ValueError(
-                    f"Unable to find {self.mdl_name}. Please verify configuration."
-                )
             self.model = model
             self.mdl_name = self.model.id  # name may change because of aliasing
         else:
