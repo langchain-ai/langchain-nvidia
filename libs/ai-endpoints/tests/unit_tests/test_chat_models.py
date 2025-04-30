@@ -43,5 +43,5 @@ def test_integration_initialization() -> None:
 
 
 def test_unavailable(empty_v1_models: None) -> None:
-    with pytest.raises(ValueError):
+    with pytest.warns(UserWarning, match="Model not-a-real-model is unknown"):
         ChatNVIDIA(api_key="BOGUS", model="not-a-real-model")
