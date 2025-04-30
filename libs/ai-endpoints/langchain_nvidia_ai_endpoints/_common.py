@@ -150,7 +150,10 @@ class _NVIDIAClient(BaseModel):
                 )
 
             normalized_path = parsed.path.rstrip("/")
-            if not normalized_path.endswith("/v1"):
+            skip_api_version_check = os.environ.get(
+                "NVIDIA_APPEND_API_VERSION", ""
+            ) in ["false", "False", "0"]
+            if not skip_api_version_check and not normalized_path.endswith("/v1"):
                 warnings.warn(
                     f"{v} does not end in /v1, "
                     "you may have inference and listing issues. "
