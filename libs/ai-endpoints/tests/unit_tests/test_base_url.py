@@ -124,6 +124,70 @@ def test_expect_warn(public_class: type, base_url: str) -> None:
     assert "does not end in /v1" in str(record[0].message)
 
 
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://localhost:8888/embeddings",
+        "http://0.0.0.0:8888/rankings",
+        "http://localhost:8888/embeddings/",
+        "http://0.0.0.0:8888/rankings/",
+        "http://localhost:8888/chat/completions",
+        "http://localhost:8080/v1/embeddings",
+        "http://0.0.0.0:8888/v1/rankings",
+    ],
+)
+@pytest.mark.parametrize("false_value", ["false", "False", "0"])
+def test_expect_skip_check(public_class: type, base_url: str, false_value: str) -> None:
+    orig = os.environ.get("NVIDIA_APPEND_API_VERSION", None)
+    warnings.filterwarnings("error")
+
+    try:
+        os.environ["NVIDIA_APPEND_API_VERSION"] = false_value
+        public_class(model="model1", base_url=base_url)
+    finally:
+        warnings.resetwarnings()
+        if orig is None:
+            os.environ.pop("NVIDIA_APPEND_API_VERSION", None)
+        else:
+            os.environ["NVIDIA_APPEND_API_VERSION"] = orig
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://localhost:8888/embeddings",
+        "http://0.0.0.0:8888/rankings",
+        "http://localhost:8888/embeddings/",
+        "http://0.0.0.0:8888/rankings/",
+        "http://localhost:8888/chat/completions",
+        "http://localhost:8080/v1/embeddings",
+        "http://0.0.0.0:8888/v1/rankings",
+    ],
+)
+@pytest.mark.parametrize(
+    "true_value",
+    ["true", "True", "yes", "1", "anything", "enabled", "on", ""],
+)
+def test_expect_not_skip_check(
+    public_class: type, base_url: str, true_value: str
+) -> None:
+    warnings.filterwarnings("ignore", r".*does not end in /v1.*")
+    orig = os.environ.get("NVIDIA_APPEND_API_VERSION", None)
+
+    try:
+        os.environ["NVIDIA_APPEND_API_VERSION"] = true_value
+        obj = public_class(model="model1", base_url=base_url)
+        assert obj.base_url.rstrip("/").endswith(
+            "/v1"
+        ), f"Expected {obj.base_url} to end with '/v1'"
+    finally:
+        warnings.resetwarnings()
+        if orig is None:
+            os.environ.pop("NVIDIA_APPEND_API_VERSION", None)
+        else:
+            os.environ["NVIDIA_APPEND_API_VERSION"] = orig
+
+
 def test_default_hosted(public_class: type) -> None:
     x = public_class(api_key="BOGUS")
     assert x._client.is_hosted
