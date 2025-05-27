@@ -264,7 +264,9 @@ class ChatNVIDIA(BaseChatModel):
         None, description="Sampling temperature in [0, 1]"
     )
     max_tokens: Optional[int] = Field(
-        1024, description="Maximum # of tokens to generate"
+        1024,
+        description="Maximum # of tokens to generate",
+        alias="max_completion_tokens"
     )
     top_p: Optional[float] = Field(None, description="Top-p for distribution sampling")
     seed: Optional[int] = Field(None, description="The seed for deterministic results")
@@ -286,7 +288,8 @@ class ChatNVIDIA(BaseChatModel):
             base_url (str): The base URL of the NIM to connect to.
                             Format for base URL is http://host:port
             temperature (float): Sampling temperature in [0, 1].
-            max_tokens (int): Maximum number of tokens to generate.
+            max_tokens (int): Maximum number of tokens to generate (deprecated, use max_completion_tokens instead).
+            max_completion_tokens (int): Maximum number of tokens to generate in the completion.
             top_p (float): Top-p for distribution sampling.
             seed (int): A seed for deterministic results.
             stop (list[str]): A list of cased stop words.
@@ -303,6 +306,20 @@ class ChatNVIDIA(BaseChatModel):
                 model="meta-llama3-8b-instruct"
             )
         """
+        # Track which parameter name was used
+        if "max_tokens" in kwargs and "max_completion_tokens" in kwargs:
+            raise ValueError("Cannot specify both max_tokens and max_completion_tokens")
+        self._token_param_name = "max_tokens" if "max_tokens" in kwargs else "max_completion_tokens"
+        
+        # Show deprecation warning if max_tokens was used
+        if self._token_param_name == "max_tokens":
+            warnings.warn(
+                "The 'max_tokens' parameter is deprecated and will be removed in a future version. "
+                "Please use 'max_completion_tokens' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         super().__init__(**kwargs)
         # allow nvidia_base_url as an alternative for base_url
         base_url = kwargs.pop("nvidia_base_url", self.base_url)
@@ -359,7 +376,9 @@ class ChatNVIDIA(BaseChatModel):
             ls_model_name=self.model or "UNKNOWN",
             ls_model_type="chat",
             ls_temperature=params.get("temperature", self.temperature),
-            ls_max_tokens=params.get("max_tokens", self.max_tokens),
+            ls_max_tokens=params.get("max_tokens", self.max_tokens) or params.get(
+                "max_completion_tokens", self.max_tokens
+            ),
             # mypy error: Extra keys ("ls_top_p", "ls_seed")
             #  for TypedDict "LangSmithParams"  [typeddict-item]
             # ls_top_p=params.get("top_p", self.top_p),
@@ -539,7 +558,7 @@ class ChatNVIDIA(BaseChatModel):
         payload: Dict[str, Any] = {
             "model": self.model,
             "temperature": self.temperature,
-            "max_tokens": self.max_tokens,
+            self._token_param_name: self.max_tokens,  # Use the exact parameter name that was passed
             "top_p": self.top_p,
             "seed": self.seed,
             "stop": self.stop,
@@ -765,7 +784,7 @@ class ChatNVIDIA(BaseChatModel):
         For Pydantic schema and Enum, the output will be None if the response is
         insufficient to construct the object or otherwise invalid. For instance,
         ```
-        llm = ChatNVIDIA(max_tokens=1)
+        llm = ChatNVIDIA(max_completion_tokens=1)
         structured_llm = llm.with_structured_output(Joke)
         print(structured_llm.invoke("Tell me a joke about NVIDIA"))
 
