@@ -269,6 +269,7 @@ class ChatNVIDIA(BaseChatModel):
     top_p: Optional[float] = Field(None, description="Top-p for distribution sampling")
     seed: Optional[int] = Field(None, description="The seed for deterministic results")
     stop: Optional[Sequence[str]] = Field(None, description="Stop words (cased)")
+    reasoning_mode: bool = Field(False, description="Enable reasoning mode")
 
     def __init__(self, **kwargs: Any):
         """
@@ -290,6 +291,7 @@ class ChatNVIDIA(BaseChatModel):
             top_p (float): Top-p for distribution sampling.
             seed (int): A seed for deterministic results.
             stop (list[str]): A list of cased stop words.
+            reasoning_mode (bool): Enable reasoning mode.
 
         API Key:
         - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
@@ -511,6 +513,11 @@ class ChatNVIDIA(BaseChatModel):
     ) -> dict:  # todo: remove
         """Generates payload for the _NVIDIAClient API to send to service."""
         messages: List[Dict[str, Any]] = []
+        
+        # Add system message for reasoning mode if enabled
+        if getattr(self, 'reasoning_mode', False):
+            messages.append({"role": "system", "content": "detailed thinking on"})
+            
         for msg in inputs:
             if isinstance(msg, str):
                 # (WFH) this shouldn't ever be reached but leaving this here bcs
