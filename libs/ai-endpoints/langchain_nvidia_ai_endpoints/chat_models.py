@@ -306,13 +306,8 @@ class ChatNVIDIA(BaseChatModel):
                 model="meta-llama3-8b-instruct"
             )
         """
-        # Track which parameter name was used
-        if "max_tokens" in kwargs and "max_completion_tokens" in kwargs:
-            raise ValueError("Cannot specify both max_tokens and max_completion_tokens")
-        self._token_param_name = "max_tokens" if "max_tokens" in kwargs else "max_completion_tokens"
-        
         # Show deprecation warning if max_tokens was used
-        if self._token_param_name == "max_tokens":
+        if "max_tokens" in kwargs:
             warnings.warn(
                 "The 'max_tokens' parameter is deprecated and will be removed in a future version. "
                 "Please use 'max_completion_tokens' instead.",
@@ -376,8 +371,9 @@ class ChatNVIDIA(BaseChatModel):
             ls_model_name=self.model or "UNKNOWN",
             ls_model_type="chat",
             ls_temperature=params.get("temperature", self.temperature),
-            ls_max_tokens=params.get("max_tokens", self.max_tokens) or params.get(
-                "max_completion_tokens", self.max_tokens
+            # TODO: remove max_tokens once all models support max_completion_tokens
+            ls_max_tokens=params.get("max_completion_tokens", self.max_tokens) or params.get(
+                "max_tokens", self.max_tokens
             ),
             # mypy error: Extra keys ("ls_top_p", "ls_seed")
             #  for TypedDict "LangSmithParams"  [typeddict-item]
@@ -558,7 +554,7 @@ class ChatNVIDIA(BaseChatModel):
         payload: Dict[str, Any] = {
             "model": self.model,
             "temperature": self.temperature,
-            self._token_param_name: self.max_tokens,  # Use the exact parameter name that was passed
+            "max_tokens": self.max_tokens, # TODO: change key to max_completion_tokens once all models support it
             "top_p": self.top_p,
             "seed": self.seed,
             "stop": self.stop,
