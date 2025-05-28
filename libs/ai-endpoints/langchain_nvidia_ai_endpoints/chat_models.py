@@ -288,8 +288,9 @@ class ChatNVIDIA(BaseChatModel):
             base_url (str): The base URL of the NIM to connect to.
                             Format for base URL is http://host:port
             temperature (float): Sampling temperature in [0, 1].
-            max_tokens (int): Maximum number of tokens to generate (deprecated, use max_completion_tokens instead).
-            max_completion_tokens (int): Maximum number of tokens to generate in the completion.
+            max_tokens (int): Maximum number of tokens to generate.
+                              Deprecated, use max_completion_tokens instead
+            max_completion_tokens (int): Maximum number of tokens to generate.
             top_p (float): Top-p for distribution sampling.
             seed (int): A seed for deterministic results.
             stop (list[str]): A list of cased stop words.
@@ -309,7 +310,8 @@ class ChatNVIDIA(BaseChatModel):
         # Show deprecation warning if max_tokens was used
         if "max_tokens" in kwargs:
             warnings.warn(
-                "The 'max_tokens' parameter is deprecated and will be removed in a future version. "
+                "The 'max_tokens' parameter is deprecated and will be removed "
+                "in a future version. "
                 "Please use 'max_completion_tokens' instead.",
                 DeprecationWarning,
                 stacklevel=2,
@@ -372,8 +374,9 @@ class ChatNVIDIA(BaseChatModel):
             ls_model_type="chat",
             ls_temperature=params.get("temperature", self.temperature),
             # TODO: remove max_tokens once all models support max_completion_tokens
-            ls_max_tokens=params.get("max_completion_tokens", self.max_tokens) or params.get(
-                "max_tokens", self.max_tokens
+            ls_max_tokens=(
+                params.get("max_completion_tokens", self.max_tokens)
+                or params.get("max_tokens", self.max_tokens)
             ),
             # mypy error: Extra keys ("ls_top_p", "ls_seed")
             #  for TypedDict "LangSmithParams"  [typeddict-item]
@@ -554,7 +557,8 @@ class ChatNVIDIA(BaseChatModel):
         payload: Dict[str, Any] = {
             "model": self.model,
             "temperature": self.temperature,
-            "max_tokens": self.max_tokens, # TODO: change key to max_completion_tokens once all models support it
+            # TODO: change key to max_completion_tokens once all models support it
+            "max_tokens": self.max_tokens, 
             "top_p": self.top_p,
             "seed": self.seed,
             "stop": self.stop,
