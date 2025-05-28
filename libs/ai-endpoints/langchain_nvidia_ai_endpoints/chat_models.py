@@ -557,7 +557,6 @@ class ChatNVIDIA(BaseChatModel):
         payload: Dict[str, Any] = {
             "model": self.model,
             "temperature": self.temperature,
-            # TODO: change key to max_completion_tokens once all models support it
             "max_tokens": self.max_tokens, 
             "top_p": self.top_p,
             "seed": self.seed,
