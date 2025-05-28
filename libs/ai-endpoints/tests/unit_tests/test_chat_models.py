@@ -70,4 +70,4 @@ def test_max_completion_tokens() -> None:
             nvidia_api_key="nvapi-...",
         )
         assert len(w) == 0
-        assert llm.max_tokens == 50  
+        assert llm.max_tokens == 50
