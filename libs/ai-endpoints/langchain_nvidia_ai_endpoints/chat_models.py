@@ -266,7 +266,7 @@ class ChatNVIDIA(BaseChatModel):
     max_tokens: Optional[int] = Field(
         1024,
         description="Maximum # of tokens to generate",
-        alias="max_completion_tokens"
+        alias="max_completion_tokens",
     )
     top_p: Optional[float] = Field(None, description="Top-p for distribution sampling")
     seed: Optional[int] = Field(None, description="The seed for deterministic results")
@@ -557,7 +557,7 @@ class ChatNVIDIA(BaseChatModel):
         payload: Dict[str, Any] = {
             "model": self.model,
             "temperature": self.temperature,
-            "max_tokens": self.max_tokens, 
+            "max_tokens": self.max_tokens,
             "top_p": self.top_p,
             "seed": self.seed,
             "stop": self.stop,
