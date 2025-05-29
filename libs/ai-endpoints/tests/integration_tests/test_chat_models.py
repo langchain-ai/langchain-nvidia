@@ -37,7 +37,7 @@ def test_chat_ai_endpoints(chat_model: str, mode: dict) -> None:
 
 
 def test_unknown_model() -> None:
-    with pytest.raises(ValueError):
+    with pytest.warns(UserWarning, match="Model unknown_model is unknown"):
         ChatNVIDIA(model="unknown_model")
 
 
