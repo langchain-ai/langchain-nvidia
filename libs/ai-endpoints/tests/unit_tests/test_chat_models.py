@@ -1,5 +1,6 @@
 """Test chat model integration."""
 
+import warnings
 
 import pytest
 from requests_mock import Mocker
@@ -45,3 +46,28 @@ def test_integration_initialization() -> None:
 def test_unavailable(empty_v1_models: None) -> None:
     with pytest.warns(UserWarning, match="Model not-a-real-model is unknown"):
         ChatNVIDIA(api_key="BOGUS", model="not-a-real-model")
+
+
+def test_max_tokens_deprecation_warning() -> None:
+    """Test that using max_tokens raises a deprecation warning."""
+    with pytest.warns(
+        DeprecationWarning,
+        match=(
+            "The 'max_tokens' parameter is deprecated and will be removed "
+            "in a future version"
+        ),
+    ):
+        ChatNVIDIA(model="meta/llama2-70b", max_tokens=50)
+
+
+def test_max_completion_tokens() -> None:
+    """Test that max_completion_tokens works without warning."""
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        llm = ChatNVIDIA(
+            model="meta/llama2-70b",
+            max_completion_tokens=50,
+            nvidia_api_key="nvapi-...",
+        )
+        assert len(w) == 0
+        assert llm.max_tokens == 50
