@@ -75,7 +75,7 @@ def test_max_completion_tokens() -> None:
             inputs=[{"role": "user", "content": "test"}],
             stop=None,
         )
-        assert payload["max_tokens"] == 50  
+        assert payload["max_tokens"] == 50
 
 
 def test_max_tokens_value() -> None:
@@ -85,9 +85,9 @@ def test_max_tokens_value() -> None:
         max_tokens=50,
         nvidia_api_key="nvapi-...",
     )
-    assert llm.max_tokens == 50  
+    assert llm.max_tokens == 50
     payload = llm._get_payload(
         inputs=[{"role": "user", "content": "test"}],
         stop=None,
     )
-    assert payload["max_tokens"] == 50  
+    assert payload["max_tokens"] == 50
