@@ -71,3 +71,23 @@ def test_max_completion_tokens() -> None:
         )
         assert len(w) == 0
         assert llm.max_tokens == 50
+        payload = llm._get_payload(
+            inputs=[{"role": "user", "content": "test"}],
+            stop=None,
+        )
+        assert payload["max_tokens"] == 50  
+
+
+def test_max_tokens_value() -> None:
+    """Test that max_tokens value is correctly set and reflected in payload."""
+    llm = ChatNVIDIA(
+        model="meta/llama2-70b",
+        max_tokens=50,
+        nvidia_api_key="nvapi-...",
+    )
+    assert llm.max_tokens == 50  
+    payload = llm._get_payload(
+        inputs=[{"role": "user", "content": "test"}],
+        stop=None,
+    )
+    assert payload["max_tokens"] == 50  
