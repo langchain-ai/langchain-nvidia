@@ -572,7 +572,6 @@ class ChatNVIDIA(BaseChatModel):
         # remove keys with None values from payload
         payload = {k: v for k, v in payload.items() if v is not None}
 
-        print("final payload:", payload)
         return {"messages": messages, **payload}
 
     def bind_tools(
