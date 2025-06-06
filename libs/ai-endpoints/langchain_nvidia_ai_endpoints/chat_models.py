@@ -50,7 +50,7 @@ from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_core.utils.pydantic import is_basemodel_subclass
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, Field, PrivateAttr, ConfigDict
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
@@ -253,6 +253,8 @@ class ChatNVIDIA(BaseChatModel):
             model = ChatNVIDIA(model="meta/llama2-70b")
             response = model.invoke("Hello")
     """
+
+    model_config = ConfigDict(populate_by_name=True)
 
     _client: _NVIDIAClient = PrivateAttr()
     base_url: Optional[str] = Field(
@@ -570,6 +572,7 @@ class ChatNVIDIA(BaseChatModel):
         # remove keys with None values from payload
         payload = {k: v for k, v in payload.items() if v is not None}
 
+        print("final payload:", payload)
         return {"messages": messages, **payload}
 
     def bind_tools(
