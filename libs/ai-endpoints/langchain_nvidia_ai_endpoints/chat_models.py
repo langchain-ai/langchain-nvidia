@@ -295,7 +295,7 @@ class ChatNVIDIA(BaseChatModel):
                               max_tokens and max_completion_tokens are aliases.
                               If both max_tokens and max_completion_tokens are supplied,
                               max_completion_tokens takes precedence.
-            max_completion_tokens (int): Maximum number of tokens to generate. 
+            max_completion_tokens (int): Maximum number of tokens to generate.
             top_p (float): Top-p for distribution sampling.
             seed (int): A seed for deterministic results.
             stop (list[str]): A list of cased stop words.
