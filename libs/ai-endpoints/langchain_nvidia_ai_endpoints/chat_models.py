@@ -273,7 +273,6 @@ class ChatNVIDIA(BaseChatModel):
     top_p: Optional[float] = Field(None, description="Top-p for distribution sampling")
     seed: Optional[int] = Field(None, description="The seed for deterministic results")
     stop: Optional[Sequence[str]] = Field(None, description="Stop words (cased)")
-    reasoning_mode: bool = Field(False, description="Enable reasoning mode")
 
     def __init__(self, **kwargs: Any):
         """
@@ -297,7 +296,6 @@ class ChatNVIDIA(BaseChatModel):
             top_p (float): Top-p for distribution sampling.
             seed (int): A seed for deterministic results.
             stop (list[str]): A list of cased stop words.
-            reasoning_mode (bool): Enable reasoning mode.
 
         API Key:
         - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
@@ -534,9 +532,14 @@ class ChatNVIDIA(BaseChatModel):
         """Generates payload for the _NVIDIAClient API to send to service."""
         messages: List[Dict[str, Any]] = []
         
-        # Add system message for reasoning mode if enabled
-        if getattr(self, 'reasoning_mode', False):
-            messages.append({"role": "system", "content": "detailed thinking on"})
+        # Add system message for thinking mode if specified
+        thinking_mode = kwargs.pop('thinking_mode', None)
+        if thinking_mode is not None:
+            content = (
+                "detailed thinking on" if thinking_mode 
+                else "detailed thinking off"
+            )
+            messages.append({"role": "system", "content": content})
             
         for msg in inputs:
             if isinstance(msg, str):
@@ -916,4 +919,47 @@ class ChatNVIDIA(BaseChatModel):
                 ls_structured_output_format=ls_structured_output_format,
             )
             | output_parser
+        )
+
+    def with_thinking_mode(
+        self,
+        enabled: bool = True,
+        **kwargs: Any,
+    ) -> Runnable[LanguageModelInput, BaseMessage]:
+        """
+        Configure the model to use thinking mode.
+
+        Args:
+            enabled (bool): Whether to enable thinking mode. Defaults to True.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A runnable that will use thinking mode when enabled.
+
+        Example:
+            .. code-block:: python
+
+                from langchain_nvidia_ai_endpoints import ChatNVIDIA
+
+                model = ChatNVIDIA(model="nvidia/llama-3.1-nemotron-nano-8b-v1")
+                
+                # Enable thinking mode
+                thinking_model = model.with_thinking_mode(enabled=True)
+                response = thinking_model.invoke("Hello")
+                
+                # Disable thinking mode
+                no_thinking_model = model.with_thinking_mode(enabled=False)
+                response = no_thinking_model.invoke("Hello")
+        """
+        # check if the model supports thinking mode, warn if it does not
+        if self._client.model and not self._client.model.supports_thinking:
+            warnings.warn(
+                f"Model '{self.model}' does not support thinking mode. "
+                "The thinking mode configuration will be ignored."
+            )
+            return self
+
+        return super().bind(
+            thinking_mode=enabled,
+            **kwargs,
         )
