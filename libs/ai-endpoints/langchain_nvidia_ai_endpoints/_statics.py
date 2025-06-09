@@ -16,7 +16,7 @@ class Model(BaseModel):
     aliases: list of aliases for the model
     supports_tools: whether the model supports tool calling
     supports_structured_output: whether the model supports structured output
-    supports_reasoning: whether the model supports reasoning mode
+    supports_thinking: whether the model supports thinking mode
 
     All aliases are deprecated and will trigger a warning when used.
     """
