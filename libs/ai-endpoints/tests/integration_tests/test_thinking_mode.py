@@ -11,7 +11,7 @@ from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
 
 def do_invoke(llm: ChatNVIDIA, msg: str) -> AIMessage:
-    return llm.invoke(msg)
+    return llm.invoke(msg)  # type: ignore[return-value]
 
 
 def check_reasoning_content(
