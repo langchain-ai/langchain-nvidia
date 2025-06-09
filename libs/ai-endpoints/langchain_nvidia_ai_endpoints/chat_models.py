@@ -534,16 +534,15 @@ class ChatNVIDIA(BaseChatModel):
     ) -> dict:  # todo: remove
         """Generates payload for the _NVIDIAClient API to send to service."""
         messages: List[Dict[str, Any]] = []
-        
+
         # Add system message for thinking mode if specified
-        thinking_mode = kwargs.pop('thinking_mode', None)
+        thinking_mode = kwargs.pop("thinking_mode", None)
         if thinking_mode is not None:
             content = (
-                "detailed thinking on" if thinking_mode 
-                else "detailed thinking off"
+                "detailed thinking on" if thinking_mode else "detailed thinking off"
             )
             messages.append({"role": "system", "content": content})
-            
+
         for msg in inputs:
             if isinstance(msg, str):
                 # (WFH) this shouldn't ever be reached but leaving this here bcs
@@ -945,11 +944,11 @@ class ChatNVIDIA(BaseChatModel):
                 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
                 model = ChatNVIDIA(model="nvidia/llama-3.1-nemotron-nano-8b-v1")
-                
+
                 # Enable thinking mode
                 thinking_model = model.with_thinking_mode(enabled=True)
                 response = thinking_model.invoke("Hello")
-                
+
                 # Disable thinking mode
                 no_thinking_model = model.with_thinking_mode(enabled=False)
                 response = no_thinking_model.invoke("Hello")
