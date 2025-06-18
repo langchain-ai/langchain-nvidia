@@ -27,16 +27,11 @@ def check_reasoning_content(
     assert isinstance(response.content, str)
 
     has_think_tag = "<think>" in response.content
-    has_metadata_reasoning = bool(response.response_metadata.get("reasoning_content"))
 
     if should_have_reasoning:
-        assert (
-            has_think_tag or has_metadata_reasoning
-        ), "No reasoning content found in either think tag or metadata"
+        assert has_think_tag, "No reasoning content found in think tag"
     else:
-        assert (
-            not has_think_tag and not has_metadata_reasoning
-        ), "Found reasoning content when it should not be present"
+        assert not has_think_tag, "Found reasoning content when it should not be present"
 
 
 @pytest.mark.parametrize("func", [do_invoke], ids=["invoke"])
