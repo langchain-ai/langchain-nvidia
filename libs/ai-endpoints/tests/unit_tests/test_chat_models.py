@@ -1,6 +1,7 @@
 """Test chat model integration."""
 
 import warnings
+from typing import Any
 
 import pytest
 from requests_mock import Mocker
@@ -102,7 +103,7 @@ def test_payload_for_thinking_mode(requests_mock: Mocker, thinking_mode: bool) -
     """Test that thinking mode correctly modifies the payload."""
     captured_requests = []
 
-    def capture_request(request, context):
+    def capture_request(request: Any, context: Any) -> dict:
         captured_requests.append(request.json())
         return {"choices": [{"message": {"role": "assistant", "content": "test"}}]}
 
