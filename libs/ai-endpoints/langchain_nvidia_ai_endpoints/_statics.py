@@ -515,14 +515,14 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
-    "nvidia/llama-3.1-nemotron-nano-4b-v1.1": Model(
-        id="nvidia/llama-3.1-nemotron-nano-4b-v1.1",
+    "nvidia/llama-3.1-nemotron-nano-8b-v1": Model(
+        id="nvidia/llama-3.1-nemotron-nano-8b-v1",
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
     ),
-    "nvidia/llama-3.1-nemotron-nano-8b-v1": Model(
-        id="nvidia/llama-3.1-nemotron-nano-8b-v1",
+    "nvidia/llama-3.3-nemotron-super-49b-v1": Model(
+        id="nvidia/llama-3.3-nemotron-super-49b-v1",
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
