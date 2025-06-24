@@ -101,23 +101,20 @@ def test_max_tokens_value() -> None:
 def test_payload_for_thinking_mode(requests_mock: Mocker, thinking_mode: bool) -> None:
     """Test that thinking mode correctly modifies the payload."""
     captured_requests = []
-    
+
     def capture_request(request, context):
         captured_requests.append(request.json())
-        return {
-            "choices": [{"message": {"role": "assistant", "content": "test"}}]
-        }
-    
+        return {"choices": [{"message": {"role": "assistant", "content": "test"}}]}
+
     requests_mock.post(
         "https://integrate.api.nvidia.com/v1/chat/completions",
         json=capture_request,
     )
     llm = ChatNVIDIA(
-        model="nvidia/llama-3.1-nemotron-nano-8b-v1", 
-        api_key="BOGUS"
+        model="nvidia/llama-3.1-nemotron-nano-8b-v1", api_key="BOGUS"
     ).with_thinking_mode(enabled=thinking_mode)
     llm.invoke("test message")
-    
+
     messages = captured_requests[0]["messages"]
     assert len(messages) == 2
     assert messages[0]["role"] == "system"
@@ -139,8 +136,8 @@ def test_warning_for_thinking_mode_unsupported_model(thinking_mode: bool) -> Non
         match="does not support thinking mode",
     ):
         ChatNVIDIA(
-        model="meta/llama2-70b", 
-        nvidia_api_key="nvapi-...",
+            model="meta/llama2-70b",
+            nvidia_api_key="nvapi-...",
         ).with_thinking_mode(enabled=thinking_mode)
 
 

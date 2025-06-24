@@ -105,9 +105,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         return list(MODEL_TABLE.values())
 
     if "thinking_model" in metafunc.fixturenames:
-        models = [
-            "nvidia/llama-3.1-nemotron-nano-8b-v1"        
-        ]
+        models = ["nvidia/llama-3.1-nemotron-nano-8b-v1"]
         if model_list := metafunc.config.getoption("thinking_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):
