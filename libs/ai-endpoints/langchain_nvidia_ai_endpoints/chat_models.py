@@ -954,7 +954,9 @@ class ChatNVIDIA(BaseChatModel):
                 response = no_thinking_model.invoke("Hello")
         """
         # check if the model supports thinking mode, warn if it does not
-        if self._client.model and not self._client.model.supports_thinking:
+        if (self._client.model and 
+            not self._client.model.supports_thinking and 
+            not self.model.startswith("nvdev/")):
             warnings.warn(
                 f"Model '{self.model}' does not support thinking mode. "
                 "The thinking mode configuration will be ignored."
