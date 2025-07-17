@@ -273,6 +273,10 @@ class ChatNVIDIA(BaseChatModel):
     top_p: Optional[float] = Field(None, description="Top-p for distribution sampling")
     seed: Optional[int] = Field(None, description="The seed for deterministic results")
     stop: Optional[Sequence[str]] = Field(None, description="Stop words (cased)")
+    stream_options: Optional[Dict[str, Any]] = Field(
+        {"include_usage": True},
+        description="Stream options for the model. Set to None to disable",
+    )
 
     def __init__(self, **kwargs: Any):
         """
@@ -430,17 +434,18 @@ class ChatNVIDIA(BaseChatModel):
             inputs=inputs,
             stop=stop,
             stream=True,
-            stream_options={"include_usage": True},
+            stream_options=self.stream_options,
             **kwargs,
         )
+        # remove stream_options if user set it to None or if model doesn't support it
         # todo: get vlm endpoints fixed and remove this
         #       vlm endpoints do not accept standard stream_options parameter
-        if (
+        if self.stream_options is None or (
             self._client.model
             and self._client.model.model_type
             and self._client.model.model_type in ["nv-vlm", "qa"]
         ):
-            payload.pop("stream_options")
+            payload.pop("stream_options", None)
         for response in self._client.get_req_stream(
             payload=payload, extra_headers=extra_headers
         ):
