@@ -959,7 +959,6 @@ class ChatNVIDIA(BaseChatModel):
                 f"Model '{self.model}' does not support thinking mode. "
                 "The thinking mode configuration will be ignored."
             )
-            return self
 
         return super().bind(
             thinking_mode=enabled,
