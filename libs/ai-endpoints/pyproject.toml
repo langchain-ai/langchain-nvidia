@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "langchain-nvidia-ai-endpoints"
-version = "0.3.11"
+version = "0.3.12"
 description = "An integration package connecting NVIDIA AI Endpoints and LangChain"
 authors = []
 readme = "README.md"
