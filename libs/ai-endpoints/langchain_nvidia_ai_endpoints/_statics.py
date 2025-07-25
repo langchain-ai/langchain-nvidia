@@ -527,6 +527,13 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_thinking=True,
     ),
+    "moonshotai/kimi-k2-instruct": Model(
+        id="moonshotai/kimi-k2-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
