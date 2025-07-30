@@ -93,7 +93,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
         # Extract verify_ssl from kwargs, default to True
         verify_ssl = kwargs.pop("verify_ssl", True)
-        
+
         self._client = _NVIDIAClient(
             **({"base_url": base_url} if base_url else {}),  # only pass if set
             mdl_name=self.model,

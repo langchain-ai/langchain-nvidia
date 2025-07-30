@@ -1,4 +1,5 @@
 """Callback Handler that prints to std out."""
+
 from __future__ import annotations
 
 import logging

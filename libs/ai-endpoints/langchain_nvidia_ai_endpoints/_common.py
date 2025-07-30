@@ -262,7 +262,7 @@ class _NVIDIAClient(BaseModel):
             session = requests.Session()
             session.verify = self.verify_ssl
             return session
-        
+
         self.get_session_fn = create_session
 
     ###################################################################################
