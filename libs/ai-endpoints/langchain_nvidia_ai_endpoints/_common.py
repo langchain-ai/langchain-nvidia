@@ -76,6 +76,11 @@ class _NVIDIAClient(BaseModel):
         description="Path for polling after HTTP 202 responses",
     )
     get_session_fn: Callable = Field(requests.Session)
+    verify_ssl: bool = Field(
+        True,
+        description="Whether to verify SSL certificates. "
+        "Set to False for self-signed certificates.",
+    )
 
     api_key: Optional[SecretStr] = Field(
         default_factory=lambda: SecretStr(
@@ -251,6 +256,14 @@ class _NVIDIAClient(BaseModel):
                     )
                 else:
                     warnings.warn("No locally hosted model was found.")
+
+        # Create session factory that sets verify parameter
+        def create_session():
+            session = requests.Session()
+            session.verify = self.verify_ssl
+            return session
+        
+        self.get_session_fn = create_session
 
     ###################################################################################
     ################### LangChain functions ###########################################

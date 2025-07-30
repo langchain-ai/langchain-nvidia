@@ -91,6 +91,9 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         base_url = kwargs.pop("nvidia_base_url", self.base_url)
         # allow nvidia_api_key as an alternative for api_key
         api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
+        # Extract verify_ssl from kwargs, default to True
+        verify_ssl = kwargs.pop("verify_ssl", True)
+        
         self._client = _NVIDIAClient(
             **({"base_url": base_url} if base_url else {}),  # only pass if set
             mdl_name=self.model,
@@ -98,6 +101,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             **({"api_key": api_key} if api_key else {}),  # only pass if set
             infer_path="{base_url}/embeddings",
             cls=self.__class__.__name__,
+            verify_ssl=verify_ssl,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
@@ -132,7 +136,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         #  encoding_format: "float" | "base64"
         #  input_type: "query" | "passage"
         #  user: str                           -- ignored
-        #  truncate: "NONE" | "START" | "END"  -- default "NONE", error raised if
+        #  input_type: "NONE" | "START" | "END"  -- default "NONE", error raised if
         #                                         an input is too long
         #  dimensions: int                     -- not supported by all models
         payload: Dict[str, Any] = {
