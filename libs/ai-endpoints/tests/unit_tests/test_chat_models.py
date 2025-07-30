@@ -171,7 +171,7 @@ def test_verify_ssl_behavior(
     verify_ssl: bool | None, expected_verify_ssl: bool
 ) -> None:
     """Test verify_ssl parameter behavior with different values."""
-    kwargs = {
+    kwargs: dict[str, Any] = {
         "model": "meta/llama2-70b",
         "nvidia_api_key": "nvapi-...",
         "base_url": "https://example.com/v1",
