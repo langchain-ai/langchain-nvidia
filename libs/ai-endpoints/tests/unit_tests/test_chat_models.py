@@ -161,11 +161,11 @@ def test_no_warning_for_thinking_mode_supported_model(thinking_mode: bool) -> No
 @pytest.mark.parametrize(
     "verify_ssl,expected_verify_ssl",
     [
-        (None, True),      # Default behavior
-        (True, True),      # Explicit True
-        (False, False),    # Explicit False
+        (None, True),  # Default behavior
+        (True, True),  # Explicit True
+        (False, False),  # Explicit False
     ],
-    ids=["default", "true", "false"]
+    ids=["default", "true", "false"],
 )
 def test_verify_ssl_behavior(
     verify_ssl: bool | None, expected_verify_ssl: bool
@@ -174,12 +174,12 @@ def test_verify_ssl_behavior(
     kwargs = {
         "model": "meta/llama2-70b",
         "nvidia_api_key": "nvapi-...",
-        "base_url": "https://example.com/v1"
+        "base_url": "https://example.com/v1",
     }
     if verify_ssl is not None:
         kwargs["verify_ssl"] = verify_ssl
-    
+
     llm = ChatNVIDIA(**kwargs)
-    
+
     # Test that session factory creates sessions with correct verify setting
     assert llm._client.get_session_fn().verify is expected_verify_ssl
