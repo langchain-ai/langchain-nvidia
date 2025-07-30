@@ -79,7 +79,7 @@ class _NVIDIAClient(BaseModel):
     verify_ssl: bool = Field(
         True,
         description="Whether to verify SSL certificates. "
-        "Set to False for self-signed certificates.",
+        "Set to False to skip the SSL certificate verification",
     )
 
     api_key: Optional[SecretStr] = Field(
@@ -258,7 +258,7 @@ class _NVIDIAClient(BaseModel):
                     warnings.warn("No locally hosted model was found.")
 
         # Create session factory that sets verify parameter
-        def create_session():
+        def create_session() -> requests.Session:
             session = requests.Session()
             session.verify = self.verify_ssl
             return session
