@@ -136,7 +136,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         #  encoding_format: "float" | "base64"
         #  input_type: "query" | "passage"
         #  user: str                           -- ignored
-        #  input_type: "NONE" | "START" | "END"  -- default "NONE", error raised if
+        #  truncate: "NONE" | "START" | "END"  -- default "NONE", error raised if
         #                                         an input is too long
         #  dimensions: int                     -- not supported by all models
         payload: Dict[str, Any] = {
