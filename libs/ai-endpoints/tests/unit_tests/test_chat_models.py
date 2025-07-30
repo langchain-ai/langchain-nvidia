@@ -1,7 +1,7 @@
 """Test chat model integration."""
 
 import warnings
-from typing import Any
+from typing import Any, Optional, Union
 
 import pytest
 from requests_mock import Mocker
@@ -164,11 +164,12 @@ def test_no_warning_for_thinking_mode_supported_model(thinking_mode: bool) -> No
         (None, True),  # Default behavior
         (True, True),  # Explicit True
         (False, False),  # Explicit False
+        ("/path/to/ca.pem", "/path/to/ca.pem"),  # CA certificate path
     ],
-    ids=["default", "true", "false"],
+    ids=["default", "true", "false", "ca_path"],
 )
 def test_verify_ssl_behavior(
-    verify_ssl: bool | None, expected_verify_ssl: bool
+    verify_ssl: Optional[Union[bool, str]], expected_verify_ssl: Union[bool, str]
 ) -> None:
     """Test verify_ssl parameter behavior with different values."""
     kwargs: dict[str, Any] = {

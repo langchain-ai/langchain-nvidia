@@ -76,10 +76,12 @@ class _NVIDIAClient(BaseModel):
         description="Path for polling after HTTP 202 responses",
     )
     get_session_fn: Callable = Field(requests.Session)
-    verify_ssl: bool = Field(
+    verify_ssl: Union[bool, str] = Field(
         True,
-        description="Whether to verify SSL certificates. "
-        "Set to False to skip the SSL certificate verification",
+        description="SSL verification setting. Can be: "
+        "True (use default CA bundle), "
+        "False (disable verification), "
+        "or a path to a CA certificate file/directory.",
     )
 
     api_key: Optional[SecretStr] = Field(
