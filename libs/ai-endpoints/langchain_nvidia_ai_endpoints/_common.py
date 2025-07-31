@@ -259,13 +259,14 @@ class _NVIDIAClient(BaseModel):
                 else:
                     warnings.warn("No locally hosted model was found.")
 
-        # Create session factory that sets verify parameter
-        def create_session() -> requests.Session:
-            session = requests.Session()
-            session.verify = self.verify_ssl
-            return session
+        # Create session function that sets verify parameter
+        self.get_session_fn = self._create_session
 
-        self.get_session_fn = create_session
+    def _create_session(self) -> requests.Session:
+        """Create a session with SSL verification."""
+        session = requests.Session()
+        session.verify = self.verify_ssl
+        return session
 
     ###################################################################################
     ################### LangChain functions ###########################################
