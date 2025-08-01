@@ -331,6 +331,9 @@ class ChatNVIDIA(BaseChatModel):
         base_url = kwargs.pop("nvidia_base_url", self.base_url)
         # allow nvidia_api_key as an alternative for api_key
         api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
+        # Extract verify_ssl from kwargs, default to True
+        verify_ssl = kwargs.pop("verify_ssl", True)
+
         self._client = _NVIDIAClient(
             **({"base_url": base_url} if base_url else {}),  # only pass if set
             mdl_name=self.model,
@@ -339,6 +342,7 @@ class ChatNVIDIA(BaseChatModel):
             infer_path="{base_url}/chat/completions",
             # instead of self.__class__.__name__ to assist in subclassing ChatNVIDIA
             cls="ChatNVIDIA",
+            verify_ssl=verify_ssl,
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization

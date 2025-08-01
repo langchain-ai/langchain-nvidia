@@ -1,7 +1,7 @@
 """Test chat model integration."""
 
 import warnings
-from typing import Any
+from typing import Any, Optional, Union
 
 import pytest
 from requests_mock import Mocker
@@ -156,3 +156,31 @@ def test_no_warning_for_thinking_mode_supported_model(thinking_mode: bool) -> No
             nvidia_api_key="nvapi-...",
         ).with_thinking_mode(enabled=thinking_mode)
         assert len(w) == 0
+
+
+@pytest.mark.parametrize(
+    "verify_ssl,expected_verify_ssl",
+    [
+        (None, True),  # Default behavior
+        (True, True),  # Explicit True
+        (False, False),  # Explicit False
+        ("/path/to/ca.pem", "/path/to/ca.pem"),  # CA certificate path
+    ],
+    ids=["default", "true", "false", "ca_path"],
+)
+def test_verify_ssl_behavior(
+    verify_ssl: Optional[Union[bool, str]], expected_verify_ssl: Union[bool, str]
+) -> None:
+    """Test verify_ssl parameter behavior with different values."""
+    kwargs: dict[str, Any] = {
+        "model": "meta/llama2-70b",
+        "nvidia_api_key": "nvapi-...",
+        "base_url": "https://example.com/v1",
+    }
+    if verify_ssl is not None:
+        kwargs["verify_ssl"] = verify_ssl
+
+    llm = ChatNVIDIA(**kwargs)
+
+    # Test that session factory creates sessions with correct verify setting
+    assert llm._client.get_session_fn().verify is expected_verify_ssl
