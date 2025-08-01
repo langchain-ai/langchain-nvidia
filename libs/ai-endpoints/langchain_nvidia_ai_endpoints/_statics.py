@@ -527,6 +527,12 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_thinking=True,
     ),
+    "nvidia/llama-3.3-nemotron-super-49b-v1.5": Model(
+        id="nvidia/llama-3.3-nemotron-super-49b-v1.5",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+    ),
     "moonshotai/kimi-k2-instruct": Model(
         id="moonshotai/kimi-k2-instruct",
         model_type="chat",
