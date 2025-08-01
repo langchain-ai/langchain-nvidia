@@ -1,5 +1,4 @@
 import warnings
-import os
 from typing import Any
 
 import pytest
@@ -54,11 +53,4 @@ def test_registered_model_functional(
         "ignore", r".*Unable to determine validity of.*"
     )  # we aren't passing client & type to Model()
     register_model(model)
-    
-    # Get API key from environment variable
-    api_key = os.environ.get("NVIDIA_API_KEY")
-    if not api_key:
-        pytest.skip("NVIDIA_API_KEY environment variable not set")
-    
-    # Pass API key to client
-    contact_service(client(model=id, nvidia_api_key=api_key))
+    contact_service(client(model=id))
