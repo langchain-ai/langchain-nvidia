@@ -27,8 +27,8 @@ from langchain_nvidia_ai_endpoints import (
         ),
         (
             NVIDIAEmbeddings,
-            "NV-Embed-QA",
-            "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/09c64e32-2b65-4892-a285-2f585408d118",
+            "nvidia/nv-embed-v1",
+            "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/4c134d37-17f9-4fc6-9f84-1f3a8a03c52c",
         ),
         (
             NVIDIARerank,
@@ -37,8 +37,8 @@ from langchain_nvidia_ai_endpoints import (
         ),
         (
             NVIDIA,
-            "bigcode/starcoder2-15b",
-            "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/d9cfe8a2-44df-44a0-ba51-3fc4a202c11c",
+            "bigcode/starcoder2-7b",
+            "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/dd7b01e7-732d-4da5-8e8d-315f79165a23",
         ),
     ],
 )
