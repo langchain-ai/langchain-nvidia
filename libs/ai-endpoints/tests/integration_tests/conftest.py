@@ -129,7 +129,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("chat_model", models, ids=models)
 
     if "tool_model" in metafunc.fixturenames:
-        models = ["meta/llama-3.3-70b-instruct"]
+        models = ["meta/llama-3.1-70b-instruct"]
         if model_list := metafunc.config.getoption("tool_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):
