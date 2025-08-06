@@ -442,6 +442,7 @@ CHAT_MODEL_TABLE = {
         id="mistralai/mistral-small-3.1-24b-instruct-2503",
         model_type="vlm",
         client="ChatNVIDIA",
+        supports_tools=True,
     ),
     "mistralai/mathstral-7b-v0.1": Model(
         id="mistralai/mathstral-7b-v0.1",
@@ -455,11 +456,6 @@ CHAT_MODEL_TABLE = {
     ),
     "rakuten/rakutenai-7b-chat": Model(
         id="rakuten/rakutenai-7b-chat",
-        model_type="chat",
-        client="ChatNVIDIA",
-    ),
-    "snowflake/arctic-embed-l": Model(
-        id="snowflake/arctic-embed-l",
         model_type="chat",
         client="ChatNVIDIA",
     ),
