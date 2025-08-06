@@ -213,11 +213,9 @@ class _NVIDIAClient(BaseModel):
                     # we override the infer_path to use the custom endpoint
                     self.infer_path = model.endpoint
             else:
-                candidates = [
-                    model
-                    for model in self.available_models
-                    if model.id == self.mdl_name
-                ]
+                unique_models = {model.id: model for model in self.available_models}.values()
+                candidates = [model for model in unique_models if model.id == self.mdl_name]
+
                 assert len(candidates) <= 1, (
                     f"Multiple candidates for {self.mdl_name} "
                     f"in `available_models`: {candidates}"
@@ -315,7 +313,7 @@ class _NVIDIAClient(BaseModel):
     def available_models(self) -> list[Model]:
         """List the available models that can be invoked."""
         if self._available_models is not None:
-            return self._available_models
+            return list({model.id: model for model in self._available_models}.values())
 
         response, _ = self._get(self.listing_path.format(base_url=self.base_url))
         # expecting -
