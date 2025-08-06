@@ -331,12 +331,12 @@ CHAT_MODEL_TABLE = {
     ),
     "google/gemma-3n-e2b-it": Model(
         id="google/gemma-3n-e2b-it",
-        model_type="chat",
+        model_type="vlm",
         client="ChatNVIDIA",
     ),
     "google/gemma-3n-e4b-it": Model(
         id="google/gemma-3n-e4b-it",
-        model_type="chat",
+        model_type="vlm",
         client="ChatNVIDIA",
     ),
     "google/shieldgemma-9b": Model(
