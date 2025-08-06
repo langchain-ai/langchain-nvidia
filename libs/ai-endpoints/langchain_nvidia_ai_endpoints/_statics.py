@@ -542,6 +542,20 @@ CHAT_MODEL_TABLE = {
         supports_tools=True,
         supports_structured_output=True,
     ),
+    "openai/gpt-oss-20b": Model(
+        id="openai/gpt-oss-20b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+    ),
+    "openai/gpt-oss-120b": Model(
+        id="openai/gpt-oss-120b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
