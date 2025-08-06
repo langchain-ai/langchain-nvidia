@@ -682,28 +682,28 @@ CHAT_MODEL_TABLE = {
     ),
     "deepseek-ai/deepseek-r1-0528": Model(
         id="deepseek-ai/deepseek-r1-0528",
-        model_type="vlm",
+        model_type="chat",
         client="ChatNVIDIA",
         supports_tools=True,
     ),
     "deepseek-ai/deepseek-r1-distill-llama-8b": Model(
         id="deepseek-ai/deepseek-r1-distill-llama-8b",
-        model_type="vlm",
+        model_type="chat",
         client="ChatNVIDIA",
     ),
     "deepseek-ai/deepseek-r1-distill-qwen-14b": Model(
         id="deepseek-ai/deepseek-r1-distill-qwen-14b",
-        model_type="vlm",
+        model_type="chat",
         client="ChatNVIDIA",
     ),
     "deepseek-ai/deepseek-r1-distill-qwen-32b": Model(
         id="deepseek-ai/deepseek-r1-distill-qwen-32b",
-        model_type="vlm",
+        model_type="chat",
         client="ChatNVIDIA",
     ),
     "deepseek-ai/deepseek-r1-distill-qwen-7b": Model(
         id="deepseek-ai/deepseek-r1-distill-qwen-7b",
-        model_type="vlm",
+        model_type="chat",
         client="ChatNVIDIA",
     ),
     "nvidia/llama-3.1-nemotron-nano-8b-v1": Model(
