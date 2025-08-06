@@ -771,6 +771,11 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "speakleash/bielik-11b-v2.3-instruct": Model(
+        id="speakleash/bielik-11b-v2.3-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
 }
 
 QA_MODEL_TABLE = {
