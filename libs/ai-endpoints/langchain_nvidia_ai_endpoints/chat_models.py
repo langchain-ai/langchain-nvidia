@@ -489,6 +489,10 @@ class ChatNVIDIA(BaseChatModel):
             "additional_kwargs": {},
             "response_metadata": {},
         }
+
+        if rc := kw_left.pop("reasoning_content", None):
+            out_dict["additional_kwargs"]["reasoning_content"] = rc
+
         if token_usage := kw_left.pop("token_usage", None):
             out_dict["usage_metadata"] = {
                 "input_tokens": token_usage.get("prompt_tokens", 0),

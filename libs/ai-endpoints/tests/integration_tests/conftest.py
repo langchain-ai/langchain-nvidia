@@ -39,6 +39,14 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run tests for a specific chat model or list of models",
     )
     parser.addoption(
+        "--reasoning-model-id",
+        action="store",
+        nargs="+",
+        help=(
+            "Run reasoning-content tests for a specific model or list of models"
+        ),
+    )
+    parser.addoption(
         "--tool-model-id",
         action="store",
         nargs="+",
@@ -103,6 +111,12 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
     def get_all_known_models() -> List[Model]:
         return list(MODEL_TABLE.values())
+
+    if "reasoning_model" in metafunc.fixturenames:
+        models = ["openai/gpt-oss-20b"]
+        if model_list := metafunc.config.getoption("reasoning_model_id"):
+            models = model_list
+        metafunc.parametrize("reasoning_model", models, ids=models)
 
     if "thinking_model" in metafunc.fixturenames:
         models = ["nvidia/llama-3.1-nemotron-nano-8b-v1"]
