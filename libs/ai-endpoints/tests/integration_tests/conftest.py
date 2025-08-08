@@ -42,9 +42,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--reasoning-model-id",
         action="store",
         nargs="+",
-        help=(
-            "Run reasoning-content tests for a specific model or list of models"
-        ),
+        help=("Run reasoning-content tests for a specific model or list of models"),
     )
     parser.addoption(
         "--tool-model-id",
