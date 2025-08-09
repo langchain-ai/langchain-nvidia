@@ -182,6 +182,67 @@ def _nv_vlm_adjust_input(
     return message_dict
 
 
+def _extract_content_after_thinking(content: str) -> str:
+    """
+    Extract content that comes after thinking tags.
+
+    When thinking mode is enabled, the actual structured output content
+    comes after the </think> closing tag. This function extracts that content
+    while preserving the original content structure.
+
+    Args:
+        content: The full content including potential thinking tags
+
+    Returns:
+        Content after the last </think> tag, or original content if no thinking tags
+    """
+    if content and "<think>" in content and "</think>" in content:
+        # Find the last </think> tag and extract content after it
+        think_end = content.rfind("</think>")
+        if think_end != -1:
+            # Extract content after </think> tag
+            actual_content = content[think_end + len("</think>") :].strip()
+            return actual_content
+    return content
+
+
+def _create_thinking_aware_parser(
+    base_parser_class: Type[BaseOutputParser],
+) -> Type[BaseOutputParser]:
+    """
+    Create a thinking-aware version of any output parser.
+
+    This wrapper extracts content after thinking tags for parsing, but preserves
+    the original content with thinking tags in the response.
+    """
+
+    class ThinkingAwareParser(base_parser_class):
+        def parse(self, text: str) -> Any:
+            # Extract only the content after thinking tags for parsing
+            actual_content = _extract_content_after_thinking(text)
+            return super().parse(actual_content)
+
+        def parse_result(
+            self, result: List[Generation], *, partial: bool = False
+        ) -> Any:
+            if result and hasattr(result[0], "text"):
+                original_text = result[0].text
+                # Extract only the content after thinking tags for parsing
+                actual_content = _extract_content_after_thinking(original_text)
+
+                # Create a new generation object with extracted content
+                clean_generation = Generation(
+                    text=actual_content, generation_info=result[0].generation_info
+                )
+
+                clean_result = [clean_generation] + result[1:]
+
+                return super().parse_result(clean_result, partial=partial)
+            return super().parse_result(result, partial=partial)
+
+    return ThinkingAwareParser
+
+
 def _nv_vlm_get_asset_ids(
     content: Union[str, List[Union[str, Dict[str, Any]]]],
 ) -> List[str]:
@@ -864,7 +925,10 @@ class ChatNVIDIA(BaseChatModel):
             )
 
         if isinstance(schema, dict):
-            output_parser: BaseOutputParser = JsonOutputParser()
+            ThinkingAwareJsonOutputParser = _create_thinking_aware_parser(
+                JsonOutputParser
+            )
+            output_parser: BaseOutputParser = ThinkingAwareJsonOutputParser()
             nvext_param: Dict[str, Any] = {"guided_json": schema}
         elif issubclass(schema, enum.Enum):
             # langchain's EnumOutputParser is not in langchain_core
@@ -891,7 +955,10 @@ class ChatNVIDIA(BaseChatModel):
                     "Enum schema must only contain string choices. "
                     "Use StrEnum or ensure all member values are strings."
                 )
-            output_parser = EnumOutputParser(enum=schema)
+            ThinkingAwareEnumOutputParser = _create_thinking_aware_parser(
+                EnumOutputParser
+            )
+            output_parser = ThinkingAwareEnumOutputParser(enum=schema)
             nvext_param = {"guided_choice": choices}
             guided_schema = choices
 
@@ -910,7 +977,10 @@ class ChatNVIDIA(BaseChatModel):
                         pass
                     return None
 
-            output_parser = ForgivingPydanticOutputParser(pydantic_object=schema)
+            ThinkingAwarePydanticOutputParser = _create_thinking_aware_parser(
+                ForgivingPydanticOutputParser
+            )
+            output_parser = ThinkingAwarePydanticOutputParser(pydantic_object=schema)
             if hasattr(schema, "model_json_schema"):
                 json_schema = schema.model_json_schema()
             else:
