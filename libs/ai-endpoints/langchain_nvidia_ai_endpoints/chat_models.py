@@ -182,6 +182,32 @@ def _nv_vlm_adjust_input(
     return message_dict
 
 
+def _extract_content_after_thinking(content: str) -> str:
+    """
+    Extract content that comes after thinking tags.
+    
+    When thinking mode is enabled, the actual structured output content
+    comes after the </think> closing tag. This function extracts that content
+    while preserving the original content structure.
+    
+    Args:
+        content: The full content including potential thinking tags
+        
+    Returns:
+        Content after the last </think> tag, or original content if no thinking tags
+    """
+    if content and "<think>" in content and "</think>" in content:
+        # Find the last </think> tag and extract content after it
+        think_end = content.rfind("</think>")
+        if think_end != -1:
+            # Extract content after </think> tag
+            actual_content = content[think_end + len("</think>"):].strip()
+            # If there's actual content after the think tags, use it
+            if actual_content:
+                return actual_content
+    return content
+
+
 def _nv_vlm_get_asset_ids(
     content: Union[str, List[Union[str, Dict[str, Any]]]],
 ) -> List[str]:
@@ -864,7 +890,14 @@ class ChatNVIDIA(BaseChatModel):
             )
 
         if isinstance(schema, dict):
-            output_parser: BaseOutputParser = JsonOutputParser()
+            # Create a thinking-aware JSON parser
+            class ThinkingAwareJsonOutputParser(JsonOutputParser):
+                def parse(self, text: str) -> Any:
+                    # Extract content after thinking tags before parsing
+                    actual_content = _extract_content_after_thinking(text)
+                    return super().parse(actual_content)
+            
+            output_parser: BaseOutputParser = ThinkingAwareJsonOutputParser()
             nvext_param: Dict[str, Any] = {"guided_json": schema}
         elif issubclass(schema, enum.Enum):
             # langchain's EnumOutputParser is not in langchain_core
@@ -876,7 +909,9 @@ class ChatNVIDIA(BaseChatModel):
 
                 def parse(self, response: str) -> Any:
                     try:
-                        return self.enum(response.strip())
+                        # Extract content after thinking tags before parsing
+                        actual_content = _extract_content_after_thinking(response)
+                        return self.enum(actual_content.strip())
                     except ValueError:
                         pass
                     return None
@@ -905,6 +940,13 @@ class ChatNVIDIA(BaseChatModel):
                     self, result: List[Generation], *, partial: bool = False
                 ) -> Any:
                     try:
+                        # Extract content after thinking tags before parsing
+                        if result and hasattr(result[0], 'text'):
+                            actual_content = _extract_content_after_thinking(result[0].text)
+                            # Create a new Generation with the extracted content
+                            from langchain_core.outputs import Generation
+                            modified_result = [Generation(text=actual_content)]
+                            return super().parse_result(modified_result, partial=partial)
                         return super().parse_result(result, partial=partial)
                     except OutputParserException:
                         pass
