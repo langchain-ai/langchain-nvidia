@@ -20,7 +20,9 @@ from typing import (
     Sequence,
     Tuple,
     Type,
+    TypeVar,
     Union,
+    cast,
 )
 
 from langchain_core.callbacks.manager import (
@@ -55,6 +57,9 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
 from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
+
+# Type variable for generic parser types
+T_Parser = TypeVar("T_Parser", bound="BaseOutputParser")
 
 _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
 
@@ -207,8 +212,8 @@ def _extract_content_after_thinking(content: str) -> str:
 
 
 def _create_thinking_aware_parser(
-    base_parser_class: Type[BaseOutputParser],
-) -> Type[BaseOutputParser]:
+    base_parser_class: Type[T_Parser],
+) -> Type[T_Parser]:
     """
     Create a thinking-aware version of any output parser.
 
@@ -216,7 +221,7 @@ def _create_thinking_aware_parser(
     the original content with thinking tags in the response.
     """
 
-    class ThinkingAwareParser(base_parser_class):
+    class ThinkingAwareParser(base_parser_class):  # type: ignore[valid-type,misc]
         def parse(self, text: str) -> Any:
             # Extract only the content after thinking tags for parsing
             actual_content = _extract_content_after_thinking(text)
@@ -240,7 +245,7 @@ def _create_thinking_aware_parser(
                 return super().parse_result(clean_result, partial=partial)
             return super().parse_result(result, partial=partial)
 
-    return ThinkingAwareParser
+    return cast(Type[T_Parser], ThinkingAwareParser)
 
 
 def _nv_vlm_get_asset_ids(
