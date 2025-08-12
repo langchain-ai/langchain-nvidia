@@ -889,11 +889,6 @@ VLM_MODEL_TABLE = {
         model_type="vlm",
         client="ChatNVIDIA",
     ),
-    "nvdev/meta/llama-4-scout-17b-16e-instruct": Model(
-        id="nvdev/meta/llama-4-scout-17b-16e-instruct",
-        model_type="vlm",
-        client="ChatNVIDIA",
-    ),
 }
 
 EMBEDDING_MODEL_TABLE = {
