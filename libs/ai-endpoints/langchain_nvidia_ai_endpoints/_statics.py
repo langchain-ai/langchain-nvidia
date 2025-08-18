@@ -719,11 +719,6 @@ CHAT_MODEL_TABLE = {
         supports_thinking=True,
         supports_tools=True,
     ),
-    "nvidia/llama-3.1-nemotron-nano-vl-8b-v1": Model(
-        id="nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
-        model_type="vlm",
-        client="ChatNVIDIA",
-    ),
     "nvidia/llama-3.1-nemotron-ultra-253b-v1": Model(
         id="nvidia/llama-3.1-nemotron-ultra-253b-v1",
         model_type="chat",
@@ -886,6 +881,11 @@ VLM_MODEL_TABLE = {
     ),
     "nvdev/meta/llama-4-maverick-17b-128e-instruct": Model(
         id="nvdev/meta/llama-4-maverick-17b-128e-instruct",
+        model_type="vlm",
+        client="ChatNVIDIA",
+    ),
+    "nvidia/llama-3.1-nemotron-nano-vl-8b-v1": Model(
+        id="nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
         model_type="vlm",
         client="ChatNVIDIA",
     ),
