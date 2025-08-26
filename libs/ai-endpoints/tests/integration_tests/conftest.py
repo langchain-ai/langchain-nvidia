@@ -111,7 +111,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         return list(MODEL_TABLE.values())
 
     if "reasoning_model" in metafunc.fixturenames:
-        models = ["openai/gpt-oss-20b"]
+        models = ["openai/gpt-oss-120b"]
         if model_list := metafunc.config.getoption("reasoning_model_id"):
             models = model_list
         metafunc.parametrize("reasoning_model", models, ids=models)
