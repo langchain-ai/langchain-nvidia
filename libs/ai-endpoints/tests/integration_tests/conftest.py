@@ -111,7 +111,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         return list(MODEL_TABLE.values())
 
     if "reasoning_model" in metafunc.fixturenames:
-        models = ["openai/gpt-oss-20b"]
+        models = ["openai/gpt-oss-120b"]
         if model_list := metafunc.config.getoption("reasoning_model_id"):
             models = model_list
         metafunc.parametrize("reasoning_model", models, ids=models)
@@ -185,7 +185,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("rerank_model", models, ids=models)
 
     if "vlm_model" in metafunc.fixturenames:
-        models = ["meta/llama-3.2-11b-vision-instruct"]
+        models = ["nvidia/vila"]
         if model_list := metafunc.config.getoption("vlm_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):

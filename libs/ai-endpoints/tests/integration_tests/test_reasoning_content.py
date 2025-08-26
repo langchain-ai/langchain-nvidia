@@ -28,7 +28,13 @@ def test_reasoning_content_exposed(
     reasoning_model: str, mode: dict, func: Callable
 ) -> None:
     llm = ChatNVIDIA(model=reasoning_model, temperature=0, **mode)
-    resp = func(llm, "Say hello")
+    prompt = (
+        "Solve this step by step: A train leaves station A at 2 PM traveling at "
+        "60 mph. Another train leaves station B at 3 PM traveling at 80 mph "
+        "towards station A. If the stations are 300 miles apart, when will "
+        "they meet? Show your complete reasoning process."
+    )
+    resp = func(llm, prompt)
     assert isinstance(resp, (AIMessage, BaseMessageChunk))
     rc = resp.additional_kwargs.get("reasoning_content")
     assert isinstance(rc, str) and rc != ""
