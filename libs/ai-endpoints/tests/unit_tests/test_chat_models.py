@@ -102,13 +102,11 @@ def test_min_tokens_parameter() -> None:
         nvidia_api_key="nvapi-...",
     )
     assert llm.min_tokens == 10
-    assert llm.ignore_eos is None
     payload = llm._get_payload(
         inputs=[{"role": "user", "content": "test"}],
         stop=None,
     )
     assert payload["min_tokens"] == 10
-    assert "ignore_eos" not in payload
 
 
 def test_ignore_eos_parameter() -> None:
@@ -119,13 +117,45 @@ def test_ignore_eos_parameter() -> None:
         nvidia_api_key="nvapi-...",
     )
     assert llm.ignore_eos is True
-    assert llm.min_tokens is None
     payload = llm._get_payload(
         inputs=[{"role": "user", "content": "test"}],
         stop=None,
     )
     assert payload["ignore_eos"] is True
+
+
+def test_optional_parameters_default_values() -> None:
+    """Test that optional parameters have correct default values
+    and payload behavior."""
+    llm = ChatNVIDIA(
+        model="meta/llama2-70b",
+        nvidia_api_key="nvapi-...",
+    )
+    # Parameters that default to None
+    assert llm.temperature is None
+    assert llm.top_p is None
+    assert llm.seed is None
+    assert llm.stop is None
+    assert llm.min_tokens is None
+    assert llm.ignore_eos is None
+
+    # Parameters that have non-None default values
+    assert llm.max_tokens == 1024
+    assert llm.stream_options == {"include_usage": True}
+
+    payload = llm._get_payload(
+        inputs=[{"role": "user", "content": "test"}],
+        stop=None,
+    )
+    assert "temperature" not in payload
+    assert "top_p" not in payload
+    assert "seed" not in payload
+    assert "stop" not in payload
     assert "min_tokens" not in payload
+    assert "ignore_eos" not in payload
+
+    assert "max_tokens" in payload
+    assert payload["max_tokens"] == 1024
 
 
 @pytest.mark.parametrize(
