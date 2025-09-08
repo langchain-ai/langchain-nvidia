@@ -304,7 +304,7 @@ def _process_for_vlm(
     return inputs, extra_headers
 
 
-_DEFAULT_MODEL_NAME: str = "meta/llama3-8b-instruct"
+_DEFAULT_MODEL_NAME: str = "meta/llama-3.1-8b-instruct"
 
 
 class ChatNVIDIA(BaseChatModel):
