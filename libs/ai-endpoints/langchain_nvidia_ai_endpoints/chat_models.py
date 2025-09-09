@@ -304,7 +304,7 @@ def _process_for_vlm(
     return inputs, extra_headers
 
 
-_DEFAULT_MODEL_NAME: str = "meta/llama3-8b-instruct"
+_DEFAULT_MODEL_NAME: str = "meta/llama-3.1-8b-instruct"
 
 
 class ChatNVIDIA(BaseChatModel):
@@ -343,6 +343,12 @@ class ChatNVIDIA(BaseChatModel):
         {"include_usage": True},
         description="Stream options for the model. Set to None to disable",
     )
+    min_tokens: Optional[int] = Field(
+        None, description="Minimum number of tokens to generate"
+    )
+    ignore_eos: Optional[bool] = Field(
+        None, description="Whether to ignore end-of-sequence tokens"
+    )
 
     def __init__(self, **kwargs: Any):
         """
@@ -369,6 +375,8 @@ class ChatNVIDIA(BaseChatModel):
             top_p (float): Top-p for distribution sampling.
             seed (int): A seed for deterministic results.
             stop (list[str]): A list of cased stop words.
+            min_tokens (int): Minimum number of tokens to generate.
+            ignore_eos (bool): Whether to ignore end-of-sequence tokens.
 
         API Key:
         - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
@@ -461,6 +469,8 @@ class ChatNVIDIA(BaseChatModel):
             #  for TypedDict "LangSmithParams"  [typeddict-item]
             # ls_top_p=params.get("top_p", self.top_p),
             # ls_seed=params.get("seed", self.seed),
+            # ls_min_tokens=params.get("min_tokens", self.min_tokens),
+            # ls_ignore_eos=params.get("ignore_eos", self.ignore_eos),
             ls_stop=params.get("stop", self.stop),
         )
 
@@ -654,6 +664,8 @@ class ChatNVIDIA(BaseChatModel):
             "top_p": self.top_p,
             "seed": self.seed,
             "stop": self.stop,
+            "min_tokens": self.min_tokens,
+            "ignore_eos": self.ignore_eos,
         }
 
         # merge incoming kwargs with attr_kwargs giving preference to

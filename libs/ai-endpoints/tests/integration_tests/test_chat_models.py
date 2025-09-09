@@ -278,6 +278,72 @@ def test_ai_endpoints_invoke_max_tokens_positive(
     assert result.response_metadata["token_usage"]["completion_tokens"] <= max_tokens
 
 
+# todo: min_tokens test for ainvoke, batch, abatch, stream, astream
+
+
+@pytest.mark.parametrize(
+    "min_tokens",
+    [-100, 2**31 - 1],
+)
+def test_ai_endpoints_invoke_min_tokens_invalid(
+    chat_model: str,
+    mode: dict,
+    min_tokens: int,
+) -> None:
+    """Test invoke's min_tokens invalid bounds."""
+    with pytest.raises(Exception):
+        llm = ChatNVIDIA(model=chat_model, min_tokens=min_tokens, **mode)
+        llm.invoke("Show me the tokens")
+    assert llm._client.last_response is not None
+    assert llm._client.last_response.status_code in [400, 422]
+    assert "min_tokens" in str(llm._client.last_response.content)
+
+
+@pytest.mark.parametrize("min_tokens", [0, 256, 512])
+def test_ai_endpoints_invoke_min_tokens_positive(
+    chat_model: str, mode: dict, min_tokens: int
+) -> None:
+    """Test invoke's min_tokens for valid values."""
+    max_tokens_value = 512
+    llm = ChatNVIDIA(
+        model=chat_model,
+        min_tokens=min_tokens,
+        max_tokens=max_tokens_value,
+        temperature=0.1,
+        **mode,
+    )
+    result = llm.invoke("Show me the tokens")
+    assert isinstance(result.content, str)
+    assert "token_usage" in result.response_metadata
+    assert "completion_tokens" in result.response_metadata["token_usage"]
+    assert result.response_metadata["token_usage"]["completion_tokens"] >= min_tokens
+    assert (
+        result.response_metadata["token_usage"]["completion_tokens"] <= max_tokens_value
+    )
+
+
+def test_ai_endpoints_invoke_min_tokens_gt_max_tokens(
+    chat_model: str, mode: dict
+) -> None:
+    """min_tokens greater than max_tokens should raise an error."""
+    min_tokens = 64
+    max_tokens = 32
+    with pytest.raises(Exception):
+        llm = ChatNVIDIA(
+            model=chat_model,
+            min_tokens=min_tokens,
+            max_tokens=max_tokens,
+            temperature=0,
+            **mode,
+        )
+        llm.invoke("Show me the tokens")
+    assert llm._client.last_response is not None
+    assert llm._client.last_response.status_code in [400, 422]
+    assert "min_tokens" in str(
+        llm._client.last_response.content
+    ) or "max_tokens" in str(llm._client.last_response.content)
+
+
 # todo: seed test for ainvoke, batch, abatch, stream, astream
 
 
@@ -388,6 +454,43 @@ def test_serialize_chatnvidia(chat_model: str, mode: dict) -> None:
     model = loads(dumps(llm), valid_namespaces=["langchain_nvidia_ai_endpoints"])
     result = model.invoke("What is there if there is nothing?")
     assert isinstance(result.content, str)
+
+
+def test_ignore_eos_parameter(chat_model: str, mode: dict) -> None:
+    """ignore_eos allows generation to continue past EOS, yielding more tokens."""
+    max_tokens_value = 64
+
+    llm_eos_ignored = ChatNVIDIA(
+        model=chat_model,
+        ignore_eos=True,
+        max_tokens=max_tokens_value,
+        temperature=0,
+        **mode,
+    )
+    llm_eos_respected = ChatNVIDIA(
+        model=chat_model,
+        ignore_eos=False,
+        max_tokens=max_tokens_value,
+        temperature=0,
+        **mode,
+    )
+
+    prompt = "Say hi"
+    res_ignore = llm_eos_ignored.invoke(prompt)
+    res_respect = llm_eos_respected.invoke(prompt)
+
+    assert isinstance(res_ignore.content, str)
+    assert isinstance(res_respect.content, str)
+    assert llm_eos_ignored._client.last_response is not None
+    assert llm_eos_respected._client.last_response is not None
+    assert llm_eos_ignored._client.last_response.status_code == 200
+    assert llm_eos_respected._client.last_response.status_code == 200
+
+    use_ignore = res_ignore.response_metadata.get("token_usage")
+    use_respect = res_respect.response_metadata.get("token_usage")
+    tokens_ignore = use_ignore.get("completion_tokens", 0) if use_ignore else 0
+    tokens_respect = use_respect.get("completion_tokens", 0) if use_respect else 0
+    assert tokens_ignore >= tokens_respect
 
 
 # todo: test that stop is cased and works with multiple words
