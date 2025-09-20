@@ -63,37 +63,11 @@ class Model(BaseModel):
 
 
 CHAT_MODEL_TABLE = {
-    "meta/codellama-70b": Model(
-        id="meta/codellama-70b",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=[
-            "ai-codellama-70b",
-            "playground_llama2_code_70b",
-            "llama2_code_70b",
-            "playground_llama2_code_34b",
-            "llama2_code_34b",
-            "playground_llama2_code_13b",
-            "llama2_code_13b",
-        ],
-    ),
     "google/gemma-7b": Model(
         id="google/gemma-7b",
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-gemma-7b", "playground_gemma_7b", "gemma_7b"],
-    ),
-    "meta/llama2-70b": Model(
-        id="meta/llama2-70b",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=[
-            "ai-llama2-70b",
-            "playground_llama2_70b",
-            "llama2_70b",
-            "playground_llama2_13b",
-            "llama2_13b",
-        ],
     ),
     "mistralai/mistral-7b-instruct-v0.2": Model(
         id="mistralai/mistral-7b-instruct-v0.2",
@@ -113,28 +87,10 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-codegemma-7b"],
     ),
-    "google/gemma-2b": Model(
-        id="google/gemma-2b",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=["ai-gemma-2b", "playground_gemma_2b", "gemma_2b"],
-    ),
-    "google/recurrentgemma-2b": Model(
-        id="google/recurrentgemma-2b",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=["ai-recurrentgemma-2b"],
-    ),
     "gotocompany/gemma-2-9b-cpt-sahabatai-instruct": Model(
         id="gotocompany/gemma-2-9b-cpt-sahabatai-instruct",
         model_type="chat",
         client="ChatNVIDIA",
-    ),
-    "mistralai/mistral-large": Model(
-        id="mistralai/mistral-large",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=["ai-mistral-large"],
     ),
     "mistralai/mixtral-8x22b-instruct-v0.1": Model(
         id="mistralai/mixtral-8x22b-instruct-v0.1",
@@ -165,29 +121,11 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-phi-3-mini"],
     ),
-    "snowflake/arctic": Model(
-        id="snowflake/arctic",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=["ai-arctic"],
-    ),
-    "databricks/dbrx-instruct": Model(
-        id="databricks/dbrx-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=["ai-dbrx-instruct"],
-    ),
     "microsoft/phi-3-mini-4k-instruct": Model(
         id="microsoft/phi-3-mini-4k-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-phi-3-mini-4k", "playground_phi2", "phi2"],
-    ),
-    "seallms/seallm-7b-v2.5": Model(
-        id="seallms/seallm-7b-v2.5",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=["ai-seallm-7b"],
     ),
     "aisingapore/sea-lion-7b-instruct": Model(
         id="aisingapore/sea-lion-7b-instruct",
@@ -213,18 +151,6 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-phi-3-medium-4k-instruct"],
     ),
-    "ibm/granite-8b-code-instruct": Model(
-        id="ibm/granite-8b-code-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=["ai-granite-8b-code-instruct"],
-    ),
-    "ibm/granite-34b-code-instruct": Model(
-        id="ibm/granite-34b-code-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=["ai-granite-34b-code-instruct"],
-    ),
     "ibm/granite-3.3-8b-instruct": Model(
         id="ibm/granite-3.3-8b-instruct",
         model_type="chat",
@@ -236,12 +162,6 @@ CHAT_MODEL_TABLE = {
         id="ibm/granite-guardian-3.0-8b",
         model_type="chat",
         client="ChatNVIDIA",
-    ),
-    "google/codegemma-1.1-7b": Model(
-        id="google/codegemma-1.1-7b",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=["ai-codegemma-1.1-7b"],
     ),
     "mediatek/breeze-7b-instruct": Model(
         id="mediatek/breeze-7b-instruct",
@@ -255,18 +175,6 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-solar-10_7b-instruct"],
     ),
-    "writer/palmyra-med-70b-32k": Model(
-        id="writer/palmyra-med-70b-32k",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=["ai-palmyra-med-70b-32k"],
-    ),
-    "writer/palmyra-med-70b": Model(
-        id="writer/palmyra-med-70b",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=["ai-palmyra-med-70b"],
-    ),
     "mistralai/mistral-7b-instruct-v0.3": Model(
         id="mistralai/mistral-7b-instruct-v0.3",
         model_type="chat",
@@ -278,17 +186,6 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-yi-large"],
-    ),
-    "nvidia/nemotron-4-340b-instruct": Model(
-        id="nvidia/nemotron-4-340b-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=["qa-nemotron-4-340b-instruct"],
-    ),
-    "nvidia/nemotron-4-340b-reward": Model(
-        id="nvidia/nemotron-4-340b-reward",
-        model_type="chat",
-        client="ChatNVIDIA",
     ),
     "mistralai/codestral-22b-instruct-v0.1": Model(
         id="mistralai/codestral-22b-instruct-v0.1",
@@ -350,12 +247,6 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-phi-3-medium-128k-instruct"],
     ),
-    "deepseek-ai/deepseek-coder-6.7b-instruct": Model(
-        id="deepseek-ai/deepseek-coder-6.7b-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-        aliases=["ai-deepseek-coder-6_7b-instruct"],
-    ),
     "nv-mistralai/mistral-nemo-12b-instruct": Model(
         id="nv-mistralai/mistral-nemo-12b-instruct",
         model_type="chat",
@@ -389,33 +280,15 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
-    "nvidia/usdcode-llama3-70b-instruct": Model(
-        id="nvidia/usdcode-llama3-70b-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-    ),
     "mistralai/mamba-codestral-7b-v0.1": Model(
         id="mistralai/mamba-codestral-7b-v0.1",
         model_type="chat",
         client="ChatNVIDIA",
     ),
-    "writer/palmyra-fin-70b-32k": Model(
-        id="writer/palmyra-fin-70b-32k",
-        model_type="chat",
-        client="ChatNVIDIA",
-        supports_structured_output=True,
-    ),
     "google/gemma-2-2b-it": Model(
         id="google/gemma-2-2b-it",
         model_type="chat",
         client="ChatNVIDIA",
-    ),
-    "mistralai/mistral-large-2-instruct": Model(
-        id="mistralai/mistral-large-2-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-        supports_tools=True,
-        supports_structured_output=True,
     ),
     "mistralai/magistral-small-2506": Model(
         id="mistralai/magistral-small-2506",
@@ -479,11 +352,6 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
-    "microsoft/phi-3.5-moe-instruct": Model(
-        id="microsoft/phi-3.5-moe-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-    ),
     "microsoft/phi-4-mini-flash-reasoning": Model(
         id="microsoft/phi-4-mini-flash-reasoning",
         model_type="chat",
@@ -505,23 +373,8 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
-    "writer/palmyra-creative-122b": Model(
-        id="writer/palmyra-creative-122b",
-        model_type="chat",
-        client="ChatNVIDIA",
-    ),
     "nvidia/nemotron-mini-4b-instruct": Model(
         id="nvidia/nemotron-mini-4b-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-    ),
-    "ai21labs/jamba-1.5-large-instruct": Model(
-        id="ai21labs/jamba-1.5-large-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-    ),
-    "ai21labs/jamba-1.5-mini-instruct": Model(
-        id="ai21labs/jamba-1.5-mini-instruct",
         model_type="chat",
         client="ChatNVIDIA",
     ),
@@ -545,11 +398,6 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
-    "nvidia/llama-3.1-nemotron-51b-instruct": Model(
-        id="nvidia/llama-3.1-nemotron-51b-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-    ),
     "meta/llama-3.2-1b-instruct": Model(
         id="meta/llama-3.2-1b-instruct",
         model_type="chat",
@@ -561,12 +409,6 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         supports_tools=True,
-        supports_structured_output=True,
-    ),
-    "nvidia/mistral-nemo-minitron-8b-8k-instruct": Model(
-        id="nvidia/mistral-nemo-minitron-8b-8k-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
         supports_structured_output=True,
     ),
     "institute-of-science-tokyo/llama-3.1-swallow-8b-instruct-v0.1": Model(
@@ -596,24 +438,8 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
-    "ibm/granite-3.0-8b-instruct": Model(
-        id="ibm/granite-3.0-8b-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-    ),
-    "ibm/granite-3.0-3b-a800m-instruct": Model(
-        id="ibm/granite-3.0-3b-a800m-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-    ),
     "nvidia/nemotron-4-mini-hindi-4b-instruct": Model(
         id="nvidia/nemotron-4-mini-hindi-4b-instruct",
-        model_type="chat",
-        client="ChatNVIDIA",
-        supports_structured_output=True,
-    ),
-    "nvidia/llama-3.1-nemotron-70b-instruct": Model(
-        id="nvidia/llama-3.1-nemotron-70b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         supports_structured_output=True,
@@ -782,43 +608,9 @@ QA_MODEL_TABLE = {
         client="ChatNVIDIA",
         aliases=["ai-chatqa-1.5-8b"],
     ),
-    "nvidia/llama3-chatqa-1.5-70b": Model(
-        id="nvidia/llama3-chatqa-1.5-70b",
-        model_type="qa",
-        client="ChatNVIDIA",
-        aliases=["ai-chatqa-1.5-70b"],
-    ),
 }
 
 VLM_MODEL_TABLE = {
-    "adept/fuyu-8b": Model(
-        id="adept/fuyu-8b",
-        model_type="nv-vlm",
-        client="ChatNVIDIA",
-        endpoint="https://ai.api.nvidia.com/v1/vlm/adept/fuyu-8b",
-        aliases=["ai-fuyu-8b", "playground_fuyu_8b", "fuyu_8b"],
-    ),
-    "google/deplot": Model(
-        id="google/deplot",
-        model_type="nv-vlm",
-        client="ChatNVIDIA",
-        endpoint="https://ai.api.nvidia.com/v1/vlm/google/deplot",
-        aliases=["ai-google-deplot", "playground_deplot", "deplot"],
-    ),
-    "microsoft/kosmos-2": Model(
-        id="microsoft/kosmos-2",
-        model_type="nv-vlm",
-        client="ChatNVIDIA",
-        endpoint="https://ai.api.nvidia.com/v1/vlm/microsoft/kosmos-2",
-        aliases=["ai-microsoft-kosmos-2", "playground_kosmos_2", "kosmos_2"],
-    ),
-    "nvidia/neva-22b": Model(
-        id="nvidia/neva-22b",
-        model_type="nv-vlm",
-        client="ChatNVIDIA",
-        endpoint="https://ai.api.nvidia.com/v1/vlm/nvidia/neva-22b",
-        aliases=["ai-neva-22b", "playground_neva_22b", "neva_22b"],
-    ),
     "google/paligemma": Model(
         id="google/paligemma",
         model_type="nv-vlm",
@@ -837,12 +629,6 @@ VLM_MODEL_TABLE = {
         id="microsoft/phi-3.5-vision-instruct",
         model_type="vlm",
         client="ChatNVIDIA",
-    ),
-    "nvidia/vila": Model(
-        id="nvidia/vila",
-        model_type="vlm",
-        client="ChatNVIDIA",
-        endpoint="https://ai.api.nvidia.com/v1/vlm/nvidia/vila",
     ),
     "nvidia/nvclip": Model(
         id="nvidia/nvclip",
@@ -878,11 +664,6 @@ VLM_MODEL_TABLE = {
     ),
     "meta/llama-4-scout-17b-16e-instruct": Model(
         id="meta/llama-4-scout-17b-16e-instruct",
-        model_type="vlm",
-        client="ChatNVIDIA",
-    ),
-    "nvdev/meta/llama-4-maverick-17b-128e-instruct": Model(
-        id="nvdev/meta/llama-4-maverick-17b-128e-instruct",
         model_type="vlm",
         client="ChatNVIDIA",
     ),
@@ -927,11 +708,6 @@ EMBEDDING_MODEL_TABLE = {
     ),
     "baai/bge-m3": Model(
         id="baai/bge-m3",
-        model_type="embedding",
-        client="NVIDIAEmbeddings",
-    ),
-    "nvidia/embed-qa-4": Model(
-        id="nvidia/embed-qa-4",
         model_type="embedding",
         client="NVIDIAEmbeddings",
     ),
@@ -988,11 +764,6 @@ RANKING_MODEL_TABLE = {
 COMPLETION_MODEL_TABLE = {
     "bigcode/starcoder2-7b": Model(
         id="bigcode/starcoder2-7b",
-        model_type="completions",
-        client="NVIDIA",
-    ),
-    "bigcode/starcoder2-15b": Model(
-        id="bigcode/starcoder2-15b",
         model_type="completions",
         client="NVIDIA",
     ),
