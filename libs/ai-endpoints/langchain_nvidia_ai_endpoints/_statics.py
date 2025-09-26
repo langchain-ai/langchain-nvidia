@@ -773,6 +773,50 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
     ),
+    "nvidia/nvidia-nemotron-nano-9b-v2": Model(
+        id="nvidia/nvidia-nemotron-nano-9b-v2",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+    ),
+    "deepseek-ai/deepseek-v3.1": Model(
+        id="deepseek-ai/deepseek-v3.1",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+    ),
+    "bytedance/seed-oss-36b-instruct": Model(
+        id="bytedance/seed-oss-36b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+    ),
+    "moonshotai/kimi-k2-instruct-0905": Model(
+        id="moonshotai/kimi-k2-instruct-0905",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+    ),
+    "qwen/qwen3-next-80b-a3b-instruct": Model(
+        id="qwen/qwen3-next-80b-a3b-instruct",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+    ),
+    "qwen/qwen3-next-80b-a3b-thinking": Model(
+        id="qwen/qwen3-next-80b-a3b-thinking",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
