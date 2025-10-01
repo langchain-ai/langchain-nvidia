@@ -66,9 +66,9 @@ from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 )
 @pytest.mark.parametrize(
     "func",
-    ["invoke", "stream"],
+    ["invoke", "stream", "ainvoke", "astream"],
 )
-def test_vlm_input_style(
+async def test_vlm_input_style(
     vlm_model: str,
     mode: dict,
     func: str,
@@ -79,8 +79,15 @@ def test_vlm_input_style(
         response = chat.invoke([HumanMessage(content=content)])
         assert isinstance(response, BaseMessage)
         assert isinstance(response.content, str)
-    if func == "stream":
+    elif func == "stream":
         for token in chat.stream([HumanMessage(content=content)]):
+            assert isinstance(token.content, str)
+    elif func == "ainvoke":
+        response = await chat.ainvoke([HumanMessage(content=content)])
+        assert isinstance(response, BaseMessage)
+        assert isinstance(response.content, str)
+    elif func == "astream":
+        async for token in chat.astream([HumanMessage(content=content)]):
             assert isinstance(token.content, str)
 
 
@@ -89,27 +96,35 @@ def test_vlm_input_style(
     ["low", "high", "auto"],
     ids=["low", "high", "auto"],
 )
-def test_vlm_detail_accepted(
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_vlm_detail_accepted(
     vlm_model: str,
     mode: dict,
     detail: str,
+    func: str,
 ) -> None:
     chat = ChatNVIDIA(model=vlm_model, **mode)
-    response = chat.invoke(
-        [
-            HumanMessage(
-                content=[
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": "tests/data/nvidia-picasso.jpg",
-                            "detail": detail,
-                        },
-                    }
-                ]
-            )
-        ]
-    )
+    messages = [
+        HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "tests/data/nvidia-picasso.jpg",
+                        "detail": detail,
+                    },
+                }
+            ]
+        )
+    ]
+
+    if func == "invoke":
+        response = chat.invoke(messages)
+    else:  # ainvoke
+        response = await chat.ainvoke(messages)
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
     # assert "cat" in response.content.lower()
@@ -120,30 +135,38 @@ def test_vlm_detail_accepted(
     [None, "None", "medium", "HIGH", ""],
     ids=["None", "None-str", "medium", "HIGH", ""],
 )
-def test_vlm_detail_invalid(
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_vlm_detail_invalid(
     vlm_model: str,
     mode: dict,
+    func: str,
     invalid_detail: str,
 ) -> None:
     """Test that invalid detail values raise ValueError."""
     chat = ChatNVIDIA(model=vlm_model, **mode)
 
-    with pytest.raises(ValueError, match="Invalid detail value"):
-        chat.invoke(
-            [
-                HumanMessage(
-                    content=[
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": "tests/data/nvidia-picasso.jpg",
-                                "detail": invalid_detail,
-                            },
-                        }
-                    ]
-                )
+    message = [
+        HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "tests/data/nvidia-picasso.jpg",
+                        "detail": invalid_detail,
+                    },
+                }
             ]
         )
+    ]
+
+    with pytest.raises(ValueError, match="Invalid detail value"):
+        if func == "invoke":
+            chat.invoke(message)
+        else:
+            await chat.ainvoke(message)
 
 
 @pytest.mark.parametrize(
@@ -156,61 +179,85 @@ def test_vlm_detail_invalid(
     ],
     ids=["jpg", "png", "webp", "gif"],
 )
-def test_vlm_image_type(
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_vlm_image_type(
     vlm_model: str,
     mode: dict,
     img: str,
+    func: str,
 ) -> None:
     chat = ChatNVIDIA(model=vlm_model, **mode)
-    response = chat.invoke(
-        [
-            HumanMessage(
-                content=[
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": img,
-                        },
-                    }
-                ]
-            )
-        ]
-    )
+    messages = [
+        HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": img,
+                    },
+                }
+            ]
+        )
+    ]
+
+    if func == "invoke":
+        response = chat.invoke(messages)
+    else:  # ainvoke
+        response = await chat.ainvoke(messages)
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
 
 
-def test_vlm_image_large(
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_vlm_image_large(
     vlm_model: str,
     mode: dict,
+    func: str,
 ) -> None:
     chat = ChatNVIDIA(model=vlm_model, **mode)
-    response = chat.invoke(
-        [
-            HumanMessage(
-                content=[
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": "tests/data/nvidia-picasso-large.png",
-                        },
-                    }
-                ]
-            )
-        ]
-    )
+    messages = [
+        HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "tests/data/nvidia-picasso-large.png",
+                    },
+                }
+            ]
+        )
+    ]
+
+    if func == "invoke":
+        response = chat.invoke(messages)
+    else:  # ainvoke
+        response = await chat.ainvoke(messages)
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
 
 
-def test_vlm_no_images(
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_vlm_no_images(
     vlm_model: str,
     mode: dict,
+    func: str,
 ) -> None:
     chat = ChatNVIDIA(model=vlm_model, **mode)
-    response = chat.invoke(
-        [HumanMessage(content="What is the capital of Massachusetts?")]
-    )
+    messages = [HumanMessage(content="What is the capital of Massachusetts?")]
+
+    if func == "invoke":
+        response = chat.invoke(messages)
+    else:  # ainvoke
+        response = await chat.ainvoke(messages)
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
 
@@ -219,31 +266,39 @@ def test_vlm_no_images(
 @pytest.mark.xfail(
     reason="Test fails when using meta/llama-3.2-11b-vision-instruct model"
 )
-def test_vlm_two_images(
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_vlm_two_images(
     vlm_model: str,
     mode: dict,
+    func: str,
 ) -> None:
     chat = ChatNVIDIA(model=vlm_model, **mode)
-    response = chat.invoke(
-        [
-            HumanMessage(
-                content=[
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": "tests/data/nvidia-picasso.jpg",
-                        },
+    messages = [
+        HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "tests/data/nvidia-picasso.jpg",
                     },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": "tests/data/nvidia-picasso.jpg",
-                        },
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "tests/data/nvidia-picasso.jpg",
                     },
-                ]
-            )
-        ]
-    )
+                },
+            ]
+        )
+    ]
+
+    if func == "invoke":
+        response = chat.invoke(messages)
+    else:  # ainvoke
+        response = await chat.ainvoke(messages)
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
 
@@ -319,9 +374,9 @@ def asset_id() -> str:
 )
 @pytest.mark.parametrize(
     "func",
-    ["invoke", "stream"],
+    ["invoke", "stream", "ainvoke", "astream"],
 )
-def test_vlm_asset_id(
+async def test_vlm_asset_id(
     vlm_model: str,
     mode: dict,
     content: Union[str, List[Union[str, Dict[str, Any]]]],
@@ -351,6 +406,13 @@ def test_vlm_asset_id(
         response = chat.invoke(content)
         assert isinstance(response, BaseMessage)
         assert isinstance(response.content, str)
-    if func == "stream":
+    elif func == "stream":
         for token in chat.stream(content):
+            assert isinstance(token.content, str)
+    elif func == "ainvoke":
+        response = await chat.ainvoke(content)
+        assert isinstance(response, BaseMessage)
+        assert isinstance(response.content, str)
+    elif func == "astream":
+        async for token in chat.astream(content):
             assert isinstance(token.content, str)

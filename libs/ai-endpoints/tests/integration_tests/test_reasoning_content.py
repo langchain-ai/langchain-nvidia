@@ -1,31 +1,22 @@
-from typing import Callable
+from typing import Union
 
 import pytest
-from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessageChunk
+from langchain_core.messages import (
+    AIMessage,
+    AIMessageChunk,
+    BaseMessage,
+    BaseMessageChunk,
+)
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
 
-def do_stream(llm: ChatNVIDIA, msg: str) -> BaseMessageChunk:
-    generator = llm.stream(msg)
-    response = next(generator)
-    for chunk in generator:
-        assert isinstance(chunk, AIMessageChunk)
-        response += chunk
-    return response
-
-
-def do_invoke(llm: ChatNVIDIA, msg: str) -> AIMessage:
-    return llm.invoke(msg)  # type: ignore[return-value]
-
-
 @pytest.mark.parametrize(
     "func",
-    [do_invoke, do_stream],
-    ids=["invoke", "stream"],
+    ["invoke", "stream", "ainvoke", "astream"],
 )
-def test_reasoning_content_exposed(
-    reasoning_model: str, mode: dict, func: Callable
+async def test_reasoning_content_exposed(
+    reasoning_model: str, mode: dict, func: str
 ) -> None:
     llm = ChatNVIDIA(model=reasoning_model, temperature=0, **mode)
     prompt = (
@@ -34,7 +25,24 @@ def test_reasoning_content_exposed(
         "towards station A. If the stations are 300 miles apart, when will "
         "they meet? Show your complete reasoning process."
     )
-    resp = func(llm, prompt)
+
+    resp: Union[BaseMessage, BaseMessageChunk]
+    if func == "invoke":
+        resp = llm.invoke(prompt)
+    elif func == "stream":
+        generator = llm.stream(prompt)
+        resp = next(generator)
+        for chunk in generator:
+            assert isinstance(chunk, AIMessageChunk)
+            resp += chunk
+    elif func == "ainvoke":
+        resp = await llm.ainvoke(prompt)
+    else:  # astream
+        async_generator = llm.astream(prompt)
+        resp = await async_generator.__anext__()
+        async for chunk in async_generator:
+            assert isinstance(chunk, AIMessageChunk)
+            resp += chunk
     assert isinstance(resp, (AIMessage, BaseMessageChunk))
     rc = resp.additional_kwargs.get("reasoning_content")
     assert isinstance(rc, str) and rc != ""

@@ -7,6 +7,8 @@ from langchain_core.messages import AIMessage, BaseMessageChunk, HumanMessage
 # from langchain_core.messages.ai import UsageMetadata
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
+from .conftest import MockHTTP
+
 mock_response = {
     "id": "chat-c891882b0c4448a5b258c63d2b031c82",
     "object": "chat.completion",
@@ -24,6 +26,23 @@ mock_response = {
     "usage": {"prompt_tokens": 12, "total_tokens": 15, "completion_tokens": 3},
     "prompt_logprobs": "",
 }
+
+
+def _build_stream_tool_calls_sse() -> list[str]:
+    return [
+        'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":null},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+        'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_ID0","type":"function","function":{"name":"xxyyzz","arguments":""}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+        'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\\"a\\""}}]},"logprobs":null, "model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+        'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":": 11,"}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+        'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":" \\"b\\": "}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+        'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"3}"}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+        'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"id":"call_ID1","type":"function","function":{"name":"zzyyxx","arguments":""}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+        'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":"{\\"a\\""}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+        'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":": 5, "}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+        'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":"\\"b\\": 3"}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+        'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":"}"}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+        'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"model_name":"dummy","finish_reason":"tool_calls"}]}',  # noqa: E501
+    ]
 
 
 @pytest.fixture
@@ -45,26 +64,33 @@ def mock_local_models_metadata(requests_mock: requests_mock.Mocker) -> None:
 
 @pytest.fixture
 def mock_local_models_stream_metadata(requests_mock: requests_mock.Mocker) -> None:
-    response_contents = "\n\n".join(
-        [
-            'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":null},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
-            'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_ID0","type":"function","function":{"name":"xxyyzz","arguments":""}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
-            'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\\"a\\""}}]},"logprobs":null, "model_name":"dummy","finish_reason":null}]}',  # noqa: E501
-            'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":": 11,"}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
-            'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":" \\"b\\": "}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
-            'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"3}"}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
-            'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"id":"call_ID1","type":"function","function":{"name":"zzyyxx","arguments":""}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
-            'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":"{\\"a\\""}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
-            'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":": 5, "}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
-            'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":"\\"b\\": 3"}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
-            'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":"}"}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
-            'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"model_name":"dummy","finish_reason":"tool_calls"}]}',  # noqa: E501
-        ]
-    )
+    response_contents = "\n\n".join(_build_stream_tool_calls_sse())
     requests_mock.post(
         "http://localhost:8888/v1/chat/completions",
         text=response_contents,
     )
+
+
+@pytest.fixture
+def mock_local_models_metadata_async(mock_http: MockHTTP) -> None:
+    mock_http.set_post(
+        json_body={
+            **mock_response,  # type: ignore[arg-type]
+            "tool_calls": [
+                {
+                    "id": "tool-ID",
+                    "type": "function",
+                    "function": {"name": "magic", "arguments": []},
+                }
+            ],
+        }
+    )
+
+
+@pytest.fixture
+def mock_local_models_stream_metadata_async(mock_http: MockHTTP) -> None:
+    text_body = "\n\n".join(_build_stream_tool_calls_sse())
+    mock_http.set_post(text_body=text_body)
 
 
 def response_metadata_checks(result: Any) -> None:
@@ -92,7 +118,7 @@ def test_response_metadata(mock_local_models_metadata: None) -> None:
     response_metadata_checks(result)
 
 
-async def test_async_response_metadata(mock_local_models_metadata: None) -> None:
+async def test_async_response_metadata(mock_local_models_metadata_async: None) -> None:
     llm = ChatNVIDIA(base_url="http://localhost:8888/v1")
     result = await llm.ainvoke([HumanMessage(content="I'm PickleRick")], logprobs=True)
     response_metadata_checks(result)
@@ -111,7 +137,7 @@ def test_response_metadata_streaming(mock_local_models_stream_metadata: None) ->
 
 
 async def test_async_response_metadata_streaming(
-    mock_local_models_stream_metadata: None,
+    mock_local_models_stream_metadata_async: None,
 ) -> None:
     llm = ChatNVIDIA(base_url="http://localhost:8888/v1")
     full: Optional[BaseMessageChunk] = None

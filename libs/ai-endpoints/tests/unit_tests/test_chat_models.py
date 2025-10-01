@@ -8,6 +8,8 @@ from requests_mock import Mocker
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
+from .conftest import MockHTTP
+
 
 @pytest.fixture(autouse=True)
 def mock_v1_models(requests_mock: Mocker) -> None:
@@ -198,6 +200,34 @@ def test_payload_for_thinking_mode(requests_mock: Mocker, thinking_mode: bool) -
     llm.invoke("test message")
 
     messages = captured_requests[0]["messages"]
+    assert len(messages) == 2
+    assert messages[0]["role"] == "system"
+    if thinking_mode:
+        assert messages[0]["content"] == "detailed thinking on"
+    else:
+        assert messages[0]["content"] == "detailed thinking off"
+
+
+@pytest.mark.parametrize(
+    "thinking_mode",
+    [False, True],
+    ids=["thinking_off", "thinking_on"],
+)
+async def test_async_payload_for_thinking_mode(
+    thinking_mode: bool, mock_http: MockHTTP
+) -> None:
+    """Async parity of thinking mode payload injection for ainvoke."""
+    mock_http.set_post(
+        json_body={"choices": [{"message": {"role": "assistant", "content": "test"}}]}
+    )
+
+    llm = ChatNVIDIA(
+        model="nvidia/llama-3.1-nemotron-nano-8b-v1", api_key="BOGUS"
+    ).with_thinking_mode(enabled=thinking_mode)
+    await llm.ainvoke("test message")
+
+    request_payload = mock_http.aio.post.call_args.kwargs.get("json", {})
+    messages = request_payload["messages"]
     assert len(messages) == 2
     assert messages[0]["role"] == "system"
     if thinking_mode:

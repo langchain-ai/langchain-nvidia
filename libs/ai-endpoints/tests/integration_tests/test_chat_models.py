@@ -1,8 +1,10 @@
 """Test ChatNVIDIA chat model."""
 
-from typing import List
+from typing import Callable, List, Union
 
+import aiohttp
 import pytest
+import requests
 from langchain_core.load.dump import dumps
 from langchain_core.load.load import loads
 from langchain_core.messages import (
@@ -23,11 +25,45 @@ from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 #
 
 
-def test_chat_ai_endpoints(chat_model: str, mode: dict) -> None:
+def assert_response_error(
+    response: Union[requests.Response, aiohttp.ClientResponse],
+    expected_status: List[int],
+    validate_content: Callable[[str], bool],
+) -> None:
+    """Assert error response for both sync and async.
+
+    Args:
+        response: HTTP response object (requests.Response for sync,
+            aiohttp.ClientResponse for async)
+        expected_status: List of acceptable HTTP error status codes
+        validate_content: Function that takes response content string and
+            returns True if valid
+    """
+    if isinstance(response, aiohttp.ClientResponse):
+        assert response.status in expected_status
+        # Content is cached in _cached_content after being read in _try_raise_async
+        content_str = str(response._cached_content)  # type: ignore[attr-defined]
+    else:
+        assert response.status_code in expected_status
+        content_str = str(response.content)
+
+    assert validate_content(content_str)
+
+
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_chat_ai_endpoints(chat_model: str, mode: dict, func: str) -> None:
     """Test ChatNVIDIA wrapper."""
     chat = ChatNVIDIA(model=chat_model, temperature=0.7, **mode)
     message = HumanMessage(content="Hello")
-    response = chat.invoke([message])
+
+    if func == "invoke":
+        response = chat.invoke([message])
+    else:  # ainvoke
+        response = await chat.ainvoke([message])
+
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
     # compatibility test for ChatMessage (pre 0.2)
@@ -41,7 +77,13 @@ def test_unknown_model() -> None:
         ChatNVIDIA(model="unknown_model")
 
 
-def test_chat_ai_endpoints_system_message(chat_model: str, mode: dict) -> None:
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_chat_ai_endpoints_system_message(
+    chat_model: str, mode: dict, func: str
+) -> None:
     """Test wrapper with system message."""
     # mamba_chat only supports 'user' or 'assistant' messages -
     #  Exception: [422] Unprocessable Entity
@@ -54,7 +96,12 @@ def test_chat_ai_endpoints_system_message(chat_model: str, mode: dict) -> None:
     chat = ChatNVIDIA(model=chat_model, max_tokens=36, **mode)
     system_message = SystemMessage(content="You are to chat with the user.")
     human_message = HumanMessage(content="Hello")
-    response = chat.invoke([system_message, human_message])
+
+    if func == "invoke":
+        response = chat.invoke([system_message, human_message])
+    else:  # ainvoke
+        response = await chat.ainvoke([system_message, human_message])
+
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
 
@@ -223,36 +270,54 @@ def test_ai_endpoints_invoke(chat_model: str, mode: dict) -> None:
     assert isinstance(result.content, str)
 
 
-# todo: max_tokens test for ainvoke, batch, abatch, stream, astream
+# todo: max_tokens test for batch, abatch, stream, astream
 
 
 @pytest.mark.parametrize("max_tokens", [-100, 0])
-def test_ai_endpoints_invoke_max_tokens_negative_a(
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ai_endpoints_invoke_max_tokens_negative_a(
     chat_model: str,
     mode: dict,
     max_tokens: int,
+    func: str,
 ) -> None:
     """Test invoke's max_tokens' negative bounds."""
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
-        llm.invoke("Show me the tokens")
+        if func == "invoke":
+            llm.invoke("Show me the tokens")
+        else:
+            await llm.ainvoke("Show me the tokens")
     assert llm._client.last_response is not None
-    assert llm._client.last_response.status_code in [400, 422]
-    assert "max_tokens" in str(llm._client.last_response.content)
+    assert_response_error(
+        llm._client.last_response,
+        [400, 422],
+        lambda content: "max_tokens" in content,
+    )
 
 
 @pytest.mark.parametrize("max_tokens", [2**31 - 1])
-def test_ai_endpoints_invoke_max_tokens_negative_b(
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ai_endpoints_invoke_max_tokens_negative_b(
     chat_model: str,
     mode: dict,
     max_tokens: int,
+    func: str,
 ) -> None:
     """Test invoke's max_tokens' positive bounds."""
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
-        llm.invoke("Show me the tokens")
+        if func == "invoke":
+            llm.invoke("Show me the tokens")
+        else:
+            await llm.ainvoke("Show me the tokens")
     assert llm._client.last_response is not None
-    assert llm._client.last_response.status_code in [400, 422]
     # custom error string -
     #    model inference failed -- ValueError: A requested length of the model output
     #    is too big. Maximum allowed output length is X, whereas requested output
@@ -260,18 +325,30 @@ def test_ai_endpoints_invoke_max_tokens_negative_b(
     #  or
     #    body -> max_tokens
     #    Input should be less than or equal to 2048 (type=less_than_equal; le=2048)
-    assert "length" in str(llm._client.last_response.content) or (
-        "max_tokens" in str(llm._client.last_response.content)
-        and "less_than_equal" in str(llm._client.last_response.content)
+    assert_response_error(
+        llm._client.last_response,
+        [400, 422],
+        lambda content: "length" in content
+        or ("max_tokens" in content and "less_than_equal" in content),
     )
 
 
-def test_ai_endpoints_invoke_max_tokens_positive(
-    chat_model: str, mode: dict, max_tokens: int = 21
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ai_endpoints_invoke_max_tokens_positive(
+    chat_model: str, mode: dict, func: str, max_tokens: int = 21
 ) -> None:
     """Test invoke's max_tokens."""
+
     llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
-    result = llm.invoke("Show me the tokens")
+
+    if func == "invoke":
+        result = llm.invoke("Show me the tokens")
+    else:  # ainvoke
+        result = await llm.ainvoke("Show me the tokens")
+
     assert isinstance(result.content, str)
     assert "token_usage" in result.response_metadata
     assert "completion_tokens" in result.response_metadata["token_usage"]
@@ -285,25 +362,41 @@ def test_ai_endpoints_invoke_max_tokens_positive(
     "min_tokens",
     [-100, 2**31 - 1],
 )
-def test_ai_endpoints_invoke_min_tokens_invalid(
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ai_endpoints_invoke_min_tokens_invalid(
     chat_model: str,
     mode: dict,
     min_tokens: int,
+    func: str,
 ) -> None:
     """Test invoke's min_tokens invalid bounds."""
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, min_tokens=min_tokens, **mode)
-        llm.invoke("Show me the tokens")
+        if func == "invoke":
+            llm.invoke("Show me the tokens")
+        else:
+            await llm.ainvoke("Show me the tokens")
     assert llm._client.last_response is not None
-    assert llm._client.last_response.status_code in [400, 422]
-    assert "min_tokens" in str(llm._client.last_response.content)
+    assert_response_error(
+        llm._client.last_response,
+        [400, 422],
+        lambda content: "min_tokens" in content,
+    )
 
 
 @pytest.mark.parametrize("min_tokens", [0, 256, 512])
-def test_ai_endpoints_invoke_min_tokens_positive(
-    chat_model: str, mode: dict, min_tokens: int
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ai_endpoints_invoke_min_tokens_positive(
+    chat_model: str, mode: dict, min_tokens: int, func: str
 ) -> None:
     """Test invoke's min_tokens for valid values."""
+
     max_tokens_value = 512
     llm = ChatNVIDIA(
         model=chat_model,
@@ -312,7 +405,12 @@ def test_ai_endpoints_invoke_min_tokens_positive(
         temperature=0.1,
         **mode,
     )
-    result = llm.invoke("Show me the tokens")
+
+    if func == "invoke":
+        result = llm.invoke("Show me the tokens")
+    else:  # ainvoke
+        result = await llm.ainvoke("Show me the tokens")
+
     assert isinstance(result.content, str)
     assert "token_usage" in result.response_metadata
     assert "completion_tokens" in result.response_metadata["token_usage"]
@@ -322,8 +420,12 @@ def test_ai_endpoints_invoke_min_tokens_positive(
     )
 
 
-def test_ai_endpoints_invoke_min_tokens_gt_max_tokens(
-    chat_model: str, mode: dict
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ai_endpoints_invoke_min_tokens_gt_max_tokens(
+    chat_model: str, mode: dict, func: str
 ) -> None:
     """min_tokens greater than max_tokens should raise an error."""
     min_tokens = 64
@@ -336,25 +438,41 @@ def test_ai_endpoints_invoke_min_tokens_gt_max_tokens(
             temperature=0,
             **mode,
         )
-        llm.invoke("Show me the tokens")
+        if func == "invoke":
+            llm.invoke("Show me the tokens")
+        else:
+            await llm.ainvoke("Show me the tokens")
     assert llm._client.last_response is not None
-    assert llm._client.last_response.status_code in [400, 422]
-    assert "min_tokens" in str(
-        llm._client.last_response.content
-    ) or "max_tokens" in str(llm._client.last_response.content)
+    assert_response_error(
+        llm._client.last_response,
+        [400, 422],
+        lambda content: "min_tokens" in content or "max_tokens" in content,
+    )
 
 
 # todo: seed test for ainvoke, batch, abatch, stream, astream
 
 
 @pytest.mark.xfail(reason="seed does not consistently control determinism")
-def test_ai_endpoints_invoke_seed_default(chat_model: str, mode: dict) -> None:
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ai_endpoints_invoke_seed_default(
+    chat_model: str, mode: dict, func: str
+) -> None:
     """Test invoke's seed (default)."""
     llm0 = ChatNVIDIA(model=chat_model, **mode)  # default seed should not repeat
-    result0 = llm0.invoke("What's in a seed?")
+    if func == "ainvoke":
+        result0 = await llm0.ainvoke("What's in a seed?")
+    else:
+        result0 = llm0.invoke("What's in a seed?")
     assert isinstance(result0.content, str)
     llm1 = ChatNVIDIA(model=chat_model, **mode)  # default seed should not repeat
-    result1 = llm1.invoke("What's in a seed?")
+    if func == "ainvoke":
+        result1 = await llm1.ainvoke("What's in a seed?")
+    else:
+        result1 = llm1.invoke("What's in a seed?")
     assert isinstance(result1.content, str)
     # if this fails, consider setting a high temperature to avoid deterministic results
     assert result0.content != result1.content
@@ -371,50 +489,92 @@ def test_ai_endpoints_invoke_seed_default(chat_model: str, mode: dict) -> None:
         1000,
     ],
 )
-def test_ai_endpoints_invoke_seed_range(chat_model: str, mode: dict, seed: int) -> None:
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ai_endpoints_invoke_seed_range(
+    chat_model: str, mode: dict, seed: int, func: str
+) -> None:
     llm = ChatNVIDIA(model=chat_model, seed=seed, **mode)
-    llm.invoke("What's in a seed?")
+    if func == "invoke":
+        llm.invoke("What's in a seed?")
+    else:
+        await llm.ainvoke("What's in a seed?")
     assert llm._client.last_response is not None
-    assert llm._client.last_response.status_code == 200
+    if func == "ainvoke":
+        assert llm._client.last_response.status == 200  # type: ignore[union-attr]
+    else:
+        assert llm._client.last_response.status_code == 200  # type: ignore[union-attr]
 
 
 @pytest.mark.xfail(reason="seed does not consistently control determinism")
-def test_ai_endpoints_invoke_seed_functional(
-    chat_model: str, mode: dict, seed: int = 413
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ai_endpoints_invoke_seed_functional(
+    chat_model: str, mode: dict, func: str, seed: int = 413
 ) -> None:
     llm = ChatNVIDIA(model=chat_model, seed=seed, **mode)
-    result0 = llm.invoke("What's in a seed?")
+    if func == "ainvoke":
+        result0 = await llm.ainvoke("What's in a seed?")
+    else:
+        result0 = llm.invoke("What's in a seed?")
     assert isinstance(result0.content, str)
-    result1 = llm.invoke("What's in a seed?")
+    if func == "ainvoke":
+        result1 = await llm.ainvoke("What's in a seed?")
+    else:
+        result1 = llm.invoke("What's in a seed?")
     assert isinstance(result1.content, str)
     assert result0.content == result1.content
 
 
-# todo: temperature test for ainvoke, batch, abatch, stream, astream
-
-
+# todo: temperature test for batch, abatch, stream, astream
 @pytest.mark.parametrize("temperature", [-0.1, 2.1])
-def test_ai_endpoints_invoke_temperature_negative(
-    chat_model: str, mode: dict, temperature: int
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ai_endpoints_invoke_temperature_negative(
+    chat_model: str, mode: dict, temperature: int, func: str
 ) -> None:
     """Test invoke's temperature (negative)."""
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, temperature=temperature, **mode)
-        llm.invoke("What's in a temperature?")
+        if func == "invoke":
+            llm.invoke("What's in a temperature?")
+        else:
+            await llm.ainvoke("What's in a temperature?")
     assert llm._client.last_response is not None
-    assert llm._client.last_response.status_code in [400, 422]
-    assert "temperature" in str(llm._client.last_response.content)
+    assert_response_error(
+        llm._client.last_response,
+        [400, 422],
+        lambda content: "temperature" in content,
+    )
 
 
 @pytest.mark.xfail(reason="temperature not consistently implemented")
-def test_ai_endpoints_invoke_temperature_positive(chat_model: str, mode: dict) -> None:
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ai_endpoints_invoke_temperature_positive(
+    chat_model: str, mode: dict, func: str
+) -> None:
     """Test invoke's temperature (positive)."""
     # idea is to have a fixed seed and vary temperature to get different results
-    llm0 = ChatNVIDIA(model=chat_model, seed=608, templerature=0, **mode)
-    result0 = llm0.invoke("What's in a temperature?")
+    llm0 = ChatNVIDIA(model=chat_model, seed=608, temperature=0, **mode)
+    if func == "ainvoke":
+        result0 = await llm0.ainvoke("What's in a temperature?")
+    else:
+        result0 = llm0.invoke("What's in a temperature?")
     assert isinstance(result0.content, str)
-    llm1 = ChatNVIDIA(model=chat_model, seed=608, templerature=1, **mode)
-    result1 = llm1.invoke("What's in a temperature?")
+    llm1 = ChatNVIDIA(model=chat_model, seed=608, temperature=1, **mode)
+    if func == "ainvoke":
+        result1 = await llm1.ainvoke("What's in a temperature?")
+    else:
+        result1 = llm1.invoke("What's in a temperature?")
     assert isinstance(result1.content, str)
     assert result0.content != result1.content
 
@@ -423,27 +583,49 @@ def test_ai_endpoints_invoke_temperature_positive(chat_model: str, mode: dict) -
 
 
 @pytest.mark.parametrize("top_p", [-10, 10])
-def test_ai_endpoints_invoke_top_p_negative(
-    chat_model: str, mode: dict, top_p: int
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ai_endpoints_invoke_top_p_negative(
+    chat_model: str, mode: dict, top_p: int, func: str
 ) -> None:
     """Test invoke's top_p (negative)."""
+
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, top_p=top_p, **mode)
-        llm.invoke("What's in a top_p?")
+        if func == "invoke":
+            llm.invoke("What's in a top_p?")
+        else:
+            await llm.ainvoke("What's in a top_p?")
+
     assert llm._client.last_response is not None
-    assert llm._client.last_response.status_code in [400, 422]
-    assert "top_p" in str(llm._client.last_response.content)
+    assert_response_error(
+        llm._client.last_response, [400, 422], lambda content: "top_p" in content
+    )
 
 
 @pytest.mark.xfail(reason="seed does not consistently control determinism")
-def test_ai_endpoints_invoke_top_p_positive(chat_model: str, mode: dict) -> None:
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ai_endpoints_invoke_top_p_positive(
+    chat_model: str, mode: dict, func: str
+) -> None:
     """Test invoke's top_p (positive)."""
     # idea is to have a fixed seed and vary top_p to get different results
     llm0 = ChatNVIDIA(model=chat_model, seed=608, top_p=0.1, **mode)
-    result0 = llm0.invoke("What's in a top_p?")
+    if func == "ainvoke":
+        result0 = await llm0.ainvoke("What's in a top_p?")
+    else:
+        result0 = llm0.invoke("What's in a top_p?")
     assert isinstance(result0.content, str)
     llm1 = ChatNVIDIA(model=chat_model, seed=608, top_p=1, **mode)
-    result1 = llm1.invoke("What's in a top_p?")
+    if func == "ainvoke":
+        result1 = await llm1.ainvoke("What's in a top_p?")
+    else:
+        result1 = llm1.invoke("What's in a top_p?")
     assert isinstance(result1.content, str)
     assert result0.content != result1.content
 
@@ -456,7 +638,11 @@ def test_serialize_chatnvidia(chat_model: str, mode: dict) -> None:
     assert isinstance(result.content, str)
 
 
-def test_ignore_eos_parameter(chat_model: str, mode: dict) -> None:
+@pytest.mark.parametrize(
+    "func",
+    ["invoke", "ainvoke"],
+)
+async def test_ignore_eos_parameter(chat_model: str, mode: dict, func: str) -> None:
     """ignore_eos allows generation to continue past EOS, yielding more tokens."""
     max_tokens_value = 64
 
@@ -476,15 +662,24 @@ def test_ignore_eos_parameter(chat_model: str, mode: dict) -> None:
     )
 
     prompt = "Say hi"
-    res_ignore = llm_eos_ignored.invoke(prompt)
-    res_respect = llm_eos_respected.invoke(prompt)
+
+    if func == "invoke":
+        res_ignore = llm_eos_ignored.invoke(prompt)
+        res_respect = llm_eos_respected.invoke(prompt)
+    else:  # ainvoke
+        res_ignore = await llm_eos_ignored.ainvoke(prompt)
+        res_respect = await llm_eos_respected.ainvoke(prompt)
 
     assert isinstance(res_ignore.content, str)
     assert isinstance(res_respect.content, str)
     assert llm_eos_ignored._client.last_response is not None
     assert llm_eos_respected._client.last_response is not None
-    assert llm_eos_ignored._client.last_response.status_code == 200
-    assert llm_eos_respected._client.last_response.status_code == 200
+    if func == "ainvoke":
+        assert llm_eos_ignored._client.last_response.status == 200  # type: ignore[union-attr]
+        assert llm_eos_respected._client.last_response.status == 200  # type: ignore[union-attr]
+    else:
+        assert llm_eos_ignored._client.last_response.status_code == 200  # type: ignore[union-attr]
+        assert llm_eos_respected._client.last_response.status_code == 200  # type: ignore[union-attr]
 
     use_ignore = res_ignore.response_metadata.get("token_usage")
     use_respect = res_respect.response_metadata.get("token_usage")
@@ -522,10 +717,12 @@ def test_ignore_eos_parameter(chat_model: str, mode: dict) -> None:
     [
         "invoke",
         "stream",
+        "ainvoke",
+        "astream",
     ],
 )
 @pytest.mark.xfail(reason="stop is not consistently implemented")
-def test_stop(
+async def test_stop(
     chat_model: str, mode: dict, func: str, prop: bool, param: bool, targets: List[str]
 ) -> None:
     if not prop and not param:
@@ -543,6 +740,20 @@ def test_stop(
         result = response.content
     elif func == "stream":
         for token in llm.stream(
+            "please count to 20 by 1s, e.g. 1 2 3 4",
+            stop=targets if param else None,
+        ):
+            assert isinstance(token.content, str)
+            result += f"{token.content}|"
+    elif func == "ainvoke":
+        response = await llm.ainvoke(
+            "please count to 20 by 1s, e.g. 1 2 3 4",
+            stop=targets if param else None,
+        )
+        assert isinstance(response.content, str)
+        result = response.content
+    elif func == "astream":
+        async for token in llm.astream(
             "please count to 20 by 1s, e.g. 1 2 3 4",
             stop=targets if param else None,
         ):
