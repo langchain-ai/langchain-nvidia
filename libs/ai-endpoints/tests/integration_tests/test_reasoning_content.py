@@ -1,5 +1,12 @@
+from typing import Union
+
 import pytest
-from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessageChunk
+from langchain_core.messages import (
+    AIMessage,
+    AIMessageChunk,
+    BaseMessage,
+    BaseMessageChunk,
+)
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
@@ -19,8 +26,9 @@ async def test_reasoning_content_exposed(
         "they meet? Show your complete reasoning process."
     )
 
+    resp: Union[BaseMessage, BaseMessageChunk]
     if func == "invoke":
-        resp = llm.invoke(prompt)  # type: ignore[assignment]
+        resp = llm.invoke(prompt)
     elif func == "stream":
         generator = llm.stream(prompt)
         resp = next(generator)
@@ -28,11 +36,11 @@ async def test_reasoning_content_exposed(
             assert isinstance(chunk, AIMessageChunk)
             resp += chunk
     elif func == "ainvoke":
-        resp = await llm.ainvoke(prompt)  # type: ignore[assignment]
+        resp = await llm.ainvoke(prompt)
     else:  # astream
-        generator = llm.astream(prompt)
-        resp = await generator.__anext__()
-        async for chunk in generator:
+        async_generator = llm.astream(prompt)
+        resp = await async_generator.__anext__()
+        async for chunk in async_generator:
             assert isinstance(chunk, AIMessageChunk)
             resp += chunk
     assert isinstance(resp, (AIMessage, BaseMessageChunk))

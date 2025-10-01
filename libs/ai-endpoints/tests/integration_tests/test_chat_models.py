@@ -267,10 +267,10 @@ async def test_ai_endpoints_invoke_max_tokens_negative_a(
     assert llm._client.last_response is not None
     # Handle both requests.Response (sync) and aiohttp.ClientResponse (async)
     if func == "ainvoke":
-        assert llm._client.last_response.status in [400, 422]
+        assert llm._client.last_response.status in [400, 422]  # type: ignore[union-attr]
         # For async, content is already consumed, so skip content check
     else:
-        assert llm._client.last_response.status_code in [400, 422]
+        assert llm._client.last_response.status_code in [400, 422]  # type: ignore[union-attr]
         assert "max_tokens" in str(llm._client.last_response.content)
 
 
@@ -295,10 +295,10 @@ async def test_ai_endpoints_invoke_max_tokens_negative_b(
     assert llm._client.last_response is not None
     # Handle both requests.Response (sync) and aiohttp.ClientResponse (async)
     if func == "ainvoke":
-        assert llm._client.last_response.status in [400, 422]
+        assert llm._client.last_response.status in [400, 422]  # type: ignore[union-attr]
         # For async, content is already consumed, so skip content check
     else:
-        assert llm._client.last_response.status_code in [400, 422]
+        assert llm._client.last_response.status_code in [400, 422]  # type: ignore[union-attr]
         # custom error string -
         #    model inference failed -- ValueError: A requested length of output
         #    is too big. Maximum allowed output length is X, whereas requested
@@ -361,10 +361,10 @@ async def test_ai_endpoints_invoke_min_tokens_invalid(
     assert llm._client.last_response is not None
     # Handle both requests.Response (sync) and aiohttp.ClientResponse (async)
     if func == "ainvoke":
-        assert llm._client.last_response.status in [400, 422]
+        assert llm._client.last_response.status in [400, 422]  # type: ignore[union-attr]
         # For async, content is already consumed, so skip content check
     else:
-        assert llm._client.last_response.status_code in [400, 422]
+        assert llm._client.last_response.status_code in [400, 422]  # type: ignore[union-attr]
         assert "min_tokens" in str(llm._client.last_response.content)
 
 
@@ -426,10 +426,10 @@ async def test_ai_endpoints_invoke_min_tokens_gt_max_tokens(
     assert llm._client.last_response is not None
     # Handle both requests.Response (sync) and aiohttp.ClientResponse (async)
     if func == "ainvoke":
-        assert llm._client.last_response.status in [400, 422]
+        assert llm._client.last_response.status in [400, 422]  # type: ignore[union-attr]
         # For async, content is already consumed, so skip content check
     else:
-        assert llm._client.last_response.status_code in [400, 422]
+        assert llm._client.last_response.status_code in [400, 422]  # type: ignore[union-attr]
         assert "min_tokens" in str(
             llm._client.last_response.content
         ) or "max_tokens" in str(llm._client.last_response.content)
@@ -489,9 +489,9 @@ async def test_ai_endpoints_invoke_seed_range(
     assert llm._client.last_response is not None
     # Handle both requests.Response (sync) and aiohttp.ClientResponse (async)
     if func == "ainvoke":
-        assert llm._client.last_response.status == 200
+        assert llm._client.last_response.status == 200  # type: ignore[union-attr]
     else:
-        assert llm._client.last_response.status_code == 200
+        assert llm._client.last_response.status_code == 200  # type: ignore[union-attr]
 
 
 @pytest.mark.xfail(reason="seed does not consistently control determinism")
@@ -535,10 +535,10 @@ async def test_ai_endpoints_invoke_temperature_negative(
     assert llm._client.last_response is not None
     # Handle both requests.Response (sync) and aiohttp.ClientResponse (async)
     if func == "ainvoke":
-        assert llm._client.last_response.status in [400, 422]
+        assert llm._client.last_response.status in [400, 422]  # type: ignore[union-attr]
         # For async, content is already consumed, so skip content check
     else:
-        assert llm._client.last_response.status_code in [400, 422]
+        assert llm._client.last_response.status_code in [400, 422]  # type: ignore[union-attr]
         assert "temperature" in str(llm._client.last_response.content)
 
 
@@ -590,10 +590,10 @@ async def test_ai_endpoints_invoke_top_p_negative(
     assert llm._client.last_response is not None
     # Handle both requests.Response (sync) and aiohttp.ClientResponse (async)
     if func == "ainvoke":
-        assert llm._client.last_response.status in [400, 422]
+        assert llm._client.last_response.status in [400, 422]  # type: ignore[union-attr]
         # For async, content is already consumed, so skip content check
     else:
-        assert llm._client.last_response.status_code in [400, 422]
+        assert llm._client.last_response.status_code in [400, 422]  # type: ignore[union-attr]
         assert "top_p" in str(llm._client.last_response.content)
 
 
@@ -668,11 +668,11 @@ async def test_ignore_eos_parameter(chat_model: str, mode: dict, func: str) -> N
     assert llm_eos_respected._client.last_response is not None
     # Handle both requests.Response (sync) and aiohttp.ClientResponse (async)
     if func == "ainvoke":
-        assert llm_eos_ignored._client.last_response.status == 200
-        assert llm_eos_respected._client.last_response.status == 200
+        assert llm_eos_ignored._client.last_response.status == 200  # type: ignore[union-attr]
+        assert llm_eos_respected._client.last_response.status == 200  # type: ignore[union-attr]
     else:
-        assert llm_eos_ignored._client.last_response.status_code == 200
-        assert llm_eos_respected._client.last_response.status_code == 200
+        assert llm_eos_ignored._client.last_response.status_code == 200  # type: ignore[union-attr]
+        assert llm_eos_respected._client.last_response.status_code == 200  # type: ignore[union-attr]
 
     use_ignore = res_ignore.response_metadata.get("token_usage")
     use_respect = res_respect.response_metadata.get("token_usage")

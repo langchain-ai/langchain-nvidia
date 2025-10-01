@@ -75,7 +75,7 @@ def mock_local_models_stream_metadata(requests_mock: requests_mock.Mocker) -> No
 def mock_local_models_metadata_async() -> Callable[[aioresponses], None]:
     def configure(m: aioresponses) -> None:
         url = "http://localhost:8888/v1/chat/completions"
-        payload = {
+        payload: dict = {
             **mock_response,
             "tool_calls": [
                 {
@@ -144,7 +144,7 @@ def test_response_metadata(mock_local_models_metadata: None) -> None:
 
 
 async def test_async_response_metadata(
-    mock_local_models_metadata_async,
+    mock_local_models_metadata_async: Callable[[aioresponses], None],
 ) -> None:
     with aioresponses() as m:
         mock_local_models_metadata_async(m)
@@ -169,7 +169,7 @@ def test_response_metadata_streaming(mock_local_models_stream_metadata: None) ->
 
 
 async def test_async_response_metadata_streaming(
-    mock_local_models_stream_metadata_async,
+    mock_local_models_stream_metadata_async: Callable[[aioresponses], None],
 ) -> None:
     with aioresponses() as m:
         mock_local_models_stream_metadata_async(m)

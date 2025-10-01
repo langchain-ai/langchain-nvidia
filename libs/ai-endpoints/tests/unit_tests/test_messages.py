@@ -65,8 +65,11 @@ async def test_ainvoke_aimessage_content_none() -> None:
 
         calls = m.requests.get(("POST", URL(url)))
         assert ("POST", URL(url)) in m.requests
+        assert calls is not None
         payload = calls[0].kwargs.get("json", {})
-        message = payload.get("messages", [{}])[0]
+        messages = payload.get("messages", [{}])
+        assert messages is not None
+        message = messages[0]
         assert "content" in message and message["content"] != "EMPTY"
         assert "content" in message and message["content"] is None
 
