@@ -1,5 +1,8 @@
+import pytest
 import requests_mock
+from aioresponses import aioresponses
 from langchain_core.messages import AIMessage
+from yarl import URL
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
@@ -34,3 +37,38 @@ def test_invoke_aimessage_content_none(requests_mock: requests_mock.Mocker) -> N
     assert "content" in message and message["content"] is None
     assert isinstance(response, AIMessage)
     assert response.content == "WORKED"
+
+
+@pytest.mark.asyncio
+async def test_ainvoke_aimessage_content_none() -> None:
+    url = "https://integrate.api.nvidia.com/v1/chat/completions"
+    with aioresponses() as m:
+        m.post(
+            url,
+            payload={
+                "id": "mock-id",
+                "created": 1234567890,
+                "object": "chat.completion",
+                "model": "mock-model",
+                "choices": [
+                    {"index": 0, "message": {"role": "assistant", "content": "WORKED"}}
+                ],
+            },
+            status=200,
+        )
+
+        empty_aimessage = AIMessage(content="EMPTY")
+        empty_aimessage.content = None  # type: ignore
+
+        llm = ChatNVIDIA(api_key="BOGUS")
+        response = await llm.ainvoke([empty_aimessage])
+
+        calls = m.requests.get(("POST", URL(url)))
+        assert ("POST", URL(url)) in m.requests
+        payload = calls[0].kwargs.get("json", {})
+        message = payload.get("messages", [{}])[0]
+        assert "content" in message and message["content"] != "EMPTY"
+        assert "content" in message and message["content"] is None
+
+        assert isinstance(response, AIMessage)
+        assert response.content == "WORKED"

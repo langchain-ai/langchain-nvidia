@@ -1,7 +1,8 @@
-from typing import Any, Optional, cast
+from typing import Any, Callable, Optional, cast
 
 import pytest
 import requests_mock
+from aioresponses import aioresponses
 from langchain_core.messages import AIMessage, BaseMessageChunk, HumanMessage
 
 # from langchain_core.messages.ai import UsageMetadata
@@ -67,6 +68,56 @@ def mock_local_models_stream_metadata(requests_mock: requests_mock.Mocker) -> No
     )
 
 
+# Async equivalents using aioresponses
+
+
+@pytest.fixture
+def mock_local_models_metadata_async() -> Callable[[aioresponses], None]:
+    def configure(m: aioresponses) -> None:
+        url = "http://localhost:8888/v1/chat/completions"
+        payload = {
+            **mock_response,
+            "tool_calls": [
+                {
+                    "id": "tool-ID",
+                    "type": "function",
+                    "function": {
+                        "name": "magic",
+                        "arguments": [],
+                    },
+                }
+            ],
+        }
+        m.post(url, payload=payload, status=200)
+
+    return configure
+
+
+@pytest.fixture
+def mock_local_models_stream_metadata_async() -> Callable[[aioresponses], None]:
+    def configure(m: aioresponses) -> None:
+        url = "http://localhost:8888/v1/chat/completions"
+        response_contents = "\n\n".join(
+            [
+                'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":null},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_ID0","type":"function","function":{"name":"xxyyzz","arguments":""}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\\"a\\""}}]},"logprobs":null, "model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":": 11,"}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":" \\"b\\": "}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"3}"}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"id":"call_ID1","type":"function","function":{"name":"zzyyxx","arguments":""}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":"{\\"a\\""}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":": 5, "}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":"\\"b\\": 3"}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":"}"}}]},"logprobs":null,"model_name":"dummy","finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"chatcmpl-ID0","object":"chat.completion.chunk","created":1721155403,"model":"magic-model","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"model_name":"dummy","finish_reason":"tool_calls"}]}',  # noqa: E501
+            ]
+        )
+        m.post(url, status=200, body=response_contents)
+
+    return configure
+
+
 def response_metadata_checks(result: Any) -> None:
     assert isinstance(result, AIMessage)
     assert result.response_metadata
@@ -92,10 +143,17 @@ def test_response_metadata(mock_local_models_metadata: None) -> None:
     response_metadata_checks(result)
 
 
-async def test_async_response_metadata(mock_local_models_metadata: None) -> None:
-    llm = ChatNVIDIA(base_url="http://localhost:8888/v1")
-    result = await llm.ainvoke([HumanMessage(content="I'm PickleRick")], logprobs=True)
-    response_metadata_checks(result)
+async def test_async_response_metadata(
+    mock_local_models_metadata_async,
+) -> None:
+    with aioresponses() as m:
+        mock_local_models_metadata_async(m)
+
+        llm = ChatNVIDIA(base_url="http://localhost:8888/v1")
+        result = await llm.ainvoke(
+            [HumanMessage(content="I'm PickleRick")], logprobs=True
+        )
+        response_metadata_checks(result)
 
 
 def test_response_metadata_streaming(mock_local_models_stream_metadata: None) -> None:
@@ -111,17 +169,20 @@ def test_response_metadata_streaming(mock_local_models_stream_metadata: None) ->
 
 
 async def test_async_response_metadata_streaming(
-    mock_local_models_stream_metadata: None,
+    mock_local_models_stream_metadata_async,
 ) -> None:
-    llm = ChatNVIDIA(base_url="http://localhost:8888/v1")
-    full: Optional[BaseMessageChunk] = None
-    async for chunk in llm.astream("I'm Pickle Rick"):
-        assert isinstance(chunk.content, str)
-        full = chunk if full is None else full + chunk
-    assert all(
-        k in cast(BaseMessageChunk, full).response_metadata
-        for k in ("model_name", "finish_reason")
-    )
+    with aioresponses() as m:
+        mock_local_models_stream_metadata_async(m)
+
+        llm = ChatNVIDIA(base_url="http://localhost:8888/v1")
+        full: Optional[BaseMessageChunk] = None
+        async for chunk in llm.astream("I'm Pickle Rick"):
+            assert isinstance(chunk.content, str)
+            full = chunk if full is None else full + chunk
+        assert all(
+            k in cast(BaseMessageChunk, full).response_metadata
+            for k in ("model_name", "finish_reason")
+        )
 
 
 def test_stream_tool_calls(

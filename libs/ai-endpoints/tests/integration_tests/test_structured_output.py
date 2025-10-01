@@ -1,4 +1,5 @@
 import enum
+import inspect
 from typing import Any, Callable, Optional, Union
 
 import pytest
@@ -18,6 +19,22 @@ def do_stream(llm: ChatNVIDIA, message: str) -> Any:
     # streaming results, which are *Chunks that can be concatenated.
     result = [chunk for chunk in llm.stream(message)]
     return result[-1] if result else None
+
+
+async def do_ainvoke(llm: ChatNVIDIA, message: str) -> Any:
+    return await llm.ainvoke(message)
+
+
+async def do_astream(llm: ChatNVIDIA, message: str) -> Any:
+    # the way streaming works is to progressively grow the response
+    # so we just return the last chunk.
+    result = [chunk async for chunk in llm.astream(message)]
+    return result[-1] if result else None
+
+
+def is_async_func(func: Callable) -> bool:
+    """Check if a function is an async function."""
+    return inspect.iscoroutinefunction(func)
 
 
 @pytest.mark.xfail(reason="Accuracy is not guaranteed")
@@ -74,16 +91,29 @@ class Joke(BaseModel):
     rating: Optional[int] = Field(description="How funny the joke is, from 1 to 10")
 
 
-@pytest.mark.parametrize("func", [do_invoke, do_stream], ids=["invoke", "stream"])
-def test_pydantic(structured_model: str, mode: dict, func: Callable) -> None:
+@pytest.mark.parametrize(
+    "func",
+    [do_invoke, do_stream, do_ainvoke, do_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
+)
+async def test_pydantic(structured_model: str, mode: dict, func: Callable) -> None:
     llm = ChatNVIDIA(model=structured_model, temperature=0, **mode)
     structured_llm = llm.with_structured_output(Joke)
-    result = func(structured_llm, "Tell me a joke about cats")
+
+    if is_async_func(func):
+        result = await func(structured_llm, "Tell me a joke about cats")
+    else:
+        result = func(structured_llm, "Tell me a joke about cats")
+
     assert isinstance(result, Joke)
 
 
-@pytest.mark.parametrize("func", [do_invoke, do_stream], ids=["invoke", "stream"])
-def test_dict(structured_model: str, mode: dict, func: Callable) -> None:
+@pytest.mark.parametrize(
+    "func",
+    [do_invoke, do_stream, do_ainvoke, do_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
+)
+async def test_dict(structured_model: str, mode: dict, func: Callable) -> None:
     json_schema = {
         "title": "joke",
         "description": "Joke to tell user.",
@@ -107,14 +137,23 @@ def test_dict(structured_model: str, mode: dict, func: Callable) -> None:
 
     llm = ChatNVIDIA(model=structured_model, temperature=0, **mode)
     structured_llm = llm.with_structured_output(json_schema)
-    result = func(structured_llm, "Tell me a joke about cats")
+
+    if is_async_func(func):
+        result = await func(structured_llm, "Tell me a joke about cats")
+    else:
+        result = func(structured_llm, "Tell me a joke about cats")
+
     assert isinstance(result, dict)
     assert "setup" in result
     assert "punchline" in result
 
 
-@pytest.mark.parametrize("func", [do_invoke, do_stream], ids=["invoke", "stream"])
-def test_enum(structured_model: str, mode: dict, func: Callable) -> None:
+@pytest.mark.parametrize(
+    "func",
+    [do_invoke, do_stream, do_ainvoke, do_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
+)
+async def test_enum(structured_model: str, mode: dict, func: Callable) -> None:
     class Choices(enum.Enum):
         A = "A is an option"
         B = "B is an option"
@@ -122,21 +161,40 @@ def test_enum(structured_model: str, mode: dict, func: Callable) -> None:
 
     llm = ChatNVIDIA(model=structured_model, temperature=0, **mode)
     structured_llm = llm.with_structured_output(Choices)
-    result = func(
-        structured_llm,
-        """
-        What does 1+1 equal?
-            A. -100
-            B. 2
-            C. doorstop
-        """,
-    )
+
+    if is_async_func(func):
+        result = await func(
+            structured_llm,
+            """
+            What does 1+1 equal?
+                A. -100
+                B. 2
+                C. doorstop
+            """,
+        )
+    else:
+        result = func(
+            structured_llm,
+            """
+            What does 1+1 equal?
+                A. -100
+                B. 2
+                C. doorstop
+            """,
+        )
+
     assert isinstance(result, Choices)
     assert result in Choices
 
 
-@pytest.mark.parametrize("func", [do_invoke, do_stream], ids=["invoke", "stream"])
-def test_enum_incomplete(structured_model: str, mode: dict, func: Callable) -> None:
+@pytest.mark.parametrize(
+    "func",
+    [do_invoke, do_stream, do_ainvoke, do_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
+)
+async def test_enum_incomplete(
+    structured_model: str, mode: dict, func: Callable
+) -> None:
     class Choices(enum.Enum):
         A = "A is an option you can pick"
         B = "B is an option you can pick"
@@ -144,20 +202,39 @@ def test_enum_incomplete(structured_model: str, mode: dict, func: Callable) -> N
 
     llm = ChatNVIDIA(model=structured_model, temperature=0, max_tokens=3, **mode)
     structured_llm = llm.with_structured_output(Choices)
-    result = func(
-        structured_llm,
-        """
-        What does 1+1 equal?
-            A. -100
-            B. 2
-            C. doorstop
-        """,
-    )
+
+    if is_async_func(func):
+        result = await func(
+            structured_llm,
+            """
+            What does 1+1 equal?
+                A. -100
+                B. 2
+                C. doorstop
+            """,
+        )
+    else:
+        result = func(
+            structured_llm,
+            """
+            What does 1+1 equal?
+                A. -100
+                B. 2
+                C. doorstop
+            """,
+        )
+
     assert result is None
 
 
-@pytest.mark.parametrize("func", [do_invoke, do_stream], ids=["invoke", "stream"])
-def test_multiple_schema(structured_model: str, mode: dict, func: Callable) -> None:
+@pytest.mark.parametrize(
+    "func",
+    [do_invoke, do_stream, do_ainvoke, do_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
+)
+async def test_multiple_schema(
+    structured_model: str, mode: dict, func: Callable
+) -> None:
     class ConversationalResponse(BaseModel):
         """Respond in a conversational manner. Be kind and helpful."""
 
@@ -170,17 +247,33 @@ def test_multiple_schema(structured_model: str, mode: dict, func: Callable) -> N
 
     llm = ChatNVIDIA(model=structured_model, temperature=0, **mode)
     structured_llm = llm.with_structured_output(Response)
-    response = func(structured_llm, "Tell me a joke about cats")
+
+    if is_async_func(func):
+        response = await func(structured_llm, "Tell me a joke about cats")
+    else:
+        response = func(structured_llm, "Tell me a joke about cats")
+
     assert isinstance(response, Response)
     assert isinstance(response.output, Joke) or isinstance(
         response.output, ConversationalResponse
     )
 
 
-@pytest.mark.parametrize("func", [do_invoke, do_stream], ids=["invoke", "stream"])
-def test_pydantic_incomplete(structured_model: str, mode: dict, func: Callable) -> None:
+@pytest.mark.parametrize(
+    "func",
+    [do_invoke, do_stream, do_ainvoke, do_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
+)
+async def test_pydantic_incomplete(
+    structured_model: str, mode: dict, func: Callable
+) -> None:
     # 3 tokens is not enough to construct a Joke
     llm = ChatNVIDIA(model=structured_model, temperature=0, max_tokens=3, **mode)
     structured_llm = llm.with_structured_output(Joke)
-    result = func(structured_llm, "Tell me a joke about cats")
+
+    if is_async_func(func):
+        result = await func(structured_llm, "Tell me a joke about cats")
+    else:
+        result = func(structured_llm, "Tell me a joke about cats")
+
     assert result is None
