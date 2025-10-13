@@ -86,8 +86,8 @@ def test_vlm_input_style(
 
 @pytest.mark.parametrize(
     "detail",
-    ["low", "high", "auto", None],
-    ids=["low", "high", "auto", "none"],
+    ["low", "high", "auto"],
+    ids=["low", "high", "auto"],
 )
 def test_vlm_detail_accepted(
     vlm_model: str,
@@ -113,6 +113,37 @@ def test_vlm_detail_accepted(
     assert isinstance(response, BaseMessage)
     assert isinstance(response.content, str)
     # assert "cat" in response.content.lower()
+
+
+@pytest.mark.parametrize(
+    "invalid_detail",
+    [None, "None", "medium", "HIGH", ""],
+    ids=["None", "None-str", "medium", "HIGH", ""],
+)
+def test_vlm_detail_invalid(
+    vlm_model: str,
+    mode: dict,
+    invalid_detail: str,
+) -> None:
+    """Test that invalid detail values raise ValueError."""
+    chat = ChatNVIDIA(model=vlm_model, **mode)
+
+    with pytest.raises(ValueError, match="Invalid detail value"):
+        chat.invoke(
+            [
+                HumanMessage(
+                    content=[
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": "tests/data/nvidia-picasso.jpg",
+                                "detail": invalid_detail,
+                            },
+                        }
+                    ]
+                )
+            ]
+        )
 
 
 @pytest.mark.parametrize(

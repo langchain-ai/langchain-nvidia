@@ -179,6 +179,13 @@ def _nv_vlm_adjust_input(
                         isinstance(part["image_url"], dict)
                         and "url" in part["image_url"]
                     ):
+                        if "detail" in part["image_url"]:
+                            detail = part["image_url"]["detail"]
+                            if detail not in ["auto", "low", "high"]:
+                                raise ValueError(
+                                    f"Invalid detail value: {detail!r}. "
+                                    "Must be one of 'auto', 'low', or 'high'. "
+                                )
                         url = _url_to_b64_string(part["image_url"]["url"])
                         if model_type == "nv-vlm":
                             part["image_url"] = url
