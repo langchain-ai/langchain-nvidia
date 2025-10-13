@@ -17,6 +17,14 @@ def stream(llm: NVIDIA, prompt: str, **kwargs: Any) -> str:
     return reduce(add, llm.stream(prompt, **kwargs))
 
 
+async def ainvoke(llm: NVIDIA, prompt: str, **kwargs: Any) -> str:
+    return await llm.ainvoke(prompt, **kwargs)
+
+
+async def astream(llm: NVIDIA, prompt: str, **kwargs: Any) -> str:
+    return reduce(add, [chunk async for chunk in llm.astream(prompt, **kwargs)])
+
+
 mock_response = {
     "id": "ID",
     "object": "text_completion",
@@ -152,3 +160,93 @@ def test_params_unknown(
 def test_identifying_params() -> None:
     llm = NVIDIA(api_key="BOGUS")
     assert set(llm._identifying_params.keys()) == {"model", "base_url"}
+
+
+@pytest.mark.parametrize(
+    "param, value",
+    [
+        ("frequency_penalty", [0.25, 0.5, 0.75]),
+        ("max_tokens", [2, 32, 512]),
+        ("presence_penalty", [0.25, 0.5, 0.75]),
+        ("seed", [1, 1234, 4321]),
+        ("stop", ["Hello", "There", "World"]),
+        ("temperature", [0, 0.5, 1]),
+        ("top_p", [0, 0.5, 1]),
+        ("best_of", [1, 5, 10]),
+        ("echo", [True, False, True]),
+        ("logit_bias", [{"hello": 1.0}, {"there": 1.0}, {"world": 1.0}]),
+        ("logprobs", [1, 2, 3]),
+        ("n", [1, 2, 3]),
+        ("suffix", ["Hello", "There", "World"]),
+        ("user", ["Bob", "Alice", "Eve"]),
+    ],
+)
+@pytest.mark.parametrize(
+    "func, mock_name",
+    [(ainvoke, "mock_v1_completions_invoke"), (astream, "mock_v1_completions_stream")],
+    ids=["ainvoke", "astream"],
+)
+async def test_async_params(
+    param: str,
+    value: List[Any],
+    func: Callable,
+    mock_name: str,
+    request: pytest.FixtureRequest,
+) -> None:
+    """
+    This tests the following...
+     - priority order (init -> bind -> infer)
+     - param passed to init, bind, invoke / stream
+    ...for each known Completion API param.
+    """
+
+    mock = request.getfixturevalue(mock_name)
+
+    init, bind, infer = value
+
+    llm = NVIDIA(api_key="BOGUS", **{param: init})
+    await func(llm, "IGNORED")
+    request_payload = mock.last_request.json()
+    assert param in request_payload
+    assert request_payload[param] == init
+
+    bound_llm = llm.bind(**{param: bind})
+    await func(bound_llm, "IGNORED")
+    request_payload = mock.last_request.json()
+    assert param in request_payload
+    assert request_payload[param] == bind
+
+    await func(bound_llm, "IGNORED", **{param: infer})
+    request_payload = mock.last_request.json()
+    assert param in request_payload
+    assert request_payload[param] == infer
+
+
+@pytest.mark.parametrize(
+    "func, mock_name",
+    [(ainvoke, "mock_v1_completions_invoke"), (astream, "mock_v1_completions_stream")],
+    ids=["ainvoke", "astream"],
+)
+async def test_async_params_unknown(
+    func: Callable,
+    mock_name: str,
+    request: pytest.FixtureRequest,
+) -> None:
+    request.getfixturevalue(mock_name)
+
+    with pytest.warns(UserWarning) as record:
+        llm = NVIDIA(api_key="BOGUS", init_unknown="INIT")
+    assert len(record) == 1
+    assert "Unrecognized, ignored arguments: {'init_unknown'}" in str(record[0].message)
+
+    with pytest.warns(UserWarning) as record:
+        await func(llm, "IGNORED", arg_unknown="ARG")
+    assert len(record) == 1
+    assert "Unrecognized, ignored arguments: {'arg_unknown'}" in str(record[0].message)
+
+    bound_llm = llm.bind(bind_unknown="BIND")
+
+    with pytest.warns(UserWarning) as record:
+        await func(bound_llm, "IGNORED")
+    assert len(record) == 1
+    assert "Unrecognized, ignored arguments: {'bind_unknown'}" in str(record[0].message)
