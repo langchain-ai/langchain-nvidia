@@ -55,6 +55,9 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         ),
     )
     max_batch_size: int = Field(default=_DEFAULT_BATCH_SIZE)
+    default_headers: Optional[Dict[str, str]] = Field(
+        None, description="Default headers merged into all requests."
+    )
 
     def __init__(self, **kwargs: Any):
         """
@@ -76,6 +79,8 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
                             an error if an input is too long.
             dimensions (int): The number of dimensions for the embeddings. This
                               parameter is not supported by all models.
+            default_headers (dict[str, str]): Default headers merged into all
+                requests.
 
         API Key:
         - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
@@ -150,8 +155,10 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         if self.dimensions:
             payload["dimensions"] = self.dimensions
 
+        extra_headers = self.default_headers or {}
         response = self._client.get_req(
             payload=payload,
+            extra_headers=extra_headers,
         )
         response.raise_for_status()
         result = response.json()

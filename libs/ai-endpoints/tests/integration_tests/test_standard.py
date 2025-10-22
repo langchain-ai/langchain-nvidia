@@ -4,6 +4,7 @@ from typing import Any, Coroutine, Type
 
 import pytest
 from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import HumanMessage
 from langchain_core.tools import BaseTool
 from langchain_tests.integration_tests import ChatModelIntegrationTests
 
@@ -60,3 +61,15 @@ class TestNVIDIAStandard(ChatModelIntegrationTests):
     def test_structured_output_optional_param(self, model: BaseChatModel) -> None:
         # Don't return anything since the return type is None
         super().test_structured_output_optional_param(model)
+
+    def test_default_headers(self) -> None:
+        """Test that default_headers parameter works."""
+        model = self.chat_model_class(
+            **self.chat_model_params,
+            default_headers={"X-Custom-Header": "test-value"},
+        )
+        response = model.invoke([HumanMessage(content="Hi")])
+        assert response.content
+        # Verify the header was sent in the actual HTTP request
+        sent_headers = model._client.last_response.request.headers  # type: ignore[attr-defined]
+        assert sent_headers["X-Custom-Header"] == "test-value"
