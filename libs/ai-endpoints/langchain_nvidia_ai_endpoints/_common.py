@@ -535,6 +535,13 @@ class _NVIDIAClient(BaseModel):
         finish_reason_holder: Optional[str] = None
         is_stopped = False
         for msg in msg_list:
+            # Check for errors in streaming response
+            if "error" in msg and "choices" not in msg:
+                error_info = msg.get("error")
+                if isinstance(error_info, dict) and error_info.get("object") == "error":
+                    error_msg = error_info.get("message", "Unknown error")
+                    error_type = error_info.get("type", "Error")
+                    raise Exception(f"{error_type}: {error_msg}")
             usage_holder = msg.get("usage", {})  ####
             if "choices" in msg:
                 ## Tease out ['choices'][0]...['delta'/'message']
