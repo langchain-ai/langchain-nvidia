@@ -142,3 +142,123 @@ def test_stream_tool_calls(
     tool_call1 = response.tool_calls[1]
     assert tool_call1["name"] == "zzyyxx"
     assert tool_call1["args"] == {"b": 3, "a": 5}
+
+
+@pytest.mark.parametrize(
+    "error_chunks,expected_error_type,expected_error_msg",
+    [
+        pytest.param(
+            [
+                'data: {"id":"id1","object":"chat.completion.chunk","created":1234567890,"model":"test","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}',  # noqa: E501
+                'data: {"error": {"object": "error", "message": "Some Error Occurred", "type": "BadRequestError"}}',  # noqa: E501
+                "data: [DONE]",
+            ],
+            "BadRequestError",
+            "Some Error Occurred",
+            id="error_after_content",
+        ),
+        pytest.param(
+            [
+                'data: {"error": {"object": "error", "message": "Some Error Occurred", "type": "InternalError"}}',  # noqa: E501
+                "data: [DONE]",
+            ],
+            "InternalError",
+            "Some Error Occurred",
+            id="error_in_first_chunk",
+        ),
+    ],
+)
+def test_stream_error_handling(
+    requests_mock: requests_mock.Mocker,
+    error_chunks: list,
+    expected_error_type: str,
+    expected_error_msg: str,
+) -> None:
+    """Test that streaming properly raises errors."""
+    response_text = "\n\n".join(error_chunks)
+    requests_mock.post(
+        "http://localhost:8888/v1/chat/completions",
+        text=response_text,
+    )
+
+    llm = ChatNVIDIA(base_url="http://localhost:8888/v1")
+
+    with pytest.raises(Exception) as exc_info:
+        list(llm.stream("Test message"))
+
+    error_msg = str(exc_info.value)
+    assert error_msg == f"{expected_error_type}: {expected_error_msg}"
+
+
+@pytest.mark.parametrize(
+    "response_chunks,should_succeed,description",
+    [
+        pytest.param(
+            [
+                'data: {"id":"id1","object":"chat.completion.chunk","created":1234567890,"model":"test","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"id1","object":"chat.completion.chunk","created":1234567890,"model":"test","choices":[{"index":0,"delta":{"content":"An error "},"finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"id1","object":"chat.completion.chunk","created":1234567890,"model":"test","choices":[{"index":0,"delta":{"content":"occurred in "},"finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"id1","object":"chat.completion.chunk","created":1234567890,"model":"test","choices":[{"index":0,"delta":{"content":"the system."},"finish_reason":null}]}',  # noqa: E501
+                'data: {"id":"id1","object":"chat.completion.chunk","created":1234567890,"model":"test","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}]}',  # noqa: E501
+                "data: [DONE]",
+            ],
+            True,
+            "'error' field not in message",
+            id="error_field_not_in_message",
+        ),
+        pytest.param(
+            [
+                'data: {"id":"id2","object":"chat.completion.chunk","created":1234567890,"model":"test","choices":[{"index":0,"delta":{"content":"Hi"},"finish_reason":null}],"error":"something"}',  # noqa: E501
+                "data: [DONE]",
+            ],
+            True,
+            "'error' key present but 'choices' also present",
+            id="has_error_key_and_choices",
+        ),
+        pytest.param(
+            [
+                'data: {"error": {"object": "not_error", "message": "test"}}',  # noqa: E501
+                "data: [DONE]",
+            ],
+            True,
+            "'error' key without 'choices' but object != 'error'",
+            id="error_key_no_choices_wrong_object",
+        ),
+        pytest.param(
+            [
+                'data: {"error": "not a dict"}',  # noqa: E501
+                "data: [DONE]",
+            ],
+            True,
+            "'error' value is not a dict",
+            id="error_not_dict",
+        ),
+        pytest.param(
+            [
+                'data: {"error": {"message": "test", "type": "SomeError"}}',  # noqa: E501
+                "data: [DONE]",
+            ],
+            True,
+            "'error' dict without 'object' field",
+            id="error_missing_object_field",
+        ),
+    ],
+)
+def test_stream_non_error_conditions(
+    requests_mock: requests_mock.Mocker,
+    response_chunks: list,
+    should_succeed: bool,
+    description: str,
+) -> None:
+    """Test conditions that should not trigger error raising."""
+    response_text = "\n\n".join(response_chunks)
+    requests_mock.post(
+        "http://localhost:8888/v1/chat/completions",
+        text=response_text,
+    )
+
+    llm = ChatNVIDIA(base_url="http://localhost:8888/v1")
+
+    # Should not raise an exception
+    chunks = list(llm.stream("Test message"))
+    assert len(chunks) > 0
