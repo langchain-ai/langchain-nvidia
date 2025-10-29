@@ -356,6 +356,10 @@ class ChatNVIDIA(BaseChatModel):
     ignore_eos: Optional[bool] = Field(
         None, description="Whether to ignore end-of-sequence tokens"
     )
+    default_headers: dict = Field(
+        default_factory=dict,
+        description="Default headers merged into all requests.",
+    )
 
     def __init__(self, **kwargs: Any):
         """
@@ -384,6 +388,8 @@ class ChatNVIDIA(BaseChatModel):
             stop (list[str]): A list of cased stop words.
             min_tokens (int): Minimum number of tokens to generate.
             ignore_eos (bool): Whether to ignore end-of-sequence tokens.
+            default_headers (dict[str, str]): Default headers merged into all
+                requests.
 
         API Key:
         - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
@@ -493,6 +499,19 @@ class ChatNVIDIA(BaseChatModel):
             for message in [convert_message_to_dict(message) for message in messages]
         ]
         inputs, extra_headers = _process_for_vlm(inputs, self._client.model)
+        # Merge default_headers with extra_headers from VLM processing.
+        # VLM headers (auto-generated) take precedence in case of conflicts.
+        if self.default_headers:
+            conflicts = set(self.default_headers.keys()) & set(extra_headers.keys())
+            if conflicts:
+                warnings.warn(
+                    f"default_headers keys {conflicts} conflict with "
+                    f"auto-generated VLM headers and will be overridden. "
+                    f"Remove them from default_headers.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            extra_headers = {**self.default_headers, **extra_headers}
         payload = self._get_payload(inputs=inputs, stop=stop, stream=False, **kwargs)
         response = self._client.get_req(payload=payload, extra_headers=extra_headers)
         responses, _ = self._client.postprocess(response)
@@ -517,6 +536,19 @@ class ChatNVIDIA(BaseChatModel):
             for message in [convert_message_to_dict(message) for message in messages]
         ]
         inputs, extra_headers = _process_for_vlm(inputs, self._client.model)
+        # Merge default_headers with extra_headers from VLM processing.
+        # VLM headers (auto-generated) take precedence in case of conflicts.
+        if self.default_headers:
+            conflicts = set(self.default_headers.keys()) & set(extra_headers.keys())
+            if conflicts:
+                warnings.warn(
+                    f"default_headers keys {conflicts} conflict with "
+                    f"auto-generated VLM headers and will be overridden. "
+                    f"Remove them from default_headers.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            extra_headers = {**self.default_headers, **extra_headers}
         payload = self._get_payload(
             inputs=inputs,
             stop=stop,

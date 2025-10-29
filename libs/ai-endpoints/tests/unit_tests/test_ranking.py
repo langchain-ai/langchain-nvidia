@@ -77,11 +77,40 @@ def test_truncate_invalid(truncate: Any) -> None:
         NVIDIARerank(truncate=truncate)
 
 
-def test_extra_headers(requests_mock: Mocker) -> None:
+def test_default_headers(requests_mock: Mocker) -> None:
+    """Test that default_headers are passed to requests."""
+    warnings.filterwarnings("ignore", ".*Found mock-model in available_models.*")
     client = NVIDIARerank(
-        api_key="BOGUS", model="mock-model", extra_headers={"X-Test": "test"}
+        api_key="BOGUS", model="mock-model", default_headers={"X-Test": "test"}
     )
-    assert client.extra_headers == {"X-Test": "test"}
+    assert client.default_headers == {"X-Test": "test"}
+
+    _ = client.compress_documents(
+        documents=[Document(page_content="Nothing really.")], query="What is it?"
+    )
+    assert requests_mock.last_request is not None
+    assert requests_mock.last_request.headers["X-Test"] == "test"
+
+
+def test_extra_headers(requests_mock: Mocker) -> None:
+    """Test backward compatibility: extra_headers deprecated, issues warning."""
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        client = NVIDIARerank(
+            api_key="BOGUS", model="mock-model", extra_headers={"X-Test": "test"}
+        )
+        # Check deprecation warning was issued
+        deprecation_warnings = [
+            warning for warning in w if issubclass(warning.category, DeprecationWarning)
+        ]
+        assert len(deprecation_warnings) == 1
+        assert str(deprecation_warnings[0].message) == (
+            "The 'extra_headers' parameter is deprecated and will be removed "
+            "in a future version. Please use 'default_headers' instead."
+        )
+
+    # Verify it still works (copied to default_headers)
+    assert client.default_headers == {"X-Test": "test"}
 
     _ = client.compress_documents(
         documents=[Document(page_content="Nothing really.")], query="What is it?"

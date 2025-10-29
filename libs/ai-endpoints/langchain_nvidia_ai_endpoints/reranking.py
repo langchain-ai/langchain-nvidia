@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import Any, Generator, List, Literal, Optional, Sequence
 
 from langchain_core.callbacks.manager import Callbacks
@@ -53,9 +54,14 @@ class NVIDIARerank(BaseDocumentCompressor):
     max_batch_size: int = Field(
         _DEFAULT_BATCH_SIZE, ge=1, description="The maximum batch size."
     )
+    default_headers: dict = Field(
+        default_factory=dict,
+        description="Default headers merged into all requests.",
+    )
     extra_headers: dict = Field(
         default_factory=dict,
-        description="Extra headers to include in the request.",
+        description="Deprecated: Use 'default_headers' instead. "
+        "Extra headers to include in the request.",
     )
 
     def __init__(self, **kwargs: Any):
@@ -75,6 +81,9 @@ class NVIDIARerank(BaseDocumentCompressor):
             truncate (str): "NONE", "END", truncate input text if it exceeds
                             the model's context length. Default is model dependent and
                             is likely to raise an error if an input is too long.
+            default_headers (dict[str, str]): Default headers merged into all
+                requests.
+            extra_headers (dict[str, str]): Deprecated. Use 'default_headers' instead.
 
         API Key:
         - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
@@ -134,6 +143,16 @@ class NVIDIARerank(BaseDocumentCompressor):
         """
 
         super().__init__(**kwargs)
+        # Handle backwards compatibility: if extra_headers is set but default_headers
+        # is not, use extra_headers
+        if self.extra_headers and not self.default_headers:
+            warnings.warn(
+                "The 'extra_headers' parameter is deprecated and will be removed "
+                "in a future version. Please use 'default_headers' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self.default_headers = self.extra_headers
         # allow nvidia_base_url as an alternative for base_url
         base_url = kwargs.pop("nvidia_base_url", self.base_url)
         # allow nvidia_api_key as an alternative for api_key
@@ -183,7 +202,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         if self.truncate:
             payload["truncate"] = self.truncate
         response = self._client.get_req(
-            payload=payload, extra_headers=self.extra_headers
+            payload=payload, extra_headers=self.default_headers
         )
         if response.status_code != 200:
             response.raise_for_status()
