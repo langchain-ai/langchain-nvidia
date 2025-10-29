@@ -55,8 +55,9 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         ),
     )
     max_batch_size: int = Field(default=_DEFAULT_BATCH_SIZE)
-    default_headers: Optional[Dict[str, str]] = Field(
-        None, description="Default headers merged into all requests."
+    default_headers: dict = Field(
+        default_factory=dict,
+        description="Default headers merged into all requests.",
     )
 
     def __init__(self, **kwargs: Any):
@@ -155,10 +156,9 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         if self.dimensions:
             payload["dimensions"] = self.dimensions
 
-        extra_headers = self.default_headers or {}
         response = self._client.get_req(
             payload=payload,
-            extra_headers=extra_headers,
+            extra_headers=self.default_headers,
         )
         response.raise_for_status()
         result = response.json()

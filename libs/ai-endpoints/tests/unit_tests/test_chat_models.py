@@ -9,6 +9,23 @@ from requests_mock import Mocker
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
 
+@pytest.fixture(autouse=True)
+def mock_v1_models(requests_mock: Mocker) -> None:
+    requests_mock.get(
+        "https://integrate.api.nvidia.com/v1/models",
+        json={
+            "data": [
+                {
+                    "id": "meta/llama3-8b-instruct",
+                    "object": "model",
+                    "created": 1234567890,
+                    "owned_by": "OWNER",
+                }
+            ]
+        },
+    )
+
+
 @pytest.fixture
 def mock_local_models(requests_mock: Mocker) -> None:
     requests_mock.get(
@@ -248,3 +265,36 @@ def test_verify_ssl_behavior(
 
     # Test that session factory creates sessions with correct verify setting
     assert llm._client.get_session_fn().verify is expected_verify_ssl
+
+
+def test_default_headers(requests_mock: Mocker) -> None:
+    """Test that default_headers are passed to requests."""
+    model = "meta/llama3-8b-instruct"
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        json={
+            "id": "chatcmpl-123",
+            "object": "chat.completion",
+            "created": 1677652288,
+            "model": model,
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": "Hello!"},
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+        },
+    )
+
+    llm = ChatNVIDIA(
+        model=model,
+        nvidia_api_key="a-bogus-key",
+        default_headers={"X-Test": "test"},
+    )
+    assert llm.default_headers == {"X-Test": "test"}
+
+    _ = llm.invoke("Hello")
+    assert requests_mock.last_request is not None
+    assert requests_mock.last_request.headers["X-Test"] == "test"
