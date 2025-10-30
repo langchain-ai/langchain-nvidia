@@ -1,3 +1,4 @@
+import inspect
 import json
 import warnings
 from functools import reduce
@@ -114,6 +115,26 @@ def eval_stream(
     return response
 
 
+async def eval_astream(
+    llm: ChatNVIDIA,
+    msg: str,
+    tool_choice: Any = None,
+    parallel_tool_calls: bool = False,
+) -> BaseMessageChunk:
+    params = {}
+    if tool_choice:
+        params["tool_choice"] = tool_choice
+    if parallel_tool_calls:
+        params["parallel_tool_calls"] = True
+
+    generator = llm.astream(msg, **params)  # type: ignore
+    response = await generator.__anext__()
+    async for chunk in generator:
+        assert isinstance(chunk, AIMessageChunk)
+        response += chunk
+    return response
+
+
 def eval_invoke(
     llm: ChatNVIDIA,
     msg: str,
@@ -127,6 +148,31 @@ def eval_invoke(
         params["parallel_tool_calls"] = True
 
     return llm.invoke(msg, **params)  # type: ignore
+
+
+async def eval_ainvoke(
+    llm: ChatNVIDIA,
+    msg: str,
+    tool_choice: Any = None,
+    parallel_tool_calls: bool = False,
+) -> BaseMessage:
+    params = {}
+    if tool_choice:
+        params["tool_choice"] = tool_choice
+    if parallel_tool_calls:
+        params["parallel_tool_calls"] = True
+
+    return await llm.ainvoke(msg, **params)  # type: ignore
+
+
+def is_invoke_func(func: Callable) -> bool:
+    """Check if function is invoke (sync or async)"""
+    return func in [eval_invoke, eval_ainvoke]
+
+
+def is_async_func(func: Callable) -> bool:
+    """Check if function is async"""
+    return inspect.iscoroutinefunction(func)
 
 
 def check_response_structure(response: AIMessage) -> None:
@@ -146,18 +192,22 @@ def check_response_structure(response: AIMessage) -> None:
 
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
 @pytest.mark.xfail(reason="Accuracy test")
-def test_accuracy_extra(tool_model: str, mode: dict, func: Callable) -> None:
+@pytest.mark.asyncio
+async def test_accuracy_extra(tool_model: str, mode: dict, func: Callable) -> None:
     llm = ChatNVIDIA(temperature=0, model=tool_model, **mode).bind_tools([xxyyzz])
-    response = func(llm, "What is 11 xxyyzz 3?")
+    if is_async_func(func):
+        response = await func(llm, "What is 11 xxyyzz 3?")
+    else:
+        response = func(llm, "What is 11 xxyyzz 3?")
     assert not response.content  # should be `response.content is None` but
     # AIMessage.content: Union[str, List[Union[str, Dict]]] cannot be None.
     assert response.additional_kwargs is not None
     # todo: this is not good, should not care about the param
-    if func == eval_invoke:
+    if is_invoke_func(func):
         assert isinstance(response, AIMessage)
         assert "tool_calls" in response.additional_kwargs
         assert isinstance(response.additional_kwargs["tool_calls"], list)
@@ -201,15 +251,19 @@ def test_accuracy_extra(tool_model: str, mode: dict, func: Callable) -> None:
 )
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
-def test_tool_choice_with_no_tool(
+@pytest.mark.asyncio
+async def test_tool_choice_with_no_tool(
     tool_model: str, mode: dict, tool_choice: Any, func: Callable
 ) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode)
     with pytest.raises(Exception) as e:
-        func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
+        if is_async_func(func):
+            await func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
+        else:
+            func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
     assert "400" in str(e.value) or "###" in str(
         e.value
     )  # todo: stop transforming 400 -> ###
@@ -226,12 +280,16 @@ def test_tool_choice_with_no_tool(
 
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
-def test_tool_choice_none(tool_model: str, mode: dict, func: Callable) -> None:
+@pytest.mark.asyncio
+async def test_tool_choice_none(tool_model: str, mode: dict, func: Callable) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools(tools=[xxyyzz])
-    response = func(llm, "What is 11 xxyyzz 3?", tool_choice="none")
+    if is_async_func(func):
+        response = await func(llm, "What is 11 xxyyzz 3?", tool_choice="none")
+    else:
+        response = func(llm, "What is 11 xxyyzz 3?", tool_choice="none")
     assert "tool_calls" not in response.additional_kwargs
 
 
@@ -244,10 +302,11 @@ def test_tool_choice_none(tool_model: str, mode: dict, func: Callable) -> None:
 )
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
-def test_tool_choice_negative(
+@pytest.mark.asyncio
+async def test_tool_choice_negative(
     tool_model: str,
     mode: dict,
     tool_choice: Optional[
@@ -257,7 +316,10 @@ def test_tool_choice_negative(
 ) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools([xxyyzz])
     with pytest.raises(Exception) as e:
-        func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
+        if is_async_func(func):
+            await func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
+        else:
+            func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
     assert "400" in str(e.value) or "###" in str(
         e.value
     )  # todo: stop transforming 400 -> ###
@@ -270,18 +332,22 @@ def test_tool_choice_negative(
 
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
 @pytest.mark.xfail(reason="Server side is broken")
-def test_tool_choice_negative_max_tokens_required(
+@pytest.mark.asyncio
+async def test_tool_choice_negative_max_tokens_required(
     tool_model: str,
     mode: dict,
     func: Callable,
 ) -> None:
     llm = ChatNVIDIA(max_tokens=5, model=tool_model, **mode).bind_tools([xxyyzz])
     with pytest.raises(Exception) as e:
-        func(llm, "What is 11 xxyyzz 3?", tool_choice="required")
+        if is_async_func(func):
+            await func(llm, "What is 11 xxyyzz 3?", tool_choice="required")
+        else:
+            func(llm, "What is 11 xxyyzz 3?", tool_choice="required")
     assert "400" in str(e.value) or "###" in str(
         e.value
     )  # todo: stop transforming 400 -> ###
@@ -294,23 +360,31 @@ def test_tool_choice_negative_max_tokens_required(
 
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
 @pytest.mark.xfail(reason="Server side is broken")
-def test_tool_choice_negative_max_tokens_function(
+@pytest.mark.asyncio
+async def test_tool_choice_negative_max_tokens_function(
     tool_model: str,
     mode: dict,
     func: Callable,
 ) -> None:
     llm = ChatNVIDIA(max_tokens=5, model=tool_model, **mode).bind_tools([xxyyzz])
-    response = func(
-        llm,
-        "What is 11 xxyyzz 3?",
-        tool_choice={"type": "function", "function": {"name": "xxyyzz"}},
-    )
+    if is_async_func(func):
+        response = await func(
+            llm,
+            "What is 11 xxyyzz 3?",
+            tool_choice={"type": "function", "function": {"name": "xxyyzz"}},
+        )
+    else:
+        response = func(
+            llm,
+            "What is 11 xxyyzz 3?",
+            tool_choice={"type": "function", "function": {"name": "xxyyzz"}},
+        )
     # todo: this is not good, should not care about the param
-    if func == eval_invoke:
+    if is_invoke_func(func):
         assert isinstance(response, AIMessage)
         assert "tool_calls" in response.additional_kwargs
         assert response.invalid_tool_calls
@@ -331,10 +405,11 @@ def test_tool_choice_negative_max_tokens_function(
 )
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
-def test_tool_choice_negative_no_args(
+@pytest.mark.asyncio
+async def test_tool_choice_negative_no_args(
     tool_model: str,
     mode: dict,
     tool_choice: Optional[
@@ -343,9 +418,12 @@ def test_tool_choice_negative_no_args(
     func: Callable,
 ) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools([tool_no_args])
-    response = func(llm, "What does the 8-ball say?", tool_choice=tool_choice)
+    if is_async_func(func):
+        response = await func(llm, "What does the 8-ball say?", tool_choice=tool_choice)
+    else:
+        response = func(llm, "What does the 8-ball say?", tool_choice=tool_choice)
     # todo: this is not good, should not care about the param
-    if func == eval_invoke:
+    if is_invoke_func(func):
         assert isinstance(response, AIMessage)
         assert response.tool_calls
     else:
@@ -364,11 +442,12 @@ def test_tool_choice_negative_no_args(
 )
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
 @pytest.mark.xfail(reason="Accuracy test")
-def test_accuracy_tool_choice_negative_no_args(
+@pytest.mark.asyncio
+async def test_accuracy_tool_choice_negative_no_args(
     tool_model: str,
     mode: dict,
     tool_choice: Optional[
@@ -377,7 +456,10 @@ def test_accuracy_tool_choice_negative_no_args(
     func: Callable,
 ) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools([tool_no_args])
-    response = func(llm, "What does the 8-ball say?", tool_choice=tool_choice)
+    if is_async_func(func):
+        response = await func(llm, "What does the 8-ball say?", tool_choice=tool_choice)
+    else:
+        response = func(llm, "What does the 8-ball say?", tool_choice=tool_choice)
     assert isinstance(response, AIMessage)
     # assert "tool_calls" in response.additional_kwargs
     assert response.tool_calls
@@ -395,10 +477,11 @@ def test_accuracy_tool_choice_negative_no_args(
 )
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
-def test_tool_choice_negative_duplicate_tool(
+@pytest.mark.asyncio
+async def test_tool_choice_negative_duplicate_tool(
     tool_model: str,
     mode: dict,
     tool_choice: Optional[
@@ -407,7 +490,10 @@ def test_tool_choice_negative_duplicate_tool(
     func: Callable,
 ) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools([xxyyzz, xxyyzz])
-    response = func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
+    if is_async_func(func):
+        response = await func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
+    else:
+        response = func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
     assert isinstance(response, AIMessage)
     assert response.tool_calls
     # assert "tool_calls" in response.additional_kwargs
@@ -423,10 +509,11 @@ def test_tool_choice_negative_duplicate_tool(
 )
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
-def test_tool_choice(
+@pytest.mark.asyncio
+async def test_tool_choice(
     tool_model: str,
     mode: dict,
     tool_choice: Optional[
@@ -435,7 +522,10 @@ def test_tool_choice(
     func: Callable,
 ) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools([xxyyzz])
-    response = func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
+    if is_async_func(func):
+        response = await func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
+    else:
+        response = func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
     assert isinstance(response, AIMessage)
     check_response_structure(response)
 
@@ -457,11 +547,12 @@ def test_tool_choice(
 )
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
 @pytest.mark.xfail(reason="Accuracy test")
-def test_accuracy_tool_choice(
+@pytest.mark.asyncio
+async def test_accuracy_tool_choice(
     tool_model: str,
     mode: dict,
     tools: List,
@@ -469,7 +560,10 @@ def test_accuracy_tool_choice(
     func: Callable,
 ) -> None:
     llm = ChatNVIDIA(temperature=0, model=tool_model, **mode).bind_tools(tools)
-    response = func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
+    if is_async_func(func):
+        response = await func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
+    else:
+        response = func(llm, "What is 11 xxyyzz 3?", tool_choice=tool_choice)
     assert isinstance(response, AIMessage)
     check_response_structure(response)
     tool_call = response.tool_calls[0]
@@ -479,21 +573,29 @@ def test_accuracy_tool_choice(
 
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
-def test_tool_choice_negative_unknown_tool(
+@pytest.mark.asyncio
+async def test_tool_choice_negative_unknown_tool(
     tool_model: str,
     mode: dict,
     func: Callable,
 ) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools(tools=[xxyyzz])
     with pytest.raises(Exception) as e:
-        func(
-            llm,
-            "What is 11 xxyyzz 3?",
-            tool_choice={"type": "function", "function": {"name": "zzyyxx"}},
-        )
+        if is_async_func(func):
+            await func(
+                llm,
+                "What is 11 xxyyzz 3?",
+                tool_choice={"type": "function", "function": {"name": "zzyyxx"}},
+            )
+        else:
+            func(
+                llm,
+                "What is 11 xxyyzz 3?",
+                tool_choice={"type": "function", "function": {"name": "zzyyxx"}},
+            )
     assert (
         "not found in the tools list" in str(e.value)
         or "no function named" in str(e.value)
@@ -535,12 +637,21 @@ def test_bind_tool_tool_choice_with_no_tool_client(
     ],
     ids=["none", "required", "any", "True", "False"],
 )
-def test_bind_tool_tool_choice_with_no_tool_server(
-    tool_model: str, mode: dict, tool_choice: Any
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_ainvoke],
+    ids=["invoke", "ainvoke"],
+)
+@pytest.mark.asyncio
+async def test_bind_tool_tool_choice_with_no_tool_server(
+    tool_model: str, mode: dict, tool_choice: Any, func: Callable
 ) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools([], tool_choice=tool_choice)
     with pytest.raises(Exception) as e:
-        llm.invoke("What is 11 xxyyzz 3?")
+        if is_async_func(func):
+            await func(llm, "What is 11 xxyyzz 3?")
+        else:
+            func(llm, "What is 11 xxyyzz 3?")
     assert "400" in str(e.value) or "###" in str(
         e.value
     )  # todo: stop transforming 400 -> ###
@@ -560,13 +671,22 @@ def test_bind_tool_tool_choice_with_no_tool_server(
     "tool_choice",
     ["none", False],
 )
-def test_bind_tool_tool_choice_none(
-    tool_model: str, mode: dict, tool_choice: Any
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_ainvoke],
+    ids=["invoke", "ainvoke"],
+)
+@pytest.mark.asyncio
+async def test_bind_tool_tool_choice_none(
+    tool_model: str, mode: dict, tool_choice: Any, func: Callable
 ) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools(
         tools=[xxyyzz], tool_choice=tool_choice
     )
-    response = llm.invoke("What is 11 xxyyzz 3?")
+    if is_async_func(func):
+        response = await func(llm, "What is 11 xxyyzz 3?")
+    else:
+        response = func(llm, "What is 11 xxyyzz 3?")
     assert isinstance(response, AIMessage)
     assert "tool_calls" not in response.additional_kwargs
 
@@ -583,17 +703,27 @@ def test_bind_tool_tool_choice_none(
     ],
     ids=["required", "partial", "function", "any", "name", "True"],
 )
-def test_bind_tool_tool_choice(
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_ainvoke],
+    ids=["invoke", "ainvoke"],
+)
+@pytest.mark.asyncio
+async def test_bind_tool_tool_choice(
     tool_model: str,
     mode: dict,
     tool_choice: Optional[
         Union[dict, str, Literal["auto", "none", "any", "required"], bool]
     ],
+    func: Callable,
 ) -> None:
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools(
         [xxyyzz], tool_choice=tool_choice
     )
-    response = llm.invoke("What is 11 xxyyzz 3?")
+    if is_async_func(func):
+        response = await func(llm, "What is 11 xxyyzz 3?")
+    else:
+        response = func(llm, "What is 11 xxyyzz 3?")
     assert isinstance(response, AIMessage)
     check_response_structure(response)
 
@@ -617,17 +747,27 @@ def test_bind_tool_tool_choice(
     [[xxyyzz], [xxyyzz, zzyyxx], [zzyyxx, xxyyzz]],
     ids=["xxyyzz", "xxyyzz_and_zzyyxx", "zzyyxx_and_xxyyzz"],
 )
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_ainvoke],
+    ids=["invoke", "ainvoke"],
+)
 @pytest.mark.xfail(reason="Accuracy test")
-def test_accuracy_bind_tool_tool_choice(
+@pytest.mark.asyncio
+async def test_accuracy_bind_tool_tool_choice(
     tool_model: str,
     mode: dict,
     tools: List,
     tool_choice: Any,
+    func: Callable,
 ) -> None:
     llm = ChatNVIDIA(temperature=0, model=tool_model, **mode).bind_tools(
         tools=tools, tool_choice=tool_choice
     )
-    response = llm.invoke("What is 11 xxyyzz 3?")
+    if is_async_func(func):
+        response = await func(llm, "What is 11 xxyyzz 3?")
+    else:
+        response = func(llm, "What is 11 xxyyzz 3?")
     assert isinstance(response, AIMessage)
     check_response_structure(response)
     tool_call = response.tool_calls[0]
@@ -668,11 +808,12 @@ def test_unknown_warns(mode: dict) -> None:
 )
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
 @pytest.mark.xfail(reason="Accuracy test")
-def test_accuracy_parallel_tool_calls_hard(
+@pytest.mark.asyncio
+async def test_accuracy_parallel_tool_calls_hard(
     tool_model: str,
     mode: dict,
     tools: List,
@@ -680,12 +821,20 @@ def test_accuracy_parallel_tool_calls_hard(
     func: Callable,
 ) -> None:
     llm = ChatNVIDIA(seed=42, temperature=1, model=tool_model, **mode).bind_tools(tools)
-    response = func(
-        llm,
-        "What is 11 xxyyzz 3 zzyyxx 5?",
-        tool_choice=tool_choice,
-        parallel_tool_calls=True,
-    )
+    if is_async_func(func):
+        response = await func(
+            llm,
+            "What is 11 xxyyzz 3 zzyyxx 5?",
+            tool_choice=tool_choice,
+            parallel_tool_calls=True,
+        )
+    else:
+        response = func(
+            llm,
+            "What is 11 xxyyzz 3 zzyyxx 5?",
+            tool_choice=tool_choice,
+            parallel_tool_calls=True,
+        )
     assert isinstance(response, AIMessage)
     check_response_structure(response)
     assert len(response.tool_calls) == 2
@@ -708,11 +857,12 @@ def test_accuracy_parallel_tool_calls_hard(
 )
 @pytest.mark.parametrize(
     "func",
-    [eval_invoke, eval_stream],
-    ids=["invoke", "stream"],
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
 @pytest.mark.xfail(reason="Accuracy test")
-def test_accuracy_parallel_tool_calls_easy(
+@pytest.mark.asyncio
+async def test_accuracy_parallel_tool_calls_easy(
     tool_model: str,
     mode: dict,
     tool_choice: Any,
@@ -721,12 +871,20 @@ def test_accuracy_parallel_tool_calls_easy(
     llm = ChatNVIDIA(seed=42, temperature=1, model=tool_model, **mode).bind_tools(
         tools=[get_current_weather],
     )
-    response = func(
-        llm,
-        "What is the weather in Boston, and what is the weather in Dublin?",
-        tool_choice=tool_choice,
-        parallel_tool_calls=True,
-    )
+    if is_async_func(func):
+        response = await func(
+            llm,
+            "What is the weather in Boston, and what is the weather in Dublin?",
+            tool_choice=tool_choice,
+            parallel_tool_calls=True,
+        )
+    else:
+        response = func(
+            llm,
+            "What is the weather in Boston, and what is the weather in Dublin?",
+            tool_choice=tool_choice,
+            parallel_tool_calls=True,
+        )
     assert isinstance(response, AIMessage)
     check_response_structure(response)
     assert len(response.tool_calls) == 2
@@ -740,10 +898,17 @@ def test_accuracy_parallel_tool_calls_easy(
     assert tool_call1["args"]["location"] in valid_args
 
 
+@pytest.mark.parametrize(
+    "func",
+    [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
+)
 @pytest.mark.xfail(reason="Server producing invalid response")
-def test_stream_usage_metadata(
+@pytest.mark.asyncio
+async def test_stream_usage_metadata(
     tool_model: str,
     mode: dict,
+    func: Callable,
 ) -> None:
     """
     This is a regression test for the server. The server was returning
@@ -765,7 +930,12 @@ def test_stream_usage_metadata(
     llm = ChatNVIDIA(model=tool_model, **mode).bind_tools(
         [magic], tool_choice="required"
     )
-    baseline = llm.invoke(prompt)
+
+    if is_async_func(func):
+        baseline = await llm.ainvoke(prompt)
+    else:
+        baseline = llm.invoke(prompt)
+
     assert isinstance(baseline, AIMessage)
     assert baseline.usage_metadata is not None
     baseline_in, baseline_out, baseline_total = (
@@ -774,7 +944,15 @@ def test_stream_usage_metadata(
         baseline.usage_metadata["total_tokens"],
     )
     assert baseline_in + baseline_out == baseline_total
-    response = reduce(add, llm.stream(prompt))
+
+    if is_async_func(func):
+        chunks = []
+        async for chunk in llm.astream(prompt):
+            chunks.append(chunk)
+        response = reduce(add, chunks)
+    else:
+        response = reduce(add, llm.stream(prompt))
+
     assert isinstance(response, AIMessage)
     assert response.usage_metadata is not None
     tolerance = 1.25  # allow for streaming to be 25% higher than invoke

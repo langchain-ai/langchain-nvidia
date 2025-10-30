@@ -11,6 +11,7 @@ import urllib.parse
 import warnings
 from typing import (
     Any,
+    AsyncIterator,
     Callable,
     Dict,
     Iterator,
@@ -487,13 +488,24 @@ class ChatNVIDIA(BaseChatModel):
             ls_stop=params.get("stop", self.stop),
         )
 
-    def _generate(
+    def _prepare_inputs_and_payload(
         self,
         messages: List[BaseMessage],
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        stop: Optional[Union[List[str], Sequence[str]]] = None,
+        stream: bool = False,
         **kwargs: Any,
-    ) -> ChatResult:
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, Any], Dict[str, str]]:
+        """Prepare inputs and payload for both sync and async methods.
+
+        Args:
+            messages: List of messages
+            stop: Stop words
+            stream: Whether to stream the response
+            kwargs: Additional keyword arguments
+
+        Returns:
+            Tuple of (inputs, payload, extra_headers)
+        """
         inputs = [
             message
             for message in [convert_message_to_dict(message) for message in messages]
@@ -512,8 +524,48 @@ class ChatNVIDIA(BaseChatModel):
                     stacklevel=2,
                 )
             extra_headers = {**self.default_headers, **extra_headers}
-        payload = self._get_payload(inputs=inputs, stop=stop, stream=False, **kwargs)
-        response = self._client.get_req(payload=payload, extra_headers=extra_headers)
+
+        if stream:
+            payload = self._get_payload(
+                inputs=inputs,
+                stop=stop,
+                stream=True,
+                stream_options=self.stream_options,
+                **kwargs,
+            )
+            # remove stream_options if user set it to None or if model
+            # doesn't support it
+            # todo: get vlm endpoints fixed and remove this
+            #       vlm endpoints do not accept standard stream_options parameter
+            if self.stream_options is None or (
+                self._client.model
+                and self._client.model.model_type
+                and self._client.model.model_type in ["nv-vlm", "qa"]
+            ):
+                payload.pop("stream_options", None)
+        else:
+            payload = self._get_payload(
+                inputs=inputs, stop=stop, stream=False, **kwargs
+            )
+
+        return inputs, payload, extra_headers
+
+    def _process_generate_response(
+        self,
+        response: Any,
+        run_manager: Optional[
+            Union[CallbackManagerForLLMRun, AsyncCallbackManagerForLLMRun]
+        ] = None,
+    ) -> ChatResult:
+        """Process response for both sync and async generate methods.
+
+        Args:
+            response: Raw response from the API
+            run_manager: Callback manager
+
+        Returns:
+            ChatResult with generated message
+        """
         responses, _ = self._client.postprocess(response)
         self._set_callback_out(responses, run_manager)
         parsed_response = self._custom_postprocess(responses, streaming=False)
@@ -523,6 +575,46 @@ class ChatNVIDIA(BaseChatModel):
         generation = ChatGeneration(message=AIMessage(**parsed_response))
         return ChatResult(generations=[generation], llm_output=responses)
 
+    def _process_stream_chunk(
+        self,
+        response: Any,
+        run_manager: Optional[
+            Union[CallbackManagerForLLMRun, AsyncCallbackManagerForLLMRun]
+        ] = None,
+    ) -> ChatGenerationChunk:
+        """Process a single stream chunk for both sync and async stream methods.
+
+        Args:
+            response: Raw response chunk from the API
+            run_manager: Callback manager
+
+        Returns:
+            ChatGenerationChunk with the parsed message
+        """
+        self._set_callback_out(response, run_manager)
+        parsed_response = self._custom_postprocess(response, streaming=True)
+        # for pre 0.2 compatibility w/ ChatMessageChunk
+        # ChatMessageChunk had a role property that was not
+        # present in AIMessageChunk
+        # unfortunately, AIMessageChunk does not have extensible propery
+        # parsed_response.update({"role": "assistant"})
+        message = AIMessageChunk(**parsed_response)
+        chunk = ChatGenerationChunk(message=message)
+        return chunk
+
+    def _generate(
+        self,
+        messages: List[BaseMessage],
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> ChatResult:
+        _, payload, extra_headers = self._prepare_inputs_and_payload(
+            messages, stop, stream=False, **kwargs
+        )
+        response = self._client.get_req(payload=payload, extra_headers=extra_headers)
+        return self._process_generate_response(response, run_manager)
+
     def _stream(
         self,
         messages: List[BaseMessage],
@@ -531,54 +623,50 @@ class ChatNVIDIA(BaseChatModel):
         **kwargs: Any,
     ) -> Iterator[ChatGenerationChunk]:
         """Allows streaming to model!"""
-        inputs = [
-            message
-            for message in [convert_message_to_dict(message) for message in messages]
-        ]
-        inputs, extra_headers = _process_for_vlm(inputs, self._client.model)
-        # Merge default_headers with extra_headers from VLM processing.
-        # VLM headers (auto-generated) take precedence in case of conflicts.
-        if self.default_headers:
-            conflicts = set(self.default_headers.keys()) & set(extra_headers.keys())
-            if conflicts:
-                warnings.warn(
-                    f"default_headers keys {conflicts} conflict with "
-                    f"auto-generated VLM headers and will be overridden. "
-                    f"Remove them from default_headers.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-            extra_headers = {**self.default_headers, **extra_headers}
-        payload = self._get_payload(
-            inputs=inputs,
-            stop=stop,
-            stream=True,
-            stream_options=self.stream_options,
-            **kwargs,
+        _, payload, extra_headers = self._prepare_inputs_and_payload(
+            messages, stop, stream=True, **kwargs
         )
-        # remove stream_options if user set it to None or if model doesn't support it
-        # todo: get vlm endpoints fixed and remove this
-        #       vlm endpoints do not accept standard stream_options parameter
-        if self.stream_options is None or (
-            self._client.model
-            and self._client.model.model_type
-            and self._client.model.model_type in ["nv-vlm", "qa"]
-        ):
-            payload.pop("stream_options", None)
         for response in self._client.get_req_stream(
             payload=payload, extra_headers=extra_headers
         ):
-            self._set_callback_out(response, run_manager)
-            parsed_response = self._custom_postprocess(response, streaming=True)
-            # for pre 0.2 compatibility w/ ChatMessageChunk
-            # ChatMessageChunk had a role property that was not
-            # present in AIMessageChunk
-            # unfortunately, AIMessageChunk does not have extensible propery
-            # parsed_response.update({"role": "assistant"})
-            message = AIMessageChunk(**parsed_response)
-            chunk = ChatGenerationChunk(message=message)
+            chunk = self._process_stream_chunk(response, run_manager)
             if run_manager:
                 run_manager.on_llm_new_token(chunk.text, chunk=chunk)
+            yield chunk
+
+    async def _agenerate(
+        self,
+        messages: List[BaseMessage],
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> ChatResult:
+        """Async version of _generate."""
+        _, payload, extra_headers = self._prepare_inputs_and_payload(
+            messages, stop, stream=False, **kwargs
+        )
+        response = await self._client.aget_req(
+            payload=payload, extra_headers=extra_headers
+        )
+        return self._process_generate_response(response, run_manager)
+
+    async def _astream(
+        self,
+        messages: List[BaseMessage],
+        stop: Optional[Sequence[str]] = None,
+        run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[ChatGenerationChunk]:
+        """Async version of _stream."""
+        _, payload, extra_headers = self._prepare_inputs_and_payload(
+            messages, stop, stream=True, **kwargs
+        )
+        async for response in self._client.aget_req_stream(
+            payload=payload, extra_headers=extra_headers
+        ):
+            chunk = self._process_stream_chunk(response, run_manager)
+            if run_manager:
+                await run_manager.on_llm_new_token(chunk.text, chunk=chunk)
             yield chunk
 
     def _set_callback_out(
