@@ -80,7 +80,7 @@ class _NVIDIAClient(BaseModel):
         description="Path for polling after HTTP 202 responses",
     )
     get_session_fn: Callable = Field(requests.Session)
-    get_async_session_fn: Callable = Field(lambda: aiohttp.ClientSession())
+    get_async_session_fn: Callable = Field(aiohttp.ClientSession)
     verify_ssl: Union[bool, str] = Field(
         True,
         description="SSL verification setting. Can be: "
