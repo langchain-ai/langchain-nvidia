@@ -798,7 +798,8 @@ class _NVIDIAClient(BaseModel):
                 line = await reader.readline()
                 if not line:  # EOF
                     break
-                if line and line.strip() != b"data: [DONE]":
+                line = line.strip()
+                if line and line != b"data: [DONE]":
                     line_str = line.decode("utf-8")
                     msg, final_line = call.postprocess(line_str)
                     yield msg

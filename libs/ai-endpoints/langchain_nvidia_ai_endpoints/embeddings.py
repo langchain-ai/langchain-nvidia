@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict, List, Literal, Optional
 
 from langchain_core.embeddings import Embeddings
@@ -132,6 +133,46 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         """
         return cls(**kwargs).available_models
 
+    def _prepare_payload(
+        self, texts: List[str], model_type: Literal["passage", "query"]
+    ) -> Dict[str, Any]:
+        """Prepare payload for both sync and async methods.
+
+        Args:
+            texts: List of texts to embed
+            model_type: Type of embedding ("passage" or "query")
+
+        Returns:
+            Payload dictionary
+        """
+        payload: Dict[str, Any] = {
+            "input": texts,
+            "model": self.model,
+            "encoding_format": "float",
+            "input_type": model_type,
+        }
+        if self.truncate:
+            payload["truncate"] = self.truncate
+        if self.dimensions:
+            payload["dimensions"] = self.dimensions
+        return payload
+
+    def _process_response(self, result: Dict[str, Any]) -> List[List[float]]:
+        """Process response for both sync and async methods.
+
+        Args:
+            result: Parsed JSON response from the API
+
+        Returns:
+            List of embeddings sorted by index
+        """
+        data = result.get("data", result)
+        if not isinstance(data, list):
+            raise ValueError(f"Expected data with a list of embeddings. Got: {data}")
+        embedding_list = [(res["embedding"], res["index"]) for res in data]
+        self._invoke_callback_vars(result)
+        return [x[0] for x in sorted(embedding_list, key=lambda x: x[1])]
+
     def _embed(
         self, texts: List[str], model_type: Literal["passage", "query"]
     ) -> List[List[float]]:
@@ -145,29 +186,28 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         #  truncate: "NONE" | "START" | "END"  -- default "NONE", error raised if
         #                                         an input is too long
         #  dimensions: int                     -- not supported by all models
-        payload: Dict[str, Any] = {
-            "input": texts,
-            "model": self.model,
-            "encoding_format": "float",
-            "input_type": model_type,
-        }
-        if self.truncate:
-            payload["truncate"] = self.truncate
-        if self.dimensions:
-            payload["dimensions"] = self.dimensions
-
+        payload = self._prepare_payload(texts, model_type)
         response = self._client.get_req(
             payload=payload,
             extra_headers=self.default_headers,
         )
         response.raise_for_status()
         result = response.json()
-        data = result.get("data", result)
-        if not isinstance(data, list):
-            raise ValueError(f"Expected data with a list of embeddings. Got: {data}")
-        embedding_list = [(res["embedding"], res["index"]) for res in data]
-        self._invoke_callback_vars(result)
-        return [x[0] for x in sorted(embedding_list, key=lambda x: x[1])]
+        return self._process_response(result)
+
+    def _validate_texts(self, texts: List[str]) -> None:
+        """Validate that texts is a list of strings.
+
+        Args:
+            texts: List to validate
+
+        Raises:
+            ValueError: If texts is not a list of strings
+        """
+        if not isinstance(texts, list) or not all(
+            isinstance(text, str) for text in texts
+        ):
+            raise ValueError(f"`texts` must be a list of strings, given: {repr(texts)}")
 
     def embed_query(self, text: str) -> List[float]:
         """Input pathway for query embeddings."""
@@ -175,15 +215,38 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Input pathway for document embeddings."""
-        if not isinstance(texts, list) or not all(
-            isinstance(text, str) for text in texts
-        ):
-            raise ValueError(f"`texts` must be a list of strings, given: {repr(texts)}")
+        self._validate_texts(texts)
 
         all_embeddings = []
         for i in range(0, len(texts), self.max_batch_size):
             batch = texts[i : i + self.max_batch_size]
             all_embeddings.extend(self._embed(batch, model_type="passage"))
+        return all_embeddings
+
+    async def _aembed(
+        self, texts: List[str], model_type: Literal["passage", "query"]
+    ) -> List[List[float]]:
+        """Async version of _embed."""
+        payload = self._prepare_payload(texts, model_type)
+        response_text = await self._client.aget_req(
+            payload=payload,
+            extra_headers=self.default_headers,
+        )
+        result = json.loads(response_text)
+        return self._process_response(result)
+
+    async def aembed_query(self, text: str) -> List[float]:
+        """Async input pathway for query embeddings."""
+        return (await self._aembed([text], model_type="query"))[0]
+
+    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Async input pathway for document embeddings."""
+        self._validate_texts(texts)
+
+        all_embeddings: List[List[float]] = []
+        for i in range(0, len(texts), self.max_batch_size):
+            batch = texts[i : i + self.max_batch_size]
+            all_embeddings.extend(await self._aembed(batch, model_type="passage"))
         return all_embeddings
 
     def _invoke_callback_vars(self, response: dict) -> None:

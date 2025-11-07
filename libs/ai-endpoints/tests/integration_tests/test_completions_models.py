@@ -54,11 +54,17 @@
 #                             the completion.
 
 
+import inspect
 from typing import Any, Callable, Tuple
 
 import pytest
 
 from langchain_nvidia_ai_endpoints import NVIDIA
+
+
+def is_async_func(func: Callable) -> bool:
+    """Check if function is async"""
+    return inspect.iscoroutinefunction(func)
 
 
 def invoke(llm: NVIDIA, prompt: str, **kwargs: Any) -> Tuple[str, int]:
@@ -88,23 +94,19 @@ async def astream(llm: NVIDIA, prompt: str, **kwargs: Any) -> Tuple[str, int]:
 
 
 @pytest.mark.parametrize(
-    "func, count", [(invoke, 0), (stream, 1)], ids=["invoke", "stream"]
+    "func, count",
+    [(invoke, 0), (stream, 1), (ainvoke, 0), (astream, 1)],
+    ids=["invoke", "stream", "ainvoke", "astream"],
 )
-def test_basic(completions_model: str, mode: dict, func: Callable, count: int) -> None:
-    llm = NVIDIA(model=completions_model, **mode)
-    response, cnt = func(llm, "Hello, my name is")
-    assert isinstance(response, str)
-    assert cnt > count, "Should have received more chunks"
-
-
-@pytest.mark.parametrize(
-    "func, count", [(ainvoke, 0), (astream, 1)], ids=["ainvoke", "astream"]
-)
-async def test_abasic(
+@pytest.mark.asyncio
+async def test_basic(
     completions_model: str, mode: dict, func: Callable, count: int
 ) -> None:
     llm = NVIDIA(model=completions_model, **mode)
-    response, cnt = await func(llm, "Hello, my name is")
+    if is_async_func(func):
+        response, cnt = await func(llm, "Hello, my name is")
+    else:
+        response, cnt = func(llm, "Hello, my name is")
     assert isinstance(response, str)
     assert cnt > count, "Should have received more chunks"
 
@@ -121,12 +123,20 @@ async def test_abasic(
         ("top_p", 0.5),
     ],
 )
-@pytest.mark.parametrize("func", [invoke, stream], ids=["invoke", "stream"])
-def test_params(
+@pytest.mark.parametrize(
+    "func",
+    [invoke, stream, ainvoke, astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
+)
+@pytest.mark.asyncio
+async def test_params(
     completions_model: str, mode: dict, param: str, value: Any, func: Callable
 ) -> None:
     llm = NVIDIA(model=completions_model, **mode)
-    response, _ = func(llm, "Hello, my name is", **{param: value})
+    if is_async_func(func):
+        response, _ = await func(llm, "Hello, my name is", **{param: value})
+    else:
+        response, _ = func(llm, "Hello, my name is", **{param: value})
     assert isinstance(response, str)
 
 
@@ -142,30 +152,54 @@ def test_params(
         ("user", "1234"),
     ],
 )
-@pytest.mark.parametrize("func", [invoke, stream], ids=["invoke", "stream"])
+@pytest.mark.parametrize(
+    "func",
+    [invoke, stream, ainvoke, astream],
+    ids=["invoke", "stream", "ainvoke", "astream"],
+)
 @pytest.mark.xfail(reason="Not consistently implemented")
-def test_params_incomplete(
+@pytest.mark.asyncio
+async def test_params_incomplete(
     completions_model: str, mode: dict, param: str, value: Any, func: Callable
 ) -> None:
     llm = NVIDIA(model=completions_model, **mode)
-    response, _ = func(llm, "Hello, my name is", **{param: value})
+    if is_async_func(func):
+        response, _ = await func(llm, "Hello, my name is", **{param: value})
+    else:
+        response, _ = func(llm, "Hello, my name is", **{param: value})
     assert isinstance(response, str)
 
 
-def test_invoke_with_stream_true(completions_model: str, mode: dict) -> None:
+@pytest.mark.parametrize("func", ["invoke", "ainvoke"], ids=["invoke", "ainvoke"])
+@pytest.mark.asyncio
+async def test_invoke_with_stream_true(
+    completions_model: str, mode: dict, func: str
+) -> None:
     llm = NVIDIA(model=completions_model, **mode)
     with pytest.warns(UserWarning) as record:
-        response = llm.invoke("Hello, my name is", stream=True)
+        if func == "invoke":
+            response = llm.invoke("Hello, my name is", stream=True)
+        else:  # ainvoke
+            response = await llm.ainvoke("Hello, my name is", stream=True)
     assert isinstance(response, str)
     assert len(record) == 1
     assert "stream set to true" in str(record[0].message)
     assert "ignoring" in str(record[0].message)
 
 
-def test_stream_with_stream_false(completions_model: str, mode: dict) -> None:
+@pytest.mark.parametrize("func", ["stream", "astream"], ids=["stream", "astream"])
+@pytest.mark.asyncio
+async def test_stream_with_stream_false(
+    completions_model: str, mode: dict, func: str
+) -> None:
     llm = NVIDIA(model=completions_model, **mode)
     with pytest.warns(UserWarning) as record:
-        response = next(llm.stream("Hello, my name is", stream=False))
+        if func == "stream":
+            response = next(llm.stream("Hello, my name is", stream=False))
+        else:  # astream
+            async for chunk in llm.astream("Hello, my name is", stream=False):
+                response = chunk
+                break
     assert isinstance(response, str)
     assert len(record) == 1
     assert "stream set to false" in str(record[0].message)
