@@ -7,6 +7,8 @@ from requests_mock import Mocker
 
 from langchain_nvidia_ai_endpoints import NVIDIARerank
 
+from .conftest import MockHTTP
+
 
 @pytest.fixture(autouse=True)
 def mock_v1_models(requests_mock: Mocker) -> None:
@@ -37,6 +39,17 @@ def mock_v1_ranking(requests_mock: Mocker) -> None:
     )
 
 
+@pytest.fixture(autouse=True)
+def mock_v1_aranking(mock_http: MockHTTP) -> None:
+    mock_http.set_post(
+        json_body={
+            "rankings": [
+                {"index": 0, "logit": 4.2},
+            ]
+        }
+    )
+
+
 @pytest.mark.parametrize(
     "truncate",
     [
@@ -45,9 +58,16 @@ def mock_v1_ranking(requests_mock: Mocker) -> None:
         "NONE",
     ],
 )
-def test_truncate(
+@pytest.mark.parametrize(
+    "func",
+    ["compress_documents", "acompress_documents"],
+)
+@pytest.mark.asyncio
+async def test_truncate(
     requests_mock: Mocker,
+    mock_http: MockHTTP,
     truncate: Optional[Literal["END", "NONE"]],
+    func: str,
 ) -> None:
     truncate_param = {}
     if truncate:
@@ -56,14 +76,26 @@ def test_truncate(
         "ignore", ".*Found mock-model in available_models.*"
     )  # expect to see this warning
     client = NVIDIARerank(api_key="BOGUS", model="mock-model", **truncate_param)
-    response = client.compress_documents(
-        documents=[Document(page_content="Nothing really.")], query="What is it?"
-    )
+    if func == "acompress_documents":
+        response = await client.acompress_documents(
+            documents=[Document(page_content="Nothing really.")], query="What is it?"
+        )
+    else:
+        response = client.compress_documents(
+            documents=[Document(page_content="Nothing really.")], query="What is it?"
+        )
 
     assert len(response) == 1
 
-    assert requests_mock.last_request is not None
-    request_payload = requests_mock.last_request.json()
+    if func == "acompress_documents":
+        assert len(mock_http.history) > 0
+        last_request = mock_http.history[-1]
+        assert last_request is not None
+        request_payload = last_request.kwargs.get("json", {})
+    else:
+        assert requests_mock.last_request is not None
+        request_payload = requests_mock.last_request.json()
+
     if truncate is None:
         assert "truncate" not in request_payload
     else:
@@ -77,7 +109,16 @@ def test_truncate_invalid(truncate: Any) -> None:
         NVIDIARerank(truncate=truncate)
 
 
-def test_default_headers(requests_mock: Mocker) -> None:
+@pytest.mark.parametrize(
+    "func",
+    ["compress_documents", "acompress_documents"],
+)
+@pytest.mark.asyncio
+async def test_default_headers(
+    requests_mock: Mocker,
+    mock_http: MockHTTP,
+    func: str,
+) -> None:
     """Test that default_headers are passed to requests."""
     warnings.filterwarnings("ignore", ".*Found mock-model in available_models.*")
     client = NVIDIARerank(
@@ -85,14 +126,32 @@ def test_default_headers(requests_mock: Mocker) -> None:
     )
     assert client.default_headers == {"X-Test": "test"}
 
-    _ = client.compress_documents(
-        documents=[Document(page_content="Nothing really.")], query="What is it?"
-    )
-    assert requests_mock.last_request is not None
-    assert requests_mock.last_request.headers["X-Test"] == "test"
+    if func == "acompress_documents":
+        _ = await client.acompress_documents(
+            documents=[Document(page_content="Nothing really.")], query="What is it?"
+        )
+        assert len(mock_http.history) > 0
+        last_request = mock_http.history[-1]
+        assert last_request is not None
+        assert last_request.kwargs.get("headers", {})["X-Test"] == "test"
+    else:
+        _ = client.compress_documents(
+            documents=[Document(page_content="Nothing really.")], query="What is it?"
+        )
+        assert requests_mock.last_request is not None
+        assert requests_mock.last_request.headers["X-Test"] == "test"
 
 
-def test_extra_headers(requests_mock: Mocker) -> None:
+@pytest.mark.parametrize(
+    "func",
+    ["compress_documents", "acompress_documents"],
+)
+@pytest.mark.asyncio
+async def test_extra_headers(
+    requests_mock: Mocker,
+    mock_http: MockHTTP,
+    func: str,
+) -> None:
     """Test backward compatibility: extra_headers deprecated, issues warning."""
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
@@ -112,8 +171,17 @@ def test_extra_headers(requests_mock: Mocker) -> None:
     # Verify it still works (copied to default_headers)
     assert client.default_headers == {"X-Test": "test"}
 
-    _ = client.compress_documents(
-        documents=[Document(page_content="Nothing really.")], query="What is it?"
-    )
-    assert requests_mock.last_request is not None
-    assert requests_mock.last_request.headers["X-Test"] == "test"
+    if func == "acompress_documents":
+        _ = await client.acompress_documents(
+            documents=[Document(page_content="Nothing really.")], query="What is it?"
+        )
+        assert len(mock_http.history) > 0
+        last_request = mock_http.history[-1]
+        assert last_request is not None
+        assert last_request.kwargs.get("headers", {})["X-Test"] == "test"
+    else:
+        _ = client.compress_documents(
+            documents=[Document(page_content="Nothing really.")], query="What is it?"
+        )
+        assert requests_mock.last_request is not None
+        assert requests_mock.last_request.headers["X-Test"] == "test"
