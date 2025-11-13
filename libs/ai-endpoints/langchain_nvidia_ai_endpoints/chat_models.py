@@ -812,7 +812,7 @@ class ChatNVIDIA(BaseChatModel):
             Union[dict, str, Literal["auto", "none", "any", "required"], bool]
         ] = None,
         **kwargs: Any,
-    ) -> Runnable[LanguageModelInput, BaseMessage]:
+    ) -> Runnable[LanguageModelInput, AIMessage]:
         """
         Bind tools to the model.
 
