@@ -1,0 +1,107 @@
+# NVIDIA
+
+The `langchain-nvidia-ai-endpoints` package contains LangChain integrations for chat models and embeddings powered by [NVIDIA AI Foundation Models](https://www.nvidia.com/en-us/ai-data-science/foundation-models/), and hosted on the [NVIDIA API Catalog](https://build.nvidia.com/).
+
+NVIDIA AI Foundation models are community- and NVIDIA-built models that are optimized to deliver the best performance on NVIDIA-accelerated infrastructure. 
+You can use the API to query live endpoints that are available on the NVIDIA API Catalog to get quick results from a DGX-hosted cloud compute environment, 
+or you can download models from NVIDIA's API catalog with NVIDIA NIM, which is included with the NVIDIA AI Enterprise license. 
+The ability to run models on-premises gives your enterprise ownership of your customizations and full control of your IP and AI application. 
+
+NIM microservices are packaged as container images on a per model/model family basis 
+and are distributed as NGC container images through the [NVIDIA NGC Catalog](https://catalog.ngc.nvidia.com/). 
+At their core, NIM microservices are containers that provide interactive APIs for running inference on an AI Model. 
+
+Use this documentation to learn how to install the `langchain-nvidia-ai-endpoints` package 
+and use it for some common functionality for text-generative and embedding models.
+
+
+
+## Install the Package
+
+```python
+pip install -U --quiet langchain-nvidia-ai-endpoints
+```
+
+
+
+## Access the NVIDIA API Catalog
+
+To get access to the NVIDIA API Catalog, do the following:
+
+1. Create a free account on the [NVIDIA API Catalog](https://build.nvidia.com/) and log in.
+2. Click your profile icon, and then click **API Keys**. The **API Keys** page appears.
+3. Click **Generate API Key**. The **Generate API Key** window appears.
+4. Click **Generate Key**. You should see **API Key Granted**, and your key appears.
+5. Copy and save the key as `NVIDIA_API_KEY`.
+6. To verify your key, use the following code.
+
+   ```python
+   import getpass
+   import os
+
+   if os.environ.get("NVIDIA_API_KEY", "").startswith("nvapi-"):
+       print("Valid NVIDIA_API_KEY already in environment. Delete to reset")
+   else:
+       nvapi_key = getpass.getpass("NVAPI Key (starts with nvapi-): ")
+       assert nvapi_key.startswith(
+           "nvapi-"
+       ), f"{nvapi_key[:5]}... is not a valid key"
+       os.environ["NVIDIA_API_KEY"] = nvapi_key
+   ```
+
+You can now use your key to access endpoints on the NVIDIA API Catalog.
+
+
+
+## Work with the API Catalog
+
+The following example chats with MistralAI's model [Mixtral 8x22B](https://build.nvidia.com/mistralai/mixtral-8x22b-instruct/modelcard) 
+hosted on the NVIDIA API Catalog.
+
+```python
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
+
+llm = ChatNVIDIA(model="mistralai/mixtral-8x22b-instruct-v0.1")
+result = llm.invoke("Write a ballad about LangChain.")
+print(result.content)
+```
+
+
+
+## Self-host with NVIDIA NIM Microservices
+
+When you are ready to deploy your AI application, you can self-host models with NVIDIA NIM. 
+For more information, refer to [NVIDIA NIM Microservices](https://www.nvidia.com/en-us/ai-data-science/products/nim-microservices/).
+
+The following code connects to locally hosted NIM Microservices.
+
+```python
+from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
+
+# connect to an chat NIM running at localhost:8000, specifyig a specific model
+llm = ChatNVIDIA(base_url="http://localhost:8000/v1", model="meta/llama3-8b-instruct")
+
+# connect to an embedding NIM running at localhost:8080
+embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")
+
+# connect to a reranking NIM running at localhost:2016
+ranker = NVIDIARerank(base_url="http://localhost:2016/v1")
+```
+
+
+
+## Use NVIDIA AI Foundation Endpoints
+
+A selection of [NVIDIA AI Foundation Models](https://www.nvidia.com/en-us/ai-data-science/foundation-models/) are supported directly in LangChain with familiar APIs. 
+The following notebooks can help you get started:
+
+- [chat/nvidia_ai_endpoints.ipynb](https://github.com/langchain-ai/langchain-nvidia/blob/main/libs/ai-endpoints/docs/chat/nvidia_ai_endpoints.ipynb)
+- [text_embedding/nvidia_ai_endpoints.ipynb](https://github.com/langchain-ai/langchain-nvidia/blob/main/libs/ai-endpoints/docs/text_embedding/nvidia_ai_endpoints.ipynb)
+
+
+
+## Related Topics
+
+- [Overview of NVIDIA NIM for Large Language Models (LLMs)](https://docs.nvidia.com/nim/large-language-models/latest/introduction.html)
+- [Overview of NeMo Retriever Embedding NIM](https://docs.nvidia.com/nim/nemo-retriever/text-embedding/latest/overview.html)
+- [Overview of NeMo Retriever Reranking NIM](https://docs.nvidia.com/nim/nemo-retriever/text-reranking/latest/overview.html)
