@@ -16,7 +16,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
-langchain-core = ">=0.3.51,<0.4"
+langchain-core = ">=0.3.51"
 aiohttp = "^3.9.1"
 filetype = "^1.2.0"
 
