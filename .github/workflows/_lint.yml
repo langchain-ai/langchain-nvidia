@@ -11,6 +11,11 @@ on:
         required: false
         type: string
         description: "Relative path to the langchain library folder"
+      python-versions:
+        required: false
+        type: string
+        default: '["3.8", "3.11"]'
+        description: "JSON array of Python versions to lint (should be min and max supported versions)"
 
 env:
   POETRY_VERSION: "1.7.1"
@@ -32,9 +37,7 @@ jobs:
         # GitHub rate-limits how many jobs can be running at any one time.
         # Starting new jobs is also relatively slow,
         # so linting on fewer versions makes CI faster.
-        python-version:
-          - "3.8"
-          - "3.11"
+        python-version: ${{ fromJson(inputs.python-versions) }}
     steps:
       - uses: actions/checkout@v4
 

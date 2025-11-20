@@ -8,6 +8,16 @@ NVIDIA_DIRS = [
     "libs/trt",
 ]
 
+PYTHON_VERSIONS = {
+    "libs/ai-endpoints": ["3.10", "3.11", "3.12", "3.13"],
+    "libs/trt": ["3.8", "3.9", "3.10", "3.11"],
+}
+
+LINT_PYTHON_VERSIONS = {
+    "libs/ai-endpoints": ["3.10", "3.13"],
+    "libs/trt": ["3.8", "3.11"],
+}
+
 if __name__ == "__main__":
     files = sys.argv[1:]
 
@@ -48,11 +58,29 @@ if __name__ == "__main__":
         # elif any(file.startswith(p) for p in ["docs/", "templates/", "cookbook/"]):
         #     dirs_to_run["lint"].add(".")
 
+    test_matrix = [
+        {
+            "working-directory": dir_,
+            "python-versions": json.dumps(PYTHON_VERSIONS.get(dir_, ["3.8", "3.9", "3.10", "3.11"]))
+        }
+        for dir_ in dirs_to_run["test"]
+    ]
+    
+    lint_matrix = [
+        {
+            "working-directory": dir_,
+            "python-versions": json.dumps(LINT_PYTHON_VERSIONS.get(dir_, ["3.8", "3.11"]))
+        }
+        for dir_ in (dirs_to_run["lint"] | dirs_to_run["test"])
+    ]
+    
     outputs = {
         "dirs-to-lint": list(
             dirs_to_run["lint"] | dirs_to_run["test"]
         ),
         "dirs-to-test": list(dirs_to_run["test"]),
+        "test-matrix": test_matrix,
+        "lint-matrix": lint_matrix,
     }
     for key, value in outputs.items():
         json_output = json.dumps(value)

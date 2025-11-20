@@ -35,40 +35,45 @@ jobs:
     outputs:
       dirs-to-lint: ${{ steps.set-matrix.outputs.dirs-to-lint }}
       dirs-to-test: ${{ steps.set-matrix.outputs.dirs-to-test }}
+      test-matrix: ${{ steps.set-matrix.outputs.test-matrix }}
+      lint-matrix: ${{ steps.set-matrix.outputs.lint-matrix }}
   lint:
-    name: cd ${{ matrix.working-directory }}
+    name: cd ${{ matrix.config.working-directory }}
     needs: [ build ]
-    if: ${{ needs.build.outputs.dirs-to-lint != '[]' }}
+    if: ${{ needs.build.outputs.lint-matrix != '[]' }}
     strategy:
       matrix:
-        working-directory: ${{ fromJson(needs.build.outputs.dirs-to-lint) }}
+        config: ${{ fromJson(needs.build.outputs.lint-matrix) }}
     uses: ./.github/workflows/_lint.yml
     with:
-      working-directory: ${{ matrix.working-directory }}
+      working-directory: ${{ matrix.config.working-directory }}
+      python-versions: ${{ matrix.config.python-versions }}
     secrets: inherit
 
   test:
-    name: cd ${{ matrix.working-directory }}
+    name: cd ${{ matrix.config.working-directory }}
     needs: [ build ]
-    if: ${{ needs.build.outputs.dirs-to-test != '[]' }}
+    if: ${{ needs.build.outputs.test-matrix != '[]' }}
     strategy:
       matrix:
-        working-directory: ${{ fromJson(needs.build.outputs.dirs-to-test) }}
+        config: ${{ fromJson(needs.build.outputs.test-matrix) }}
     uses: ./.github/workflows/_test.yml
     with:
-      working-directory: ${{ matrix.working-directory }}
+      working-directory: ${{ matrix.config.working-directory }}
+      python-versions: ${{ matrix.config.python-versions }}
     secrets: inherit
 
   compile-integration-tests:
-    name: cd ${{ matrix.working-directory }}
+    name: cd ${{ matrix.config.working-directory }}
     needs: [ build ]
-    if: ${{ needs.build.outputs.dirs-to-test != '[]' }}
+    if: ${{ needs.build.outputs.test-matrix != '[]' }}
     strategy:
       matrix:
-        working-directory: ${{ fromJson(needs.build.outputs.dirs-to-test) }}
+        config: ${{ fromJson(needs.build.outputs.test-matrix) }}
     uses: ./.github/workflows/_compile_integration_test.yml
     with:
-      working-directory: ${{ matrix.working-directory }}
+      working-directory: ${{ matrix.config.working-directory }}
+      python-versions: ${{ matrix.config.python-versions }}
     secrets: inherit
   ci_success:
     name: "CI Success"
