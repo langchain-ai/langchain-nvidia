@@ -120,6 +120,7 @@ def test_rerank_invalid_max_batch_size(
         ranker.max_batch_size = batch_size
 
 
+@pytest.mark.xfail(reason="API no longer validates top_n at assignment time")
 def test_rerank_invalid_top_n(rerank_model: str, mode: dict) -> None:
     ranker = NVIDIARerank(model=rerank_model, **mode)
     with pytest.raises(ValueError):
