@@ -7,6 +7,11 @@ on:
         required: true
         type: string
         description: "From which folder this pipeline executes"
+      python-versions:
+        required: false
+        type: string
+        default: '["3.8", "3.9", "3.10", "3.11"]'
+        description: "JSON array of Python versions to test"
 
 env:
   POETRY_VERSION: "1.7.1"
@@ -19,11 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version:
-          - "3.8"
-          - "3.9"
-          - "3.10"
-          - "3.11"
+        python-version: ${{ fromJson(inputs.python-versions) }}
     name: "poetry run pytest -m compile tests/integration_tests #${{ matrix.python-version }}"
     steps:
       - uses: actions/checkout@v4

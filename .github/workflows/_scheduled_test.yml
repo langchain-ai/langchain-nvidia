@@ -16,12 +16,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version:
-          - "3.8"
-          - "3.11"
-        working-directory:
-          - "libs/ai-endpoints"
-          - "libs/trt"
+        include:
+          - python-version: "3.8"
+            working-directory: "libs/trt"
+          - python-version: "3.11"
+            working-directory: "libs/trt"
+          - python-version: "3.11"
+            working-directory: "libs/ai-endpoints"
+          - python-version: "3.13"
+            working-directory: "libs/ai-endpoints"
 
     steps:
       - uses: actions/checkout@v4
