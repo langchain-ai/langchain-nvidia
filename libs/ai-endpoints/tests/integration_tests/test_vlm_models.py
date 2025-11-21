@@ -38,9 +38,7 @@ from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
         [
             {
                 "type": "image_url",
-                "image_url": {
-                    "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Boston_-_panoramio_(23).jpg/2560px-Boston_-_panoramio_(23).jpg"
-                },
+                "image_url": {"url": "https://picsum.photos/800/600"},
             }
         ],
         [{"type": "image_url", "image_url": {"url": "tests/data/nvidia-picasso.jpg"}}],

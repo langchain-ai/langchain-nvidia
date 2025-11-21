@@ -25,38 +25,35 @@ def _normalize_content(content: Any) -> Any:
     - None
 
     This function converts list content to string or None as needed.
-    For multimodal content (images, etc.), returns the list as-is.
+    For multimodal content (images), returns the list as-is.
     """
     if content is None or isinstance(content, str):
         return content
 
-    # If content is a list of blocks
-    if isinstance(content, list):
-        # Check if this is multimodal content (has non-text blocks)
-        has_non_text_blocks = any(
-            isinstance(block, dict) and block.get("type") not in ("text", None)
-            for block in content
-        )
+    if not isinstance(content, list):
+        return str(content)
 
-        # If multimodal (images, etc.), return as-is for API to handle
-        if has_non_text_blocks:
-            return content
+    # Process list of content blocks
+    text_parts = []
 
-        # For text-only blocks, extract and join text
-        text_parts = []
-        for block in content:
-            if isinstance(block, dict):
-                if block.get("type") == "text" and "text" in block:
-                    text_parts.append(block["text"])
-            elif isinstance(block, str):
-                text_parts.append(block)
+    for block in content:
+        if isinstance(block, str):
+            text_parts.append(block)
+        elif isinstance(block, dict):
+            block_type = block.get("type")
 
-        # Return joined text or None if empty
-        result = "".join(text_parts)
-        return result if result else None
+            # Preserve multimodal content (images) as-is for VLM models
+            if block_type in ("image_url", "image"):
+                return content
 
-    # For other types, convert to string
-    return str(content)
+            # Extract text from text blocks
+            if block_type == "text" and "text" in block:
+                text_parts.append(block["text"])
+            # Ignore other block types (tool_call, etc.) - they're handled elsewhere
+
+    # Join text blocks, return None if empty
+    result = "".join(text_parts)
+    return result if result else None
 
 
 def convert_message_to_dict(message: BaseMessage) -> dict:
