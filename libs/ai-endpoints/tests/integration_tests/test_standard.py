@@ -66,3 +66,15 @@ class TestNVIDIAStandard(ChatModelIntegrationTests):
     def test_structured_output_optional_param(self, model: BaseChatModel) -> None:
         # Don't return anything since the return type is None
         super().test_structured_output_optional_param(model)
+
+    @pytest.mark.xfail(reason="Some models return double-escapes Unicode in tool calls")
+    def test_unicode_tool_call_integration(
+        self,
+        model: BaseChatModel,
+        *,
+        tool_choice: str | None = None,
+        force_tool_call: bool = True,
+    ) -> None:
+        return super().test_unicode_tool_call_integration(
+            model, tool_choice=tool_choice, force_tool_call=force_tool_call
+        )
