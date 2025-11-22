@@ -19,11 +19,11 @@ from tritonclient.utils import np_to_triton_dtype
 
 
 class TritonTensorRTError(Exception):
-    """Base exception for TritonTensorRT."""
+    """Base exception for `TritonTensorRT`."""
 
 
 class TritonTensorRTRuntimeError(TritonTensorRTError, RuntimeError):
-    """Runtime error for TritonTensorRT."""
+    """Runtime error for `TritonTensorRT`."""
 
 
 class TritonTensorRTLLM(BaseLLM):
