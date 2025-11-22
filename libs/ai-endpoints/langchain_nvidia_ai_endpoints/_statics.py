@@ -9,14 +9,16 @@ class Model(BaseModel):
     """
     Model information.
 
-    id: unique identifier for the model, passed as model parameter for requests
-    model_type: API type (chat, vlm, embedding, ranking, completions)
-    client: client name, e.g. ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank, NVIDIA
-    endpoint: custom endpoint for the model
-    aliases: list of aliases for the model
-    supports_tools: whether the model supports tool calling
-    supports_structured_output: whether the model supports structured output
-    supports_thinking: whether the model supports thinking mode
+    Attributes:
+        id: Unique identifier for the model, passed as model parameter for requests
+        model_type: API type (`chat`, `vlm`, `embedding`, `ranking`, `completions`)
+        client: Client name, e.g. `ChatNVIDIA`, `NVIDIAEmbeddings`, `NVIDIARerank`,
+            `NVIDIA`
+        endpoint: Custom endpoint for the model
+        aliases: List of aliases for the model
+        supports_tools: Whether the model supports tool calling
+        supports_structured_output: Whether the model supports structured output
+        supports_thinking: Whether the model supports thinking mode
 
     All aliases are deprecated and will trigger a warning when used.
     """
@@ -845,35 +847,42 @@ if "_INCLUDE_OPENAI" in os.environ:
 
 
 def register_model(model: Model) -> None:
-    """
-    Register a model as a known model. This must be done at the
-    beginning of a program, at least before the model is used or
+    """Register a model as a known model.
+
+    Must be done at the beginning of a program, at least before the model is used or
     available models are listed.
 
-    For instance -
-    ```
+    For instance:
+
+    ```python
     from langchain_nvidia_ai_endpoints import register_model, Model
-    register_model(Model(id="my-custom-model-name",
-                         model_type="chat",
-                         client="ChatNVIDIA",
-                         endpoint="http://host:port/path-to-my-model"))
+
+
+    register_model(
+        Model(
+            id="my-custom-model-name",
+            model_type="chat",
+            client="ChatNVIDIA",
+            endpoint="http://host:port/path-to-my-model"
+        )
+    )
     llm = ChatNVIDIA(model="my-custom-model-name")
     ```
 
     Be sure that the `id` matches the model parameter the endpoint expects.
 
-    Supported model types are:
-        - chat models, which must accept and produce chat completion payloads
-    Supported model clients are:
-        - ChatNVIDIA, for chat models
+    Supported model types are chat models, which must accept and produce chat completion
+    payloads.
+
+    Supported model clients are `ChatNVIDIA`, for chat models.
 
     Endpoint is required.
 
-    Use this instead of passing `base_url` to a client constructor
-    when the model's endpoint supports inference and not /v1/models
-    listing. Use `base_url` when the model's endpoint supports
-    /v1/models listing and inference on a known path,
-    e.g. /v1/chat/completions.
+    Use this instead of passing `base_url` to a client constructor when the model's
+    endpoint supports inference and not `/v1/models` listing.
+
+    Use `base_url` when the model's endpoint supports `/v1/models` listing and inference
+    on a known path, e.g. `/v1/chat/completions`.
     """
     if model.id in MODEL_TABLE:
         warnings.warn(
@@ -887,14 +896,16 @@ def register_model(model: Model) -> None:
 
 
 def lookup_model(name: str) -> Optional[Model]:
-    """
-    Lookup a model by name, using only the table of known models.
+    """Lookup a model by name, using only the table of known models.
+
     The name is either:
-        - directly in the table
-        - an alias in the table
-        - not found (None)
-    Callers can check to see if the name was an alias by
-    comparing the result's id field to the name they provided.
+
+    - Directly in the table
+    - An alias in the table
+    - Not found (`None`)
+
+    Callers can check to see if the name was an alias by comparing the result's id field
+    to the name they provided.
     """
     model = None
     if not (model := MODEL_TABLE.get(name)):
@@ -906,14 +917,11 @@ def lookup_model(name: str) -> Optional[Model]:
 
 
 def determine_model(name: str) -> Optional[Model]:
-    """
-    Determine the model to use based on a name, using
-    only the table of known models.
+    """Determine the model to use based on a name, using only the table of known models.
 
-    Raise a warning if the model is found to be
-    an alias of a known model.
+    Raise a warning if the model is found to be an alias of a known model.
 
-    If the model is not found, return None.
+    If the model is not found, return `None`.
     """
     if model := lookup_model(name):
         # all aliases are deprecated

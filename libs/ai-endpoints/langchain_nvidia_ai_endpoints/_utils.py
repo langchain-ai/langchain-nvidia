@@ -19,12 +19,14 @@ from langchain_core.messages import (
 def _normalize_content(content: Any) -> Any:
     """Normalize message content to handle LangChain 1.0 content blocks.
 
-    In LangChain 1.0, message.content can be:
+    In LangChain 1.0, `message.content` can be:
+
     - A string (traditional)
     - A list of content blocks (new in v1.0)
-    - None
+    - `None`
 
-    This function converts list content to string or None as needed.
+    This function converts list content to string or `None` as needed.
+
     For multimodal content (images), returns the list as-is.
     """
     if content is None or isinstance(content, str):

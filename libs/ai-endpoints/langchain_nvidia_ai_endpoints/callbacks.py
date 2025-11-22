@@ -25,10 +25,12 @@ track token information similar to `get_openai_callback`. Additionally, you can 
 custom price mappings as necessary (`price_map` argument), or provide a custom callback
 manager for advanced use-cases (`callback` argument).
 
-**NOTE:** This feature is currently not supported in streaming modes, but works fine
-for non-streaming `invoke/ainvoke` queries.
+!!! note
 
-```
+    This feature is currently not supported in streaming modes, but works fine
+    for non-streaming `invoke/ainvoke` queries.
+
+```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings
 from langchain_nvidia_ai_endpoints.callbacks import get_usage_callback
 
@@ -78,17 +80,14 @@ def standardize_model_name(
     price_map: dict = {},
     is_completion: bool = False,
 ) -> str:
-    """
-    Standardize the model name to a format that can be used in the OpenAI API.
+    """Standardize the model name to a format that can be used in the OpenAI API.
 
     Args:
         model_name: Model name to standardize.
         is_completion: Whether the model is used for completion or not.
-            Defaults to False.
 
     Returns:
         Standardized model name.
-
     """
     model_name = model_name.lower()
     if ".ft-" in model_name:
@@ -117,8 +116,7 @@ def standardize_model_name(
 def get_token_cost_for_model(
     model_name: str, num_tokens: int, price_map: dict, is_completion: bool = False
 ) -> float:
-    """
-    Get the cost in USD for a given model and number of tokens.
+    """Get the cost in USD for a given model and number of tokens.
 
     Args:
         model_name: Name of the model
@@ -126,7 +124,6 @@ def get_token_cost_for_model(
         price_map: Map of model names to cost per 1000 tokens.
             Defaults to AI Foundation Endpoint pricing per https://www.together.ai/pricing.
         is_completion: Whether the model is used for completion or not.
-            Defaults to False.
 
     Returns:
         Cost in USD.
@@ -202,7 +199,7 @@ class UsageCallbackHandler(BaseCallbackHandler):
 
     @property
     def model_usage(self) -> dict:
-        """Whether to call verbose callbacks even if verbose is False."""
+        """Whether to call verbose callbacks even if verbose is `False`."""
         return dict(self._model_usage)
 
     def reset(self) -> None:
@@ -212,7 +209,7 @@ class UsageCallbackHandler(BaseCallbackHandler):
 
     @property
     def always_verbose(self) -> bool:
-        """Whether to call verbose callbacks even if verbose is False."""
+        """Whether to call verbose callbacks even if verbose is `False`."""
         return True
 
     def on_llm_start(
@@ -288,14 +285,17 @@ def get_usage_callback(
     callback: Optional[UsageCallbackHandler] = None,
 ) -> Generator[UsageCallbackHandler, None, None]:
     """Get the OpenAI callback handler in a context manager.
-    which conveniently exposes token and cost information.
+
+    Exposes token and cost information.
 
     Returns:
-        OpenAICallbackHandler: The OpenAI callback handler.
+        The OpenAI callback handler.
 
     Example:
-        >>> with get_openai_callback() as cb:
-        ...     # Use the OpenAI callback handler
+        ```python
+        with get_openai_callback() as cb:
+            # Use the OpenAI callback handler
+        ```
     """
     if not callback:
         callback = UsageCallbackHandler()

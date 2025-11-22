@@ -1,7 +1,8 @@
 """LangChain NVIDIA AI Foundation Model Playground Integration
 
-.. note::
-    You can ``import langchain_nvidia`` instead.
+!!! note
+
+    You can `import langchain_nvidia` instead.
 
 This comprehensive module integrates NVIDIA's state-of-the-art AI Foundation Models, featuring advanced models for conversational AI and semantic embeddings, into the LangChain framework. It provides robust classes for seamless interaction with NVIDIA's AI models, particularly tailored for enriching conversational experiences and enhancing semantic understanding in various applications.
 
@@ -15,25 +16,31 @@ This comprehensive module integrates NVIDIA's state-of-the-art AI Foundation Mod
 
 Install this module easily using pip::
 
-    pip install langchain-nvidia-ai-endpoints
+```bash
+pip install langchain-nvidia-ai-endpoints
+```
 
 **Utilizing Chat Models**
 
 After setting up the environment, interact with NVIDIA AI Foundation models::
 
-    from langchain_nvidia_ai_endpoints import ChatNVIDIA
+```python
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-    ai_chat_model = ChatNVIDIA(model="meta/llama2-70b")
-    response = ai_chat_model.invoke("Tell me about the LangChain integration.")
+ai_chat_model = ChatNVIDIA(model="meta/llama2-70b")
+response = ai_chat_model.invoke("Tell me about the LangChain integration.")
+```
 
 **Generating Semantic Embeddings**
 
 Use NVIDIA's models for creating embeddings, useful in various NLP tasks::
 
-    from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
+```python
+from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 
-    embed_model = NVIDIAEmbeddings(model="nvolveqa_40k")
-    embedding_output = embed_model.embed_query("Exploring AI capabilities.")
+embed_model = NVIDIAEmbeddings(model="nvolveqa_40k")
+embedding_output = embed_model.embed_query("Exploring AI capabilities.")
+```
 """  # noqa: E501
 
 from langchain_nvidia_ai_endpoints._statics import Model, register_model
