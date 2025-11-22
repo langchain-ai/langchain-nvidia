@@ -372,12 +372,13 @@ class ChatNVIDIA(BaseChatModel):
 
     def __init__(self, **kwargs: Any):
         """
-        Create a new NVIDIAChat chat model.
+        Create a new `NVIDIAChat` chat model.
 
         This class provides access to a NVIDIA NIM for chat. By default, it
         connects to a hosted NIM, but can be configured to connect to a local NIM
-        using the `base_url` parameter. An API key is required to connect to the
-        hosted NIM.
+        using the `base_url` parameter.
+
+        An API key is required to connect to the hosted NIM.
 
         Args:
             model (str): The model to use for chat.
@@ -404,11 +405,10 @@ class ChatNVIDIA(BaseChatModel):
             default_headers (dict[str, str]): Default headers merged into all
                 requests.
 
-        API Key:
-        - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
-            environment variable.
+        The recommended way to provide the API key is through the `NVIDIA_API_KEY`
+        environment variable.
 
-        Base URL:
+        **Base URL:**
 
         - Connect to a self-hosted model with NVIDIA NIM using the `base_url` arg to
             link to the local host at `localhost:8000`:
@@ -718,9 +718,9 @@ class ChatNVIDIA(BaseChatModel):
             }
         # "tool_calls" is set for invoke and stream responses
         if tool_calls := kw_left.pop("tool_calls", None):
-            assert isinstance(
-                tool_calls, list
-            ), "invalid response from server: tool_calls must be a list"
+            assert isinstance(tool_calls, list), (
+                "invalid response from server: tool_calls must be a list"
+            )
             # todo: break this into post-processing for invoke and stream
             if not streaming:
                 out_dict["additional_kwargs"]["tool_calls"] = tool_calls
@@ -841,11 +841,11 @@ class ChatNVIDIA(BaseChatModel):
 
                 Options:
 
-                - `'any'` or `'required'` – force a tool call.
-                - `'auto'` – let the model decide.
-                - `'none'` – force no tool call.
-                - `str` or `dict` – force a specific tool call.
-                - `bool` – if `True`, force a tool call; if `False`, force no tool call.
+                - `'any'` or `'required'` – Force a tool call.
+                - `'auto'` – Let the model decide.
+                - `'none'` – Force no tool call.
+                - `str` or `dict` – Force a specific tool call.
+                - `bool` – If `True`, force a tool call; if `False`, force no tool call.
 
                 Defaults to passing no value.
             **kwargs: Additional keyword arguments.

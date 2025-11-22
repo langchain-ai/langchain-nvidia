@@ -14,7 +14,7 @@ This comprehensive module integrates NVIDIA's state-of-the-art AI Foundation Mod
 
 **Installation**
 
-Install this module easily using pip::
+Install this module easily using pip:
 
 ```bash
 pip install langchain-nvidia-ai-endpoints

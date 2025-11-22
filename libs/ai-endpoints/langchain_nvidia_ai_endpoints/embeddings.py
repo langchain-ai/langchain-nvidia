@@ -22,11 +22,11 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     Client to NVIDIA embeddings models.
 
     Attributes:
-        - model: The name of the model to use
-        - truncate: `'NONE'`, `'START'`, `'END'`, truncate input text if it exceeds the
+        model: The name of the model to use
+        truncate: `'NONE'`, `'START'`, `'END'`, truncate input text if it exceeds the
             model's maximum token length. Default is `'NONE'`, which raises an error if
             an input is too long.
-        - dimensions: The number of dimensions for the embeddings. This parameter is
+        dimensions: The number of dimensions for the embeddings. This parameter is
             not supported by all models.
     """
 
@@ -72,8 +72,9 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
 
         This class provides access to a NVIDIA NIM for embedding. By default, it
         connects to a hosted NIM, but can be configured to connect to a local NIM
-        using the `base_url` parameter. An API key is required to connect to the
-        hosted NIM.
+        using the `base_url` parameter.
+
+        An API key is required to connect to the hosted NIM.
 
         Args:
             model (str): The model to use for embedding.

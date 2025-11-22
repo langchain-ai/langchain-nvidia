@@ -11,9 +11,8 @@ class Model(BaseModel):
 
     Attributes:
         id: Unique identifier for the model, passed as model parameter for requests
-        model_type: API type (`chat`, `vlm`, `embedding`, `ranking`, `completions`)
-        client: Client name, e.g. `ChatNVIDIA`, `NVIDIAEmbeddings`, `NVIDIARerank`,
-            `NVIDIA`
+        model_type: API type
+        client: Client name
         endpoint: Custom endpoint for the model
         aliases: List of aliases for the model
         supports_tools: Whether the model supports tool calling
@@ -30,18 +29,26 @@ class Model(BaseModel):
     )
 
     id: str
+
     # why do we have a model_type? because ChatNVIDIA can speak both chat and vlm.
     model_type: Optional[
         Literal["chat", "vlm", "nv-vlm", "embedding", "ranking", "completions", "qa"]
     ] = None
+
     client: Optional[
         Literal["ChatNVIDIA", "NVIDIAEmbeddings", "NVIDIARerank", "NVIDIA"]
     ] = None
+
     endpoint: Optional[str] = None
+
     aliases: Optional[list] = None
+
     supports_tools: Optional[bool] = False
+
     supports_structured_output: Optional[bool] = False
+
     supports_thinking: Optional[bool] = False
+
     base_model: Optional[str] = None
 
     def __hash__(self) -> int:

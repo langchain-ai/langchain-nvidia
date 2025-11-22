@@ -75,8 +75,9 @@ class NVIDIARerank(BaseDocumentCompressor):
 
         This class provides access to a NVIDIA NIM for reranking. By default, it
         connects to a hosted NIM, but can be configured to connect to a local NIM
-        using the `base_url` parameter. An API key is required to connect to the
-        hosted NIM.
+        using the `base_url` parameter.
+
+        An API key is required to connect to the hosted NIM.
 
         Args:
             model (str): The model to use for reranking.
@@ -137,7 +138,7 @@ class NVIDIARerank(BaseDocumentCompressor):
                 documents=[Document(page_content=passage) for passage in passages]
             )
 
-            print(f"Most relevant: {response[0].page_content}\n"
+            print(f"Most relevant: {response[0].page_content}"
                 f"Least relevant: {response[-1].page_content}"
             )
 
@@ -248,9 +249,9 @@ class NVIDIARerank(BaseDocumentCompressor):
                 query=query, documents=[d.page_content for d in doc_batch]
             )
             for ranking in rankings:
-                assert (
-                    0 <= ranking.index < len(doc_batch)
-                ), "invalid response from server: index out of range"
+                assert 0 <= ranking.index < len(doc_batch), (
+                    "invalid response from server: index out of range"
+                )
                 doc = doc_batch[ranking.index]
                 doc.metadata["relevance_score"] = ranking.logit
                 results.append(doc)

@@ -70,8 +70,9 @@ class NVIDIA(LLM):
 
         This class provides access to a NVIDIA NIM for completions. By default, it
         connects to a hosted NIM, but can be configured to connect to a local NIM
-        using the `base_url` parameter. An API key is required to connect to the
-        hosted NIM.
+        using the `base_url` parameter.
+
+        An API key is required to connect to the hosted NIM.
 
         Args:
             model (str): The model to use for completions.

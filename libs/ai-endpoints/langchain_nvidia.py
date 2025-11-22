@@ -10,14 +10,14 @@ and enhancing semantic understanding in various applications.
 **Features:**
 
 1. **`ChatNVIDIA`:** This class serves as the primary interface for interacting
-   with chat models. Users can effortlessly utilize advanced models like 'Nemotron'
-   to engage in rich, context-aware conversations, applicable across diverse
-   domains from customer support to interactive storytelling.
+    with chat models. Users can effortlessly utilize advanced models like 'Nemotron'
+    to engage in rich, context-aware conversations, applicable across diverse
+    domains from customer support to interactive storytelling.
 
 2. **`NVIDIAEmbeddings`:** The class offers capabilities to generate sophisticated
-   embeddings using AI models. These embeddings are instrumental for tasks like
-   semantic analysis, text similarity assessments, and contextual understanding,
-   significantly enhancing the depth of NLP applications.
+    embeddings using AI models. These embeddings are instrumental for tasks like
+    semantic analysis, text similarity assessments, and contextual understanding,
+    significantly enhancing the depth of NLP applications.
 
 3. **`NVIDIARerank`:** This class provides an interface for reranking search results
     using AI models. Users can leverage this functionality to enhance search
@@ -32,7 +32,7 @@ and enhancing semantic understanding in various applications.
 
 Install this module easily using pip:
 
-```python
+```bash
 pip install langchain-nvidia-ai-endpoints
 ```
 
