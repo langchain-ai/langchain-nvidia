@@ -41,8 +41,11 @@ class NVIDIARerank(BaseDocumentCompressor):
         default=None,
         description="Base url for model listing an invocation",
     )
+
     top_n: int = Field(5, ge=0, description="The number of documents to return.")
+
     model: Optional[str] = Field(None, description="The model to use for reranking.")
+
     truncate: Optional[Literal["NONE", "END"]] = Field(
         default=None,
         description=(
@@ -51,13 +54,16 @@ class NVIDIARerank(BaseDocumentCompressor):
             "input is too long."
         ),
     )
+
     max_batch_size: int = Field(
         _DEFAULT_BATCH_SIZE, ge=1, description="The maximum batch size."
     )
+
     default_headers: dict = Field(
         default_factory=dict,
         description="Default headers merged into all requests.",
     )
+
     extra_headers: dict = Field(
         default_factory=dict,
         description="Deprecated: Use 'default_headers' instead. "
@@ -65,8 +71,7 @@ class NVIDIARerank(BaseDocumentCompressor):
     )
 
     def __init__(self, **kwargs: Any):
-        """
-        Create a new NVIDIARerank document compressor.
+        """Create a new `NVIDIARerank` document compressor.
 
         This class provides access to a NVIDIA NIM for reranking. By default, it
         connects to a hosted NIM, but can be configured to connect to a local NIM
@@ -76,30 +81,34 @@ class NVIDIARerank(BaseDocumentCompressor):
         Args:
             model (str): The model to use for reranking.
             nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
-            api_key (str): Alternative to nvidia_api_key.
+            api_key (str): Alternative to `nvidia_api_key`.
             base_url (str): The base URL of the NIM to connect to.
-            truncate (str): "NONE", "END", truncate input text if it exceeds
-                            the model's context length. Default is model dependent and
-                            is likely to raise an error if an input is too long.
+            truncate (str): `'NONE'`, `'END'`, truncate input text if it exceeds
+                the model's context length. Default is model dependent and
+                is likely to raise an error if an input is too long.
             default_headers (dict[str, str]): Default headers merged into all
                 requests.
-            extra_headers (dict[str, str]): Deprecated. Use 'default_headers' instead.
+            extra_headers (dict[str, str]): Deprecated. Use `default_headers` instead.
 
-        API Key:
-        - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
-            environment variable.
+        The recommended way to provide the API key is through the `NVIDIA_API_KEY`
+        environment variable.
 
         Base URL:
+
         - Connect to a self-hosted model with NVIDIA NIM using the `base_url` arg to
-            link to the local host at localhost:8000:
+            link to the local host at `localhost:8000`:
+
+            ```python
             ranker = NVIDIARerank(base_url="http://localhost:8000/v1")
+            ```
 
         Example:
-        >>> from langchain_nvidia_ai_endpoints import NVIDIARerank
-        >>> from langchain_core.documents import Document
+            ```python
+            from langchain_nvidia_ai_endpoints import NVIDIARerank
+            from langchain_core.documents import Document
 
-        >>> query = "What is the GPU memory bandwidth of H100 SXM?"
-        >>> passages = [
+            query = "What is the GPU memory bandwidth of H100 SXM?"
+            passages = [
                 "The Hopper GPU is paired with the Grace CPU using NVIDIA's ultra-fast
                 chip-to-chip interconnect, delivering 900GB/s of bandwidth, 7X faster
                 than PCIe Gen5. This innovative design will deliver up to 30X higher
@@ -118,28 +127,29 @@ class NVIDIARerank(BaseDocumentCompressor):
                 with NVLink and NVSwitch™.",
             ]
 
-        >>> client = NVIDIARerank(
+            client = NVIDIARerank(
                 model="nvidia/nv-rerankqa-mistral-4b-v3",
                 api_key="$API_KEY_REQUIRED_IF_EXECUTING_OUTSIDE_NGC"
             )
 
-        >>> response = client.compress_documents(
+            response = client.compress_documents(
                 query=query,
                 documents=[Document(page_content=passage) for passage in passages]
             )
 
-        >>> print(f"Most relevant: {response[0].page_content}\n"
-                  f"Least relevant: {response[-1].page_content}"
+            print(f"Most relevant: {response[0].page_content}\n"
+                f"Least relevant: {response[-1].page_content}"
             )
 
-        Most relevant: Accelerated servers with H100 deliver the compute power—along
-        with 3 terabytes per second (TB/s) of memory bandwidth per GPU and scalability
-        with NVLink and NVSwitch™.
-        Least relevant: A100 provides up to 20X higher performance over the prior
-        generation and can be partitioned into seven GPU instances to dynamically
-        adjust to shifting demands. The A100 80GB debuts the world's fastest memory
-        bandwidth at over 2 terabytes per second (TB/s) to run the largest models
-        and datasets.
+            # Most relevant: Accelerated servers with H100 deliver the compute
+            # power—along with 3 terabytes per second (TB/s) of memory bandwidth per GPU
+            # and scalability with NVLink and NVSwitch™.
+            # Least relevant: A100 provides up to 20X higher performance over the prior
+            # generation and can be partitioned into seven GPU instances to dynamically
+            # adjust to shifting demands. The A100 80GB debuts the world's fastest
+            # memory bandwidth at over 2 terabytes per second (TB/s) to run the largest
+            # models and datasets.
+            ```
         """
 
         super().__init__(**kwargs)
@@ -177,9 +187,7 @@ class NVIDIARerank(BaseDocumentCompressor):
 
     @property
     def available_models(self) -> List[Model]:
-        """
-        Get a list of available models that work with NVIDIARerank.
-        """
+        """Get a list of available models that work with `NVIDIARerank`."""
         return self._client.get_available_models(self.__class__.__name__)
 
     @classmethod
@@ -187,9 +195,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         cls,
         **kwargs: Any,
     ) -> List[Model]:
-        """
-        Get a list of available models that work with NVIDIARerank.
-        """
+        """Get a list of available models that work with `NVIDIARerank`."""
         return cls(**kwargs).available_models
 
     # todo: batching when len(documents) > endpoint's max batch size

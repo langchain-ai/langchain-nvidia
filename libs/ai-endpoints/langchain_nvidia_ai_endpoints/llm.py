@@ -15,20 +15,21 @@ _DEFAULT_MODEL_NAME: str = "nvidia/mistral-nemo-minitron-8b-base"
 
 
 class NVIDIA(LLM):
-    """
-    LangChain LLM that uses the Completions API with NVIDIA NIMs.
-    """
+    """LangChain LLM that uses the Completions API with NVIDIA NIMs."""
 
     model_config = ConfigDict(
         validate_assignment=True,
     )
 
     _client: _NVIDIAClient = PrivateAttr()
+
     _default_model_name: str = "nvidia/mistral-nemo-minitron-8b-base"
+
     base_url: Optional[str] = Field(
         default=None,
         description="Base url for model listing and invocation",
     )
+
     model: Optional[str] = Field(None, description="The model to use for completions.")
 
     _init_args: Dict[str, Any] = PrivateAttr()
@@ -36,9 +37,7 @@ class NVIDIA(LLM):
     the Completions API endpoint."""
 
     def __check_kwargs(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Check kwargs, warn for unknown keys, and return a copy recognized keys.
-        """
+        """Check kwargs, warn for unknown keys, and return a copy recognized keys."""
         completions_arguments = {
             "frequency_penalty",
             "max_tokens",
@@ -67,8 +66,7 @@ class NVIDIA(LLM):
         return recognized_kwargs
 
     def __init__(self, **kwargs: Any):
-        """
-        Create a new NVIDIA LLM for Completions APIs.
+        """Create a new NVIDIA LLM for Completions APIs.
 
         This class provides access to a NVIDIA NIM for completions. By default, it
         connects to a hosted NIM, but can be configured to connect to a local NIM
@@ -78,14 +76,14 @@ class NVIDIA(LLM):
         Args:
             model (str): The model to use for completions.
             nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
-            api_key (str): Alternative to nvidia_api_key.
+            api_key (str): Alternative to `nvidia_api_key`.
             base_url (str): The base URL of the NIM to connect to.
 
-        API Key:
-        - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
-            environment variable.
+        The recommended way to provide the API key is through the `NVIDIA_API_KEY`
+        environment variable.
 
         Additional arguments that can be passed to the Completions API:
+
         - max_tokens (int): The maximum number of tokens to generate.
         - stop (str or List[str]): The stop sequence to use for generating completions.
         - temperature (float): The temperature to use for generating completions.
@@ -99,10 +97,13 @@ class NVIDIA(LLM):
         e.g. `NVIDIA().invoke("prompt", max_tokens=512)`.
         """
         super().__init__(**kwargs)
+
         # allow nvidia_base_url as an alternative for base_url
         base_url = kwargs.pop("nvidia_base_url", self.base_url)
+
         # allow nvidia_api_key as an alternative for api_key
         api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
+
         # Extract verify_ssl from kwargs, default to True
         verify_ssl = kwargs.pop("verify_ssl", True)
 
@@ -134,9 +135,7 @@ class NVIDIA(LLM):
 
     @property
     def available_models(self) -> List[Model]:
-        """
-        Get a list of available models that work with NVIDIA.
-        """
+        """Get a list of available models that work with NVIDIA."""
         return self._client.get_available_models(self.__class__.__name__)
 
     @classmethod
@@ -144,24 +143,20 @@ class NVIDIA(LLM):
         cls,
         **kwargs: Any,
     ) -> List[Model]:
-        """
-        Get a list of available models that work with the Completions API.
-        """
+        """Get a list of available models that work with the Completions API."""
         return cls(**kwargs).available_models
 
     @property
     def _llm_type(self) -> str:
-        """
-        Get the type of language model used by this chat model.
+        """Get the type of language model used by this chat model.
+
         Used for logging purposes only.
         """
         return "NVIDIA"
 
     @property
     def _identifying_params(self) -> Dict[str, Any]:
-        """
-        Get parameters used to help identify the LLM.
-        """
+        """Get parameters used to help identify the LLM."""
         return {
             "model": self.model,
             "base_url": self.base_url,

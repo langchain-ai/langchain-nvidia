@@ -42,13 +42,11 @@ class TritonTensorRTLLM(BaseLLM):
         client: The client object used to communicate with the inference server
 
     Example:
-        .. code-block:: python
+        ```python
+        from langchain_nvidia_trt import TritonTensorRTLLM
 
-            from langchain_nvidia_trt import TritonTensorRTLLM
-
-            model = TritonTensorRTLLM()
-
-
+        model = TritonTensorRTLLM()
+        ```
     """
 
     server_url: Optional[str] = Field(None, alias="server_url")

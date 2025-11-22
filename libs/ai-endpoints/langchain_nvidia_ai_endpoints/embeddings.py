@@ -21,13 +21,13 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     """
     Client to NVIDIA embeddings models.
 
-    Fields:
-    - model: str, the name of the model to use
-    - truncate: "NONE", "START", "END", truncate input text if it exceeds the model's
-        maximum token length. Default is "NONE", which raises an error if an input is
-        too long.
-    - dimensions: int, the number of dimensions for the embeddings. This parameter is
-                  not supported by all models.
+    Attributes:
+        - model: The name of the model to use
+        - truncate: `'NONE'`, `'START'`, `'END'`, truncate input text if it exceeds the
+            model's maximum token length. Default is `'NONE'`, which raises an error if
+            an input is too long.
+        - dimensions: The number of dimensions for the embeddings. This parameter is
+            not supported by all models.
     """
 
     model_config = ConfigDict(
@@ -35,11 +35,14 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     )
 
     _client: _NVIDIAClient = PrivateAttr()
+
     base_url: Optional[str] = Field(
         default=None,
         description="Base url for model listing an invocation",
     )
+
     model: Optional[str] = Field(None, description="Name of the model to invoke")
+
     truncate: Literal["NONE", "START", "END"] = Field(
         default="NONE",
         description=(
@@ -47,6 +50,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             "Default is 'NONE', which raises an error if an input is too long."
         ),
     )
+
     dimensions: Optional[int] = Field(
         default=None,
         description=(
@@ -54,7 +58,9 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             "supported by all models."
         ),
     )
+
     max_batch_size: int = Field(default=_DEFAULT_BATCH_SIZE)
+
     default_headers: dict = Field(
         default_factory=dict,
         description="Default headers merged into all requests.",
@@ -62,7 +68,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
 
     def __init__(self, **kwargs: Any):
         """
-        Create a new NVIDIAEmbeddings embedder.
+        Create a new `NVIDIAEmbeddings` embedder.
 
         This class provides access to a NVIDIA NIM for embedding. By default, it
         connects to a hosted NIM, but can be configured to connect to a local NIM
@@ -72,25 +78,28 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         Args:
             model (str): The model to use for embedding.
             nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
-            api_key (str): Alternative to nvidia_api_key.
+            api_key (str): Alternative to `nvidia_api_key`.
             base_url (str): The base URL of the NIM to connect to.
-                            Format for base URL is http://host:port
-            trucate (str): "NONE", "START", "END", truncate input text if it exceeds
-                            the model's context length. Default is "NONE", which raises
-                            an error if an input is too long.
+                Format for base URL is http://host:port
+            trucate (str): `'NONE'`, `'START'`, `'END'`, truncate input text if it
+                exceeds the model's context length. Default is `'NONE'`, which raises
+                an error if an input is too long.
             dimensions (int): The number of dimensions for the embeddings. This
-                              parameter is not supported by all models.
+                parameter is not supported by all models.
             default_headers (dict[str, str]): Default headers merged into all
                 requests.
 
-        API Key:
-        - The recommended way to provide the API key is through the `NVIDIA_API_KEY`
-            environment variable.
+        The recommended way to provide the API key is through the `NVIDIA_API_KEY`
+        environment variable.
 
         Base URL:
+
         - Connect to a self-hosted model with NVIDIA NIM using the `base_url` arg to
-            link to the local host at localhost:8000:
+            link to the local host at `localhost:8000`:
+
+            ```python
             embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")
+            ```
         """
         super().__init__(**kwargs)
         # allow nvidia_base_url as an alternative for base_url
@@ -117,9 +126,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
 
     @property
     def available_models(self) -> List[Model]:
-        """
-        Get a list of available models that work with NVIDIAEmbeddings.
-        """
+        """Get a list of available models that work with `NVIDIAEmbeddings`."""
         return self._client.get_available_models(self.__class__.__name__)
 
     @classmethod
@@ -127,9 +134,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         cls,
         **kwargs: Any,
     ) -> List[Model]:
-        """
-        Get a list of available models that work with NVIDIAEmbeddings.
-        """
+        """Get a list of available models that work with `NVIDIAEmbeddings`."""
         return cls(**kwargs).available_models
 
     def _embed(

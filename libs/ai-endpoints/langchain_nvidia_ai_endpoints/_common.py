@@ -43,9 +43,7 @@ _BASE_URL_VAR = "NVIDIA_BASE_URL"
 
 
 class _NVIDIAClient(BaseModel):
-    """
-    Low level client library interface to NIM endpoints.
-    """
+    """Low level client library interface to NIM endpoints."""
 
     default_hosted_model_name: str = Field(..., description="Default model name to use")
     # "mdl_name" because "model_" is a protected namespace in pydantic
@@ -67,20 +65,26 @@ class _NVIDIAClient(BaseModel):
         ),
         description="Base URL for standard inference",
     )
+
     infer_path: str = Field(
         ...,
         description="Path for inference",
     )
+
     listing_path: str = Field(
         "{base_url}/models",
         description="Path for listing available models",
     )
+
     polling_url_tmpl: str = Field(
         "https://api.nvcf.nvidia.com/v2/nvcf/pexec/status/{request_id}",
         description="Path for polling after HTTP 202 responses",
     )
+
     get_session_fn: Callable = Field(requests.Session)
+
     get_async_session_fn: Callable = Field(aiohttp.ClientSession)
+
     verify_ssl: Union[bool, str] = Field(
         True,
         description="SSL verification setting. Can be: "
@@ -104,17 +108,21 @@ class _NVIDIAClient(BaseModel):
         ge=0,
         description="The minimum amount of time (in sec) to poll after a 202 response",
     )
+
     interval: float = Field(
         0.02,
         ge=0,
         description="Interval (in sec) between polling attempts after a 202 response",
     )
+
     last_inputs: Optional[dict] = Field(
         default={}, description="Last inputs sent over to the server"
     )
+
     last_response: Optional[Union[Response, aiohttp.ClientResponse]] = Field(
         None, description="Last response sent from the server"
     )
+
     headers_tmpl: dict = Field(
         {
             "call": {
@@ -141,15 +149,16 @@ class _NVIDIAClient(BaseModel):
     @field_validator("base_url")
     def _validate_base_url(cls, v: str) -> str:
         """
-        validate the base_url.
+        Validate the `base_url`.
 
-        if the base_url is not a url, raise an error
+        If the `base_url` is not a url, raise an error
 
-        if the base_url does not end in /v1, e.g. /embeddings, /completions, /rankings,
-        or /reranking, emit a warning. old documentation told users to pass in the full
-        inference url, which is incorrect and prevents model listing from working.
+        If the `base_url` does not end in `/v1`, e.g. `/embeddings`, `/completions`,
+        `/rankings`, or `/reranking`, emit a warning. old documentation told users to
+        pass in the full inference url, which is incorrect and prevents model listing
+        from working.
 
-        normalize base_url to end in /v1
+        Normalize `base_url` to end in `/v1`
         """
         ## Making sure /v1 in added to the url
         if v is not None:
@@ -271,7 +280,7 @@ class _NVIDIAClient(BaseModel):
         self.get_async_session_fn = self._create_async_session
 
     def _build_ssl_context(self) -> Union[bool, ssl.SSLContext]:
-        """Build an SSL context for aiohttp based on verify_ssl setting."""
+        """Build an SSL context for aiohttp based on `verify_ssl` setting."""
         if isinstance(self.verify_ssl, bool):
             return self.verify_ssl
         if isinstance(self.verify_ssl, str):
@@ -434,10 +443,12 @@ class _NVIDIAClient(BaseModel):
 
     def _wait(self, response: Response, session: requests.Session) -> Response:
         """
-        Any request may return a 202 status code, which means the request is still
-        processing. This method will wait for a response using the request id.
+        Any request may return a `202` status code, which means the request is still
+        processing.
 
-        see https://docs.nvidia.com/cloud-functions/user-guide/latest/cloud-function/api.html#http-polling
+        This method will wait for a response using the request id.
+
+        See [HTTP polling docs](https://docs.nvidia.com/cloud-functions/user-guide/latest/cloud-function/api.html#http-polling).
         """
         start_time = time.time()
         # note: the local NIM does not return a 202 status code
@@ -516,7 +527,7 @@ class _NVIDIAClient(BaseModel):
         payload: Optional[dict] = {},
         extra_headers: dict = {},
     ) -> Tuple[aiohttp.ClientResponse, aiohttp.ClientSession]:
-        """Async version of _post"""
+        """Async version of `_post`"""
         self.last_inputs = {
             "url": invoke_url,
             "headers": {
@@ -540,7 +551,7 @@ class _NVIDIAClient(BaseModel):
         self,
         invoke_url: str,
     ) -> Tuple[aiohttp.ClientResponse, aiohttp.ClientSession]:
-        """Async version of _get"""
+        """Async version of `_get`"""
         self.last_inputs = {
             "url": invoke_url,
             "headers": self.headers_tmpl["call"],
@@ -561,7 +572,7 @@ class _NVIDIAClient(BaseModel):
         response: aiohttp.ClientResponse,
         session: aiohttp.ClientSession,
     ) -> aiohttp.ClientResponse:
-        """Async version of _wait"""
+        """Async version of `_wait`"""
         loop = asyncio.get_event_loop()
         start_time = loop.time()
         # note: the local NIM does not return a 202 status code
@@ -588,7 +599,7 @@ class _NVIDIAClient(BaseModel):
         return response
 
     async def _try_raise_async(self, response: aiohttp.ClientResponse) -> None:
-        """Async version of _try_raise for aiohttp responses."""
+        """Async version of `_try_raise` for `aiohttp` responses."""
         # todo: Add unit tests for _try_raise_async and _try_raise
         if response.status < 400:
             return
@@ -648,6 +659,7 @@ class _NVIDIAClient(BaseModel):
         response: Union[str, Response],
     ) -> Tuple[dict, bool]:
         """Parses a response from the AI Foundation Model Function API.
+
         Strongly assumes that the API will return a single response.
         """
         return self._aggregate_msgs(self._process_response(response))
@@ -759,7 +771,7 @@ class _NVIDIAClient(BaseModel):
         payload: dict = {},
         extra_headers: dict = {},
     ) -> str:
-        """Async version of get_req."""
+        """Async version of `get_req`."""
         response, session = await self._post_async(
             self.infer_url, payload, extra_headers=extra_headers
         )
@@ -775,7 +787,7 @@ class _NVIDIAClient(BaseModel):
         payload: dict,
         extra_headers: dict = {},
     ) -> AsyncIterator[Dict]:
-        """Async version of get_req_stream."""
+        """Async version of `get_req_stream`."""
         self.last_inputs = {
             "url": self.infer_url,
             "headers": {
