@@ -80,16 +80,8 @@ class NVIDIARerank(BaseDocumentCompressor):
         An API key is required to connect to the hosted NIM.
 
         Args:
-            model (str): The model to use for reranking.
             nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
             api_key (str): Alternative to `nvidia_api_key`.
-            base_url (str): The base URL of the NIM to connect to.
-            truncate (str): `'NONE'`, `'END'`, truncate input text if it exceeds
-                the model's context length. Default is model dependent and
-                is likely to raise an error if an input is too long.
-            default_headers (dict[str, str]): Default headers merged into all
-                requests.
-            extra_headers (dict[str, str]): Deprecated. Use `default_headers` instead.
 
         The recommended way to provide the API key is through the `NVIDIA_API_KEY`
         environment variable.
@@ -154,6 +146,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         """
 
         super().__init__(**kwargs)
+
         # Handle backwards compatibility: if extra_headers is set but default_headers
         # is not, use extra_headers
         if self.extra_headers and not self.default_headers:
@@ -164,10 +157,13 @@ class NVIDIARerank(BaseDocumentCompressor):
                 stacklevel=2,
             )
             self.default_headers = self.extra_headers
+
         # allow nvidia_base_url as an alternative for base_url
         base_url = kwargs.pop("nvidia_base_url", self.base_url)
+
         # allow nvidia_api_key as an alternative for api_key
         api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
+
         # Extract verify_ssl from kwargs, default to True
         verify_ssl = kwargs.pop("verify_ssl", True)
 
@@ -180,9 +176,11 @@ class NVIDIARerank(BaseDocumentCompressor):
             cls=self.__class__.__name__,
             verify_ssl=verify_ssl,
         )
+
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
         self.model = self._client.mdl_name
+
         # same for base_url
         self.base_url = self._client.base_url
 
