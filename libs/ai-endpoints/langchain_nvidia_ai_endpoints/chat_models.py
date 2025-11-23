@@ -718,9 +718,9 @@ class ChatNVIDIA(BaseChatModel):
             }
         # "tool_calls" is set for invoke and stream responses
         if tool_calls := kw_left.pop("tool_calls", None):
-            assert isinstance(tool_calls, list), (
-                "invalid response from server: tool_calls must be a list"
-            )
+            assert isinstance(
+                tool_calls, list
+            ), "invalid response from server: tool_calls must be a list"
             # todo: break this into post-processing for invoke and stream
             if not streaming:
                 out_dict["additional_kwargs"]["tool_calls"] = tool_calls
