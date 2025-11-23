@@ -75,10 +75,8 @@ class NVIDIA(LLM):
         An API key is required to connect to the hosted NIM.
 
         Args:
-            model (str): The model to use for completions.
             nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
             api_key (str): Alternative to `nvidia_api_key`.
-            base_url (str): The base URL of the NIM to connect to.
 
         The recommended way to provide the API key is through the `NVIDIA_API_KEY`
         environment variable.

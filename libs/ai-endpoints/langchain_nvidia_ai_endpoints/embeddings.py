@@ -87,8 +87,6 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
                 an error if an input is too long.
             dimensions (int): The number of dimensions for the embeddings. This
                 parameter is not supported by all models.
-            default_headers (dict[str, str]): Default headers merged into all
-                requests.
 
         The recommended way to provide the API key is through the `NVIDIA_API_KEY`
         environment variable.
@@ -103,10 +101,13 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             ```
         """
         super().__init__(**kwargs)
+
         # allow nvidia_base_url as an alternative for base_url
         base_url = kwargs.pop("nvidia_base_url", self.base_url)
+
         # allow nvidia_api_key as an alternative for api_key
         api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
+
         # Extract verify_ssl from kwargs, default to True
         verify_ssl = kwargs.pop("verify_ssl", True)
 
@@ -119,9 +120,11 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             cls=self.__class__.__name__,
             verify_ssl=verify_ssl,
         )
+
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
         self.model = self._client.mdl_name
+
         # same for base_url
         self.base_url = self._client.base_url
 
