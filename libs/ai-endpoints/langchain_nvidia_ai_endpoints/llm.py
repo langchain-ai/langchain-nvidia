@@ -65,7 +65,13 @@ class NVIDIA(LLM):
 
         return recognized_kwargs
 
-    def __init__(self, **kwargs: Any):
+    def __init__(
+        self,
+        *,
+        nvidia_api_key: Optional[str] = None,
+        api_key: Optional[str] = None,
+        **kwargs: Any,
+    ):
         """Create a new NVIDIA LLM for Completions APIs.
 
         This class provides access to a NVIDIA NIM for completions. By default, it
@@ -75,8 +81,9 @@ class NVIDIA(LLM):
         An API key is required to connect to the hosted NIM.
 
         Args:
-            nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
-            api_key (str): Alternative to `nvidia_api_key`.
+            nvidia_api_key: The API key to use for connecting to the hosted NIM.
+            api_key: Alternative to `nvidia_api_key`.
+            **kwargs: Additional parameters passed to the underlying client.
 
         The recommended way to provide the API key is through the `NVIDIA_API_KEY`
         environment variable.
@@ -101,7 +108,7 @@ class NVIDIA(LLM):
         base_url = kwargs.pop("nvidia_base_url", self.base_url)
 
         # allow nvidia_api_key as an alternative for api_key
-        api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
+        api_key = nvidia_api_key or api_key
 
         # Extract verify_ssl from kwargs, default to True
         verify_ssl = kwargs.pop("verify_ssl", True)

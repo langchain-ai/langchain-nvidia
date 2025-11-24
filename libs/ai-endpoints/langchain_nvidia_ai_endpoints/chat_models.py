@@ -350,7 +350,9 @@ class ChatNVIDIA(BaseChatModel):
 
     seed: Optional[int] = Field(None, description="The seed for deterministic results")
 
-    stop: Optional[Sequence[str]] = Field(None, description="Stop words (cased)")
+    stop: Optional[Union[str, List[str]]] = Field(
+        None, description="Stop words (cased)"
+    )
 
     stream_options: Optional[Dict[str, Any]] = Field(
         {"include_usage": True},
@@ -370,7 +372,23 @@ class ChatNVIDIA(BaseChatModel):
         description="Default headers merged into all requests.",
     )
 
-    def __init__(self, **kwargs: Any):
+    def __init__(
+        self,
+        *,
+        model: Optional[str] = None,
+        nvidia_api_key: Optional[str] = None,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_completion_tokens: Optional[int] = None,
+        top_p: Optional[float] = None,
+        seed: Optional[int] = None,
+        stop: Optional[Union[str, List[str]]] = None,
+        min_tokens: Optional[int] = None,
+        ignore_eos: Optional[bool] = None,
+        default_headers: Optional[Dict[str, str]] = None,
+        **kwargs: Any,
+    ):
         """
         Create a new `NVIDIAChat` chat model.
 
@@ -381,29 +399,21 @@ class ChatNVIDIA(BaseChatModel):
         An API key is required to connect to the hosted NIM.
 
         Args:
-            model (str): The model to use for chat.
-            nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
-            api_key (str): Alternative to `nvidia_api_key`.
-            base_url (str): The base URL of the NIM to connect to.
+            model: The model to use for chat.
+            nvidia_api_key: The API key to use for connecting to the hosted NIM.
+            api_key: Alternative to `nvidia_api_key`.
+            base_url: The base URL of the NIM to connect to.
 
                 Format for base URL is `http://host:port`
-            temperature (float): Sampling temperature in `[0, 1]`.
-            max_tokens (int): Maximum number of tokens to generate.
-
-                Deprecated, use `max_completion_tokens` instead.
-
-                `max_tokens` and `max_completion_tokens` are aliases.
-
-                If both max_tokens and max_completion_tokens are supplied,
-                `max_completion_tokens` takes precedence.
-            max_completion_tokens (int): Maximum number of tokens to generate.
-            top_p (float): Top-p for distribution sampling.
-            seed (int): A seed for deterministic results.
-            stop (list[str]): A list of cased stop words.
-            min_tokens (int): Minimum number of tokens to generate.
-            ignore_eos (bool): Whether to ignore end-of-sequence tokens.
-            default_headers (dict[str, str]): Default headers merged into all
-                requests.
+            temperature: Sampling temperature in `[0, 1]`.
+            max_completion_tokens: Maximum number of tokens to generate.
+            top_p: Top-p for distribution sampling.
+            seed: A seed for deterministic results.
+            stop: A string or list of strings specifying stop sequences.
+            min_tokens: Minimum number of tokens to generate.
+            ignore_eos: Whether to ignore end-of-sequence tokens.
+            default_headers: Default headers merged into all requests.
+            **kwargs: Additional parameters passed to the underlying client.
 
         The recommended way to provide the API key is through the `NVIDIA_API_KEY`
         environment variable.
@@ -430,12 +440,37 @@ class ChatNVIDIA(BaseChatModel):
                 stacklevel=2,
             )
 
-        super().__init__(**kwargs)
+        init_kwargs: Dict[str, Any] = {}
+        if model is not None:
+            init_kwargs["model"] = model
+        if base_url is not None:
+            init_kwargs["base_url"] = base_url
+        if temperature is not None:
+            init_kwargs["temperature"] = temperature
+        if max_completion_tokens is not None:
+            init_kwargs["max_completion_tokens"] = max_completion_tokens
+        if top_p is not None:
+            init_kwargs["top_p"] = top_p
+        if seed is not None:
+            init_kwargs["seed"] = seed
+        if stop is not None:
+            init_kwargs["stop"] = stop
+        if min_tokens is not None:
+            init_kwargs["min_tokens"] = min_tokens
+        if ignore_eos is not None:
+            init_kwargs["ignore_eos"] = ignore_eos
+        if default_headers is not None:
+            init_kwargs["default_headers"] = default_headers
+
+        init_kwargs.update(kwargs)
+
+        super().__init__(**init_kwargs)
+
         # allow nvidia_base_url as an alternative for base_url
         base_url = kwargs.pop("nvidia_base_url", self.base_url)
 
         # allow nvidia_api_key as an alternative for api_key
-        api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
+        api_key = nvidia_api_key or api_key
 
         # Extract verify_ssl from kwargs, default to True
         verify_ssl = kwargs.pop("verify_ssl", True)

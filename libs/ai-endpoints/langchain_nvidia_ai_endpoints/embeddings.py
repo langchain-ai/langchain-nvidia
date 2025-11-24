@@ -66,7 +66,17 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         description="Default headers merged into all requests.",
     )
 
-    def __init__(self, **kwargs: Any):
+    def __init__(
+        self,
+        *,
+        model: Optional[str] = None,
+        nvidia_api_key: Optional[str] = None,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        trucate: Optional[Literal["NONE", "START", "END"]] = None,
+        dimensions: Optional[int] = None,
+        **kwargs: Any,
+    ):
         """
         Create a new `NVIDIAEmbeddings` embedder.
 
@@ -77,16 +87,17 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         An API key is required to connect to the hosted NIM.
 
         Args:
-            model (str): The model to use for embedding.
-            nvidia_api_key (str): The API key to use for connecting to the hosted NIM.
-            api_key (str): Alternative to `nvidia_api_key`.
-            base_url (str): The base URL of the NIM to connect to.
+            model: The model to use for embedding.
+            nvidia_api_key: The API key to use for connecting to the hosted NIM.
+            api_key: Alternative to `nvidia_api_key`.
+            base_url: The base URL of the NIM to connect to.
                 Format for base URL is http://host:port
-            trucate (str): `'NONE'`, `'START'`, `'END'`, truncate input text if it
+            trucate: `'NONE'`, `'START'`, `'END'`, truncate input text if it
                 exceeds the model's context length. Default is `'NONE'`, which raises
                 an error if an input is too long.
-            dimensions (int): The number of dimensions for the embeddings. This
+            dimensions: The number of dimensions for the embeddings. This
                 parameter is not supported by all models.
+            **kwargs: Additional parameters passed to the underlying client.
 
         The recommended way to provide the API key is through the `NVIDIA_API_KEY`
         environment variable.
@@ -100,13 +111,25 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")
             ```
         """
-        super().__init__(**kwargs)
+        init_kwargs: Dict[str, Any] = {}
+        if model is not None:
+            init_kwargs["model"] = model
+        if base_url is not None:
+            init_kwargs["base_url"] = base_url
+        if trucate is not None:
+            init_kwargs["truncate"] = trucate
+        if dimensions is not None:
+            init_kwargs["dimensions"] = dimensions
+
+        init_kwargs.update(kwargs)
+
+        super().__init__(**init_kwargs)
 
         # allow nvidia_base_url as an alternative for base_url
         base_url = kwargs.pop("nvidia_base_url", self.base_url)
 
         # allow nvidia_api_key as an alternative for api_key
-        api_key = kwargs.pop("nvidia_api_key", kwargs.pop("api_key", None))
+        api_key = nvidia_api_key or api_key
 
         # Extract verify_ssl from kwargs, default to True
         verify_ssl = kwargs.pop("verify_ssl", True)
