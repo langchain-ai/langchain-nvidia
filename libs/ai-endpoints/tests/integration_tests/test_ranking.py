@@ -43,11 +43,22 @@ def documents(text: str, splitter: CharacterTextSplitter) -> List[Document]:
     return splitter.create_documents(text)
 
 
-def test_langchain_reranker_direct(
-    query: str, documents: List[Document], rerank_model: str, mode: dict
+@pytest.mark.parametrize(
+    "func", ["compress", "acompress"], ids=["compress", "acompress"]
+)
+@pytest.mark.asyncio
+async def test_langchain_reranker_direct(
+    query: str,
+    documents: List[Document],
+    rerank_model: str,
+    mode: dict,
+    func: str,
 ) -> None:
     ranker = NVIDIARerank(model=rerank_model, **mode)
-    result_docs = ranker.compress_documents(documents=documents, query=query)
+    if func == "compress":
+        result_docs = ranker.compress_documents(documents=documents, query=query)
+    else:  # acompress
+        result_docs = await ranker.acompress_documents(documents=documents, query=query)
     assert len(result_docs) > 0
     for doc in result_docs:
         assert "relevance_score" in doc.metadata
@@ -55,59 +66,101 @@ def test_langchain_reranker_direct(
         assert isinstance(doc.metadata["relevance_score"], float)
 
 
-def test_langchain_reranker_direct_empty_docs(
-    query: str, rerank_model: str, mode: dict
+@pytest.mark.parametrize(
+    "func", ["compress", "acompress"], ids=["compress", "acompress"]
+)
+@pytest.mark.asyncio
+async def test_langchain_reranker_direct_empty_docs(
+    query: str, rerank_model: str, mode: dict, func: str
 ) -> None:
     ranker = NVIDIARerank(model=rerank_model, **mode)
-    result_docs = ranker.compress_documents(documents=[], query=query)
+    if func == "compress":
+        result_docs = ranker.compress_documents(documents=[], query=query)
+    else:  # acompress
+        result_docs = await ranker.acompress_documents(documents=[], query=query)
     assert len(result_docs) == 0
 
 
-def test_langchain_reranker_direct_top_n_negative(
-    query: str, documents: List[Document], rerank_model: str, mode: dict
+@pytest.mark.parametrize(
+    "func", ["compress", "acompress"], ids=["compress", "acompress"]
+)
+@pytest.mark.asyncio
+async def test_langchain_reranker_direct_top_n_negative(
+    query: str, documents: List[Document], rerank_model: str, mode: dict, func: str
 ) -> None:
     orig = NVIDIARerank.model_config["validate_assignment"]
     NVIDIARerank.model_config["validate_assignment"] = False
     ranker = NVIDIARerank(model=rerank_model, **mode)
     ranker.top_n = -100
     NVIDIARerank.model_config["validate_assignment"] = orig
-    result_docs = ranker.compress_documents(documents=documents, query=query)
+    if func == "compress":
+        result_docs = ranker.compress_documents(documents=documents, query=query)
+    else:  # acompress
+        result_docs = await ranker.acompress_documents(documents=documents, query=query)
     assert len(result_docs) == 0
 
 
-def test_langchain_reranker_direct_top_n_zero(
-    query: str, documents: List[Document], rerank_model: str, mode: dict
+@pytest.mark.parametrize(
+    "func", ["compress", "acompress"], ids=["compress", "acompress"]
+)
+@pytest.mark.asyncio
+async def test_langchain_reranker_direct_top_n_zero(
+    query: str, documents: List[Document], rerank_model: str, mode: dict, func: str
 ) -> None:
     ranker = NVIDIARerank(model=rerank_model, **mode)
     ranker.top_n = 0
-    result_docs = ranker.compress_documents(documents=documents, query=query)
+    if func == "compress":
+        result_docs = ranker.compress_documents(documents=documents, query=query)
+    else:  # acompress
+        result_docs = await ranker.acompress_documents(documents=documents, query=query)
     assert len(result_docs) == 0
 
 
-def test_langchain_reranker_direct_top_n_one(
-    query: str, documents: List[Document], rerank_model: str, mode: dict
+@pytest.mark.parametrize(
+    "func", ["compress", "acompress"], ids=["compress", "acompress"]
+)
+@pytest.mark.asyncio
+async def test_langchain_reranker_direct_top_n_one(
+    query: str, documents: List[Document], rerank_model: str, mode: dict, func: str
 ) -> None:
     ranker = NVIDIARerank(model=rerank_model, **mode)
     ranker.top_n = 1
-    result_docs = ranker.compress_documents(documents=documents, query=query)
+    if func == "compress":
+        result_docs = ranker.compress_documents(documents=documents, query=query)
+    else:  # acompress
+        result_docs = await ranker.acompress_documents(documents=documents, query=query)
     assert len(result_docs) == 1
 
 
-def test_langchain_reranker_direct_top_n_equal_len_docs(
-    query: str, documents: List[Document], rerank_model: str, mode: dict
+@pytest.mark.parametrize(
+    "func", ["compress", "acompress"], ids=["compress", "acompress"]
+)
+@pytest.mark.asyncio
+async def test_langchain_reranker_direct_top_n_equal_len_docs(
+    query: str, documents: List[Document], rerank_model: str, mode: dict, func: str
 ) -> None:
     ranker = NVIDIARerank(model=rerank_model, **mode)
     ranker.top_n = len(documents)
-    result_docs = ranker.compress_documents(documents=documents, query=query)
+    if func == "compress":
+        result_docs = ranker.compress_documents(documents=documents, query=query)
+    else:  # acompress
+        result_docs = await ranker.acompress_documents(documents=documents, query=query)
     assert len(result_docs) == len(documents)
 
 
-def test_langchain_reranker_direct_top_n_greater_len_docs(
-    query: str, documents: List[Document], rerank_model: str, mode: dict
+@pytest.mark.parametrize(
+    "func", ["compress", "acompress"], ids=["compress", "acompress"]
+)
+@pytest.mark.asyncio
+async def test_langchain_reranker_direct_top_n_greater_len_docs(
+    query: str, documents: List[Document], rerank_model: str, mode: dict, func: str
 ) -> None:
     ranker = NVIDIARerank(model=rerank_model, **mode)
     ranker.top_n = len(documents) * 2
-    result_docs = ranker.compress_documents(documents=documents, query=query)
+    if func == "compress":
+        result_docs = ranker.compress_documents(documents=documents, query=query)
+    else:  # acompress
+        result_docs = await ranker.acompress_documents(documents=documents, query=query)
     assert len(result_docs) == len(documents)
 
 
@@ -128,6 +181,9 @@ def test_rerank_invalid_top_n(rerank_model: str, mode: dict) -> None:
 
 
 @pytest.mark.parametrize(
+    "func", ["compress", "acompress"], ids=["compress", "acompress"]
+)
+@pytest.mark.parametrize(
     "batch_size, top_n",
     [
         (7, 7),  # batch_size == top_n
@@ -138,20 +194,25 @@ def test_rerank_invalid_top_n(rerank_model: str, mode: dict) -> None:
         (10, 1),  # batch_size > top_n, corner case 1
     ],
 )
-def test_rerank_batching(
+@pytest.mark.asyncio
+async def test_rerank_batching(
     query: str,
     documents: List[Document],
     rerank_model: str,
     mode: dict,
     batch_size: int,
     top_n: int,
+    func: str,
 ) -> None:
     assert len(documents) > batch_size, "test requires more documents"
 
     ranker = NVIDIARerank(model=rerank_model, **mode)
     ranker.top_n = top_n
     ranker.max_batch_size = batch_size
-    result_docs = ranker.compress_documents(documents=documents, query=query)
+    if func == "compress":
+        result_docs = ranker.compress_documents(documents=documents, query=query)
+    else:  # acompress
+        result_docs = await ranker.acompress_documents(documents=documents, query=query)
     assert len(result_docs) == min(len(documents), top_n)
     for doc in result_docs:
         assert "relevance_score" in doc.metadata
@@ -182,8 +243,14 @@ def test_rerank_batching(
     # ), "batched results do not match unbatched results"
 
 
+@pytest.mark.parametrize(
+    "func", ["compress", "acompress"], ids=["compress", "acompress"]
+)
 @pytest.mark.parametrize("truncate", ["END"])
-def test_truncate_positive(rerank_model: str, mode: dict, truncate: str) -> None:
+@pytest.mark.asyncio
+async def test_truncate_positive(
+    rerank_model: str, mode: dict, truncate: str, func: str
+) -> None:
     query = "What is acceleration?"
     documents = [
         Document(page_content="NVIDIA " * length)
@@ -192,12 +259,21 @@ def test_truncate_positive(rerank_model: str, mode: dict, truncate: str) -> None
     client = NVIDIARerank(
         model=rerank_model, top_n=len(documents), truncate=truncate, **mode
     )
-    response = client.compress_documents(documents=documents, query=query)
+    if func == "compress":
+        response = client.compress_documents(documents=documents, query=query)
+    else:  # acompress
+        response = await client.acompress_documents(documents=documents, query=query)
     assert len(response) == len(documents)
 
 
+@pytest.mark.parametrize(
+    "func", ["compress", "acompress"], ids=["compress", "acompress"]
+)
 @pytest.mark.parametrize("truncate", [None, "NONE"])
-def test_truncate_negative(rerank_model: str, mode: dict, truncate: str) -> None:
+@pytest.mark.asyncio
+async def test_truncate_negative(
+    rerank_model: str, mode: dict, truncate: str, func: str
+) -> None:
     if rerank_model == "nv-rerank-qa-mistral-4b:1":
         pytest.skip("nv-rerank-qa-mistral-4b:1 truncates by default")
     query = "What is acceleration?"
@@ -210,6 +286,9 @@ def test_truncate_negative(rerank_model: str, mode: dict, truncate: str) -> None
         truncate_param = {"truncate": truncate}
     client = NVIDIARerank(model=rerank_model, **truncate_param, **mode)
     with pytest.raises(Exception) as e:
-        client.compress_documents(documents=documents, query=query)
+        if func == "compress":
+            client.compress_documents(documents=documents, query=query)
+        else:  # acompress
+            await client.acompress_documents(documents=documents, query=query)
     assert "400" in str(e.value)
     assert "exceeds maximum allowed" in str(e.value)

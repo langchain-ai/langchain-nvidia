@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import json
 import warnings
-from typing import Any, Generator, List, Literal, Optional, Sequence
+from typing import Any, Dict, Generator, List, Literal, Optional, Sequence
 
 from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
@@ -204,8 +205,16 @@ class NVIDIARerank(BaseDocumentCompressor):
         """Get a list of available models that work with `NVIDIARerank`."""
         return cls(**kwargs).available_models
 
-    # todo: batching when len(documents) > endpoint's max batch size
-    def _rank(self, documents: List[str], query: str) -> List[Ranking]:
+    def _prepare_payload(self, documents: List[str], query: str) -> Dict[str, Any]:
+        """Prepare payload for both sync and async methods.
+
+        Args:
+            documents: List of document texts to rank
+            query: Query text
+
+        Returns:
+            Payload dictionary
+        """
         payload = {
             "model": self.model,
             "query": {"text": query},
@@ -213,15 +222,75 @@ class NVIDIARerank(BaseDocumentCompressor):
         }
         if self.truncate:
             payload["truncate"] = self.truncate
+        return payload
+
+    def _process_response(self, result: Dict[str, Any]) -> List[Ranking]:
+        """Process response for both sync and async methods.
+
+        Args:
+            result: Parsed JSON response from the API
+
+        Returns:
+            List of rankings limited to top_n
+        """
+        rankings = result["rankings"]
+        # todo: callback support
+        return [Ranking(**ranking) for ranking in rankings[: self.top_n]]
+
+    @staticmethod
+    def _batch(ls: list, size: int) -> Generator[List[Document], None, None]:
+        """Batch documents into chunks of specified size.
+
+        Args:
+            ls: List to batch
+            size: Batch size
+
+        Yields:
+            Batches of documents
+        """
+        for i in range(0, len(ls), size):
+            yield ls[i : i + size]
+
+    def _process_batch_rankings(
+        self,
+        doc_batch: List[Document],
+        rankings: List[Ranking],
+        results: List[Document],
+    ) -> None:
+        """Process rankings for a batch of documents.
+
+        Args:
+            doc_batch: Batch of documents
+            rankings: Rankings for the batch
+            results: List to append processed documents to
+        """
+        for ranking in rankings:
+            assert (
+                0 <= ranking.index < len(doc_batch)
+            ), "invalid response from server: index out of range"
+            doc = doc_batch[ranking.index]
+            doc.metadata["relevance_score"] = ranking.logit
+            results.append(doc)
+
+    @staticmethod
+    def _sort_by_relevance(results: List[Document]) -> None:
+        """Sort results by relevance score in descending order.
+
+        Args:
+            results: List of documents to sort in-place
+        """
+        results.sort(key=lambda x: x.metadata["relevance_score"], reverse=True)
+
+    # todo: batching when len(documents) > endpoint's max batch size
+    def _rank(self, documents: List[str], query: str) -> List[Ranking]:
+        payload = self._prepare_payload(documents, query)
         response = self._client.get_req(
             payload=payload, extra_headers=self.default_headers
         )
         if response.status_code != 200:
             response.raise_for_status()
         # todo: handle errors
-        rankings = response.json()["rankings"]
-        # todo: callback support
-        return [Ranking(**ranking) for ranking in rankings[: self.top_n]]
+        return self._process_response(response.json())
 
     def compress_documents(
         self,
@@ -243,23 +312,46 @@ class NVIDIARerank(BaseDocumentCompressor):
         if len(documents) == 0 or self.top_n < 1:
             return []
 
-        def batch(ls: list, size: int) -> Generator[List[Document], None, None]:
-            for i in range(0, len(ls), size):
-                yield ls[i : i + size]
-
         doc_list = list(documents)
-        results = []
-        for doc_batch in batch(doc_list, self.max_batch_size):
+        results: List[Document] = []
+        for doc_batch in self._batch(doc_list, self.max_batch_size):
             rankings = self._rank(
                 query=query, documents=[d.page_content for d in doc_batch]
             )
-            for ranking in rankings:
-                assert (
-                    0 <= ranking.index < len(doc_batch)
-                ), "invalid response from server: index out of range"
-                doc = doc_batch[ranking.index]
-                doc.metadata["relevance_score"] = ranking.logit
-                results.append(doc)
+            self._process_batch_rankings(doc_batch, rankings, results)
+
+        # if we batched, we need to sort the results
+        if len(doc_list) > self.max_batch_size:
+            results.sort(key=lambda x: x.metadata["relevance_score"], reverse=True)
+
+        return results[: self.top_n]
+
+    async def _arank(self, documents: List[str], query: str) -> List[Ranking]:
+        """Async version of _rank."""
+        payload = self._prepare_payload(documents, query)
+        response_text = await self._client.aget_req(
+            payload=payload, extra_headers=self.default_headers
+        )
+        result = json.loads(response_text)
+        return self._process_response(result)
+
+    async def acompress_documents(
+        self,
+        documents: Sequence[Document],
+        query: str,
+        callbacks: Optional[Callbacks] = None,
+    ) -> Sequence[Document]:
+        """Async version of compress_documents."""
+        if len(documents) == 0 or self.top_n < 1:
+            return []
+
+        doc_list = list(documents)
+        results: List[Document] = []
+        for doc_batch in self._batch(doc_list, self.max_batch_size):
+            rankings = await self._arank(
+                query=query, documents=[d.page_content for d in doc_batch]
+            )
+            self._process_batch_rankings(doc_batch, rankings, results)
 
         # if we batched, we need to sort the results
         if len(doc_list) > self.max_batch_size:

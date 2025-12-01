@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import json
 import warnings
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional
 
-from langchain_core.callbacks.manager import CallbackManagerForLLMRun
+from langchain_core.callbacks.manager import (
+    AsyncCallbackManagerForLLMRun,
+    CallbackManagerForLLMRun,
+)
 from langchain_core.language_models.llms import LLM
 from langchain_core.outputs import GenerationChunk
 from pydantic import ConfigDict, Field, PrivateAttr
@@ -168,13 +172,22 @@ class NVIDIA(LLM):
             "base_url": self.base_url,
         }
 
-    def _call(
+    def _prepare_call_payload(
         self,
         prompt: str,
         stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
-    ) -> str:
+    ) -> Dict[str, Any]:
+        """Prepare payload for non-streaming calls (both sync and async).
+
+        Args:
+            prompt: The prompt to send
+            stop: Stop words
+            kwargs: Additional keyword arguments
+
+        Returns:
+            Payload dictionary
+        """
         payload: Dict[str, Any] = {
             "model": self.model,
             "prompt": prompt,
@@ -188,28 +201,24 @@ class NVIDIA(LLM):
             warnings.warn("stream set to true for non-streaming call, ignoring")
             del payload["stream"]
 
-        response = self._client.get_req(payload=payload)
-        response.raise_for_status()
+        return payload
 
-        # todo: handle response's usage and system_fingerprint
-
-        choices = response.json()["choices"]
-        # todo: write a test for this by setting n > 1 on the request
-        #       aug 2024: n > 1 is not supported by endpoints
-        if len(choices) > 1:
-            warnings.warn(
-                f"Multiple choices in response, returning only the first: {choices}"
-            )
-
-        return choices[0]["text"]
-
-    def _stream(
+    def _prepare_stream_payload(
         self,
         prompt: str,
         stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
-    ) -> Iterator[GenerationChunk]:
+    ) -> Dict[str, Any]:
+        """Prepare payload for streaming calls (both sync and async).
+
+        Args:
+            prompt: The prompt to send
+            stop: Stop words
+            kwargs: Additional keyword arguments
+
+        Returns:
+            Payload dictionary
+        """
         payload: Dict[str, Any] = {
             "model": self.model,
             "prompt": prompt,
@@ -226,9 +235,79 @@ class NVIDIA(LLM):
             warnings.warn("stream set to false for streaming call, ignoring")
             payload["stream"] = True
 
+        return payload
+
+    def _process_result(self, result: Dict[str, Any]) -> str:
+        """Process parsed JSON result from both sync and async call methods.
+
+        Args:
+            result: Parsed JSON response
+
+        Returns:
+            Generated text
+        """
+        # todo: handle response's usage and system_fingerprint
+        choices = result["choices"]
+        # todo: write a test for this by setting n > 1 on the request
+        #       aug 2024: n > 1 is not supported by endpoints
+        if len(choices) > 1:
+            warnings.warn(
+                f"Multiple choices in response, returning only the first: {choices}"
+            )
+
+        return choices[0]["text"]
+
+    def _call(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> str:
+        payload = self._prepare_call_payload(prompt, stop, **kwargs)
+        response = self._client.get_req(payload=payload)
+        response.raise_for_status()
+        result = response.json()
+        return self._process_result(result)
+
+    def _stream(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> Iterator[GenerationChunk]:
+        payload = self._prepare_stream_payload(prompt, stop, **kwargs)
         for chunk in self._client.get_req_stream(payload=payload):
             content = chunk["content"]
             generation = GenerationChunk(text=content)
             if run_manager:  # todo: add tests for run_manager
                 run_manager.on_llm_new_token(content, chunk=generation)
+            yield generation
+
+    async def _acall(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> str:
+        payload = self._prepare_call_payload(prompt, stop, **kwargs)
+        response_text = await self._client.aget_req(payload=payload)
+        result = json.loads(response_text)
+        return self._process_result(result)
+
+    async def _astream(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[GenerationChunk]:
+        payload = self._prepare_stream_payload(prompt, stop, **kwargs)
+        async for chunk in self._client.aget_req_stream(payload=payload):
+            content = chunk["content"]
+            generation = GenerationChunk(text=content)
+            if run_manager:
+                await run_manager.on_llm_new_token(content, chunk=generation)
             yield generation
