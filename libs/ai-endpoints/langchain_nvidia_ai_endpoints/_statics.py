@@ -653,6 +653,22 @@ CHAT_MODEL_TABLE = {
         supports_structured_output=True,
         supports_thinking=True,
     ),
+    "deepseek-ai/deepseek-v3.1-terminus": Model(
+        id="deepseek-ai/deepseek-v3.1-terminus",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+    ),
+    "minimaxai/minimax-m2": Model(
+        id="minimaxai/minimax-m2",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
@@ -723,6 +739,16 @@ VLM_MODEL_TABLE = {
     ),
     "nvidia/llama-3.1-nemotron-nano-vl-8b-v1": Model(
         id="nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
+        model_type="vlm",
+        client="ChatNVIDIA",
+    ),
+    "mistralai/ministral-14b-instruct-2512": Model(
+        id="mistralai/ministral-14b-instruct-2512",
+        model_type="vlm",
+        client="ChatNVIDIA",
+    ),
+    "mistralai/mistral-large-3-675b-instruct-2512": Model(
+        id="mistralai/mistral-large-3-675b-instruct-2512",
         model_type="vlm",
         client="ChatNVIDIA",
     ),
