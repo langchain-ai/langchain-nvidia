@@ -18,6 +18,8 @@ class Model(BaseModel):
         supports_tools: Whether the model supports tool calling
         supports_structured_output: Whether the model supports structured output
         supports_thinking: Whether the model supports thinking mode
+        thinking_prefix: System message prefix when thinking is enabled
+        no_thinking_prefix: System message prefix when thinking is disabled
 
     All aliases are deprecated and will trigger a warning when used.
     """
@@ -48,6 +50,10 @@ class Model(BaseModel):
     supports_structured_output: Optional[bool] = False
 
     supports_thinking: Optional[bool] = False
+
+    thinking_prefix: Optional[str] = None
+
+    no_thinking_prefix: Optional[str] = None
 
     base_model: Optional[str] = None
 
@@ -547,12 +553,16 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
+        thinking_prefix="detailed thinking on",
+        no_thinking_prefix="detailed thinking off",
     ),
     "nvidia/llama-3.1-nemotron-nano-4b-v1.1": Model(
         id="nvidia/llama-3.1-nemotron-nano-4b-v1.1",
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
+        thinking_prefix="detailed thinking on",
+        no_thinking_prefix="detailed thinking off",
         supports_tools=True,
     ),
     "nvidia/llama-3.1-nemotron-ultra-253b-v1": Model(
@@ -560,6 +570,8 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
+        thinking_prefix="detailed thinking on",
+        no_thinking_prefix="detailed thinking off",
         supports_tools=True,
     ),
     "nvidia/llama-3.3-nemotron-super-49b-v1": Model(
@@ -567,6 +579,8 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
+        thinking_prefix="detailed thinking on",
+        no_thinking_prefix="detailed thinking off",
         supports_tools=True,
         supports_structured_output=True,
     ),
@@ -575,6 +589,8 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
+        thinking_prefix="/think",
+        no_thinking_prefix="/no_think",
         supports_tools=True,
         supports_structured_output=True,
     ),
@@ -616,6 +632,8 @@ CHAT_MODEL_TABLE = {
         supports_tools=True,
         supports_structured_output=True,
         supports_thinking=True,
+        thinking_prefix="/think",
+        no_thinking_prefix="/no_think",
     ),
     "deepseek-ai/deepseek-v3.1": Model(
         id="deepseek-ai/deepseek-v3.1",

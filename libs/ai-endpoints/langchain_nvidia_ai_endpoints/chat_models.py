@@ -814,14 +814,6 @@ class ChatNVIDIA(BaseChatModel):
         """Generates payload for the `_NVIDIAClient` API to send to service."""
         messages: List[Dict[str, Any]] = []
 
-        # Add system message for thinking mode if specified
-        thinking_mode = kwargs.pop("thinking_mode", None)
-        if thinking_mode is not None:
-            content = (
-                "detailed thinking on" if thinking_mode else "detailed thinking off"
-            )
-            messages.append({"role": "system", "content": content})
-
         for msg in inputs:
             if isinstance(msg, str):
                 # (WFH) this shouldn't ever be reached but leaving this here bcs
@@ -835,6 +827,34 @@ class ChatNVIDIA(BaseChatModel):
                 messages.append(msg)
             else:
                 raise ValueError(f"Unknown message received: {msg} of type {type(msg)}")
+
+        # Handle thinking mode by appending prefix to system message
+        thinking_mode = kwargs.pop("thinking_mode", None)
+        if thinking_mode is not None and self._client.model:
+            # Select the appropriate prefix based on thinking_mode
+            prefix = (
+                (self._client.model.thinking_prefix or "")
+                if thinking_mode
+                else (self._client.model.no_thinking_prefix or "")
+            )
+
+            if prefix:
+                # Find existing system message and append prefix
+                system_msg_found = False
+                for msg in messages:
+                    if msg.get("role") == "system":
+                        system_msg_found = True
+                        existing_content = msg.get("content", "")
+                        # Append prefix at the end of existing system message
+                        if existing_content:
+                            msg["content"] = f"{existing_content}\n{prefix}"
+                        else:
+                            msg["content"] = prefix
+                        break
+
+                # If no system message exists, create one with the prefix
+                if not system_msg_found:
+                    messages.insert(0, {"role": "system", "content": prefix})
 
         # special handling for "stop" because it always comes in kwargs.
         # if user provided "stop" to invoke/stream, it will be non-None
