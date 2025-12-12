@@ -669,6 +669,14 @@ CHAT_MODEL_TABLE = {
         supports_structured_output=True,
         supports_thinking=True,
     ),
+    "moonshotai/kimi-k2-thinking": Model(
+        id="moonshotai/kimi-k2-thinking",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
@@ -808,6 +816,11 @@ EMBEDDING_MODEL_TABLE = {
     ),
     "nvidia/nv-embedcode-7b-v1": Model(
         id="nvidia/nv-embedcode-7b-v1",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+    ),
+    "nvidia/llama-3.2-nemoretriever-300m-embed-v2": Model(
+        id="nvidia/llama-3.2-nemoretriever-300m-embed-v2",
         model_type="embedding",
         client="NVIDIAEmbeddings",
     ),
