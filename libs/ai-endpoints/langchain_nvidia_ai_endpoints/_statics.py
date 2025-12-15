@@ -677,6 +677,14 @@ CHAT_MODEL_TABLE = {
         supports_structured_output=True,
         supports_thinking=True,
     ),
+    "nvidia/nemotron-3-nano-30b-a3b": Model(
+        id="nvidia/nemotron-3-nano-30b-a3b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
