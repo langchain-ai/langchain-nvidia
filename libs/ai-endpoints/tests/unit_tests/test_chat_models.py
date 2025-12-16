@@ -6,6 +6,7 @@ from typing import Any, Optional, Union
 import pytest
 from requests_mock import Mocker
 
+from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
 from .conftest import MockHTTP
@@ -285,32 +286,14 @@ def test_thinking_prefix_appends_to_existing_system_message(
 
 
 @pytest.mark.parametrize(
-    "model_name,expected_on,expected_off",
+    "model_name",
     [
-        # Detailed thinking models (use "detailed thinking on/off")
-        (
-            "nvidia/llama-3.1-nemotron-nano-8b-v1",
-            "detailed thinking on",
-            "detailed thinking off",
-        ),
-        (
-            "nvidia/llama-3.1-nemotron-nano-4b-v1.1",
-            "detailed thinking on",
-            "detailed thinking off",
-        ),
-        (
-            "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-            "detailed thinking on",
-            "detailed thinking off",
-        ),
-        (
-            "nvidia/llama-3.3-nemotron-super-49b-v1",
-            "detailed thinking on",
-            "detailed thinking off",
-        ),
-        # /think models (use "/think" and "/no_think")
-        ("nvidia/llama-3.3-nemotron-super-49b-v1.5", "/think", "/no_think"),
-        ("nvidia/nvidia-nemotron-nano-9b-v2", "/think", "/no_think"),
+        "nvidia/llama-3.1-nemotron-nano-8b-v1",
+        "nvidia/llama-3.1-nemotron-nano-4b-v1.1",
+        "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+        "nvidia/llama-3.3-nemotron-super-49b-v1",
+        "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+        "nvidia/nvidia-nemotron-nano-9b-v2",
     ],
 )
 @pytest.mark.parametrize(
@@ -321,8 +304,6 @@ def test_thinking_prefix_appends_to_existing_system_message(
 def test_different_thinking_prefixes_for_different_models(
     requests_mock: Mocker,
     model_name: str,
-    expected_on: str,
-    expected_off: str,
     thinking_mode: bool,
 ) -> None:
     """Test different models use correct thinking prefixes."""
@@ -346,8 +327,98 @@ def test_different_thinking_prefixes_for_different_models(
     assert len(messages) == 2
     assert messages[0]["role"] == "system"
 
-    expected_content = expected_on if thinking_mode else expected_off
+    model_def = MODEL_TABLE[model_name]
+    expected_content = (
+        model_def.thinking_prefix if thinking_mode else model_def.no_thinking_prefix
+    )
     assert messages[0]["content"] == expected_content
+
+
+@pytest.mark.parametrize(
+    "model_name",
+    [
+        "nvidia/nemotron-3-nano-30b-a3b",
+    ],
+)
+@pytest.mark.parametrize(
+    "thinking_mode",
+    [False, True],
+    ids=["thinking_off", "thinking_on"],
+)
+def test_param_based_thinking_mode(
+    requests_mock: Mocker, model_name: str, thinking_mode: bool
+) -> None:
+    """Test that param-based thinking mode correctly adds parameters to payload."""
+    captured_requests = []
+
+    def capture_request(request: Any, context: Any) -> dict:
+        captured_requests.append(request.json())
+        return {"choices": [{"message": {"role": "assistant", "content": "test"}}]}
+
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        json=capture_request,
+    )
+
+    llm = ChatNVIDIA(model=model_name, api_key="BOGUS").with_thinking_mode(
+        enabled=thinking_mode
+    )
+    llm.invoke("test message")
+
+    payload = captured_requests[0]
+
+    model_def = MODEL_TABLE[model_name]
+    expected_params = (
+        model_def.thinking_param_enable
+        if thinking_mode
+        else model_def.thinking_param_disable
+    )
+
+    # Verify that the expected params are present in the payload
+    assert expected_params is not None
+    for key, value in expected_params.items():
+        assert key in payload
+        assert payload[key] == value
+
+
+@pytest.mark.parametrize(
+    "model_name",
+    [
+        "nvidia/nemotron-3-nano-30b-a3b",
+    ],
+)
+@pytest.mark.parametrize(
+    "thinking_mode",
+    [False, True],
+    ids=["thinking_off", "thinking_on"],
+)
+async def test_async_param_based_thinking_mode(
+    model_name: str, thinking_mode: bool, mock_http: MockHTTP
+) -> None:
+    """Async parity of param-based thinking mode payload injection for ainvoke."""
+    mock_http.set_post(
+        json_body={"choices": [{"message": {"role": "assistant", "content": "test"}}]}
+    )
+
+    llm = ChatNVIDIA(model=model_name, api_key="BOGUS").with_thinking_mode(
+        enabled=thinking_mode
+    )
+    await llm.ainvoke("test message")
+
+    request_payload = mock_http.aio.post.call_args.kwargs.get("json", {})
+
+    model_def = MODEL_TABLE[model_name]
+    expected_params = (
+        model_def.thinking_param_enable
+        if thinking_mode
+        else model_def.thinking_param_disable
+    )
+
+    # Verify that the expected params are present in the payload
+    assert expected_params is not None
+    for key, value in expected_params.items():
+        assert key in request_payload
+        assert request_payload[key] == value
 
 
 @pytest.mark.parametrize(
@@ -470,3 +541,53 @@ def test_model_kwargs_extra_parameters() -> None:
     assert payload3["temperature"] == 0.3
     assert payload3["top_k"] == 20
     assert payload3["custom_param"] == "from_invoke"
+
+
+def test_param_based_thinking_deep_merge_chat_template_kwargs(
+    requests_mock: Mocker,
+) -> None:
+    """Test deep merge for param-based thinking mode.
+
+    Specifically tests nvidia/nemotron-3-nano-30b-a3b which uses
+    chat_template_kwargs parameter for thinking mode.
+    """
+    # Note: This test is specific to models using chat_template_kwargs
+    captured_requests = []
+
+    def capture_request(request: Any, context: Any) -> dict:
+        captured_requests.append(request.json())
+        return {"choices": [{"message": {"role": "assistant", "content": "test"}}]}
+
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        json=capture_request,
+    )
+
+    llm = ChatNVIDIA(
+        model="nvidia/nemotron-3-nano-30b-a3b", api_key="BOGUS"
+    ).with_thinking_mode(enabled=True)
+
+    # User passes their own chat_template_kwargs
+    llm.invoke("test message", chat_template_kwargs={"user_param": "user_value"})
+
+    payload = captured_requests[0]
+
+    # Verify both user params and thinking params are present
+    assert "chat_template_kwargs" in payload
+    assert payload["chat_template_kwargs"]["user_param"] == "user_value"
+    assert payload["chat_template_kwargs"]["enable_thinking"] is True
+
+    # Test override: with_thinking_mode binding should take precedence
+    captured_requests.clear()
+    llm2 = ChatNVIDIA(
+        model="nvidia/nemotron-3-nano-30b-a3b", api_key="BOGUS"
+    ).with_thinking_mode(enabled=False)
+
+    llm2.invoke(
+        "test message",
+        chat_template_kwargs={"enable_thinking": True},  # User tries to enable
+    )
+
+    payload2 = captured_requests[0]
+    # with_thinking_mode(enabled=False) should override user's True
+    assert payload2["chat_template_kwargs"]["enable_thinking"] is False

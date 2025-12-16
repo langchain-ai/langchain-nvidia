@@ -19,7 +19,19 @@ class Model(BaseModel):
         supports_structured_output: Whether the model supports structured output
         supports_thinking: Whether the model supports thinking mode
         thinking_prefix: System message prefix when thinking is enabled
+            (tag-based)
         no_thinking_prefix: System message prefix when thinking is disabled
+            (tag-based)
+        thinking_param_enable: Dict of parameters to apply when thinking is
+            enabled (param-based)
+        thinking_param_disable: Dict of parameters to apply when thinking is
+            disabled (param-based)
+
+    Thinking mode can be enabled via two mechanisms:
+        1. Tag-based: Use thinking_prefix/no_thinking_prefix (appended to
+            system message)
+        2. Param-based: Use thinking_param_enable/thinking_param_disable
+            (merged into request params)
 
     All aliases are deprecated and will trigger a warning when used.
     """
@@ -54,6 +66,10 @@ class Model(BaseModel):
     thinking_prefix: Optional[str] = None
 
     no_thinking_prefix: Optional[str] = None
+
+    thinking_param_enable: Optional[dict] = None
+
+    thinking_param_disable: Optional[dict] = None
 
     base_model: Optional[str] = None
 
@@ -702,6 +718,8 @@ CHAT_MODEL_TABLE = {
         supports_tools=True,
         supports_structured_output=True,
         supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
     "deepseek-ai/deepseek-v3.2": Model(
         id="deepseek-ai/deepseek-v3.2",
