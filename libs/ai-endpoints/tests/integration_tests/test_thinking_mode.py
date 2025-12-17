@@ -37,12 +37,24 @@ def check_reasoning_content(
     assert isinstance(response, AIMessage)
     assert isinstance(response.content, str)
 
-    think_tag = "<think>" in response.content
+    # Check for content_blocks with reasoning
+    has_reasoning_block = (
+        hasattr(response, "content_blocks")
+        and response.content_blocks is not None
+        and len(response.content_blocks) > 0
+        and response.content_blocks[0].get("type") == "reasoning"
+    )
 
     if should_have_reasoning:
-        assert think_tag, "No reasoning content found in think tag"
+        assert has_reasoning_block, "No reasoning content found in content_blocks"
+        # Content should not contain think tags
+        assert (
+            "<think>" not in response.content
+        ), "Content should not contain think tags"
     else:
-        assert not think_tag, "Found reasoning content when it should not be present"
+        assert (
+            not has_reasoning_block
+        ), "Found reasoning content when it should not be present"
 
 
 @pytest.mark.parametrize(

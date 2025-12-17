@@ -23,7 +23,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
 )
 
 from langchain_core.callbacks.manager import (
@@ -194,63 +193,55 @@ def _nv_vlm_adjust_input(
     return message_dict
 
 
-def _extract_content_after_thinking(content: str) -> str:
-    """Extract content that comes after thinking tags.
+def parse_thinking_content(content: str) -> tuple[str, str]:
+    """Parse thinking content from text.
 
-    When thinking mode is enabled, the actual structured output content
-    comes after the `</think>` closing tag. This function extracts that content
-    while preserving the original content structure.
+    This function handles multiple formats by trying to find the reasoning content
+    1. Content with single </think> tag delimiter
+    2. Content with <think></think> paired tags
+    3. Plain content without reasoning
 
     Args:
         content: The full content including potential thinking tags
 
     Returns:
-        Content after the last `</think>` tag, or original content if no thinking tags
+        tuple: (reasoning_content, actual_content) where either can be empty string
     """
-    if content and "<think>" in content and "</think>" in content:
-        # Find the last </think> tag and extract content after it
-        think_end = content.rfind("</think>")
-        if think_end != -1:
-            # Extract content after </think> tag
-            actual_content = content[think_end + len("</think>") :].strip()
-            return actual_content
-    return content
+    if not content:
+        return "", ""
 
+    # Check for single </think> tag (everything before is reasoning)
+    if "</think>" in content and "<think>" not in content:
+        think_end_idx = content.find("</think>")
+        reasoning_part = content[:think_end_idx]
+        actual_content = content[think_end_idx + len("</think>") :]
 
-def _create_thinking_aware_parser(
-    base_parser_class: Type[T_Parser],
-) -> Type[T_Parser]:
-    """Create a thinking-aware version of any output parser.
+        reasoning = reasoning_part.strip("\n").strip()
+        actual = actual_content.strip("\n").strip()
 
-    This wrapper extracts content after thinking tags for parsing, but preserves
-    the original content with thinking tags in the response.
-    """
+        return reasoning, actual
 
-    class ThinkingAwareParser(base_parser_class):  # type: ignore[valid-type,misc]
-        def parse(self, text: str) -> Any:
-            # Extract only the content after thinking tags for parsing
-            actual_content = _extract_content_after_thinking(text)
-            return super().parse(actual_content)
+    # Check for paired <think></think> tags
+    if "<think>" in content and "</think>" in content:
+        think_start_idx = content.find("<think>")
+        think_end_idx = content.find("</think>")
 
-        def parse_result(
-            self, result: List[Generation], *, partial: bool = False
-        ) -> Any:
-            if result and hasattr(result[0], "text"):
-                original_text = result[0].text
-                # Extract only the content after thinking tags for parsing
-                actual_content = _extract_content_after_thinking(original_text)
+        # Make sure both tags are in the right order
+        if (
+            think_start_idx != -1
+            and think_end_idx != -1
+            and think_start_idx < think_end_idx
+        ):
+            reasoning_part = content[think_start_idx + len("<think>") : think_end_idx]
+            actual_content = content[think_end_idx + len("</think>") :]
 
-                # Create a new generation object with extracted content
-                clean_generation = Generation(
-                    text=actual_content, generation_info=result[0].generation_info
-                )
+            reasoning = reasoning_part.strip("\n").strip()
+            actual = actual_content.strip("\n").strip()
 
-                clean_result = [clean_generation] + result[1:]
+            return reasoning, actual
 
-                return super().parse_result(clean_result, partial=partial)
-            return super().parse_result(result, partial=partial)
-
-    return cast(Type[T_Parser], ThinkingAwareParser)
+    # No reasoning found, return plain content
+    return "", content
 
 
 def _nv_vlm_get_asset_ids(
@@ -733,17 +724,29 @@ class ChatNVIDIA(BaseChatModel):
         self, msg: dict, streaming: bool = False
     ) -> dict:  # todo: remove
         kw_left = msg.copy()
+        content = kw_left.pop("content", "") or ""
+
+        # Extract reasoning: check reasoning_content field first,
+        # then parse <think> tags if needed
+        reasoning_from_reasoning_content = kw_left.pop("reasoning_content", None)
+
+        reasoning_from_tags, content_without_reasoning = parse_thinking_content(content)
+
+        # Prioritize reasoning from reasoning_content field
+        reasoning = reasoning_from_reasoning_content or reasoning_from_tags
+        final_content = content_without_reasoning
+
         out_dict = {
             "role": kw_left.pop("role", "assistant") or "assistant",
             "name": kw_left.pop("name", None),
             "id": kw_left.pop("id", None),
-            "content": kw_left.pop("content", "") or "",
+            "content": final_content,
             "additional_kwargs": {},
             "response_metadata": {},
         }
 
-        if rc := kw_left.pop("reasoning_content", None):
-            out_dict["additional_kwargs"]["reasoning_content"] = rc
+        if reasoning:
+            out_dict["additional_kwargs"]["reasoning_content"] = reasoning
 
         if token_usage := kw_left.pop("token_usage", None):
             out_dict["usage_metadata"] = {
@@ -1132,10 +1135,7 @@ class ChatNVIDIA(BaseChatModel):
             )
 
         if isinstance(schema, dict):
-            ThinkingAwareJsonOutputParser = _create_thinking_aware_parser(
-                JsonOutputParser
-            )
-            output_parser: BaseOutputParser = ThinkingAwareJsonOutputParser()
+            output_parser: BaseOutputParser = JsonOutputParser()
             nvext_param: Dict[str, Any] = {"guided_json": schema}
         elif issubclass(schema, enum.Enum):
             # langchain's EnumOutputParser is not in langchain_core
@@ -1162,10 +1162,7 @@ class ChatNVIDIA(BaseChatModel):
                     "Enum schema must only contain string choices. "
                     "Use StrEnum or ensure all member values are strings."
                 )
-            ThinkingAwareEnumOutputParser = _create_thinking_aware_parser(
-                EnumOutputParser
-            )
-            output_parser = ThinkingAwareEnumOutputParser(enum=schema)
+            output_parser = EnumOutputParser(enum=schema)
             nvext_param = {"guided_choice": choices}
             guided_schema = choices
 
@@ -1184,10 +1181,7 @@ class ChatNVIDIA(BaseChatModel):
                         pass
                     return None
 
-            ThinkingAwarePydanticOutputParser = _create_thinking_aware_parser(
-                ForgivingPydanticOutputParser
-            )
-            output_parser = ThinkingAwarePydanticOutputParser(pydantic_object=schema)
+            output_parser = ForgivingPydanticOutputParser(pydantic_object=schema)
             if hasattr(schema, "model_json_schema"):
                 json_schema = schema.model_json_schema()
             else:
