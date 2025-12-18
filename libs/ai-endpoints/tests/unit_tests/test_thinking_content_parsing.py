@@ -1,5 +1,7 @@
 """Tests for thinking content parsing and content_blocks generation."""
 
+import warnings
+
 import pytest
 import requests_mock
 
@@ -8,43 +10,49 @@ from langchain_nvidia_ai_endpoints.chat_models import parse_thinking_content
 
 
 @pytest.mark.parametrize(
-    "response_content,expected_content,expected_reasoning",
+    "response_content,expected_content,expected_reasoning,should_warn",
     [
         # Paired <think></think> tags
         (
             "<think>This is my reasoning.</think>This is the response.",
             "This is the response.",
             "This is my reasoning.",
+            True,
         ),
         # Single </think> tag
         (
             "This is reasoning content</think>This is the actual response.",
             "This is the actual response.",
             "This is reasoning content",
+            True,
         ),
         # No thinking tags
         (
             "Just a regular response",
             "Just a regular response",
             "",
+            False,
         ),
         # Only thinking content, no response
         (
             "<think>Only reasoning here</think>",
             "",
             "Only reasoning here",
+            True,
         ),
         # Whitespace handling with paired tags
         (
             "<think>\nReasoning with whitespace\n</think>\n\nResponse text\n",
             "Response text",
             "Reasoning with whitespace",
+            True,
         ),
         # Whitespace handling with single tag
         (
             "\nReasoning\n</think>\n\n  Response  \n",
             "Response",
             "Reasoning",
+            True,
         ),
         # Complex reasoning with newlines
         (
@@ -54,6 +62,7 @@ from langchain_nvidia_ai_endpoints.chat_models import parse_thinking_content
             ),
             "Final answer",
             "Step 1: analyze\nStep 2: process\nStep 3: conclude",
+            True,
         ),
     ],
     ids=[
@@ -71,6 +80,7 @@ def test_thinking_content_parsing_and_blocks(
     response_content: str,
     expected_content: str,
     expected_reasoning: str,
+    should_warn: bool,
 ) -> None:
     """Test parsing and content_blocks generation for thinking content."""
     # Test 1: Parse function directly
@@ -107,7 +117,18 @@ def test_thinking_content_parsing_and_blocks(
     )
 
     llm = ChatNVIDIA(api_key="BOGUS")
-    response = llm.invoke("Test message")
+
+    # Check for warning if reasoning is parsed from tags
+    if should_warn:
+        with pytest.warns(
+            UserWarning,
+            match="Reasoning content was parsed from model output",
+        ):
+            response = llm.invoke("Test message")
+    else:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            response = llm.invoke("Test message")
 
     # Check content field
     assert response.content == expected_content
@@ -153,7 +174,7 @@ def test_thinking_content_parsing_and_blocks(
 def test_content_blocks_with_reasoning_content_from_response(
     requests_mock: requests_mock.Mocker,
 ) -> None:
-    """Test that reasoning_content from response is also handled."""
+    """Test that reasoning_content from response is handled without warning."""
     requests_mock.post(
         "https://integrate.api.nvidia.com/v1/chat/completions",
         json={
@@ -183,7 +204,11 @@ def test_content_blocks_with_reasoning_content_from_response(
     )
 
     llm = ChatNVIDIA(api_key="BOGUS")
-    response = llm.invoke("Test message")
+
+    # Should not raise any warnings because reasoning comes from response field
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        response = llm.invoke("Test message")
 
     # Check content and additional_kwargs
     assert response.content == "Response text"
@@ -209,7 +234,7 @@ def test_content_blocks_with_reasoning_content_from_response(
 def test_content_blocks_priority_response_over_tags(
     requests_mock: requests_mock.Mocker,
 ) -> None:
-    """Test reasoning_content from response takes priority over tags."""
+    """Test reasoning_content from response takes priority over tags without warning."""
     requests_mock.post(
         "https://integrate.api.nvidia.com/v1/chat/completions",
         json={
@@ -239,7 +264,11 @@ def test_content_blocks_priority_response_over_tags(
     )
 
     llm = ChatNVIDIA(api_key="BOGUS")
-    response = llm.invoke("Test message")
+
+    # Should not warn because reasoning_content field takes priority
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        response = llm.invoke("Test message")
 
     # Content should be parsed from tags
     assert response.content == "Response"

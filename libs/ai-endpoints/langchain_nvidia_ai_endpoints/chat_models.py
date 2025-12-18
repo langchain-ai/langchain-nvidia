@@ -732,6 +732,17 @@ class ChatNVIDIA(BaseChatModel):
 
         reasoning_from_tags, content_without_reasoning = parse_thinking_content(content)
 
+        # Warn user if reasoning was parsed from tags
+        # (only if not provided via reasoning_content field)
+        if reasoning_from_tags and not reasoning_from_reasoning_content:
+            warnings.warn(
+                "Reasoning content was parsed from model output. "
+                "The reasoning is available in additional_kwargs['reasoning_content'] "
+                "and in the reasoning content block in response.content_blocks.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         # Prioritize reasoning from reasoning_content field
         reasoning = reasoning_from_reasoning_content or reasoning_from_tags
         final_content = content_without_reasoning
