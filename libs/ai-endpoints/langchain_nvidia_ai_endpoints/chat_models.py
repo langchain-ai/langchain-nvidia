@@ -51,9 +51,11 @@ from langchain_core.outputs import (
 )
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
+from langchain_core.utils import get_pydantic_field_names
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_core.utils.pydantic import is_basemodel_subclass
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
+from langchain_core.utils.utils import _build_model_kwargs
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
@@ -371,6 +373,22 @@ class ChatNVIDIA(BaseChatModel):
         default_factory=dict,
         description="Default headers merged into all requests.",
     )
+
+    model_kwargs: Dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "Additional model parameters that are not explicitly defined "
+            "to be added during invocation."
+        ),
+    )
+
+    # Reference: https://github.com/langchain-ai/langchain/blob/master/libs/partners/openai/langchain_openai/llms/base.py#L295
+    @model_validator(mode="before")
+    @classmethod
+    def build_extra(cls, values: dict[str, Any]) -> Any:
+        """Build extra kwargs from additional params that were passed in."""
+        all_required_field_names = get_pydantic_field_names(cls)
+        return _build_model_kwargs(values, all_required_field_names)
 
     def __init__(
         self,
@@ -843,6 +861,9 @@ class ChatNVIDIA(BaseChatModel):
             "min_tokens": self.min_tokens,
             "ignore_eos": self.ignore_eos,
         }
+
+        # merge model_kwargs first
+        payload.update(self.model_kwargs)
 
         # merge incoming kwargs with attr_kwargs giving preference to
         # the incoming kwargs
