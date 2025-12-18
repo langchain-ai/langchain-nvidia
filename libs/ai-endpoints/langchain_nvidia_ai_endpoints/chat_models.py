@@ -311,7 +311,7 @@ def _process_for_vlm(
     return inputs, extra_headers
 
 
-_DEFAULT_MODEL_NAME: str = "meta/llama-3.1-8b-instruct"
+_DEFAULT_MODEL_NAME: str = "meta/llama3-8b-instruct"
 
 
 class ChatNVIDIA(BaseChatModel):
@@ -361,14 +361,6 @@ class ChatNVIDIA(BaseChatModel):
         description="Stream options for the model. Set to None to disable",
     )
 
-    min_tokens: Optional[int] = Field(
-        None, description="Minimum number of tokens to generate"
-    )
-
-    ignore_eos: Optional[bool] = Field(
-        None, description="Whether to ignore end-of-sequence tokens"
-    )
-
     default_headers: dict = Field(
         default_factory=dict,
         description="Default headers merged into all requests.",
@@ -402,8 +394,6 @@ class ChatNVIDIA(BaseChatModel):
         top_p: Optional[float] = None,
         seed: Optional[int] = None,
         stop: Optional[Union[str, List[str]]] = None,
-        min_tokens: Optional[int] = None,
-        ignore_eos: Optional[bool] = None,
         default_headers: Optional[Dict[str, str]] = None,
         **kwargs: Any,
     ):
@@ -428,8 +418,6 @@ class ChatNVIDIA(BaseChatModel):
             top_p: Top-p for distribution sampling.
             seed: A seed for deterministic results.
             stop: A string or list of strings specifying stop sequences.
-            min_tokens: Minimum number of tokens to generate.
-            ignore_eos: Whether to ignore end-of-sequence tokens.
             default_headers: Default headers merged into all requests.
             **kwargs: Additional parameters passed to the underlying client.
 
@@ -473,10 +461,6 @@ class ChatNVIDIA(BaseChatModel):
             init_kwargs["seed"] = seed
         if stop is not None:
             init_kwargs["stop"] = stop
-        if min_tokens is not None:
-            init_kwargs["min_tokens"] = min_tokens
-        if ignore_eos is not None:
-            init_kwargs["ignore_eos"] = ignore_eos
         if default_headers is not None:
             init_kwargs["default_headers"] = default_headers
 
@@ -550,8 +534,6 @@ class ChatNVIDIA(BaseChatModel):
             #  for TypedDict "LangSmithParams"  [typeddict-item]
             # ls_top_p=params.get("top_p", self.top_p),
             # ls_seed=params.get("seed", self.seed),
-            # ls_min_tokens=params.get("min_tokens", self.min_tokens),
-            # ls_ignore_eos=params.get("ignore_eos", self.ignore_eos),
             ls_stop=params.get("stop", self.stop),
         )
 
@@ -858,8 +840,6 @@ class ChatNVIDIA(BaseChatModel):
             "top_p": self.top_p,
             "seed": self.seed,
             "stop": self.stop,
-            "min_tokens": self.min_tokens,
-            "ignore_eos": self.ignore_eos,
         }
 
         # merge model_kwargs first
