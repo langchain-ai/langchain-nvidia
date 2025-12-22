@@ -685,6 +685,14 @@ CHAT_MODEL_TABLE = {
         supports_structured_output=True,
         supports_thinking=True,
     ),
+    "deepseek-ai/deepseek-v3.2": Model(
+        id="deepseek-ai/deepseek-v3.2",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+        supports_structured_output=True,
+        supports_tools=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
