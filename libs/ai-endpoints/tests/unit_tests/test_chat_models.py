@@ -113,36 +113,6 @@ def test_max_tokens_value() -> None:
     assert payload["max_tokens"] == 50
 
 
-def test_min_tokens_parameter() -> None:
-    """Test that min_tokens parameter works correctly."""
-    llm = ChatNVIDIA(
-        model="meta/llama2-70b",
-        min_tokens=10,
-        nvidia_api_key="nvapi-...",
-    )
-    assert llm.min_tokens == 10
-    payload = llm._get_payload(
-        inputs=[{"role": "user", "content": "test"}],
-        stop=None,
-    )
-    assert payload["min_tokens"] == 10
-
-
-def test_ignore_eos_parameter() -> None:
-    """Test that ignore_eos parameter works correctly."""
-    llm = ChatNVIDIA(
-        model="meta/llama2-70b",
-        ignore_eos=True,
-        nvidia_api_key="nvapi-...",
-    )
-    assert llm.ignore_eos is True
-    payload = llm._get_payload(
-        inputs=[{"role": "user", "content": "test"}],
-        stop=None,
-    )
-    assert payload["ignore_eos"] is True
-
-
 def test_optional_parameters_default_values() -> None:
     """Test that optional parameters have correct default values
     and payload behavior."""
@@ -155,8 +125,6 @@ def test_optional_parameters_default_values() -> None:
     assert llm.top_p is None
     assert llm.seed is None
     assert llm.stop is None
-    assert llm.min_tokens is None
-    assert llm.ignore_eos is None
 
     # Parameters that have non-None default values
     assert llm.max_tokens == 1024
@@ -170,8 +138,6 @@ def test_optional_parameters_default_values() -> None:
     assert "top_p" not in payload
     assert "seed" not in payload
     assert "stop" not in payload
-    assert "min_tokens" not in payload
-    assert "ignore_eos" not in payload
 
     assert "max_tokens" in payload
     assert payload["max_tokens"] == 1024
@@ -328,3 +294,64 @@ def test_default_headers(requests_mock: Mocker) -> None:
     _ = llm.invoke("Hello")
     assert requests_mock.last_request is not None
     assert requests_mock.last_request.headers["X-Test"] == "test"
+
+
+def test_model_kwargs_extra_parameters() -> None:
+    """Test that extra parameters are captured in model_kwargs and included
+    in payload."""
+    # Test 1: Extra parameters via constructor kwargs
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        llm = ChatNVIDIA(
+            model="meta/llama3-70b-instruct",
+            nvidia_api_key="nvapi-...",
+            custom_param="custom_value",
+        )
+        # Should get warning about non-default parameter
+        assert len(w) == 1
+        assert "custom_param" in str(w[0].message)
+
+    # Check that extra param is stored in model_kwargs
+    assert "custom_param" in llm.model_kwargs
+    assert llm.model_kwargs["custom_param"] == "custom_value"
+
+    # Check that custom param appears in payload
+    payload = llm._get_payload(
+        inputs=[{"role": "user", "content": "test"}],
+        stop=None,
+    )
+    assert payload["custom_param"] == "custom_value"
+
+    # Test 2: Explicit model_kwargs parameter alongside explicit params
+    llm2 = ChatNVIDIA(
+        model="meta/llama3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        temperature=0.5,
+        model_kwargs={"top_k": 10, "custom_param": "from_model_kwargs"},
+    )
+
+    # Explicit temperature parameter is set
+    assert llm2.temperature == 0.5
+    assert "top_k" in llm2.model_kwargs
+    assert llm2.model_kwargs["top_k"] == 10
+
+    # Both explicit and model_kwargs parameters appear in payload
+    payload2 = llm2._get_payload(
+        inputs=[{"role": "user", "content": "test"}],
+        stop=None,
+    )
+    assert payload2["temperature"] == 0.5
+    assert payload2["top_k"] == 10
+    assert payload2["custom_param"] == "from_model_kwargs"
+
+    # Test 3: Invoke-time kwargs override explicit parameters and model_kwargs
+    payload3 = llm2._get_payload(
+        inputs=[{"role": "user", "content": "test"}],
+        stop=None,
+        temperature=0.3,
+        top_k=20,
+        custom_param="from_invoke",
+    )
+    assert payload3["temperature"] == 0.3
+    assert payload3["top_k"] == 20
+    assert payload3["custom_param"] == "from_invoke"
