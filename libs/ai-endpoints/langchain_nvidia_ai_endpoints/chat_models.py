@@ -136,6 +136,17 @@ def _url_to_b64_string(image_source: str) -> str:
         raise ValueError(f"Unable to process the provided image source: {e}")
 
 
+def _deep_merge(base: dict, update: dict) -> dict:
+    """Deep merge update dict into base dict."""
+    result = base.copy()
+    for key, value in update.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
 def _nv_vlm_adjust_input(
     message_dict: Dict[str, Any], model_type: str
 ) -> Dict[str, Any]:
@@ -840,21 +851,7 @@ class ChatNVIDIA(BaseChatModel):
 
             if thinking_params:
                 # Param-based thinking: merge parameters into kwargs
-                def deep_merge(base: dict, update: dict) -> dict:
-                    """Deep merge update dict into base dict."""
-                    result = base.copy()
-                    for key, value in update.items():
-                        if (
-                            key in result
-                            and isinstance(result[key], dict)
-                            and isinstance(value, dict)
-                        ):
-                            result[key] = deep_merge(result[key], value)
-                        else:
-                            result[key] = value
-                    return result
-
-                kwargs = deep_merge(kwargs, thinking_params)
+                kwargs = _deep_merge(kwargs, thinking_params)
             else:
                 # Tag-based thinking: use system message prefix
                 prefix = (
