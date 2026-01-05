@@ -92,6 +92,29 @@ class Model(BaseModel):
                 )
         return self
 
+    @model_validator(mode="after")
+    def validate_thinking_config(self) -> "Model":
+        """Warn if both param-based and tag-based thinking are configured."""
+        has_param_based = (
+            self.thinking_param_enable is not None
+            or self.thinking_param_disable is not None
+        )
+        has_tag_based = (
+            self.thinking_prefix is not None or self.no_thinking_prefix is not None
+        )
+
+        if has_param_based and has_tag_based:
+            warnings.warn(
+                f"Model '{self.id}' has both param-based thinking "
+                f"(thinking_param_enable/disable) and tag-based thinking "
+                f"(thinking_prefix/no_thinking_prefix) configured. "
+                f"Param-based thinking will take precedence and tag-based "
+                f"thinking will be ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
+        return self
+
 
 CHAT_MODEL_TABLE = {
     "google/gemma-7b": Model(

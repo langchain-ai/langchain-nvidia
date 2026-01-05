@@ -6,7 +6,7 @@ from typing import Any, Optional, Union
 import pytest
 from requests_mock import Mocker
 
-from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE
+from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, register_model
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
 from .conftest import MockHTTP
@@ -419,6 +419,79 @@ async def test_async_param_based_thinking_mode(
     for key, value in expected_params.items():
         assert key in request_payload
         assert request_payload[key] == value
+
+
+@pytest.mark.parametrize(
+    "thinking_mode",
+    [False, True],
+    ids=["thinking_off", "thinking_on"],
+)
+def test_param_based_thinking_takes_precedence_over_tag_based(
+    requests_mock: Mocker, thinking_mode: bool
+) -> None:
+    """Test param-based thinking takes precedence over tag-based when both
+    are configured."""
+    # Register a model with both param-based and tag-based thinking configured
+    test_model_id = "test/model-with-both-thinking-modes"
+
+    # Suppress warning from register_model()
+    # (tested in test_statics.py::test_model_warns_on_both_thinking_modes)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        register_model(
+            Model(
+                id=test_model_id,
+                model_type="chat",
+                client="ChatNVIDIA",
+                endpoint="https://integrate.api.nvidia.com/v1/chat/completions",
+                # Param-based thinking (should be used)
+                thinking_param_enable={
+                    "chat_template_kwargs": {"enable_thinking": True}
+                },
+                thinking_param_disable={
+                    "chat_template_kwargs": {"enable_thinking": False}
+                },
+                # Tag-based thinking (should be ignored)
+                thinking_prefix="TAG_BASED_ON",
+                no_thinking_prefix="TAG_BASED_OFF",
+            )
+        )
+
+    captured_requests = []
+
+    def capture_request(request: Any, context: Any) -> dict:
+        captured_requests.append(request.json())
+        return {"choices": [{"message": {"role": "assistant", "content": "test"}}]}
+
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        json=capture_request,
+    )
+
+    llm = ChatNVIDIA(model=test_model_id, api_key="BOGUS").with_thinking_mode(
+        enabled=thinking_mode
+    )
+    llm.invoke("test message")
+
+    payload = captured_requests[0]
+    messages = payload["messages"]
+
+    # Verify param-based thinking is used
+    if thinking_mode:
+        assert "chat_template_kwargs" in payload
+        assert payload["chat_template_kwargs"]["enable_thinking"] is True
+    else:
+        assert "chat_template_kwargs" in payload
+        assert payload["chat_template_kwargs"]["enable_thinking"] is False
+
+    # Verify tag-based thinking is not used (no system message with the
+    # tag-based prefix). If there's a system message, it should not contain
+    # the tag-based prefix
+    for msg in messages:
+        if msg.get("role") == "system":
+            content = msg.get("content", "")
+            assert "TAG_BASED_ON" not in content
+            assert "TAG_BASED_OFF" not in content
 
 
 @pytest.mark.parametrize(
