@@ -17,7 +17,8 @@ class Model(BaseModel):
         aliases: List of aliases for the model
         supports_tools: Whether the model supports tool calling
         supports_structured_output: Whether the model supports structured output
-        supports_thinking: Whether the model supports thinking mode
+        supports_thinking: Whether the model supports configuring thinking
+            on/off through system message or request parameters
         thinking_prefix: System message prefix when thinking is enabled
             (tag-based)
         no_thinking_prefix: System message prefix when thinking is disabled
@@ -211,6 +212,8 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_thinking=True,
         supports_tools=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
     "ibm/granite-guardian-3.0-8b": Model(
         id="ibm/granite-guardian-3.0-8b",
@@ -543,12 +546,13 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_thinking=True,
         supports_tools=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
     "qwen/qwq-32b": Model(
         id="qwen/qwq-32b",
         model_type="chat",
         client="ChatNVIDIA",
-        supports_thinking=True,
         supports_tools=True,
     ),
     "nvidia/llama-3.1-nemotron-70b-reward": Model(
@@ -679,6 +683,8 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
     "bytedance/seed-oss-36b-instruct": Model(
         id="bytedance/seed-oss-36b-instruct",
@@ -686,7 +692,6 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_tools=True,
         supports_structured_output=True,
-        supports_thinking=True,
     ),
     "moonshotai/kimi-k2-instruct-0905": Model(
         id="moonshotai/kimi-k2-instruct-0905",
@@ -708,7 +713,6 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_tools=True,
         supports_structured_output=True,
-        supports_thinking=True,
     ),
     "deepseek-ai/deepseek-v3.1-terminus": Model(
         id="deepseek-ai/deepseek-v3.1-terminus",
@@ -717,6 +721,8 @@ CHAT_MODEL_TABLE = {
         supports_tools=True,
         supports_structured_output=True,
         supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
     "minimaxai/minimax-m2": Model(
         id="minimaxai/minimax-m2",
@@ -724,7 +730,6 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_tools=True,
         supports_structured_output=True,
-        supports_thinking=True,
     ),
     "moonshotai/kimi-k2-thinking": Model(
         id="moonshotai/kimi-k2-thinking",
@@ -732,7 +737,6 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_tools=True,
         supports_structured_output=True,
-        supports_thinking=True,
     ),
     "nvidia/nemotron-3-nano-30b-a3b": Model(
         id="nvidia/nemotron-3-nano-30b-a3b",
@@ -751,6 +755,8 @@ CHAT_MODEL_TABLE = {
         supports_thinking=True,
         supports_structured_output=True,
         supports_tools=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
 }
 
