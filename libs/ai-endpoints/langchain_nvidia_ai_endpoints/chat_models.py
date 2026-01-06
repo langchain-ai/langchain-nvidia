@@ -1280,7 +1280,7 @@ class ChatNVIDIA(BaseChatModel):
             ```python
             from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-            model = ChatNVIDIA(model="nvidia/llama-3.1-nemotron-nano-8b-v1")
+            model = ChatNVIDIA(model="nvidia/nvidia-nemotron-nano-9b-v2")
 
             # Enable thinking mode
             thinking_model = model.with_thinking_mode(enabled=True)
