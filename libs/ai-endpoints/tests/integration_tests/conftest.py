@@ -117,7 +117,12 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("reasoning_model", models, ids=models)
 
     if "thinking_model" in metafunc.fixturenames:
-        models = ["nvidia/llama-3.1-nemotron-nano-8b-v1"]
+        # Default models test two thinking modes:
+        # - nvidia/nemotron-3-nano-30b-a3b: parameter-based on/off control,
+        #   outputs reasoning in reasoning_content
+        # - nvidia/llama-3.3-nemotron-super-49b-v1: tag-based on/off control,
+        #   outputs reasoning in think tags
+        models = ["nvidia/nemotron-3-nano-30b-a3b", "nvidia/nvidia-nemotron-nano-9b-v2"]
         if model_list := metafunc.config.getoption("thinking_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):

@@ -915,12 +915,6 @@ RANKING_MODEL_TABLE = {
         endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/reranking",
         aliases=["ai-rerank-qa-mistral-4b"],
     ),
-    "nvidia/nv-rerankqa-mistral-4b-v3": Model(
-        id="nvidia/nv-rerankqa-mistral-4b-v3",
-        model_type="ranking",
-        client="NVIDIARerank",
-        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/nv-rerankqa-mistral-4b-v3/reranking",
-    ),
     "nvidia/llama-3.2-nv-rerankqa-1b-v1": Model(
         id="nvidia/llama-3.2-nv-rerankqa-1b-v1",
         model_type="ranking",
