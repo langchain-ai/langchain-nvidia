@@ -23,7 +23,7 @@ class Ranking(BaseModel):
     logit: float
 
 
-_DEFAULT_MODEL_NAME: str = "nvidia/nv-rerankqa-mistral-4b-v3"
+_DEFAULT_MODEL_NAME: str = "nvidia/llama-3.2-nv-rerankqa-1b-v2"
 _DEFAULT_BATCH_SIZE: int = 32
 
 
@@ -129,7 +129,7 @@ class NVIDIARerank(BaseDocumentCompressor):
             ]
 
             client = NVIDIARerank(
-                model="nvidia/nv-rerankqa-mistral-4b-v3",
+                model="nvidia/llama-3.2-nv-rerankqa-1b-v2",
                 api_key="$API_KEY_REQUIRED_IF_EXECUTING_OUTSIDE_NGC"
             )
 

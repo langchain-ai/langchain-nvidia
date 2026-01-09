@@ -17,7 +17,22 @@ class Model(BaseModel):
         aliases: List of aliases for the model
         supports_tools: Whether the model supports tool calling
         supports_structured_output: Whether the model supports structured output
-        supports_thinking: Whether the model supports thinking mode
+        supports_thinking: Whether the model supports configuring thinking
+            on/off through system message or request parameters
+        thinking_prefix: System message prefix when thinking is enabled
+            (tag-based)
+        no_thinking_prefix: System message prefix when thinking is disabled
+            (tag-based)
+        thinking_param_enable: Dict of parameters to apply when thinking is
+            enabled (param-based)
+        thinking_param_disable: Dict of parameters to apply when thinking is
+            disabled (param-based)
+
+    Thinking mode can be enabled via two mechanisms:
+        1. Tag-based: Use thinking_prefix/no_thinking_prefix (appended to
+            system message)
+        2. Param-based: Use thinking_param_enable/thinking_param_disable
+            (merged into request params)
 
     All aliases are deprecated and will trigger a warning when used.
     """
@@ -49,6 +64,14 @@ class Model(BaseModel):
 
     supports_thinking: Optional[bool] = False
 
+    thinking_prefix: Optional[str] = None
+
+    no_thinking_prefix: Optional[str] = None
+
+    thinking_param_enable: Optional[dict] = None
+
+    thinking_param_disable: Optional[dict] = None
+
     base_model: Optional[str] = None
 
     def __hash__(self) -> int:
@@ -68,6 +91,29 @@ class Model(BaseModel):
                     f"Model type '{self.model_type}' not supported "
                     f"by client '{self.client}'"
                 )
+        return self
+
+    @model_validator(mode="after")
+    def validate_thinking_config(self) -> "Model":
+        """Warn if both param-based and tag-based thinking are configured."""
+        has_param_based = (
+            self.thinking_param_enable is not None
+            or self.thinking_param_disable is not None
+        )
+        has_tag_based = (
+            self.thinking_prefix is not None or self.no_thinking_prefix is not None
+        )
+
+        if has_param_based and has_tag_based:
+            warnings.warn(
+                f"Model '{self.id}' has both param-based thinking "
+                f"(thinking_param_enable/disable) and tag-based thinking "
+                f"(thinking_prefix/no_thinking_prefix) configured. "
+                f"Param-based thinking will take precedence and tag-based "
+                f"thinking will be ignored.",
+                UserWarning,
+                stacklevel=2,
+            )
         return self
 
 
@@ -166,6 +212,8 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_thinking=True,
         supports_tools=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
     "ibm/granite-guardian-3.0-8b": Model(
         id="ibm/granite-guardian-3.0-8b",
@@ -498,12 +546,13 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_thinking=True,
         supports_tools=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
     "qwen/qwq-32b": Model(
         id="qwen/qwq-32b",
         model_type="chat",
         client="ChatNVIDIA",
-        supports_thinking=True,
         supports_tools=True,
     ),
     "nvidia/llama-3.1-nemotron-70b-reward": Model(
@@ -547,12 +596,16 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
+        thinking_prefix="detailed thinking on",
+        no_thinking_prefix="detailed thinking off",
     ),
     "nvidia/llama-3.1-nemotron-nano-4b-v1.1": Model(
         id="nvidia/llama-3.1-nemotron-nano-4b-v1.1",
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
+        thinking_prefix="detailed thinking on",
+        no_thinking_prefix="detailed thinking off",
         supports_tools=True,
     ),
     "nvidia/llama-3.1-nemotron-ultra-253b-v1": Model(
@@ -560,6 +613,8 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
+        thinking_prefix="detailed thinking on",
+        no_thinking_prefix="detailed thinking off",
         supports_tools=True,
     ),
     "nvidia/llama-3.3-nemotron-super-49b-v1": Model(
@@ -567,6 +622,8 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
+        thinking_prefix="detailed thinking on",
+        no_thinking_prefix="detailed thinking off",
         supports_tools=True,
         supports_structured_output=True,
     ),
@@ -575,6 +632,8 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
+        thinking_prefix="/think",
+        no_thinking_prefix="/no_think",
         supports_tools=True,
         supports_structured_output=True,
     ),
@@ -616,12 +675,16 @@ CHAT_MODEL_TABLE = {
         supports_tools=True,
         supports_structured_output=True,
         supports_thinking=True,
+        thinking_prefix="/think",
+        no_thinking_prefix="/no_think",
     ),
     "deepseek-ai/deepseek-v3.1": Model(
         id="deepseek-ai/deepseek-v3.1",
         model_type="chat",
         client="ChatNVIDIA",
         supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
     "bytedance/seed-oss-36b-instruct": Model(
         id="bytedance/seed-oss-36b-instruct",
@@ -629,7 +692,6 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_tools=True,
         supports_structured_output=True,
-        supports_thinking=True,
     ),
     "moonshotai/kimi-k2-instruct-0905": Model(
         id="moonshotai/kimi-k2-instruct-0905",
@@ -651,7 +713,6 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_tools=True,
         supports_structured_output=True,
-        supports_thinking=True,
     ),
     "deepseek-ai/deepseek-v3.1-terminus": Model(
         id="deepseek-ai/deepseek-v3.1-terminus",
@@ -660,6 +721,8 @@ CHAT_MODEL_TABLE = {
         supports_tools=True,
         supports_structured_output=True,
         supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
     "minimaxai/minimax-m2": Model(
         id="minimaxai/minimax-m2",
@@ -667,7 +730,6 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_tools=True,
         supports_structured_output=True,
-        supports_thinking=True,
     ),
     "moonshotai/kimi-k2-thinking": Model(
         id="moonshotai/kimi-k2-thinking",
@@ -675,7 +737,6 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_tools=True,
         supports_structured_output=True,
-        supports_thinking=True,
     ),
     "nvidia/nemotron-3-nano-30b-a3b": Model(
         id="nvidia/nemotron-3-nano-30b-a3b",
@@ -684,6 +745,8 @@ CHAT_MODEL_TABLE = {
         supports_tools=True,
         supports_structured_output=True,
         supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
     "deepseek-ai/deepseek-v3.2": Model(
         id="deepseek-ai/deepseek-v3.2",
@@ -692,6 +755,8 @@ CHAT_MODEL_TABLE = {
         supports_thinking=True,
         supports_structured_output=True,
         supports_tools=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
 }
 
@@ -849,12 +914,6 @@ RANKING_MODEL_TABLE = {
         client="NVIDIARerank",
         endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/reranking",
         aliases=["ai-rerank-qa-mistral-4b"],
-    ),
-    "nvidia/nv-rerankqa-mistral-4b-v3": Model(
-        id="nvidia/nv-rerankqa-mistral-4b-v3",
-        model_type="ranking",
-        client="NVIDIARerank",
-        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/nv-rerankqa-mistral-4b-v3/reranking",
     ),
     "nvidia/llama-3.2-nv-rerankqa-1b-v1": Model(
         id="nvidia/llama-3.2-nv-rerankqa-1b-v1",
