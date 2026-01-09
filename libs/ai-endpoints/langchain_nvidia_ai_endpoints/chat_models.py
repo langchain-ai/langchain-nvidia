@@ -136,6 +136,17 @@ def _url_to_b64_string(image_source: str) -> str:
         raise ValueError(f"Unable to process the provided image source: {e}")
 
 
+def _deep_merge(base: dict, update: dict) -> dict:
+    """Deep merge update dict into base dict."""
+    result = base.copy()
+    for key, value in update.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
 def _nv_vlm_adjust_input(
     message_dict: Dict[str, Any], model_type: str
 ) -> Dict[str, Any]:
@@ -814,14 +825,6 @@ class ChatNVIDIA(BaseChatModel):
         """Generates payload for the `_NVIDIAClient` API to send to service."""
         messages: List[Dict[str, Any]] = []
 
-        # Add system message for thinking mode if specified
-        thinking_mode = kwargs.pop("thinking_mode", None)
-        if thinking_mode is not None:
-            content = (
-                "detailed thinking on" if thinking_mode else "detailed thinking off"
-            )
-            messages.append({"role": "system", "content": content})
-
         for msg in inputs:
             if isinstance(msg, str):
                 # (WFH) this shouldn't ever be reached but leaving this here bcs
@@ -835,6 +838,45 @@ class ChatNVIDIA(BaseChatModel):
                 messages.append(msg)
             else:
                 raise ValueError(f"Unknown message received: {msg} of type {type(msg)}")
+
+        # Handle thinking mode via parameters or prefix to system message
+        thinking_mode = kwargs.pop("thinking_mode", None)
+        if thinking_mode is not None and self._client.model:
+            # Check if model uses param-based thinking
+            thinking_params = (
+                self._client.model.thinking_param_enable
+                if thinking_mode
+                else self._client.model.thinking_param_disable
+            )
+
+            if thinking_params:
+                # Param-based thinking: merge parameters into kwargs
+                kwargs = _deep_merge(kwargs, thinking_params)
+            else:
+                # Tag-based thinking: use system message prefix
+                prefix = (
+                    (self._client.model.thinking_prefix or "")
+                    if thinking_mode
+                    else (self._client.model.no_thinking_prefix or "")
+                )
+
+                if prefix:
+                    # Find existing system message and append prefix
+                    system_msg_found = False
+                    for msg in messages:
+                        if msg.get("role") == "system":
+                            system_msg_found = True
+                            existing_content = msg.get("content", "")
+                            # Append prefix at the end of existing system message
+                            if existing_content:
+                                msg["content"] = f"{existing_content}\n{prefix}"
+                            else:
+                                msg["content"] = prefix
+                            break
+
+                    # If no system message exists, create one with the prefix
+                    if not system_msg_found:
+                        messages.insert(0, {"role": "system", "content": prefix})
 
         # special handling for "stop" because it always comes in kwargs.
         # if user provided "stop" to invoke/stream, it will be non-None
@@ -1238,7 +1280,7 @@ class ChatNVIDIA(BaseChatModel):
             ```python
             from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-            model = ChatNVIDIA(model="nvidia/llama-3.1-nemotron-nano-8b-v1")
+            model = ChatNVIDIA(model="nvidia/nvidia-nemotron-nano-9b-v2")
 
             # Enable thinking mode
             thinking_model = model.with_thinking_mode(enabled=True)
