@@ -66,7 +66,7 @@ select = [
 ]
 
 [tool.mypy]
-disallow_untyped_defs = "True"
+disallow_untyped_defs = true
 
 [tool.coverage.run]
 omit = ["tests/*"]
