@@ -206,7 +206,9 @@ def _nv_vlm_adjust_input(
     return message_dict
 
 
-def parse_thinking_content(content: str) -> tuple[str, str]:
+def parse_thinking_content(
+    content: str, *, remove_tags: bool = True
+) -> tuple[str, str, str]:
     """Parse thinking content from text.
 
     This function handles multiple formats by trying to find the reasoning content
@@ -216,12 +218,14 @@ def parse_thinking_content(content: str) -> tuple[str, str]:
 
     Args:
         content: The full content including potential thinking tags
+        remove_tags: If True (default), removes tags.
+            If False, keeps for backward compat.
 
     Returns:
-        tuple: (reasoning_content, actual_content) where either can be empty string
+        tuple: (reasoning_content, content_with_tags, content_without_tags)
     """
     if not content:
-        return "", ""
+        return "", "", ""
 
     # Check for single </think> tag (everything before is reasoning)
     if "</think>" in content and "<think>" not in content:
@@ -232,7 +236,10 @@ def parse_thinking_content(content: str) -> tuple[str, str]:
         reasoning = reasoning_part.strip("\n").strip()
         actual = actual_content.strip("\n").strip()
 
-        return reasoning, actual
+        if remove_tags:
+            return reasoning, actual, actual
+        else:
+            return reasoning, content, actual
 
     # Check for paired <think></think> tags
     if "<think>" in content and "</think>" in content:
@@ -251,10 +258,28 @@ def parse_thinking_content(content: str) -> tuple[str, str]:
             reasoning = reasoning_part.strip("\n").strip()
             actual = actual_content.strip("\n").strip()
 
-            return reasoning, actual
+            if remove_tags:
+                return reasoning, actual, actual
+            else:
+                return reasoning, content, actual
 
     # No reasoning found, return plain content
-    return "", content
+    return "", content, content
+
+
+def _is_structured_output(payload: dict) -> bool:
+    """Check if the payload indicates structured output mode.
+
+    Structured output is enabled when nvext contains guided_json or guided_choice.
+
+    Args:
+        payload: The request payload dictionary
+
+    Returns:
+        True if structured output mode is enabled, False otherwise
+    """
+    nvext = payload.get("nvext", {})
+    return bool(nvext and ("guided_json" in nvext or "guided_choice" in nvext))
 
 
 def _nv_vlm_get_asset_ids(
@@ -607,19 +632,23 @@ class ChatNVIDIA(BaseChatModel):
         run_manager: Optional[
             Union[CallbackManagerForLLMRun, AsyncCallbackManagerForLLMRun]
         ] = None,
+        structured_output: bool = False,
     ) -> ChatResult:
         """Process response for both sync and async generate methods.
 
         Args:
             response: Raw response from the API
             run_manager: Callback manager
+            structured_output: Whether this is structured output mode
 
         Returns:
             ChatResult with generated message
         """
         responses, _ = self._client.postprocess(response)
         self._set_callback_out(responses, run_manager)
-        parsed_response = self._custom_postprocess(responses, streaming=False)
+        parsed_response = self._custom_postprocess(
+            responses, streaming=False, structured_output=structured_output
+        )
         # for pre 0.2 compatibility w/ ChatMessage
         # ChatMessage had a role property that was not present in AIMessage
         parsed_response.update({"role": "assistant"})
@@ -632,18 +661,22 @@ class ChatNVIDIA(BaseChatModel):
         run_manager: Optional[
             Union[CallbackManagerForLLMRun, AsyncCallbackManagerForLLMRun]
         ] = None,
+        structured_output: bool = False,
     ) -> ChatGenerationChunk:
         """Process a single stream chunk for both sync and async stream methods.
 
         Args:
             response: Raw response chunk from the API
             run_manager: Callback manager
+            structured_output: Whether this is structured output mode
 
         Returns:
             ChatGenerationChunk with the parsed message
         """
         self._set_callback_out(response, run_manager)
-        parsed_response = self._custom_postprocess(response, streaming=True)
+        parsed_response = self._custom_postprocess(
+            response, streaming=True, structured_output=structured_output
+        )
         # for pre 0.2 compatibility w/ ChatMessageChunk
         # ChatMessageChunk had a role property that was not
         # present in AIMessageChunk
@@ -664,7 +697,9 @@ class ChatNVIDIA(BaseChatModel):
             messages, stop, stream=False, **kwargs
         )
         response = self._client.get_req(payload=payload, extra_headers=extra_headers)
-        return self._process_generate_response(response, run_manager)
+        return self._process_generate_response(
+            response, run_manager, _is_structured_output(payload)
+        )
 
     def _stream(
         self,
@@ -677,10 +712,11 @@ class ChatNVIDIA(BaseChatModel):
         _, payload, extra_headers = self._prepare_inputs_and_payload(
             messages, stop, stream=True, **kwargs
         )
+        structured_output = _is_structured_output(payload)
         for response in self._client.get_req_stream(
             payload=payload, extra_headers=extra_headers
         ):
-            chunk = self._process_stream_chunk(response, run_manager)
+            chunk = self._process_stream_chunk(response, run_manager, structured_output)
             if run_manager:
                 run_manager.on_llm_new_token(chunk.text, chunk=chunk)
             yield chunk
@@ -699,7 +735,9 @@ class ChatNVIDIA(BaseChatModel):
         response = await self._client.aget_req(
             payload=payload, extra_headers=extra_headers
         )
-        return self._process_generate_response(response, run_manager)
+        return self._process_generate_response(
+            response, run_manager, _is_structured_output(payload)
+        )
 
     async def _astream(
         self,
@@ -712,10 +750,11 @@ class ChatNVIDIA(BaseChatModel):
         _, payload, extra_headers = self._prepare_inputs_and_payload(
             messages, stop, stream=True, **kwargs
         )
+        structured_output = _is_structured_output(payload)
         async for response in self._client.aget_req_stream(
             payload=payload, extra_headers=extra_headers
         ):
-            chunk = self._process_stream_chunk(response, run_manager)
+            chunk = self._process_stream_chunk(response, run_manager, structured_output)
             if run_manager:
                 await run_manager.on_llm_new_token(chunk.text, chunk=chunk)
             yield chunk
@@ -732,7 +771,7 @@ class ChatNVIDIA(BaseChatModel):
                     cb.llm_output = result
 
     def _custom_postprocess(
-        self, msg: dict, streaming: bool = False
+        self, msg: dict, streaming: bool = False, structured_output: bool = False
     ) -> dict:  # todo: remove
         kw_left = msg.copy()
         content = kw_left.pop("content", "") or ""
@@ -741,22 +780,45 @@ class ChatNVIDIA(BaseChatModel):
         # then parse <think> tags if needed
         reasoning_from_reasoning_content = kw_left.pop("reasoning_content", None)
 
-        reasoning_from_tags, content_without_reasoning = parse_thinking_content(content)
+        # Parse thinking content
+        # For structured output: remove tags
+        # For regular output: keep tags for backward compatibility
+        (
+            reasoning_from_tags,
+            content_with_tags,
+            content_without_tags,
+        ) = parse_thinking_content(content, remove_tags=structured_output)
 
         # Warn user if reasoning was parsed from tags
         # (only if not provided via reasoning_content field)
         if reasoning_from_tags and not reasoning_from_reasoning_content:
-            warnings.warn(
-                "Reasoning content was parsed from model output. "
-                "The reasoning is available in additional_kwargs['reasoning_content'] "
-                "and in the reasoning content block in response.content_blocks.",
-                UserWarning,
-                stacklevel=2,
-            )
+            if structured_output:
+                warnings.warn(
+                    "Reasoning content with <think> tags was detected in "
+                    "structured output mode. The tags have been removed from "
+                    "the content to ensure valid structured output. "
+                    "Note: The reasoning will be removed after the output "
+                    "parser extracts the structured object. To preserve "
+                    "reasoning, include a 'reasoning' field in your output "
+                    "schema and ask the model to populate it in the JSON.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            else:
+                warnings.warn(
+                    "Reasoning content was parsed from <think> tags in model "
+                    "output. The tags are currently preserved in the content "
+                    "but will be removed in a future version. The reasoning "
+                    "is available in additional_kwargs['reasoning_content'] "
+                    "and in the reasoning content block in content_blocks. "
+                    "Use reasoning_content instead of parsing tags manually.",
+                    UserWarning,
+                    stacklevel=2,
+                )
 
         # Prioritize reasoning from reasoning_content field
         reasoning = reasoning_from_reasoning_content or reasoning_from_tags
-        final_content = content_without_reasoning
+        final_content = content_without_tags if structured_output else content_with_tags
 
         out_dict = {
             "role": kw_left.pop("role", "assistant") or "assistant",
