@@ -718,8 +718,6 @@ class _NVIDIAClient(BaseModel):
                     content_buffer[k] += v
                 else:
                     content_buffer[k] = v
-            if is_stopped:
-                break
         content_holder = {**content_holder, **content_buffer}
         if usage_holder:
             content_holder.update(token_usage=usage_holder)  ####
