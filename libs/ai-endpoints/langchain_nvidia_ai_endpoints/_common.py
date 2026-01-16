@@ -718,8 +718,6 @@ class _NVIDIAClient(BaseModel):
                     content_buffer[k] += v
                 else:
                     content_buffer[k] = v
-            if is_stopped:
-                break
         content_holder = {**content_holder, **content_buffer}
         if usage_holder:
             content_holder.update(token_usage=usage_holder)  ####
@@ -757,8 +755,6 @@ class _NVIDIAClient(BaseModel):
                     line = line.decode("utf-8")
                     msg, final_line = call.postprocess(line)
                     yield msg
-                    if final_line:
-                        break
                 self._try_raise(response)
 
         return (r for r in out_gen())
@@ -815,8 +811,6 @@ class _NVIDIAClient(BaseModel):
                     line_str = line.decode("utf-8")
                     msg, final_line = call.postprocess(line_str)
                     yield msg
-                    if final_line:
-                        return
                 await self._try_raise_async(response)
         finally:
             await session.close()
