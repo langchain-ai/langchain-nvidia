@@ -755,8 +755,6 @@ class _NVIDIAClient(BaseModel):
                     line = line.decode("utf-8")
                     msg, final_line = call.postprocess(line)
                     yield msg
-                    if final_line:
-                        break
                 self._try_raise(response)
 
         return (r for r in out_gen())
@@ -813,8 +811,6 @@ class _NVIDIAClient(BaseModel):
                     line_str = line.decode("utf-8")
                     msg, final_line = call.postprocess(line_str)
                     yield msg
-                    if final_line:
-                        return
                 await self._try_raise_async(response)
         finally:
             await session.close()
