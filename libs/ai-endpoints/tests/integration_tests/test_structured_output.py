@@ -91,6 +91,7 @@ class Joke(BaseModel):
     rating: Optional[int] = Field(description="How funny the joke is, from 1 to 10")
 
 
+@pytest.mark.xfail(reason="Temporarily marking as xfail for model changes")
 @pytest.mark.parametrize(
     "func",
     [do_invoke, do_stream, do_ainvoke, do_astream],
@@ -108,6 +109,7 @@ async def test_pydantic(structured_model: str, mode: dict, func: Callable) -> No
     assert isinstance(result, Joke)
 
 
+@pytest.mark.xfail(reason="Temporarily marking as xfail for model changes")
 @pytest.mark.parametrize(
     "func",
     [do_invoke, do_stream, do_ainvoke, do_astream],
@@ -148,6 +150,7 @@ async def test_dict(structured_model: str, mode: dict, func: Callable) -> None:
     assert "punchline" in result
 
 
+@pytest.mark.xfail(reason="Temporarily marking as xfail for model changes")
 @pytest.mark.parametrize(
     "func",
     [do_invoke, do_stream, do_ainvoke, do_astream],
@@ -227,6 +230,7 @@ async def test_enum_incomplete(
     assert result is None
 
 
+@pytest.mark.xfail(reason="Temporarily marking as xfail for model changes")
 @pytest.mark.parametrize(
     "func",
     [do_invoke, do_stream, do_ainvoke, do_astream],

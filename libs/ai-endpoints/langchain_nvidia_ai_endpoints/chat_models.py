@@ -366,18 +366,31 @@ class ChatNVIDIA(BaseChatModel):
     model: Optional[str] = Field(None, description="Name of the model to invoke")
 
     temperature: Optional[float] = Field(
-        None, description="Sampling temperature in [0, 1]"
+        None,
+        ge=0.0,
+        le=2.0,
+        description="Sampling temperature in [0, 2]",
     )
 
     max_tokens: Optional[int] = Field(
         1024,
+        gt=0,
         description="Maximum # of tokens to generate",
         alias="max_completion_tokens",
     )
 
-    top_p: Optional[float] = Field(None, description="Top-p for distribution sampling")
+    top_p: Optional[float] = Field(
+        None,
+        ge=0.0,
+        le=1.0,
+        description="Top-p for nucleus sampling in [0, 1]",
+    )
 
-    seed: Optional[int] = Field(None, description="The seed for deterministic results")
+    seed: Optional[int] = Field(
+        None,
+        ge=0,
+        description="The seed for deterministic results",
+    )
 
     stop: Optional[Union[str, List[str]]] = Field(
         None, description="Stop words (cased)"
@@ -440,9 +453,9 @@ class ChatNVIDIA(BaseChatModel):
             base_url: The base URL of the NIM to connect to.
 
                 Format for base URL is `http://host:port`
-            temperature: Sampling temperature in `[0, 1]`.
+            temperature: Sampling temperature in `[0, 2]`.
             max_completion_tokens: Maximum number of tokens to generate.
-            top_p: Top-p for distribution sampling.
+            top_p: Top-p for distribution sampling in `[0, 1]`.
             seed: A seed for deterministic results.
             stop: A string or list of strings specifying stop sequences.
             default_headers: Default headers merged into all requests.

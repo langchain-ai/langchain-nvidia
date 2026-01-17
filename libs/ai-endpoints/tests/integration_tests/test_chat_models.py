@@ -284,19 +284,13 @@ async def test_ai_endpoints_invoke_max_tokens_negative_a(
     max_tokens: int,
     func: str,
 ) -> None:
-    """Test invoke's max_tokens' negative bounds."""
+    """Test invoke's max_tokens' negative bounds (caught by client-side validation)."""
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
         if func == "invoke":
             llm.invoke("Show me the tokens")
         else:
             await llm.ainvoke("Show me the tokens")
-    assert llm._client.last_response is not None
-    assert_response_error(
-        llm._client.last_response,
-        [400, 422],
-        lambda content: "max_tokens" in content,
-    )
 
 
 @pytest.mark.parametrize("max_tokens", [2**31 - 1])
@@ -436,7 +430,7 @@ async def test_ai_endpoints_invoke_seed_functional(
 
 
 # todo: temperature test for batch, abatch, stream, astream
-@pytest.mark.parametrize("temperature", [-0.1, 2.1])
+@pytest.mark.parametrize("temperature", [-0.1])
 @pytest.mark.parametrize(
     "func",
     ["invoke", "ainvoke"],
@@ -444,19 +438,13 @@ async def test_ai_endpoints_invoke_seed_functional(
 async def test_ai_endpoints_invoke_temperature_negative(
     chat_model: str, mode: dict, temperature: int, func: str
 ) -> None:
-    """Test invoke's temperature (negative)."""
+    """Test temperature validation (negative rejected by client-side)."""
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, temperature=temperature, **mode)
         if func == "invoke":
             llm.invoke("What's in a temperature?")
         else:
             await llm.ainvoke("What's in a temperature?")
-    assert llm._client.last_response is not None
-    assert_response_error(
-        llm._client.last_response,
-        [400, 422],
-        lambda content: "temperature" in content,
-    )
 
 
 @pytest.mark.xfail(reason="temperature not consistently implemented")
@@ -495,7 +483,7 @@ async def test_ai_endpoints_invoke_temperature_positive(
 async def test_ai_endpoints_invoke_top_p_negative(
     chat_model: str, mode: dict, top_p: int, func: str
 ) -> None:
-    """Test invoke's top_p (negative)."""
+    """Test invoke's top_p (negative, caught by client-side validation)."""
 
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, top_p=top_p, **mode)
@@ -503,11 +491,6 @@ async def test_ai_endpoints_invoke_top_p_negative(
             llm.invoke("What's in a top_p?")
         else:
             await llm.ainvoke("What's in a top_p?")
-
-    assert llm._client.last_response is not None
-    assert_response_error(
-        llm._client.last_response, [400, 422], lambda content: "top_p" in content
-    )
 
 
 @pytest.mark.xfail(reason="seed does not consistently control determinism")
