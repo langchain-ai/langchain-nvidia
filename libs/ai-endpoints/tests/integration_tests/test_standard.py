@@ -17,7 +17,7 @@ class TestNVIDIAStandard(ChatModelIntegrationTests):
 
     @property
     def chat_model_params(self) -> dict:
-        return {"model": "meta/llama-3.1-70b-instruct", "temperature": 0}
+        return {"model": "meta/llama-3.3-70b-instruct", "temperature": 0}
 
     @pytest.mark.parametrize("model", [{}, {"output_version": "v1"}], indirect=True)
     @pytest.mark.xfail(
