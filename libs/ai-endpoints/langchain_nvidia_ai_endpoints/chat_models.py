@@ -381,9 +381,9 @@ class ChatNVIDIA(BaseChatModel):
 
     top_p: Optional[float] = Field(
         None,
-        gt=0.0,
+        ge=0.0,
         le=1.0,
-        description="Top-p for nucleus sampling in (0, 1]",
+        description="Top-p for nucleus sampling in [0, 1]",
     )
 
     seed: Optional[int] = Field(
@@ -453,9 +453,9 @@ class ChatNVIDIA(BaseChatModel):
             base_url: The base URL of the NIM to connect to.
 
                 Format for base URL is `http://host:port`
-            temperature: Sampling temperature in `[0, 1]`.
+            temperature: Sampling temperature in `[0, 2]`.
             max_completion_tokens: Maximum number of tokens to generate.
-            top_p: Top-p for distribution sampling.
+            top_p: Top-p for distribution sampling in `[0, 1]`.
             seed: A seed for deterministic results.
             stop: A string or list of strings specifying stop sequences.
             default_headers: Default headers merged into all requests.
