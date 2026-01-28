@@ -270,7 +270,9 @@ def parse_thinking_content(
 def _is_structured_output(payload: dict) -> bool:
     """Check if the payload indicates structured output mode.
 
-    Structured output is enabled when nvext contains guided_json or guided_choice.
+    Structured output is enabled when:
+    - payload directly contains guided_json or guided_choice (direct format), or
+    - nvext contains guided_json or guided_choice (nvext format)
 
     Args:
         payload: The request payload dictionary
@@ -278,8 +280,14 @@ def _is_structured_output(payload: dict) -> bool:
     Returns:
         True if structured output mode is enabled, False otherwise
     """
+    if "guided_json" in payload or "guided_choice" in payload:
+        return True
+
     nvext = payload.get("nvext", {})
-    return bool(nvext and ("guided_json" in nvext or "guided_choice" in nvext))
+    if nvext and ("guided_json" in nvext or "guided_choice" in nvext):
+        return True
+
+    return False
 
 
 def _nv_vlm_get_asset_ids(
@@ -1328,13 +1336,62 @@ class ChatNVIDIA(BaseChatModel):
             "schema": guided_schema,
         }
 
-        return (
-            super().bind(
-                nvext=nvext_param,
-                ls_structured_output_format=ls_structured_output_format,
-            )
-            | output_parser
+        # Support both parameter formats for structured output:
+        # 1. Direct format: guided_json=schema
+        # 2. nvext format: nvext={"guided_json": schema}
+        # Try direct first, automatically retry with nvext if direct fails.
+        direct_llm = super().bind(
+            **nvext_param, ls_structured_output_format=ls_structured_output_format
         )
+        nvext_llm = super().bind(
+            nvext=nvext_param, ls_structured_output_format=ls_structured_output_format
+        )
+
+        direct_chain = direct_llm | output_parser
+        nvext_chain = nvext_llm | output_parser
+
+        from langchain_core.runnables import Runnable, RunnableConfig
+
+        class _FallbackRunnable(Runnable):
+            """Runnable that tries direct format first, falls back to nvext."""
+
+            def invoke(
+                self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
+            ) -> Any:
+                try:
+                    return direct_chain.invoke(input, config, **kwargs)
+                except Exception:
+                    return nvext_chain.invoke(input, config, **kwargs)
+
+            async def ainvoke(
+                self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
+            ) -> Any:
+                try:
+                    return await direct_chain.ainvoke(input, config, **kwargs)
+                except Exception:
+                    return await nvext_chain.ainvoke(input, config, **kwargs)
+
+            def stream(
+                self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
+            ) -> Iterator:
+                try:
+                    for chunk in direct_chain.stream(input, config, **kwargs):
+                        yield chunk
+                except Exception:
+                    for chunk in nvext_chain.stream(input, config, **kwargs):
+                        yield chunk
+
+            async def astream(
+                self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
+            ) -> AsyncIterator:
+                try:
+                    async for chunk in direct_chain.astream(input, config, **kwargs):
+                        yield chunk
+                except Exception:
+                    async for chunk in nvext_chain.astream(input, config, **kwargs):
+                        yield chunk
+
+        return _FallbackRunnable()
 
     def with_thinking_mode(
         self,
