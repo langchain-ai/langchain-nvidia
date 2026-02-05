@@ -758,6 +758,13 @@ CHAT_MODEL_TABLE = {
         thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
+    "stepfun-ai/step-3.5-flash": Model(
+        id="stepfun-ai/step-3.5-flash",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_structured_output=True,
+        supports_tools=True,
+    ),
 }
 
 QA_MODEL_TABLE = {
