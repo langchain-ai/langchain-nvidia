@@ -1,8 +1,11 @@
+from typing import Any
+
 import pytest
 import requests_mock
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
 
 from .conftest import MockHTTP
 
@@ -68,3 +71,51 @@ async def test_ainvoke_aimessage_content_none(mock_http: MockHTTP) -> None:
     assert "content" in message and message["content"] is None
     assert isinstance(response, AIMessage)
     assert response.content == "WORKED"
+
+
+def test_convert_message_to_dict_preserves_image_url_content() -> None:
+    """Multimodal content with image_url is preserved as list."""
+    content: Any = [
+        {"type": "text", "text": "What is in this image?"},
+        {"type": "image_url", "image_url": {"url": "https://example.com/image.png"}},
+    ]
+    msg = HumanMessage(content=content)
+    out = convert_message_to_dict(msg)
+    assert out["role"] == "user"
+    assert out["content"] == content
+
+
+def test_convert_message_to_dict_preserves_image_content() -> None:
+    """Multimodal content with image block type is preserved as list."""
+    content: Any = [
+        {"type": "text", "text": "Describe this."},
+        {"type": "image", "image": {"data": "base64..."}},
+    ]
+    msg = HumanMessage(content=content)
+    out = convert_message_to_dict(msg)
+    assert out["role"] == "user"
+    assert out["content"] == content
+
+
+def test_convert_message_to_dict_preserves_video_url_content() -> None:
+    """Multimodal content with video_url is preserved as list."""
+    content: Any = [
+        {"type": "text", "text": "What happens in this video?"},
+        {"type": "video_url", "video_url": {"url": "https://example.com/video.mp4"}},
+    ]
+    msg = HumanMessage(content=content)
+    out = convert_message_to_dict(msg)
+    assert out["role"] == "user"
+    assert out["content"] == content
+
+
+def test_convert_message_to_dict_preserves_video_content() -> None:
+    """Multimodal content with video block type is preserved as list."""
+    content: Any = [
+        {"type": "text", "text": "Describe this."},
+        {"type": "video", "video": {"data": "base64..."}},
+    ]
+    msg = HumanMessage(content=content)
+    out = convert_message_to_dict(msg)
+    assert out["role"] == "user"
+    assert out["content"] == content

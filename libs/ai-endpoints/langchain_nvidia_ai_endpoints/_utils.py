@@ -44,8 +44,8 @@ def _normalize_content(content: Any) -> Any:
         elif isinstance(block, dict):
             block_type = block.get("type")
 
-            # Preserve multimodal content (images) as-is for VLM models
-            if block_type in ("image_url", "image"):
+            # Preserve multimodal content (images and videos) as-is for VLM models
+            if block_type in ("image_url", "image", "video_url", "video"):
                 return content
 
             # Extract text from text blocks
