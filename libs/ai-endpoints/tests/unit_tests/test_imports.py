@@ -3,6 +3,7 @@ from langchain_nvidia_ai_endpoints import __all__ as long_all
 
 EXPECTED_ALL = [
     "ChatNVIDIA",
+    "ChatNVIDIADynamo",
     "NVIDIAEmbeddings",
     "NVIDIARerank",
     "NVIDIA",
