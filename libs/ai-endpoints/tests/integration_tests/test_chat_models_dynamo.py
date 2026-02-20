@@ -1,4 +1,4 @@
-"""Integration-style tests for ChatNVIDIADynamo using a local dummy server.
+"""Integration tests for ChatNVIDIADynamo using a local dummy server.
 
 Spins up a lightweight HTTP server that validates the full request body
 structure, including nvext.agent_hints, and returns well-formed
@@ -7,19 +7,13 @@ OpenAI-compatible responses.
 
 import json
 import threading
+from collections.abc import Generator
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 
 from langchain_nvidia_ai_endpoints.chat_models_dynamo import ChatNVIDIADynamo
-
-
-@pytest.fixture(autouse=True)
-def mock_v1_models(requests_mock):
-    """Override the conftest autouse fixture to allow real HTTP to local server."""
-    requests_mock.real_http = True
-
 
 # --- Validation helpers ---
 
@@ -33,9 +27,9 @@ REQUIRED_AGENT_HINTS_KEYS = {
 }
 
 
-def validate_request_body(body: Dict[str, Any]) -> List[str]:
+def validate_request_body(body: dict[str, Any]) -> list[str]:
     """Return a list of validation errors (empty == valid)."""
-    errors: List[str] = []
+    errors: list[str] = []
 
     for key in REQUIRED_TOP_LEVEL_KEYS:
         if key not in body:
@@ -131,8 +125,8 @@ class _Handler(BaseHTTPRequestHandler):
     """HTTP handler that validates requests and returns canned responses."""
 
     # Shared across requests; set by the test fixture
-    validation_errors: List[List[str]] = []
-    received_bodies: List[Dict[str, Any]] = []
+    validation_errors: list[list[str]] = []
+    received_bodies: list[dict[str, Any]] = []
 
     def do_GET(self) -> None:
         if self.path == "/v1/models":
@@ -180,7 +174,7 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 @pytest.fixture()
-def dummy_server():
+def dummy_server() -> Generator[str, None, None]:
     """Start a local HTTP server on an ephemeral port, yield the base URL."""
     _Handler.validation_errors = []
     _Handler.received_bodies = []
@@ -200,7 +194,7 @@ def test_invoke_sends_valid_body(dummy_server: str) -> None:
     llm = ChatNVIDIADynamo(
         model="mock-model",
         base_url=dummy_server,
-        api_key="fake-key",
+        nvidia_api_key="fake-key",
     )
     result = llm.invoke("What is Dynamo?")
 
@@ -223,7 +217,7 @@ def test_invoke_with_overrides(dummy_server: str) -> None:
     llm = ChatNVIDIADynamo(
         model="mock-model",
         base_url=dummy_server,
-        api_key="fake-key",
+        nvidia_api_key="fake-key",
         osl=1024,
         iat=100,
     )
@@ -241,7 +235,7 @@ def test_stream_sends_valid_body(dummy_server: str) -> None:
     llm = ChatNVIDIADynamo(
         model="mock-model",
         base_url=dummy_server,
-        api_key="fake-key",
+        nvidia_api_key="fake-key",
     )
     chunks = list(llm.stream("Stream test"))
 
@@ -263,7 +257,7 @@ async def test_ainvoke_sends_valid_body(dummy_server: str) -> None:
     llm = ChatNVIDIADynamo(
         model="mock-model",
         base_url=dummy_server,
-        api_key="fake-key",
+        nvidia_api_key="fake-key",
     )
     result = await llm.ainvoke("Async test")
 
@@ -279,7 +273,7 @@ def test_unique_prefix_id_per_request(dummy_server: str) -> None:
     llm = ChatNVIDIADynamo(
         model="mock-model",
         base_url=dummy_server,
-        api_key="fake-key",
+        nvidia_api_key="fake-key",
     )
     llm.invoke("request 1")
     llm.invoke("request 2")

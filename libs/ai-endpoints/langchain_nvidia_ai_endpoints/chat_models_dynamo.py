@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any, Dict, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from pydantic import Field
 
@@ -45,11 +46,48 @@ class ChatNVIDIADynamo(ChatNVIDIA):
         description="Request priority hint for Dynamo routing.",
     )
 
+    def __init__(
+        self,
+        *,
+        model: str | None = None,
+        nvidia_api_key: str | None = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        temperature: float | None = None,
+        max_completion_tokens: int | None = None,
+        top_p: float | None = None,
+        seed: int | None = None,
+        stop: str | list[str] | None = None,
+        default_headers: dict[str, str] | None = None,
+        osl: int = 512,
+        iat: int = 250,
+        latency_sensitivity: float = 1.0,
+        priority: int = 1,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            model=model,
+            nvidia_api_key=nvidia_api_key,
+            api_key=api_key,
+            base_url=base_url,
+            temperature=temperature,
+            max_completion_tokens=max_completion_tokens,
+            top_p=top_p,
+            seed=seed,
+            stop=stop,
+            default_headers=default_headers,
+            osl=osl,
+            iat=iat,
+            latency_sensitivity=latency_sensitivity,
+            priority=priority,
+            **kwargs,
+        )
+
     @property
     def _llm_type(self) -> str:
         return "chat-nvidia-ai-playground-dynamo"
 
-    def _get_payload(self, inputs: Sequence[Dict], **kwargs: Any) -> dict:
+    def _get_payload(self, inputs: Sequence[dict], **kwargs: Any) -> dict:
         # Pop dynamo-specific overrides from kwargs so they don't leak upstream
         osl_value = kwargs.pop("osl", self.osl)
         iat_value = kwargs.pop("iat", self.iat)
@@ -60,7 +98,7 @@ class ChatNVIDIADynamo(ChatNVIDIA):
 
         payload = super()._get_payload(inputs, **kwargs)
 
-        agent_hints: Dict[str, Any] = {
+        agent_hints: dict[str, Any] = {
             "prefix_id": f"langchain-dynamo-{uuid.uuid4().hex[:12]}",
             "osl": osl_value,
             "iat": iat_value,
