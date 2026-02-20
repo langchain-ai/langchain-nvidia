@@ -205,9 +205,9 @@ def test_invoke_sends_valid_body(dummy_server: str) -> None:
     result = llm.invoke("What is Dynamo?")
 
     assert len(_Handler.validation_errors) == 1, "expected exactly one request"
-    assert _Handler.validation_errors[0] == [], (
-        f"request body validation failed: {_Handler.validation_errors[0]}"
-    )
+    assert (
+        _Handler.validation_errors[0] == []
+    ), f"request body validation failed: {_Handler.validation_errors[0]}"
     assert result.content == "Hello from dummy server!"
 
     body = _Handler.received_bodies[0]
@@ -246,9 +246,9 @@ def test_stream_sends_valid_body(dummy_server: str) -> None:
     chunks = list(llm.stream("Stream test"))
 
     assert len(_Handler.validation_errors) == 1
-    assert _Handler.validation_errors[0] == [], (
-        f"request body validation failed: {_Handler.validation_errors[0]}"
-    )
+    assert (
+        _Handler.validation_errors[0] == []
+    ), f"request body validation failed: {_Handler.validation_errors[0]}"
     assert len(chunks) > 0
 
     body = _Handler.received_bodies[0]
