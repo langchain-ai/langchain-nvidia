@@ -58,13 +58,10 @@ class ChatNVIDIADynamo(ChatNVIDIA):
             raise ValueError(f"iat must be a non-negative int, got {iat!r}")
         if not isinstance(latency_sensitivity, (int, float)):
             raise ValueError(
-                "latency_sensitivity must be a number, "
-                f"got {latency_sensitivity!r}"
+                "latency_sensitivity must be a number, " f"got {latency_sensitivity!r}"
             )
         if not isinstance(priority, int) or priority < 0:
-            raise ValueError(
-                f"priority must be a non-negative int, got {priority!r}"
-            )
+            raise ValueError(f"priority must be a non-negative int, got {priority!r}")
 
     def _get_payload(self, inputs: Sequence[dict], **kwargs: Any) -> dict:
         # Pop dynamo-specific overrides from kwargs so they don't leak upstream
