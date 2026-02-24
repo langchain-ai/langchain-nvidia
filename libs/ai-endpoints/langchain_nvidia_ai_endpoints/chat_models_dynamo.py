@@ -10,8 +10,6 @@ from pydantic import Field
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA, _deep_merge
 
-_DYNAMO_KEYS = ("osl", "iat", "latency_sensitivity", "priority")
-
 
 class ChatNVIDIADynamo(ChatNVIDIA):
     """ChatNVIDIA subclass that injects ``nvext.agent_hints`` into requests
@@ -50,6 +48,24 @@ class ChatNVIDIADynamo(ChatNVIDIA):
     def _llm_type(self) -> str:
         return "chat-nvidia-ai-playground-dynamo"
 
+    @staticmethod
+    def _validate_dynamo_params(
+        osl: int, iat: int, latency_sensitivity: float, priority: int
+    ) -> None:
+        if not isinstance(osl, int) or osl < 0:
+            raise ValueError(f"osl must be a non-negative int, got {osl!r}")
+        if not isinstance(iat, int) or iat < 0:
+            raise ValueError(f"iat must be a non-negative int, got {iat!r}")
+        if not isinstance(latency_sensitivity, (int, float)):
+            raise ValueError(
+                "latency_sensitivity must be a number, "
+                f"got {latency_sensitivity!r}"
+            )
+        if not isinstance(priority, int) or priority < 0:
+            raise ValueError(
+                f"priority must be a non-negative int, got {priority!r}"
+            )
+
     def _get_payload(self, inputs: Sequence[dict], **kwargs: Any) -> dict:
         # Pop dynamo-specific overrides from kwargs so they don't leak upstream
         osl_value = kwargs.pop("osl", self.osl)
@@ -58,6 +74,10 @@ class ChatNVIDIADynamo(ChatNVIDIA):
             "latency_sensitivity", self.latency_sensitivity
         )
         priority = kwargs.pop("priority", self.priority)
+
+        self._validate_dynamo_params(
+            osl_value, iat_value, latency_sensitivity, priority
+        )
 
         payload = super()._get_payload(inputs, **kwargs)
 

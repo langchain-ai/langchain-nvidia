@@ -158,3 +158,24 @@ def test_streaming_payload_has_agent_hints() -> None:
     assert hints["iat"] == 250
     assert hints["latency_sensitivity"] == 1.0
     assert hints["priority"] == 1
+
+
+# --- Validation ---
+
+
+@pytest.mark.parametrize(
+    "key,value",
+    [
+        ("osl", -1),
+        ("osl", "bad"),
+        ("iat", -1),
+        ("iat", 3.5),
+        ("priority", -1),
+        ("priority", "high"),
+        ("latency_sensitivity", "fast"),
+    ],
+)
+def test_invalid_per_invocation_overrides(key: str, value: Any) -> None:
+    llm = _make_llm()
+    with pytest.raises(ValueError):
+        _get_payload(llm, **{key: value})
