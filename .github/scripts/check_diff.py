@@ -10,12 +10,12 @@ NVIDIA_DIRS = [
 
 PYTHON_VERSIONS = {
     "libs/ai-endpoints": ["3.10", "3.11", "3.12", "3.13"],
-    "libs/trt": ["3.8", "3.9", "3.10", "3.11"],
+    "libs/trt": ["3.9", "3.10", "3.11"],
 }
 
 LINT_PYTHON_VERSIONS = {
     "libs/ai-endpoints": ["3.10", "3.13"],
-    "libs/trt": ["3.8", "3.11"],
+    "libs/trt": ["3.9", "3.11"],
 }
 
 if __name__ == "__main__":
