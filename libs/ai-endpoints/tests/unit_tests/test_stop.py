@@ -86,7 +86,7 @@ def test_stop(
     client = ChatNVIDIA(
         model="mock-model",
         api_key="mocked",
-        **(dict(stop=prop_stop) if prop_stop else {}),
+        **(dict(stop=prop_stop) if prop_stop else {}),  # type: ignore[arg-type]
     )
     # getattr(client, func_name) is a clever way to call a method by name
     response = getattr(client, func_name)(
