@@ -13,6 +13,9 @@ on:
         default: '["3.8", "3.9", "3.10", "3.11"]'
         description: "JSON array of Python versions to test"
 
+permissions:
+  contents: read
+
 env:
   POETRY_VERSION: "1.7.1"
 
