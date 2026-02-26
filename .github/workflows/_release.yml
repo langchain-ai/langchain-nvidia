@@ -14,6 +14,8 @@ on:
         type: string
         default: 'libs/ai-endpoints'
 
+permissions: {}
+
 env:
   PYTHON_VERSION: "3.11"
   POETRY_VERSION: "1.7.1"
@@ -72,7 +74,9 @@ jobs:
       - build
     uses:
       ./.github/workflows/_test_release.yml
-    permissions: write-all
+    permissions:
+      id-token: write
+      contents: read
     with:
       working-directory: ${{ inputs.working-directory }}
     secrets: inherit
