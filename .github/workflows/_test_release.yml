@@ -8,7 +8,8 @@ on:
         type: string
         description: "From which folder this pipeline executes"
 
-permissions: {}
+permissions:
+  contents: read
 
 env:
   POETRY_VERSION: "1.7.1"
