@@ -848,6 +848,16 @@ VLM_MODEL_TABLE = {
         model_type="vlm",
         client="ChatNVIDIA",
     ),
+    "moonshotai/kimi-k2.5": Model(
+        id="moonshotai/kimi-k2.5",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"thinking": False}},
+    ),
 }
 
 EMBEDDING_MODEL_TABLE = {
