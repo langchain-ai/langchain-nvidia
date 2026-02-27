@@ -425,7 +425,6 @@ class ChatNVIDIA(BaseChatModel):
 
     # Reference: https://github.com/langchain-ai/langchain/blob/master/libs/partners/openai/langchain_openai/llms/base.py#L295
     @model_validator(mode="before")
-    
     @classmethod
     def build_extra(cls, values: dict[str, Any]) -> Any:
         """Build extra kwargs from additional params that were passed in."""
@@ -605,28 +604,30 @@ class ChatNVIDIA(BaseChatModel):
         Returns:
             Tuple of `(inputs, payload, extra_headers)`
         """
-        
+
         # Convert messages to dicts
         inputs = [convert_message_to_dict(message) for message in messages]
-        
+
         # Preserve reasoning content if enabled
         if self.preserve_reasoning_history:
             for i, message in enumerate(messages):
                 if (
                     isinstance(message, AIMessage)
-                    and hasattr(message, 'additional_kwargs')
-                    and 'reasoning_content' in message.additional_kwargs
-                    and message.additional_kwargs['reasoning_content']
+                    and hasattr(message, "additional_kwargs")
+                    and "reasoning_content" in message.additional_kwargs
+                    and message.additional_kwargs["reasoning_content"]
                 ):
-                    reasoning = message.additional_kwargs['reasoning_content']
-                    original_content = inputs[i].get('content', '')
-                    
+                    reasoning = message.additional_kwargs["reasoning_content"]
+                    original_content = inputs[i].get("content", "")
+
                     # Reconstruct with thinking tags
                     if original_content:
-                        inputs[i]['content'] = f"<think>{reasoning}</think>\n{original_content}"
+                        inputs[i][
+                            "content"
+                        ] = f"<think>{reasoning}</think>\n{original_content}"
                     else:
-                        inputs[i]['content'] = f"<think>{reasoning}</think>"
-        
+                        inputs[i]["content"] = f"<think>{reasoning}</think>"
+
         inputs, extra_headers = _process_for_vlm(inputs, self._client.model)
 
         # Merge default_headers with extra_headers from VLM processing.
