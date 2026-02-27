@@ -49,6 +49,7 @@ from langchain_nvidia_ai_endpoints.chat_models_dynamo import ChatNVIDIADynamo
 from langchain_nvidia_ai_endpoints.embeddings import NVIDIAEmbeddings
 from langchain_nvidia_ai_endpoints.llm import NVIDIA
 from langchain_nvidia_ai_endpoints.reranking import NVIDIARerank
+from langchain_nvidia_ai_endpoints.retrievers import NvidiaRetriever
 
 __all__ = [
     "ChatNVIDIA",
@@ -56,6 +57,7 @@ __all__ = [
     "NVIDIA",
     "NVIDIAEmbeddings",
     "NVIDIARerank",
+    "NvidiaRetriever",
     "register_model",
     "Model",
 ]
