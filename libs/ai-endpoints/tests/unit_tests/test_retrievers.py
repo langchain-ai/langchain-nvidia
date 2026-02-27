@@ -1,4 +1,4 @@
-"""Unit tests for NvidiaRetriever."""
+"""Unit tests for NVIDIARetriever."""
 
 import json
 from unittest.mock import patch
@@ -8,16 +8,16 @@ import requests
 import requests_mock
 
 from langchain_nvidia_ai_endpoints.retrievers import (
-    NvidiaRAGConnectionError,
-    NvidiaRAGServerError,
-    NvidiaRAGValidationError,
-    NvidiaRetriever,
+    NVIDIARAGConnectionError,
+    NVIDIARAGServerError,
+    NVIDIARAGValidationError,
+    NVIDIARetriever,
 )
 
 
 def test_nvidia_retriever_init() -> None:
-    """Test NvidiaRetriever initialization."""
-    retriever = NvidiaRetriever(
+    """Test NVIDIARetriever initialization."""
+    retriever = NVIDIARetriever(
         base_url="http://localhost:8081",
         collection_names=["test_multimodal_query"],
         k=4,
@@ -29,7 +29,7 @@ def test_nvidia_retriever_init() -> None:
 
 def test_nvidia_retriever_build_payload() -> None:
     """Test payload construction."""
-    retriever = NvidiaRetriever(
+    retriever = NVIDIARetriever(
         base_url="http://localhost:8081",
         collection_names=["col1"],
         k=5,
@@ -48,7 +48,7 @@ def test_nvidia_retriever_build_payload() -> None:
 
 def test_nvidia_retriever_results_to_documents() -> None:
     """Test conversion of API results to Documents."""
-    retriever = NvidiaRetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
     results = [
         {
             "document_id": "doc1",
@@ -70,7 +70,7 @@ def test_nvidia_retriever_results_to_documents() -> None:
 
 def test_nvidia_retriever_invoke_success() -> None:
     """Test successful invoke."""
-    retriever = NvidiaRetriever(
+    retriever = NVIDIARetriever(
         base_url="http://localhost:8081",
         collection_names=["test_multimodal_query"],
         k=2,
@@ -114,8 +114,8 @@ def test_nvidia_retriever_invoke_success() -> None:
 
 
 def test_nvidia_retriever_connection_error() -> None:
-    """Test NvidiaRAGConnectionError when server is unreachable."""
-    retriever = NvidiaRetriever(base_url="http://localhost:8081")
+    """Test NVIDIARAGConnectionError when server is unreachable."""
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
 
     with requests_mock.Mocker() as m:
         m.post(
@@ -123,15 +123,15 @@ def test_nvidia_retriever_connection_error() -> None:
             exc=requests.exceptions.ConnectionError("Connection refused"),
         )
 
-        with pytest.raises(NvidiaRAGConnectionError) as exc_info:
+        with pytest.raises(NVIDIARAGConnectionError) as exc_info:
             retriever.invoke("query")
         assert "Cannot connect to RAG server" in str(exc_info.value)
         assert "rag-server container" in str(exc_info.value)
 
 
 def test_nvidia_retriever_server_error() -> None:
-    """Test NvidiaRAGServerError when server returns 500."""
-    retriever = NvidiaRetriever(base_url="http://localhost:8081")
+    """Test NVIDIARAGServerError when server returns 500."""
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
 
     with requests_mock.Mocker() as m:
         m.post(
@@ -140,15 +140,15 @@ def test_nvidia_retriever_server_error() -> None:
             text="Internal Server Error",
         )
 
-        with pytest.raises(NvidiaRAGServerError) as exc_info:
+        with pytest.raises(NVIDIARAGServerError) as exc_info:
             retriever.invoke("query")
         assert exc_info.value.status_code == 500
         assert "500" in str(exc_info.value)
 
 
 def test_nvidia_retriever_validation_error() -> None:
-    """Test NvidiaRAGValidationError when server returns 422."""
-    retriever = NvidiaRetriever(base_url="http://localhost:8081")
+    """Test NVIDIARAGValidationError when server returns 422."""
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
 
     with requests_mock.Mocker() as m:
         m.post(
@@ -157,7 +157,7 @@ def test_nvidia_retriever_validation_error() -> None:
             text='{"detail": "Invalid query"}',
         )
 
-        with pytest.raises(NvidiaRAGValidationError) as exc_info:
+        with pytest.raises(NVIDIARAGValidationError) as exc_info:
             retriever.invoke("")
         assert "422" in str(exc_info.value)
 
@@ -167,7 +167,7 @@ async def test_nvidia_retriever_ainvoke_success() -> None:
     """Test successful async invoke."""
     from langchain_core.documents import Document
 
-    retriever = NvidiaRetriever(
+    retriever = NVIDIARetriever(
         base_url="http://localhost:8081",
         collection_names=["test_multimodal_query"],
         k=1,

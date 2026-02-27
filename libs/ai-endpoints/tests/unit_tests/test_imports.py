@@ -7,7 +7,7 @@ EXPECTED_ALL = [
     "NVIDIAEmbeddings",
     "NVIDIARerank",
     "NVIDIA",
-    "NvidiaRetriever",
+    "NVIDIARetriever",
     "register_model",
     "Model",
 ]

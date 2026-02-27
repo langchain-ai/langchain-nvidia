@@ -1,4 +1,4 @@
-"""NvidiaRetriever for NVIDIA RAG Blueprint /search endpoint.
+"""NVIDIARetriever for NVIDIA RAG Blueprint /search endpoint.
 
 Connects to a containerized NVIDIA RAG server that exposes the /v1/search endpoint.
 Supports all DocumentSearch API parameters.
@@ -25,13 +25,13 @@ from pydantic import ConfigDict, Field
 # -----------------------------------------------------------------------------
 
 
-class NvidiaRAGError(Exception):
+class NVIDIARAGError(Exception):
     """Base exception for NVIDIA RAG retriever errors."""
 
     pass
 
 
-class NvidiaRAGConnectionError(NvidiaRAGError):
+class NVIDIARAGConnectionError(NVIDIARAGError):
     """Raised when the RAG server endpoint is unreachable.
 
     Common causes:
@@ -43,7 +43,7 @@ class NvidiaRAGConnectionError(NvidiaRAGError):
     pass
 
 
-class NvidiaRAGServerError(NvidiaRAGError):
+class NVIDIARAGServerError(NVIDIARAGError):
     """Raised when the RAG server returns an error response.
 
     Includes the HTTP status code and response body for debugging.
@@ -55,7 +55,7 @@ class NvidiaRAGServerError(NvidiaRAGError):
         self.body = body
 
 
-class NvidiaRAGValidationError(NvidiaRAGError):
+class NVIDIARAGValidationError(NVIDIARAGError):
     """Raised when the request payload is invalid (e.g. 422 Unprocessable Entity)."""
 
     def __init__(self, message: str, body: str = ""):
@@ -64,14 +64,14 @@ class NvidiaRAGValidationError(NvidiaRAGError):
 
 
 # -----------------------------------------------------------------------------
-# NvidiaRetriever
+# NVIDIARetriever
 # -----------------------------------------------------------------------------
 
 _SEARCH_PATH = "/v1/search"
 _DEFAULT_TIMEOUT = 60
 
 
-class NvidiaRetriever(BaseRetriever):
+class NVIDIARetriever(BaseRetriever):
     """LangChain retriever that queries the NVIDIA RAG Blueprint /v1/search endpoint.
 
     Targets containerized RAG deployments where the rag-server exposes the search API.
@@ -80,9 +80,9 @@ class NvidiaRetriever(BaseRetriever):
     Example:
         .. code-block:: python
 
-            from langchain_nvidia_ai_endpoints import NvidiaRetriever
+            from langchain_nvidia_ai_endpoints import NVIDIARetriever
 
-            retriever = NvidiaRetriever(
+            retriever = NVIDIARetriever(
                 base_url="http://localhost:8081",
                 collection_names=["test_multimodal_query"],
                 k=4,
@@ -240,17 +240,17 @@ class NvidiaRetriever(BaseRetriever):
                 headers={"Content-Type": "application/json"},
             )
         except requests.exceptions.ConnectionError as e:
-            raise NvidiaRAGConnectionError(
+            raise NVIDIARAGConnectionError(
                 f"Cannot connect to RAG server at {url}. "
                 f"Ensure the rag-server container is running and base_url is correct (default port: 8081). Error: {e}"
             ) from e
         except requests.exceptions.Timeout as e:
-            raise NvidiaRAGConnectionError(
+            raise NVIDIARAGConnectionError(
                 f"Request to RAG server at {url} timed out after {self.timeout}s. "
                 f"Server may be overloaded or unreachable."
             ) from e
         except requests.exceptions.RequestException as e:
-            raise NvidiaRAGConnectionError(
+            raise NVIDIARAGConnectionError(
                 f"Request to RAG server at {url} failed. Error: {e}"
             ) from e
 
@@ -260,12 +260,12 @@ class NvidiaRetriever(BaseRetriever):
             results = data.get("results", [])
             return self._results_to_documents(results)
         elif response.status_code == 422:
-            raise NvidiaRAGValidationError(
+            raise NVIDIARAGValidationError(
                 f"RAG server validation error (422). Check query and parameters. Response: {body[:500]}",
                 body=body,
             )
         else:
-            raise NvidiaRAGServerError(
+            raise NVIDIARAGServerError(
                 f"RAG server returned HTTP {response.status_code}. Response: {body[:500]}",
                 status_code=response.status_code,
                 body=body,
@@ -286,23 +286,23 @@ class NvidiaRetriever(BaseRetriever):
                         results = data.get("results", [])
                         return self._results_to_documents(results)
                     elif response.status == 422:
-                        raise NvidiaRAGValidationError(
+                        raise NVIDIARAGValidationError(
                             f"RAG server validation error (422). Check query and parameters. Response: {body[:500]}",
                             body=body,
                         )
                     else:
-                        raise NvidiaRAGServerError(
+                        raise NVIDIARAGServerError(
                             f"RAG server returned HTTP {response.status}. Response: {body[:500]}",
                             status_code=response.status,
                             body=body,
                         )
         except aiohttp.ClientError as e:
-            raise NvidiaRAGConnectionError(
+            raise NVIDIARAGConnectionError(
                 f"Cannot connect to RAG server at {url}. "
                 f"Ensure the rag-server container is running and base_url is correct. Error: {e}"
             ) from e
         except asyncio.TimeoutError as e:
-            raise NvidiaRAGConnectionError(
+            raise NVIDIARAGConnectionError(
                 f"Request to RAG server at {url} timed out after {self.timeout}s. "
                 f"Server may be overloaded or unreachable."
             ) from e
