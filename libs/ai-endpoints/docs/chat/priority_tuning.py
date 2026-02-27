@@ -28,7 +28,7 @@ from typing import Any
 import matplotlib.pyplot as plt
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from langchain_nvidia_ai_endpoints import ChatNVIDIADynamo, inference_priority
+from langchain_nvidia_ai_endpoints import ChatNVIDIADynamo
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║  CONFIGURATION                                                            ║
@@ -45,6 +45,7 @@ MAX_TOKENS = 2048
 OSL = 2048
 LATENCY_SENSITIVITY = 1.0
 IAT = 250
+DEFAULT_PRIORITY = 1  # control mode: all requests use this
 
 # Heavy bottom distribution — flood the queue so priority has something to sort
 TIERS: list[dict[str, Any]] = [
@@ -649,52 +650,21 @@ async def main() -> None:
             ]
             tasks_spec.append((name, tier["label"], tier["priority"], msgs))
 
-    # ── Timed call (no decorator — for control) ─────────────────────────────
+    # ── Timed call — passes priority directly as a kwarg ─────────────────────
     async def timed_call(
-        name: str, t0: float, tier_label: str, messages: list,
+        name: str,
+        t0: float,
+        tier_label: str,
+        messages: list,
+        priority: int = DEFAULT_PRIORITY,
     ) -> Result:
         start = time.perf_counter() - t0
-        await llm.ainvoke(messages, osl=OSL)
+        await llm.ainvoke(messages, osl=OSL, priority=priority)
         end = time.perf_counter() - t0
         return Result(
             name=name, start_time=start,
             end_time=end, tier_label=tier_label,
         )
-
-    # ── Decorated wrappers (for experiment) ──────────────────────────────────
-    @inference_priority(priority=1)
-    async def p1_call(
-        name: str, t0: float, tier_label: str, messages: list,
-    ) -> Result:
-        return await timed_call(name, t0, tier_label, messages)
-
-    @inference_priority(priority=3)
-    async def p3_call(
-        name: str, t0: float, tier_label: str, messages: list,
-    ) -> Result:
-        return await timed_call(name, t0, tier_label, messages)
-
-    @inference_priority(priority=5)
-    async def p5_call(
-        name: str, t0: float, tier_label: str, messages: list,
-    ) -> Result:
-        return await timed_call(name, t0, tier_label, messages)
-
-    @inference_priority(priority=7)
-    async def p7_call(
-        name: str, t0: float, tier_label: str, messages: list,
-    ) -> Result:
-        return await timed_call(name, t0, tier_label, messages)
-
-    @inference_priority(priority=10)
-    async def p10_call(
-        name: str, t0: float, tier_label: str, messages: list,
-    ) -> Result:
-        return await timed_call(name, t0, tier_label, messages)
-
-    priority_wrappers = {
-        1: p1_call, 3: p3_call, 5: p5_call, 7: p7_call, 10: p10_call,
-    }
 
     # ── Warmup ───────────────────────────────────────────────────────────────
     warmup_msgs = [
@@ -749,12 +719,8 @@ async def main() -> None:
 
             coros = []
             for name, tier_label, pri, msgs in tasks_spec:
-                if use_priority:
-                    coros.append(
-                        priority_wrappers[pri](name, t0, tier_label, msgs)
-                    )
-                else:
-                    coros.append(timed_call(name, t0, tier_label, msgs))
+                p = pri if use_priority else DEFAULT_PRIORITY
+                coros.append(timed_call(name, t0, tier_label, msgs, priority=p))
 
             results = list(await asyncio.gather(*coros))
             wall = max(r.end_time for r in results)
