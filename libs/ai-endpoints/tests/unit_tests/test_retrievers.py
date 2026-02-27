@@ -37,6 +37,23 @@ def test_nvidia_retriever_init() -> None:
     assert retriever.k == 4
 
 
+def test_nvidia_retriever_base_url_rejects_v1_search() -> None:
+    """Test that base_url must not include /v1/search."""
+    with pytest.raises(ValueError) as exc_info:
+        NVIDIARetriever(
+            base_url="http://localhost:8081/v1/search",
+            collection_names=["test"],
+        )
+    assert "/v1/search" in str(exc_info.value)
+    assert "must not include" in str(exc_info.value)
+
+    with pytest.raises(ValueError):
+        NVIDIARetriever(
+            base_url="http://localhost:8081/v1/search/",
+            collection_names=["test"],
+        )
+
+
 def test_nvidia_retriever_build_payload() -> None:
     """Test payload construction."""
     retriever = NVIDIARetriever(
@@ -136,7 +153,7 @@ def test_nvidia_retriever_connection_error() -> None:
         with pytest.raises(NVIDIARAGConnectionError) as exc_info:
             retriever.invoke("query")
         assert "Cannot connect to RAG server" in str(exc_info.value)
-        assert "rag-server container" in str(exc_info.value)
+        assert "rag-server" in str(exc_info.value)
 
 
 def test_nvidia_retriever_timeout_error() -> None:
@@ -186,6 +203,40 @@ def test_nvidia_retriever_invalid_json() -> None:
         assert exc_info.value.status_code == 200
         assert "invalid JSON" in str(exc_info.value)
         assert exc_info.value.body == "<html>Internal Error Page</html>"
+
+
+def test_nvidia_retriever_response_not_dict() -> None:
+    """Test NVIDIARAGServerError when 200 response is JSON but not a dict (e.g. [])."""
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+
+    with requests_mock.Mocker() as m:
+        m.post(
+            "http://localhost:8081/v1/search",
+            status_code=200,
+            text="[]",
+        )
+
+        with pytest.raises(NVIDIARAGServerError) as exc_info:
+            retriever.invoke("query")
+        assert exc_info.value.status_code == 200
+        assert "expected dict" in str(exc_info.value)
+
+
+def test_nvidia_retriever_results_not_list() -> None:
+    """Test NVIDIARAGServerError when results field is not a list."""
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+
+    with requests_mock.Mocker() as m:
+        m.post(
+            "http://localhost:8081/v1/search",
+            status_code=200,
+            json={"results": "not a list"},
+        )
+
+        with pytest.raises(NVIDIARAGServerError) as exc_info:
+            retriever.invoke("query")
+        assert exc_info.value.status_code == 200
+        assert "must be a list" in str(exc_info.value)
 
 
 def test_nvidia_retriever_server_error() -> None:

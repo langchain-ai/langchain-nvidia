@@ -18,7 +18,7 @@ from langchain_core.callbacks.manager import (
 )
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, field_validator
 
 # -----------------------------------------------------------------------------
 # Exceptions
@@ -94,14 +94,31 @@ class NVIDIARetriever(BaseRetriever):
 
     base_url: str = Field(
         ...,
-        description="Base URL of the RAG server (e.g. http://localhost:8081). Must not include /v1/search.",
+        description=(
+            "Base URL of the RAG server (e.g. http://localhost:8081). "
+            "Must not include /v1/search."
+        ),
     )
+
+    @field_validator("base_url")
+    @classmethod
+    def _validate_base_url_no_search_path(cls, v: str) -> str:
+        """Ensure base_url does not include /v1/search (path appended automatically)."""
+        if "/v1/search" in v.rstrip("/").lower():
+            raise ValueError(
+                "base_url must not include /v1/search. "
+                "Use the server root (e.g. http://localhost:8081) instead."
+            )
+        return v
 
     k: int = Field(
         default=10,
         ge=0,
         le=25,
-        description="Number of document chunks to return (reranker_top_k). Maps to reranker_top_k in the API.",
+        description=(
+            "Number of document chunks to return (reranker_top_k). "
+            "Maps to reranker_top_k in the API."
+        ),
     )
 
     collection_names: List[str] = Field(
@@ -113,7 +130,7 @@ class NVIDIARetriever(BaseRetriever):
         default=100,
         ge=0,
         le=400,
-        description="Number of top results to retrieve from the vector database before reranking.",
+        description=("Number of top results from vector DB before reranking."),
     )
 
     vdb_endpoint: str = Field(
@@ -123,7 +140,7 @@ class NVIDIARetriever(BaseRetriever):
 
     enable_reranker: bool = Field(
         default=True,
-        description="Enable or disable reranking by the ranker model.",
+        description="Enable or disable reranking.",
     )
 
     enable_query_rewriting: bool = Field(
@@ -133,24 +150,26 @@ class NVIDIARetriever(BaseRetriever):
 
     enable_filter_generator: bool = Field(
         default=False,
-        description="Enable or disable automatic filter expression generation from natural language.",
+        description="Enable or disable automatic filter generation.",
     )
 
     enable_citations: bool = Field(
         default=True,
-        description="Enable or disable image/table/chart citations as part of response.",
+        description="Enable or disable image/table/chart citations in response.",
     )
 
     filter_expr: Union[str, List[dict], None] = Field(
         default=None,
-        description="Filter expression to filter retrieved documents (Milvus filter syntax).",
+        description="Filter expression for retrieved docs (Milvus filter syntax).",
     )
 
     confidence_threshold: float = Field(
         default=0.0,
         ge=0.0,
         le=1.0,
-        description="Minimum confidence score threshold for filtering chunks. Requires enable_reranker=True.",
+        description=(
+            "Min confidence score for filtering. Requires enable_reranker=True."
+        ),
     )
 
     embedding_model: Optional[str] = Field(
@@ -175,7 +194,10 @@ class NVIDIARetriever(BaseRetriever):
 
     messages: List[dict] = Field(
         default_factory=list,
-        description="Conversation history for context-aware retrieval. Last message should have role 'user'.",
+        description=(
+            "Conversation history for context-aware retrieval. "
+            "Last message should have role 'user'."
+        ),
     )
 
     timeout: float = Field(
@@ -211,6 +233,27 @@ class NVIDIARetriever(BaseRetriever):
             payload["reranker_endpoint"] = self.reranker_endpoint
         return payload
 
+    def _parse_search_response(
+        self, data: Any, body: str, status_code: int
+    ) -> List[Document]:
+        """Parse and validate search response."""
+        if not isinstance(data, dict):
+            raise NVIDIARAGServerError(
+                f"RAG server returned unexpected response type (expected dict). "
+                f"Response: {body[:500]}",
+                status_code=status_code,
+                body=body,
+            )
+        results = data.get("results", [])
+        if not isinstance(results, list):
+            raise NVIDIARAGServerError(
+                f"RAG server 'results' must be a list, got "
+                f"{type(results).__name__}. Response: {body[:500]}",
+                status_code=status_code,
+                body=body,
+            )
+        return self._results_to_documents(results)
+
     def _results_to_documents(self, results: List[dict]) -> List[Document]:
         """Convert API results (SourceResult) to LangChain Documents."""
         docs: List[Document] = []
@@ -242,7 +285,8 @@ class NVIDIARetriever(BaseRetriever):
         except requests.exceptions.ConnectionError as e:
             raise NVIDIARAGConnectionError(
                 f"Cannot connect to RAG server at {url}. "
-                f"Ensure the rag-server container is running and base_url is correct (default port: 8081). Error: {e}"
+                f"Ensure rag-server is running and base_url is correct (port 8081). "
+                f"Error: {e}"
             ) from e
         except requests.exceptions.Timeout as e:
             raise NVIDIARAGConnectionError(
@@ -260,20 +304,20 @@ class NVIDIARetriever(BaseRetriever):
                 data = json.loads(body)
             except json.JSONDecodeError as e:
                 raise NVIDIARAGServerError(
-                    f"RAG server returned invalid JSON. Response: {body[:500]}",
+                    f"RAG server returned invalid JSON. " f"Response: {body[:500]}",
                     status_code=response.status_code,
                     body=body,
                 ) from e
-            results = data.get("results", [])
-            return self._results_to_documents(results)
+            return self._parse_search_response(data, body, response.status_code)
         elif response.status_code == 422:
             raise NVIDIARAGValidationError(
-                f"RAG server validation error (422). Check query and parameters. Response: {body[:500]}",
+                f"RAG server validation error (422). Response: {body[:500]}",
                 body=body,
             )
         else:
             raise NVIDIARAGServerError(
-                f"RAG server returned HTTP {response.status_code}. Response: {body[:500]}",
+                f"RAG server returned HTTP {response.status_code}. "
+                f"Response: {body[:500]}",
                 status_code=response.status_code,
                 body=body,
             )
@@ -293,32 +337,35 @@ class NVIDIARetriever(BaseRetriever):
                             data = json.loads(body)
                         except json.JSONDecodeError as e:
                             raise NVIDIARAGServerError(
-                                f"RAG server returned invalid JSON. Response: {body[:500]}",
+                                f"RAG server returned invalid JSON. "
+                                f"Response: {body[:500]}",
                                 status_code=response.status,
                                 body=body,
                             ) from e
-                        results = data.get("results", [])
-                        return self._results_to_documents(results)
+                        return self._parse_search_response(data, body, response.status)
                     elif response.status == 422:
                         raise NVIDIARAGValidationError(
-                            f"RAG server validation error (422). Check query and parameters. Response: {body[:500]}",
+                            f"RAG server validation error (422). "
+                            f"Response: {body[:500]}",
                             body=body,
                         )
                     else:
                         raise NVIDIARAGServerError(
-                            f"RAG server returned HTTP {response.status}. Response: {body[:500]}",
+                            f"RAG server returned HTTP {response.status}. "
+                            f"Response: {body[:500]}",
                             status_code=response.status,
                             body=body,
                         )
         except aiohttp.ClientError as e:
             raise NVIDIARAGConnectionError(
                 f"Cannot connect to RAG server at {url}. "
-                f"Ensure the rag-server container is running and base_url is correct. Error: {e}"
+                f"Ensure rag-server is running and base_url is correct. "
+                f"Error: {e}"
             ) from e
         except asyncio.TimeoutError as e:
             raise NVIDIARAGConnectionError(
-                f"Request to RAG server at {url} timed out after {self.timeout}s. "
-                f"Server may be overloaded or unreachable."
+                f"Request to RAG server at {url} timed out after "
+                f"{self.timeout}s. Server may be overloaded or unreachable."
             ) from e
 
     def _get_relevant_documents(
