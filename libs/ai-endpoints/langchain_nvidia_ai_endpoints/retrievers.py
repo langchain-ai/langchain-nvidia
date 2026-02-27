@@ -256,7 +256,14 @@ class NVIDIARetriever(BaseRetriever):
 
         body = response.text
         if response.status_code == 200:
-            data = json.loads(body)
+            try:
+                data = json.loads(body)
+            except json.JSONDecodeError as e:
+                raise NVIDIARAGServerError(
+                    f"RAG server returned invalid JSON. Response: {body[:500]}",
+                    status_code=response.status_code,
+                    body=body,
+                ) from e
             results = data.get("results", [])
             return self._results_to_documents(results)
         elif response.status_code == 422:
@@ -282,7 +289,14 @@ class NVIDIARetriever(BaseRetriever):
                 async with session.post(url, json=payload) as response:
                     body = await response.text()
                     if response.status == 200:
-                        data = json.loads(body)
+                        try:
+                            data = json.loads(body)
+                        except json.JSONDecodeError as e:
+                            raise NVIDIARAGServerError(
+                                f"RAG server returned invalid JSON. Response: {body[:500]}",
+                                status_code=response.status,
+                                body=body,
+                            ) from e
                         results = data.get("results", [])
                         return self._results_to_documents(results)
                     elif response.status == 422:

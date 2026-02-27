@@ -1,18 +1,28 @@
 """Unit tests for NVIDIARetriever."""
 
+import asyncio
 import json
 from unittest.mock import patch
 
+import aiohttp
 import pytest
 import requests
 import requests_mock
 
 from langchain_nvidia_ai_endpoints.retrievers import (
     NVIDIARAGConnectionError,
+    NVIDIARAGError,
     NVIDIARAGServerError,
     NVIDIARAGValidationError,
     NVIDIARetriever,
 )
+
+
+def test_nvidia_rag_exception_inheritance() -> None:
+    """Test that all RAG exceptions inherit from NVIDIARAGError."""
+    assert issubclass(NVIDIARAGConnectionError, NVIDIARAGError)
+    assert issubclass(NVIDIARAGServerError, NVIDIARAGError)
+    assert issubclass(NVIDIARAGValidationError, NVIDIARAGError)
 
 
 def test_nvidia_retriever_init() -> None:
@@ -129,6 +139,55 @@ def test_nvidia_retriever_connection_error() -> None:
         assert "rag-server container" in str(exc_info.value)
 
 
+def test_nvidia_retriever_timeout_error() -> None:
+    """Test NVIDIARAGConnectionError when request times out."""
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+
+    with requests_mock.Mocker() as m:
+        m.post(
+            "http://localhost:8081/v1/search",
+            exc=requests.exceptions.Timeout("Request timed out"),
+        )
+
+        with pytest.raises(NVIDIARAGConnectionError) as exc_info:
+            retriever.invoke("query")
+        assert "timed out" in str(exc_info.value)
+        assert "8081" in str(exc_info.value)
+
+
+def test_nvidia_retriever_request_exception() -> None:
+    """Test NVIDIARAGConnectionError for generic RequestException."""
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+
+    with requests_mock.Mocker() as m:
+        m.post(
+            "http://localhost:8081/v1/search",
+            exc=requests.exceptions.RequestException("Generic request failed"),
+        )
+
+        with pytest.raises(NVIDIARAGConnectionError) as exc_info:
+            retriever.invoke("query")
+        assert "failed" in str(exc_info.value).lower()
+
+
+def test_nvidia_retriever_invalid_json() -> None:
+    """Test NVIDIARAGServerError when server returns 200 with invalid JSON."""
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+
+    with requests_mock.Mocker() as m:
+        m.post(
+            "http://localhost:8081/v1/search",
+            status_code=200,
+            text="<html>Internal Error Page</html>",
+        )
+
+        with pytest.raises(NVIDIARAGServerError) as exc_info:
+            retriever.invoke("query")
+        assert exc_info.value.status_code == 200
+        assert "invalid JSON" in str(exc_info.value)
+        assert exc_info.value.body == "<html>Internal Error Page</html>"
+
+
 def test_nvidia_retriever_server_error() -> None:
     """Test NVIDIARAGServerError when server returns 500."""
     retriever = NVIDIARetriever(base_url="http://localhost:8081")
@@ -159,6 +218,116 @@ def test_nvidia_retriever_validation_error() -> None:
 
         with pytest.raises(NVIDIARAGValidationError) as exc_info:
             retriever.invoke("")
+        assert "422" in str(exc_info.value)
+
+
+# -----------------------------------------------------------------------------
+# Async exception tests
+# -----------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_nvidia_retriever_async_connection_error() -> None:
+    """Test NVIDIARAGConnectionError when async request fails to connect."""
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+
+    def mock_post(*args, **kwargs):
+        raise aiohttp.ClientError("Connection refused")
+
+    with patch.object(aiohttp.ClientSession, "post", side_effect=mock_post):
+        with pytest.raises(NVIDIARAGConnectionError) as exc_info:
+            await retriever.ainvoke("query")
+        assert "Cannot connect to RAG server" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_nvidia_retriever_async_timeout_error() -> None:
+    """Test NVIDIARAGConnectionError when async request times out."""
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+
+    def mock_post(*args, **kwargs):
+        raise asyncio.TimeoutError("Request timed out")
+
+    with patch.object(aiohttp.ClientSession, "post", side_effect=mock_post):
+        with pytest.raises(NVIDIARAGConnectionError) as exc_info:
+            await retriever.ainvoke("query")
+        assert "timed out" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_nvidia_retriever_async_invalid_json() -> None:
+    """Test NVIDIARAGServerError when async response is 200 with invalid JSON."""
+
+    class MockResponse:
+        status = 200
+
+        async def text(self):
+            return "not valid json {{{"
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+
+    def mock_post(*args, **kwargs):
+        return MockResponse()
+
+    with patch.object(aiohttp.ClientSession, "post", side_effect=mock_post):
+        with pytest.raises(NVIDIARAGServerError) as exc_info:
+            await retriever.ainvoke("query")
+        assert exc_info.value.status_code == 200
+        assert "invalid JSON" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_nvidia_retriever_async_server_error() -> None:
+    """Test NVIDIARAGServerError when async server returns 500."""
+
+    class MockResponse:
+        status = 500
+
+        async def text(self):
+            return "Internal Server Error"
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+
+    with patch.object(aiohttp.ClientSession, "post", return_value=MockResponse()):
+        with pytest.raises(NVIDIARAGServerError) as exc_info:
+            await retriever.ainvoke("query")
+        assert exc_info.value.status_code == 500
+        assert "500" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_nvidia_retriever_async_validation_error() -> None:
+    """Test NVIDIARAGValidationError when async server returns 422."""
+
+    class MockResponse:
+        status = 422
+
+        async def text(self):
+            return '{"detail": "Invalid query"}'
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+
+    with patch.object(aiohttp.ClientSession, "post", return_value=MockResponse()):
+        with pytest.raises(NVIDIARAGValidationError) as exc_info:
+            await retriever.ainvoke("")
         assert "422" in str(exc_info.value)
 
 
