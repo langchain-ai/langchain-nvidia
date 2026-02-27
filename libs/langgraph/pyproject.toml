@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "langchain-nvidia-langgraph"
-version = "1.0.4"
+version = "0.1.0"
 description = "NVIDIA-optimized LangGraph using a set of foundational agent performance primitives"
 authors = []
 readme = "README.md"
