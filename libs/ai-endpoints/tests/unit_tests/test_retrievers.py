@@ -2,7 +2,8 @@
 
 import asyncio
 import json
-from unittest.mock import patch
+from typing import Any
+from unittest.mock import AsyncMock, patch
 
 import aiohttp
 import pytest
@@ -35,6 +36,23 @@ def test_nvidia_retriever_init() -> None:
     assert retriever.base_url == "http://localhost:8081"
     assert retriever.collection_names == ["test_multimodal_query"]
     assert retriever.k == 4
+
+
+def test_nvidia_retriever_base_url_rejects_v1_search() -> None:
+    """Test that base_url must not include /v1/search."""
+    with pytest.raises(ValueError) as exc_info:
+        NVIDIARetriever(
+            base_url="http://localhost:8081/v1/search",
+            collection_names=["test"],
+        )
+    assert "/v1/search" in str(exc_info.value)
+    assert "must not include" in str(exc_info.value)
+
+    with pytest.raises(ValueError):
+        NVIDIARetriever(
+            base_url="http://localhost:8081/v1/search/",
+            collection_names=["test"],
+        )
 
 
 def test_nvidia_retriever_build_payload() -> None:
@@ -136,7 +154,7 @@ def test_nvidia_retriever_connection_error() -> None:
         with pytest.raises(NVIDIARAGConnectionError) as exc_info:
             retriever.invoke("query")
         assert "Cannot connect to RAG server" in str(exc_info.value)
-        assert "rag-server container" in str(exc_info.value)
+        assert "rag-server" in str(exc_info.value)
 
 
 def test_nvidia_retriever_timeout_error() -> None:
@@ -188,6 +206,40 @@ def test_nvidia_retriever_invalid_json() -> None:
         assert exc_info.value.body == "<html>Internal Error Page</html>"
 
 
+def test_nvidia_retriever_empty_array_response() -> None:
+    """Test NVIDIARAGServerError when 200 response is empty array (data: [])."""
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+
+    with requests_mock.Mocker() as m:
+        m.post(
+            "http://localhost:8081/v1/search",
+            status_code=200,
+            text="[]",
+        )
+
+        with pytest.raises(NVIDIARAGServerError) as exc_info:
+            retriever.invoke("query")
+        assert exc_info.value.status_code == 200
+        assert "Check backend logs" in str(exc_info.value)
+
+
+def test_nvidia_retriever_results_not_list() -> None:
+    """Test NVIDIARAGServerError when results field is not a list."""
+    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+
+    with requests_mock.Mocker() as m:
+        m.post(
+            "http://localhost:8081/v1/search",
+            status_code=200,
+            json={"results": "not a list"},
+        )
+
+        with pytest.raises(NVIDIARAGServerError) as exc_info:
+            retriever.invoke("query")
+        assert exc_info.value.status_code == 200
+        assert "must be a list" in str(exc_info.value)
+
+
 def test_nvidia_retriever_server_error() -> None:
     """Test NVIDIARAGServerError when server returns 500."""
     retriever = NVIDIARetriever(base_url="http://localhost:8081")
@@ -231,7 +283,7 @@ async def test_nvidia_retriever_async_connection_error() -> None:
     """Test NVIDIARAGConnectionError when async request fails to connect."""
     retriever = NVIDIARetriever(base_url="http://localhost:8081")
 
-    def mock_post(*args, **kwargs):
+    def mock_post(*args: Any, **kwargs: Any) -> None:
         raise aiohttp.ClientError("Connection refused")
 
     with patch.object(aiohttp.ClientSession, "post", side_effect=mock_post):
@@ -245,7 +297,7 @@ async def test_nvidia_retriever_async_timeout_error() -> None:
     """Test NVIDIARAGConnectionError when async request times out."""
     retriever = NVIDIARetriever(base_url="http://localhost:8081")
 
-    def mock_post(*args, **kwargs):
+    def mock_post(*args: Any, **kwargs: Any) -> None:
         raise asyncio.TimeoutError("Request timed out")
 
     with patch.object(aiohttp.ClientSession, "post", side_effect=mock_post):
@@ -261,18 +313,18 @@ async def test_nvidia_retriever_async_invalid_json() -> None:
     class MockResponse:
         status = 200
 
-        async def text(self):
+        async def text(self) -> str:
             return "not valid json {{{"
 
-        async def __aenter__(self):
+        async def __aenter__(self) -> "MockResponse":
             return self
 
-        async def __aexit__(self, *args):
+        async def __aexit__(self, *args: Any) -> None:
             pass
 
     retriever = NVIDIARetriever(base_url="http://localhost:8081")
 
-    def mock_post(*args, **kwargs):
+    def mock_post(*args: Any, **kwargs: Any) -> MockResponse:
         return MockResponse()
 
     with patch.object(aiohttp.ClientSession, "post", side_effect=mock_post):
@@ -289,13 +341,13 @@ async def test_nvidia_retriever_async_server_error() -> None:
     class MockResponse:
         status = 500
 
-        async def text(self):
+        async def text(self) -> str:
             return "Internal Server Error"
 
-        async def __aenter__(self):
+        async def __aenter__(self) -> "MockResponse":
             return self
 
-        async def __aexit__(self, *args):
+        async def __aexit__(self, *args: Any) -> None:
             pass
 
     retriever = NVIDIARetriever(base_url="http://localhost:8081")
@@ -314,13 +366,13 @@ async def test_nvidia_retriever_async_validation_error() -> None:
     class MockResponse:
         status = 422
 
-        async def text(self):
+        async def text(self) -> str:
             return '{"detail": "Invalid query"}'
 
-        async def __aenter__(self):
+        async def __aenter__(self) -> "MockResponse":
             return self
 
-        async def __aexit__(self, *args):
+        async def __aexit__(self, *args: Any) -> None:
             pass
 
     retriever = NVIDIARetriever(base_url="http://localhost:8081")
@@ -342,9 +394,10 @@ async def test_nvidia_retriever_ainvoke_success() -> None:
         k=1,
     )
     expected_docs = [Document(page_content="Async content", metadata={"score": 0.85})]
+    mock_search = AsyncMock(return_value=expected_docs)
 
-    with patch.object(retriever, "_search_async", return_value=expected_docs):
+    with patch.object(retriever, "_search_async", mock_search):
         docs = await retriever.ainvoke("async query")
         assert len(docs) == 1
         assert docs[0].page_content == "Async content"
-        retriever._search_async.assert_called_once_with("async query")
+        mock_search.assert_called_once_with("async query")
