@@ -95,6 +95,7 @@ addopts = "--strict-markers --strict-config --durations=5"
 # https://docs.pytest.org/en/7.1.x/example/markers.html#registering-markers
 markers = [
   "asyncio: mark tests as requiring asyncio",
+  "compile: mark placeholder test used to compile integration tests without running them",
   "integration: mark integration tests (end-to-end compile and invoke)",
 ]
 asyncio_mode = "auto"
