@@ -270,6 +270,18 @@ for chunk in completions_llm.stream(prompt):
 ```
 
 
+### Dynamo KV Cache Optimization
+
+`ChatNVIDIADynamo` is a drop-in replacement for `ChatNVIDIA` that injects NVIDIA Dynamo KV cache routing hints into requests. Use it with Dynamo-enabled deployments to improve inference scheduling.
+
+```python
+from langchain_nvidia_ai_endpoints import ChatNVIDIADynamo
+
+llm = ChatNVIDIADynamo(model="meta/llama3-8b-instruct", osl=1024, iat=100)
+result = llm.invoke("Write a short poem.")
+```
+
+
 ### Embeddings
 
 The following example connects to an embeddings model.
@@ -308,6 +320,18 @@ response = client.compress_documents(
 )
 
 print(f"Most relevant: {response[0].page_content}\nLeast relevant: {response[-1].page_content}")
+```
+
+
+### Retrieval
+
+The following example connects to a running NVIDIA RAG Blueprint server to retrieve relevant documents via the `/v1/search` endpoint.
+
+```python
+from langchain_nvidia_ai_endpoints import NvidiaRetriever
+
+retriever = NvidiaRetriever(base_url="http://localhost:8081", k=4)
+docs = retriever.invoke("What is machine learning?")
 ```
 
 
