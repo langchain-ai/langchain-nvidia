@@ -1,70 +1,11 @@
-#!/usr/bin/env python3
-"""Priority-only A/B test: does priority actually affect Dynamo scheduling?
+"""Diverse query pool for priority scheduling tests.
 
-Saturates the GPU with 200 diverse, realistic queries to force queueing.
-Holds max_tokens, osl, latency_sensitivity, iat constant across all requests.
-Only priority differs.
-
-  A (control):    all 200 requests at default priority (1)
-  B (experiment): same 200 requests with tiered priorities (1,3,5,7,10)
-
-If CRITICAL tasks finish faster in B than A, priority scheduling works.
-If completion times are identical, priority is a no-op.
-
-Usage:
-    cd libs/ai-endpoints
-    .venv/bin/python docs/chat/priority_tuning.py
+48 unique (system, user) prompt pairs across 16 domains. Used by both
+the priority_tuning.py script and the inference_priority notebook.
 """
 
-from __future__ import annotations
-
-import asyncio
-import os
-import statistics
-import time
-from dataclasses import dataclass
-from typing import Any
-
-import matplotlib.pyplot as plt
-from langchain_core.messages import HumanMessage, SystemMessage
-
-from langchain_nvidia_ai_endpoints import ChatNVIDIADynamo
-
-# ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║  CONFIGURATION                                                            ║
-# ╚══════════════════════════════════════════════════════════════════════════════╝
-
-NIM_BASE_URL = "http://localhost:8099/v1"
-MODEL = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16"
-
-NUM_RUNS = 5
-NUM_WARMUP_CALLS = 20
-
-# Fixed for ALL requests — only priority changes
-MAX_TOKENS = 2048
-OSL = 2048
-LATENCY_SENSITIVITY = 1.0
-IAT = 250
-DEFAULT_PRIORITY = 1  # control mode: all requests use this
-
-# Heavy bottom distribution — flood the queue so priority has something to sort
-TIERS: list[dict[str, Any]] = [
-    {"priority": 1,  "label": "CRITICAL",   "count": 5},
-    {"priority": 3,  "label": "HIGH",       "count": 10},
-    {"priority": 5,  "label": "MEDIUM",     "count": 20},
-    {"priority": 7,  "label": "LOW",        "count": 40},
-    {"priority": 10, "label": "BACKGROUND", "count": 125},
-]
-# Total: 200 concurrent requests
-
-# ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║  DIVERSE QUERY POOL                                                        ║
-# ║  Each request gets a unique (system, user) pair — realistic multi-agent     ║
-# ║  workload with varying complexity and domain.                               ║
-# ╚══════════════════════════════════════════════════════════════════════════════╝
-
 QUERIES: list[dict[str, str]] = [
-    # ── Customer support ────────────────────────────────────────────────────
+    # ── Customer support ──────────────────────────────────────────────────
     {
         "system": "You are a senior customer support analyst. Provide a thorough, "
                   "detailed analysis with specific recommendations.",
@@ -105,7 +46,7 @@ QUERIES: list[dict[str, str]] = [
                 "marketplace, and $75 from a streaming service I don't use. All "
                 "happened within 2 hours yesterday while I was at work.",
     },
-    # ── Financial analysis ──────────────────────────────────────────────────
+    # ── Financial analysis ────────────────────────────────────────────────
     {
         "system": "You are a financial analyst. Provide a detailed market analysis "
                   "with supporting reasoning and risk factors.",
@@ -130,7 +71,7 @@ QUERIES: list[dict[str, str]] = [
                 "runway. They're raising at $200M pre-money. Is this reasonable? "
                 "Compare using revenue multiples, growth-adjusted metrics, and comps.",
     },
-    # ── Legal analysis ──────────────────────────────────────────────────────
+    # ── Legal analysis ────────────────────────────────────────────────────
     {
         "system": "You are a contract law specialist. Review this scenario and "
                   "provide detailed legal analysis with citations to common law "
@@ -150,7 +91,7 @@ QUERIES: list[dict[str, str]] = [
                 "let go from their department. They had positive performance reviews "
                 "for the past 3 years. What's the retaliation risk?",
     },
-    # ── Technical/engineering ───────────────────────────────────────────────
+    # ── Technical/engineering ─────────────────────────────────────────────
     {
         "system": "You are a senior software architect. Provide a detailed technical "
                   "analysis with trade-offs and recommendations.",
@@ -186,7 +127,7 @@ QUERIES: list[dict[str, str]] = [
                 "with PII). Preliminary analysis shows a compromised service account "
                 "with elevated privileges. What's the immediate response plan?",
     },
-    # ── Research and analysis ───────────────────────────────────────────────
+    # ── Research and analysis ─────────────────────────────────────────────
     {
         "system": "You are a medical research analyst. Provide a thorough literature "
                   "review with critical analysis of methodology.",
@@ -214,7 +155,7 @@ QUERIES: list[dict[str, str]] = [
                 "teacher workload impact, and long-term retention. Include specific "
                 "study results where possible.",
     },
-    # ── Creative and strategic ──────────────────────────────────────────────
+    # ── Creative and strategic ────────────────────────────────────────────
     {
         "system": "You are a brand strategy consultant. Develop a comprehensive "
                   "go-to-market strategy with detailed reasoning.",
@@ -243,7 +184,7 @@ QUERIES: list[dict[str, str]] = [
                 "Our R&D team is 40 engineers. We have $10M in the bank. What's "
                 "the 12-month product strategy to compete?",
     },
-    # ── Healthcare ──────────────────────────────────────────────────────────
+    # ── Healthcare ────────────────────────────────────────────────────────
     {
         "system": "You are a clinical informatics specialist. Analyze this "
                   "patient workflow problem and recommend improvements.",
@@ -262,7 +203,7 @@ QUERIES: list[dict[str, str]] = [
                 "myeloablative conditioning and has a 5% serious adverse event "
                 "rate. Outline the regulatory strategy and timeline.",
     },
-    # ── Education ───────────────────────────────────────────────────────────
+    # ── Education ─────────────────────────────────────────────────────────
     {
         "system": "You are a curriculum design expert. Create a detailed "
                   "learning pathway with assessment strategies.",
@@ -281,7 +222,7 @@ QUERIES: list[dict[str, str]] = [
                 "and summer school with minimal impact. Budget for new initiatives "
                 "is $2M annually. What evidence-based interventions would help?",
     },
-    # ── Real estate and urban planning ──────────────────────────────────────
+    # ── Real estate and urban planning ────────────────────────────────────
     {
         "system": "You are an urban planning consultant. Provide a detailed "
                   "feasibility analysis with community impact assessment.",
@@ -300,7 +241,7 @@ QUERIES: list[dict[str, str]] = [
                 "largest tenant (40% of revenue) has indicated they may not renew. "
                 "Cap rate is 7.2%. Is this a good investment?",
     },
-    # ── Logistics and operations ────────────────────────────────────────────
+    # ── Logistics and operations ──────────────────────────────────────────
     {
         "system": "You are a logistics optimization specialist. Design an "
                   "efficient distribution network with cost modeling.",
@@ -319,7 +260,7 @@ QUERIES: list[dict[str, str]] = [
                 "inspection is manual with 6 inspectors per shift. We suspect "
                 "tool wear and operator fatigue. Propose a comprehensive fix.",
     },
-    # ── Environmental science ───────────────────────────────────────────────
+    # ── Environmental science ─────────────────────────────────────────────
     {
         "system": "You are an environmental impact assessment specialist. "
                   "Conduct a thorough analysis with mitigation recommendations.",
@@ -339,7 +280,7 @@ QUERIES: list[dict[str, str]] = [
                 "Current reserves will last approximately 15 years at current "
                 "rates. Develop a comprehensive water management strategy.",
     },
-    # ── Marketing and advertising ───────────────────────────────────────────
+    # ── Marketing and advertising ─────────────────────────────────────────
     {
         "system": "You are a digital marketing strategist. Design a "
                   "comprehensive multi-channel campaign with ROI projections.",
@@ -359,7 +300,7 @@ QUERIES: list[dict[str, str]] = [
                 "filed. Three major retailers have pulled the product. Develop "
                 "the crisis response plan.",
     },
-    # ── Human resources ─────────────────────────────────────────────────────
+    # ── Human resources ───────────────────────────────────────────────────
     {
         "system": "You are an organizational development consultant. Analyze "
                   "the situation and propose a transformation roadmap.",
@@ -380,7 +321,7 @@ QUERIES: list[dict[str, str]] = [
                 "to FAANG companies. Annual budget for compensation adjustments "
                 "is $5M. Design the new compensation framework.",
     },
-    # ── Data science and AI ─────────────────────────────────────────────────
+    # ── Data science and AI ───────────────────────────────────────────────
     {
         "system": "You are an ML systems architect. Design a production ML "
                   "pipeline with monitoring and governance.",
@@ -401,7 +342,7 @@ QUERIES: list[dict[str, str]] = [
                 "historical hiring decisions. Analyze the bias sources and "
                 "propose a comprehensive remediation plan.",
     },
-    # ── Energy and sustainability ───────────────────────────────────────────
+    # ── Energy and sustainability ─────────────────────────────────────────
     {
         "system": "You are a renewable energy project finance analyst. "
                   "Evaluate this investment opportunity with detailed financials.",
@@ -422,7 +363,7 @@ QUERIES: list[dict[str, str]] = [
                 "Develop a phased roadmap with cost estimates and timeline "
                 "for each major decarbonization initiative.",
     },
-    # ── Government and public policy ────────────────────────────────────────
+    # ── Government and public policy ──────────────────────────────────────
     {
         "system": "You are a public policy analyst. Evaluate this proposed "
                   "regulation with economic impact analysis.",
@@ -442,7 +383,7 @@ QUERIES: list[dict[str, str]] = [
                 "Options include light rail, BRT, or a hybrid approach. "
                 "Analyze each option with cost-benefit analysis.",
     },
-    # ── Nonprofit and social impact ─────────────────────────────────────────
+    # ── Nonprofit and social impact ───────────────────────────────────────
     {
         "system": "You are a nonprofit strategy consultant. Develop a "
                   "comprehensive organizational growth plan.",
@@ -463,7 +404,7 @@ QUERIES: list[dict[str, str]] = [
                 "comprehensive evaluation framework including counterfactual "
                 "analysis and long-term outcome tracking.",
     },
-    # ── Aerospace and defense ───────────────────────────────────────────────
+    # ── Aerospace and defense ─────────────────────────────────────────────
     {
         "system": "You are an aerospace systems engineer. Conduct a detailed "
                   "trade study with technical analysis.",
@@ -485,7 +426,7 @@ QUERIES: list[dict[str, str]] = [
                 "failed last quarter. Assess the program risks and recommend "
                 "corrective actions.",
     },
-    # ── Agriculture and food science ────────────────────────────────────────
+    # ── Agriculture and food science ──────────────────────────────────────
     {
         "system": "You are a precision agriculture specialist. Design a "
                   "smart farming implementation plan.",
@@ -506,7 +447,7 @@ QUERIES: list[dict[str, str]] = [
                 "from 2,000 suppliers across 15 countries. Design the "
                 "traceability system architecture and rollout plan.",
     },
-    # ── Insurance and risk ──────────────────────────────────────────────────
+    # ── Insurance and risk ────────────────────────────────────────────────
     {
         "system": "You are an actuarial science expert. Analyze this risk "
                   "pool and recommend pricing adjustments.",
@@ -528,260 +469,3 @@ QUERIES: list[dict[str, str]] = [
                 "is 65/100. Evaluate the risk and propose terms.",
     },
 ]
-
-
-# ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║  DATA                                                                      ║
-# ╚══════════════════════════════════════════════════════════════════════════════╝
-
-
-@dataclass
-class Result:
-    name: str
-    start_time: float  # seconds from batch start to first token sent
-    end_time: float    # seconds from batch start to response received
-    tier_label: str
-
-
-# ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║  GANTT CHART                                                               ║
-# ╚══════════════════════════════════════════════════════════════════════════════╝
-
-TIER_COLORS = {
-    "CRITICAL":   "#d62728",  # red
-    "HIGH":       "#ff7f0e",  # orange
-    "MEDIUM":     "#2ca02c",  # green
-    "LOW":        "#1f77b4",  # blue
-    "BACKGROUND": "#7f7f7f",  # gray
-}
-
-
-def save_gantt(
-    results: list[Result],
-    title: str,
-    filepath: str,
-) -> None:
-    """Save a Gantt chart of request timings to disk."""
-    # Sort: by tier order, then by end_time within tier
-    tier_order = {
-        "CRITICAL": 0, "HIGH": 1, "MEDIUM": 2,
-        "LOW": 3, "BACKGROUND": 4,
-    }
-    sorted_results = sorted(
-        results,
-        key=lambda r: (tier_order.get(r.tier_label, 99), r.end_time),
-    )
-
-    n = len(sorted_results)
-    fig_height = max(6, n * 0.12)
-    fig, ax = plt.subplots(figsize=(14, fig_height))
-
-    y_labels = []
-    for i, r in enumerate(sorted_results):
-        color = TIER_COLORS.get(r.tier_label, "#333333")
-        ax.barh(
-            i, r.end_time - r.start_time,
-            left=r.start_time, height=0.7,
-            color=color, alpha=0.85, edgecolor="white",
-            linewidth=0.3,
-        )
-        y_labels.append(r.name)
-
-    ax.set_yticks(range(n))
-    ax.set_yticklabels(y_labels, fontsize=4, fontfamily="monospace")
-    ax.invert_yaxis()
-    ax.set_xlabel("Time (seconds from batch start)")
-    ax.set_title(title, fontsize=11, fontweight="bold")
-
-    # Legend
-    from matplotlib.patches import Patch
-    legend_handles = [
-        Patch(facecolor=TIER_COLORS[lb], label=lb)
-        for lb in tier_order
-    ]
-    ax.legend(
-        handles=legend_handles, loc="lower right",
-        fontsize=8, framealpha=0.9,
-    )
-
-    plt.tight_layout()
-    fig.savefig(filepath, dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    print(f"    -> Saved {filepath}")
-
-
-# ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║  MAIN                                                                      ║
-# ╚══════════════════════════════════════════════════════════════════════════════╝
-
-
-async def main() -> None:
-    # Single LLM — same config for every request
-    llm = ChatNVIDIADynamo(
-        base_url=NIM_BASE_URL,
-        model=MODEL,
-        max_completion_tokens=MAX_TOKENS,
-    )
-
-    total_tasks = sum(t["count"] for t in TIERS)
-    tier_labels = [t["label"] for t in TIERS]
-
-    print(f"Priority-only A/B test: {total_tasks} requests per trial")
-    print(f"Fixed: max_tokens={MAX_TOKENS}, osl={OSL}, "
-          f"latency_sensitivity={LATENCY_SENSITIVITY}, iat={IAT}")
-    print(f"Query pool: {len(QUERIES)} unique (system, user) pairs")
-    print()
-    for t in TIERS:
-        print(f"  {t['label']:12s}  priority={t['priority']:2d}  count={t['count']:3d}")
-    print()
-
-    # ── Build task list ──────────────────────────────────────────────────────
-    # Each task: (name, tier_label, priority, messages)
-    tasks_spec: list[tuple[str, str, int, list]] = []
-    query_idx = 0
-    for tier in TIERS:
-        for i in range(tier["count"]):
-            name = f"{tier['label'].lower()}_{i + 1:03d}"
-            q = QUERIES[query_idx % len(QUERIES)]
-            query_idx += 1
-            msgs = [
-                SystemMessage(content=q["system"]),
-                HumanMessage(content=q["user"]),
-            ]
-            tasks_spec.append((name, tier["label"], tier["priority"], msgs))
-
-    # ── Timed call — passes priority directly as a kwarg ─────────────────────
-    async def timed_call(
-        name: str,
-        t0: float,
-        tier_label: str,
-        messages: list,
-        priority: int = DEFAULT_PRIORITY,
-    ) -> Result:
-        start = time.perf_counter() - t0
-        await llm.ainvoke(messages, osl=OSL, priority=priority)
-        end = time.perf_counter() - t0
-        return Result(
-            name=name, start_time=start,
-            end_time=end, tier_label=tier_label,
-        )
-
-    # ── Warmup ───────────────────────────────────────────────────────────────
-    warmup_msgs = [
-        SystemMessage(content="You are a helpful assistant."),
-        HumanMessage(content="Explain the concept of supply and demand in detail."),
-    ]
-    print(f"Warming up ({NUM_WARMUP_CALLS} calls, max_tokens={MAX_TOKENS})...")
-    await asyncio.gather(
-        *[llm.ainvoke(warmup_msgs, osl=OSL) for _ in range(NUM_WARMUP_CALLS)]
-    )
-    print("Warmup done.\n")
-
-    # ── Output directory for Gantt charts ───────────────────────────────────
-    out_dir = os.path.join(
-        os.path.dirname(__file__), "priority_gantt_charts",
-    )
-    os.makedirs(out_dir, exist_ok=True)
-    print(f"Gantt charts will be saved to: {out_dir}\n")
-
-    # ── Helper to compute per-tier stats ─────────────────────────────────────
-    def tier_stats(results: list[Result]) -> dict[str, dict[str, float]]:
-        by_tier: dict[str, list[float]] = {lb: [] for lb in tier_labels}
-        for r in results:
-            by_tier[r.tier_label].append(r.end_time)
-        out: dict[str, dict[str, float]] = {}
-        for lb in tier_labels:
-            times = by_tier[lb]
-            if times:
-                out[lb] = {
-                    "median": statistics.median(times),
-                    "mean": statistics.mean(times),
-                    "min": min(times),
-                    "max": max(times),
-                }
-        return out
-
-    # ── Run both modes ───────────────────────────────────────────────────────
-    mode_summaries: dict[str, dict[str, float]] = {}
-
-    for mode_name, use_priority in [("A: CONTROL (all priority=1)", False),
-                                     ("B: EXPERIMENT (tiered priority)", True)]:
-        print("=" * 70)
-        print(f"  {mode_name}")
-        print("=" * 70)
-
-        all_medians: dict[str, list[float]] = {lb: [] for lb in tier_labels}
-
-        for run_idx in range(1, NUM_RUNS + 1):
-            print(f"  Run {run_idx}/{NUM_RUNS} — {total_tasks} calls...",
-                  end=" ", flush=True)
-            t0 = time.perf_counter()
-
-            coros = []
-            for name, tier_label, pri, msgs in tasks_spec:
-                p = pri if use_priority else DEFAULT_PRIORITY
-                coros.append(timed_call(name, t0, tier_label, msgs, priority=p))
-
-            results = list(await asyncio.gather(*coros))
-            wall = max(r.end_time for r in results)
-            print(f"done in {wall:.1f}s")
-
-            stats = tier_stats(results)
-            for lb in tier_labels:
-                s = stats[lb]
-                all_medians[lb].append(s["median"])
-                n = sum(1 for r in results if r.tier_label == lb)
-                print(f"    {lb:12s}: med={s['median']:6.1f}s  "
-                      f"mean={s['mean']:6.1f}s  "
-                      f"min={s['min']:5.1f}s  max={s['max']:5.1f}s  "
-                      f"[n={n}]")
-
-            # Save Gantt chart
-            mode_tag = "control" if not use_priority else "experiment"
-            chart_path = os.path.join(
-                out_dir, f"{mode_tag}_run{run_idx:02d}.png",
-            )
-            save_gantt(
-                results,
-                title=(
-                    f"{mode_name} - Run {run_idx}/{NUM_RUNS} "
-                    f"({total_tasks} requests, {wall:.1f}s wall)"
-                ),
-                filepath=chart_path,
-            )
-            print()
-
-        # Median-of-medians across runs
-        final = {lb: statistics.median(all_medians[lb]) for lb in tier_labels}
-        mode_summaries[mode_name] = final
-
-        print(f"  MEDIAN OF MEDIANS ({mode_name}):")
-        for lb in tier_labels:
-            print(f"    {lb:12s}: {final[lb]:6.1f}s")
-        print()
-
-    # ── Side-by-side comparison ──────────────────────────────────────────────
-    control_key = "A: CONTROL (all priority=1)"
-    experiment_key = "B: EXPERIMENT (tiered priority)"
-    ctrl = mode_summaries[control_key]
-    expt = mode_summaries[experiment_key]
-
-    print("=" * 70)
-    print("  SIDE-BY-SIDE COMPARISON (median of medians)")
-    print("=" * 70)
-    print()
-    print(f"  {'Tier':12s}  {'Control':>9s}  {'Experiment':>11s}  {'Delta':>8s}")
-    print(f"  {'~' * 12}  {'~' * 9}  {'~' * 11}  {'~' * 8}")
-    for lb in tier_labels:
-        delta = expt[lb] - ctrl[lb]
-        print(f"  {lb:12s}  {ctrl[lb]:>8.1f}s  {expt[lb]:>10.1f}s  {delta:>+7.1f}s")
-
-    print()
-    print("INTERPRETATION:")
-    print("  Negative CRITICAL delta => priority IS speeding up critical tasks")
-    print("  Positive BACKGROUND delta => priority IS deprioritizing background")
-    print("  All deltas ~0 => priority has NO scheduling effect")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
