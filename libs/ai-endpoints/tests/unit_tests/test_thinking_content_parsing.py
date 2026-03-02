@@ -161,9 +161,10 @@ def test_thinking_content_parsing_and_blocks(
     else:
         assert response.content == expected_content_without_tags
 
-    # Check content_blocks and reasoning_content
+    # Check additional_kwargs and content_blocks
     if expected_reasoning:
         assert response.additional_kwargs["reasoning_content"] == expected_reasoning
+        assert response.additional_kwargs["reasoning"] == expected_reasoning
         assert hasattr(response, "content_blocks")
         assert response.content_blocks is not None
 
@@ -180,6 +181,7 @@ def test_thinking_content_parsing_and_blocks(
         assert text_blocks[0]["text"] == response_content  # type: ignore[typeddict-item]
     else:
         assert "reasoning_content" not in response.additional_kwargs
+        assert "reasoning" not in response.additional_kwargs
 
         # LangChain should auto-generate a single text block from string content
         assert hasattr(response, "content_blocks")
@@ -274,6 +276,7 @@ def test_content_blocks_priority_response_over_tags(
                         "role": "assistant",
                         "content": "<think>Tag reasoning</think>Response",
                         "reasoning_content": "Reasoning from response",
+                        "reasoning": "Reasoning from response",
                     },
                     "logprobs": None,
                     "finish_reason": "stop",
@@ -298,8 +301,9 @@ def test_content_blocks_priority_response_over_tags(
     # In backward compatible mode, tags are preserved in content
     assert response.content == "<think>Tag reasoning</think>Response"
 
-    # Reasoning from response should take priority over tag-based reasoning
+    # reasoning_content from API fields takes priority over tags
     assert response.additional_kwargs["reasoning_content"] == "Reasoning from response"
+    assert response.additional_kwargs["reasoning"] == "Reasoning from response"
 
     # Check content_blocks
     reasoning_blocks = [
