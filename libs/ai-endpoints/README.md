@@ -2,6 +2,8 @@
 
 The `langchain-nvidia-ai-endpoints` package contains LangChain integrations for chat models and embeddings powered by [NVIDIA AI Foundation Models](https://www.nvidia.com/en-us/ai-data-science/foundation-models/), and hosted on the [NVIDIA API Catalog](https://build.nvidia.com/).
 
+A strong starting point is [Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/), NVIDIA's open model family built for agentic AI. Nemotron models use a hybrid Mamba-Transformer mixture-of-experts architecture that delivers leading benchmark accuracy with high throughput and up to 1M token context windows. Model weights, training data, and implementation recipes are published openly under the NVIDIA Open Model License.
+
 NVIDIA AI Foundation models are community- and NVIDIA-built models that are optimized to deliver the best performance on NVIDIA-accelerated infrastructure. 
 You can use the API to query live endpoints that are available on the NVIDIA API Catalog to get quick results from a DGX-hosted cloud compute environment. 
 or you can download models from NVIDIA's API catalog with NVIDIA NIM, which is included with the NVIDIA AI Enterprise license. 
@@ -58,7 +60,7 @@ Use the following code to invoke the core chat interface.
 ## Core LC Chat Interface
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-llm = ChatNVIDIA(model="meta/llama3-70b-instruct", max_tokens=419)
+llm = ChatNVIDIA(model="nvidia/nemotron-3-nano-30b-a3b")
 result = llm.invoke("Write a ballad about LangChain.")
 print(result.content)
 ```
@@ -133,10 +135,23 @@ Some model types support unique prompting techniques and chat messages.
 Use this section to learn about a few examples.
 
 
+### Nemotron
+
+[Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. The models deliver strong reasoning and tool-calling performance with high throughput. `nvidia/nemotron-3-nano-30b-a3b` is a recommended starting point: an efficient 30B mixture-of-experts model with a 1M token context window, available on the NVIDIA API Catalog and as a self-hosted NIM.
+
+```python
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
+
+llm = ChatNVIDIA(model="nvidia/nemotron-3-nano-30b-a3b")
+result = llm.invoke("Plan a three-step agentic workflow for competitive research.")
+print(result.content)
+```
+
+
 ### General Chat
 
-Models such as `meta/llama3-8b-instruct` and `mistralai/mixtral-8x22b-instruct-v0.1` 
-are good all-around models that you can use for any LangChain chat messages. 
+Models such as `meta/llama3-8b-instruct` and `mistralai/mixtral-8x22b-instruct-v0.1`
+are good all-around models that you can use for any LangChain chat messages.
 
 The following example generates a simple chat response.
 
@@ -270,6 +285,18 @@ for chunk in completions_llm.stream(prompt):
 ```
 
 
+### Dynamo KV Cache Optimization
+
+`ChatNVIDIADynamo` is a drop-in replacement for `ChatNVIDIA` that injects NVIDIA Dynamo KV cache routing hints into requests. Use it with Dynamo-enabled deployments to improve inference scheduling.
+
+```python
+from langchain_nvidia_ai_endpoints import ChatNVIDIADynamo
+
+llm = ChatNVIDIADynamo(model="meta/llama3-8b-instruct", osl=1024, iat=100)
+result = llm.invoke("Write a short poem.")
+```
+
+
 ### Embeddings
 
 The following example connects to an embeddings model.
@@ -308,6 +335,18 @@ response = client.compress_documents(
 )
 
 print(f"Most relevant: {response[0].page_content}\nLeast relevant: {response[-1].page_content}")
+```
+
+
+### Retrieval
+
+The following example connects to a running NVIDIA RAG Blueprint server to retrieve relevant documents via the `/v1/search` endpoint.
+
+```python
+from langchain_nvidia_ai_endpoints import NVIDIARetriever
+
+retriever = NVIDIARetriever(base_url="http://localhost:8081", k=4)
+docs = retriever.invoke("What is machine learning?")
 ```
 
 
