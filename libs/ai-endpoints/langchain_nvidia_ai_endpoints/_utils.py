@@ -83,6 +83,15 @@ def convert_message_to_dict(message: BaseMessage) -> dict:
             "role": "assistant",
             "content": _normalize_content(message.content),
         }
+        # Forward reasoning fields only when they originated from separate API
+        # response fields, not from <think> tags.
+        api_fields = message.additional_kwargs.get("_reasoning_api_fields", [])
+        if "reasoning_content" in api_fields:
+            message_dict["reasoning_content"] = message.additional_kwargs[
+                "reasoning_content"
+            ]
+        if "reasoning" in api_fields:
+            message_dict["reasoning"] = message.additional_kwargs["reasoning"]
         if "function_call" in message.additional_kwargs:
             message_dict["function_call"] = message.additional_kwargs["function_call"]
             # If function call only, content is None not empty string
