@@ -10,6 +10,8 @@ EXPECTED_ALL = [
     "NVIDIARetriever",
     "register_model",
     "Model",
+    "inference_priority",
+    "get_inference_priority",
 ]
 
 
