@@ -313,6 +313,81 @@ def test_reasoning_content_only_roundtrip(
     assert assistant_msg["reasoning_content"] == "Let me think step by step."
 
 
+def test_reasoning_only_field_roundtrip(
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    """Model returns only "reasoning".
+    Invocation output must expose it in both reasoning_content and reasoning.
+    Multi-turn input must forward only the "reasoning" field."""
+    turn1_response = {
+        "id": "chatcmpl-1",
+        "object": "chat.completion",
+        "created": 1234567890,
+        "model": "BOGUS",
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": "The answer is 4.",
+                    "reasoning": "The user asked 2+2. That equals 4.",
+                },
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30},
+    }
+    turn2_response = {
+        "id": "chatcmpl-2",
+        "object": "chat.completion",
+        "created": 1234567891,
+        "model": "BOGUS",
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": "That gives 12."},
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": {"prompt_tokens": 30, "completion_tokens": 10, "total_tokens": 40},
+    }
+
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        [{"json": turn1_response}, {"json": turn2_response}],
+    )
+
+    llm = ChatNVIDIA(api_key="BOGUS")
+    response1 = llm.invoke([HumanMessage(content="What is 2+2?")])
+
+    # Invocation output: both channels populated
+    assert response1.additional_kwargs["reasoning_content"] == (
+        "The user asked 2+2. That equals 4."
+    )
+    assert response1.additional_kwargs["reasoning"] == (
+        "The user asked 2+2. That equals 4."
+    )
+    # Only "reasoning" is flagged as an API field
+    assert response1.additional_kwargs.get("_reasoning_api_fields") == ["reasoning"]
+
+    # Turn 2: only "reasoning" forwarded, not "reasoning_content"
+    llm.invoke(
+        [
+            HumanMessage(content="What is 2+2?"),
+            response1,
+            HumanMessage(content="Multiply that by 3"),
+        ]
+    )
+
+    turn2_request = requests_mock.request_history[1].json()
+    assistant_msg = turn2_request["messages"][1]
+
+    assert assistant_msg["role"] == "assistant"
+    assert assistant_msg["content"] == "The answer is 4."
+    assert assistant_msg["reasoning"] == "The user asked 2+2. That equals 4."
+    assert "reasoning_content" not in assistant_msg
+
+
 def test_reasoning_api_fields_flag_not_leaked_to_payload() -> None:
     """Internal _reasoning_api_fields flag must not appear in serialized message."""
     msg = AIMessage(
@@ -390,9 +465,9 @@ def test_think_tags_not_sent_as_separate_reasoning_fields(
         warnings.simplefilter("ignore")
         response1 = llm.invoke([HumanMessage(content="What is 2+2?")])
 
-    # Reasoning is in additional_kwargs for user access
+    # Tag-based reasoning: only reasoning_content is populated
     assert response1.additional_kwargs["reasoning_content"] == "My reasoning"
-    assert response1.additional_kwargs["reasoning"] == "My reasoning"
+    assert "reasoning" not in response1.additional_kwargs
     # Tags are preserved in content
     assert "<think>" in response1.content
 

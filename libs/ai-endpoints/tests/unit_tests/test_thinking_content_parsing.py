@@ -162,9 +162,10 @@ def test_thinking_content_parsing_and_blocks(
         assert response.content == expected_content_without_tags
 
     # Check additional_kwargs and content_blocks
+    # Tag-based reasoning populates reasoning_content only (not reasoning).
     if expected_reasoning:
         assert response.additional_kwargs["reasoning_content"] == expected_reasoning
-        assert response.additional_kwargs["reasoning"] == expected_reasoning
+        assert "reasoning" not in response.additional_kwargs
         assert hasattr(response, "content_blocks")
         assert response.content_blocks is not None
 
@@ -316,6 +317,70 @@ def test_content_blocks_priority_response_over_tags(
     assert len(text_blocks) == 1
     # In backward compatible mode, content contains tags
     assert text_blocks[0]["text"] == "<think>Tag reasoning</think>Response"  # type: ignore[typeddict-item]
+
+
+def test_content_blocks_with_reasoning_field_only(
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    """Test that models returning only 'reasoning' (e.g. kimi-k2.5) expose it in
+    both additional_kwargs['reasoning_content'] and additional_kwargs['reasoning']
+    on invocation output, but only forward 'reasoning' in multi-turn input."""
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        json={
+            "id": "chatcmpl-ID",
+            "object": "chat.completion",
+            "created": 1234567890,
+            "model": "BOGUS",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": "Response text",
+                        "reasoning": "Reasoning from reasoning field",
+                    },
+                    "logprobs": None,
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 10,
+                "completion_tokens": 20,
+                "total_tokens": 30,
+            },
+            "system_fingerprint": None,
+        },
+    )
+
+    llm = ChatNVIDIA(api_key="BOGUS")
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        response = llm.invoke("Test message")
+
+    assert response.content == "Response text"
+    # reasoning_content is populated from reasoning field for unified access
+    assert response.additional_kwargs["reasoning_content"] == (
+        "Reasoning from reasoning field"
+    )
+    assert response.additional_kwargs["reasoning"] == "Reasoning from reasoning field"
+
+    # Check content_blocks exposes a reasoning block
+    assert hasattr(response, "content_blocks")
+    reasoning_blocks = [
+        b for b in response.content_blocks if b.get("type") == "reasoning"
+    ]
+    assert len(reasoning_blocks) == 1
+    assert reasoning_blocks[0]["reasoning"] == "Reasoning from reasoning field"  # type: ignore[typeddict-item]
+
+    text_blocks = [b for b in response.content_blocks if b.get("type") == "text"]
+    assert len(text_blocks) == 1
+    assert text_blocks[0]["text"] == "Response text"  # type: ignore[typeddict-item]
+
+    # _reasoning_api_fields must only flag "reasoning" so multi-turn forwards
+    # only the "reasoning" field, not "reasoning_content"
+    assert response.additional_kwargs.get("_reasoning_api_fields") == ["reasoning"]
 
 
 @pytest.mark.parametrize(
