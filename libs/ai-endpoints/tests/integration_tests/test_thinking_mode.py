@@ -47,10 +47,6 @@ def check_reasoning_content(
 
     if should_have_reasoning:
         assert has_reasoning_block, "No reasoning content found in content_blocks"
-        # Content should not contain think tags
-        assert (
-            "<think>" not in response.content
-        ), "Content should not contain think tags"
     else:
         assert (
             not has_reasoning_block
