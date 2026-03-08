@@ -1,4 +1,4 @@
-"""Unit tests for NVIDIARetriever."""
+"""Unit tests for NVIDIARAGRetriever."""
 
 import asyncio
 import json
@@ -13,9 +13,9 @@ import requests_mock
 from langchain_nvidia_ai_endpoints.retrievers import (
     NVIDIARAGConnectionError,
     NVIDIARAGError,
+    NVIDIARAGRetriever,
     NVIDIARAGServerError,
     NVIDIARAGValidationError,
-    NVIDIARetriever,
 )
 
 
@@ -27,8 +27,8 @@ def test_nvidia_rag_exception_inheritance() -> None:
 
 
 def test_nvidia_retriever_init() -> None:
-    """Test NVIDIARetriever initialization."""
-    retriever = NVIDIARetriever(
+    """Test NVIDIARAGRetriever initialization."""
+    retriever = NVIDIARAGRetriever(
         base_url="http://localhost:8081",
         collection_names=["test_multimodal_query"],
         k=4,
@@ -41,7 +41,7 @@ def test_nvidia_retriever_init() -> None:
 def test_nvidia_retriever_base_url_rejects_v1_search() -> None:
     """Test that base_url must not include /v1/search."""
     with pytest.raises(ValueError) as exc_info:
-        NVIDIARetriever(
+        NVIDIARAGRetriever(
             base_url="http://localhost:8081/v1/search",
             collection_names=["test"],
         )
@@ -49,7 +49,7 @@ def test_nvidia_retriever_base_url_rejects_v1_search() -> None:
     assert "must not include" in str(exc_info.value)
 
     with pytest.raises(ValueError):
-        NVIDIARetriever(
+        NVIDIARAGRetriever(
             base_url="http://localhost:8081/v1/search/",
             collection_names=["test"],
         )
@@ -57,7 +57,7 @@ def test_nvidia_retriever_base_url_rejects_v1_search() -> None:
 
 def test_nvidia_retriever_build_payload() -> None:
     """Test payload construction."""
-    retriever = NVIDIARetriever(
+    retriever = NVIDIARAGRetriever(
         base_url="http://localhost:8081",
         collection_names=["col1"],
         k=5,
@@ -76,7 +76,7 @@ def test_nvidia_retriever_build_payload() -> None:
 
 def test_nvidia_retriever_results_to_documents() -> None:
     """Test conversion of API results to Documents."""
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
     results = [
         {
             "document_id": "doc1",
@@ -98,7 +98,7 @@ def test_nvidia_retriever_results_to_documents() -> None:
 
 def test_nvidia_retriever_invoke_success() -> None:
     """Test successful invoke."""
-    retriever = NVIDIARetriever(
+    retriever = NVIDIARAGRetriever(
         base_url="http://localhost:8081",
         collection_names=["test_multimodal_query"],
         k=2,
@@ -143,7 +143,7 @@ def test_nvidia_retriever_invoke_success() -> None:
 
 def test_nvidia_retriever_connection_error() -> None:
     """Test NVIDIARAGConnectionError when server is unreachable."""
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
 
     with requests_mock.Mocker() as m:
         m.post(
@@ -159,7 +159,7 @@ def test_nvidia_retriever_connection_error() -> None:
 
 def test_nvidia_retriever_timeout_error() -> None:
     """Test NVIDIARAGConnectionError when request times out."""
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
 
     with requests_mock.Mocker() as m:
         m.post(
@@ -175,7 +175,7 @@ def test_nvidia_retriever_timeout_error() -> None:
 
 def test_nvidia_retriever_request_exception() -> None:
     """Test NVIDIARAGConnectionError for generic RequestException."""
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
 
     with requests_mock.Mocker() as m:
         m.post(
@@ -190,7 +190,7 @@ def test_nvidia_retriever_request_exception() -> None:
 
 def test_nvidia_retriever_invalid_json() -> None:
     """Test NVIDIARAGServerError when server returns 200 with invalid JSON."""
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
 
     with requests_mock.Mocker() as m:
         m.post(
@@ -208,7 +208,7 @@ def test_nvidia_retriever_invalid_json() -> None:
 
 def test_nvidia_retriever_empty_array_response() -> None:
     """Test NVIDIARAGServerError when 200 response is empty array (data: [])."""
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
 
     with requests_mock.Mocker() as m:
         m.post(
@@ -225,7 +225,7 @@ def test_nvidia_retriever_empty_array_response() -> None:
 
 def test_nvidia_retriever_results_not_list() -> None:
     """Test NVIDIARAGServerError when results field is not a list."""
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
 
     with requests_mock.Mocker() as m:
         m.post(
@@ -242,7 +242,7 @@ def test_nvidia_retriever_results_not_list() -> None:
 
 def test_nvidia_retriever_server_error() -> None:
     """Test NVIDIARAGServerError when server returns 500."""
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
 
     with requests_mock.Mocker() as m:
         m.post(
@@ -259,7 +259,7 @@ def test_nvidia_retriever_server_error() -> None:
 
 def test_nvidia_retriever_validation_error() -> None:
     """Test NVIDIARAGValidationError when server returns 422."""
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
 
     with requests_mock.Mocker() as m:
         m.post(
@@ -281,7 +281,7 @@ def test_nvidia_retriever_validation_error() -> None:
 @pytest.mark.asyncio
 async def test_nvidia_retriever_async_connection_error() -> None:
     """Test NVIDIARAGConnectionError when async request fails to connect."""
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
 
     def mock_post(*args: Any, **kwargs: Any) -> None:
         raise aiohttp.ClientError("Connection refused")
@@ -295,7 +295,7 @@ async def test_nvidia_retriever_async_connection_error() -> None:
 @pytest.mark.asyncio
 async def test_nvidia_retriever_async_timeout_error() -> None:
     """Test NVIDIARAGConnectionError when async request times out."""
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
 
     def mock_post(*args: Any, **kwargs: Any) -> None:
         raise asyncio.TimeoutError("Request timed out")
@@ -322,7 +322,7 @@ async def test_nvidia_retriever_async_invalid_json() -> None:
         async def __aexit__(self, *args: Any) -> None:
             pass
 
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
 
     def mock_post(*args: Any, **kwargs: Any) -> MockResponse:
         return MockResponse()
@@ -350,7 +350,7 @@ async def test_nvidia_retriever_async_server_error() -> None:
         async def __aexit__(self, *args: Any) -> None:
             pass
 
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
 
     with patch.object(aiohttp.ClientSession, "post", return_value=MockResponse()):
         with pytest.raises(NVIDIARAGServerError) as exc_info:
@@ -375,7 +375,7 @@ async def test_nvidia_retriever_async_validation_error() -> None:
         async def __aexit__(self, *args: Any) -> None:
             pass
 
-    retriever = NVIDIARetriever(base_url="http://localhost:8081")
+    retriever = NVIDIARAGRetriever(base_url="http://localhost:8081")
 
     with patch.object(aiohttp.ClientSession, "post", return_value=MockResponse()):
         with pytest.raises(NVIDIARAGValidationError) as exc_info:
@@ -388,7 +388,7 @@ async def test_nvidia_retriever_ainvoke_success() -> None:
     """Test successful async invoke."""
     from langchain_core.documents import Document
 
-    retriever = NVIDIARetriever(
+    retriever = NVIDIARAGRetriever(
         base_url="http://localhost:8081",
         collection_names=["test_multimodal_query"],
         k=1,
