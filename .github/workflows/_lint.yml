@@ -85,6 +85,11 @@ jobs:
         run: |
           poetry run pip install -e "$LANGCHAIN_LOCATION"
 
+      - name: Get mypy version
+        id: mypy-version
+        working-directory: ${{ inputs.working-directory }}
+        run: echo "version=$(poetry run mypy --version | awk '{print $2}')" >> $GITHUB_OUTPUT
+
       - name: Get .mypy_cache to speed up mypy
         uses: actions/cache@v4
         env:
@@ -92,7 +97,7 @@ jobs:
         with:
           path: |
             ${{ env.WORKDIR }}/.mypy_cache
-          key: mypy-lint-${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python-version }}-${{ inputs.working-directory }}-${{ hashFiles(format('{0}/poetry.lock', inputs.working-directory)) }}
+          key: mypy-lint-${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python-version }}-${{ inputs.working-directory }}-${{ hashFiles(format('{0}/poetry.lock', inputs.working-directory)) }}-mypy${{ steps.mypy-version.outputs.version }}
 
       - name: Install unit test dependencies
         # Also installs dev/lint/test/typing dependencies, to ensure we have
@@ -126,7 +131,7 @@ jobs:
         with:
           path: |
             ${{ env.WORKDIR }}/.mypy_cache_test
-          key: mypy-test-${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python-version }}-${{ inputs.working-directory }}-${{ hashFiles(format('{0}/poetry.lock', inputs.working-directory)) }}
+          key: mypy-test-${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python-version }}-${{ inputs.working-directory }}-${{ hashFiles(format('{0}/poetry.lock', inputs.working-directory)) }}-mypy${{ steps.mypy-version.outputs.version }}
 
       - name: Analysing the code with our lint
         working-directory: ${{ inputs.working-directory }}
