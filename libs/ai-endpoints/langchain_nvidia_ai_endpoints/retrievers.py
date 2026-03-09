@@ -385,3 +385,7 @@ class NVIDIARAGRetriever(BaseRetriever):
     ) -> List[Document]:
         """Async retrieve documents from the NVIDIA RAG /v1/search endpoint."""
         return await self._search_async(query)
+
+
+# Backwards compatibility alias (langchain-tests / mypy resolve NVIDIARetriever)
+NVIDIARetriever = NVIDIARAGRetriever
