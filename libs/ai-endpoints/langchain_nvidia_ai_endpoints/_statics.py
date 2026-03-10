@@ -934,6 +934,12 @@ RANKING_MODEL_TABLE = {
         client="NVIDIARerank",
         endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-3_2-nv-rerankqa-1b-v2/reranking",
     ),
+    "nvidia/llama-nemotron-rerank-1b-v2": Model(
+        id="nvidia/llama-nemotron-rerank-1b-v2",
+        model_type="ranking",
+        client="NVIDIARerank",
+        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-nemotron-rerank-1b-v2/reranking",
+    ),
 }
 
 COMPLETION_MODEL_TABLE = {
