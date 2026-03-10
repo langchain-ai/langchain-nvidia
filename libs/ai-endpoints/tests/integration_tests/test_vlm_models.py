@@ -352,23 +352,34 @@ def asset_id() -> str:
 @pytest.mark.parametrize(
     "content",
     [
-        [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": "data:image/jpg;asset_id,{asset_id}"},
-                    }
-                ],
-            }
-        ],
-        [
+        pytest.param(
+            [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": "data:image/jpg;asset_id,{asset_id}"},
+                        }
+                    ],
+                }
+            ],
+            id="data",
+            marks=pytest.mark.xfail(
+                reason="API is not supporting asset_id in image_url blocks"
+            ),
+        ),
+        pytest.param(
+            [
+                """<img src="data:image/jpg;asset_id,{asset_id}"/>""",
+            ],
+            id="list-of-tag",
+        ),
+        pytest.param(
             """<img src="data:image/jpg;asset_id,{asset_id}"/>""",
-        ],
-        """<img src="data:image/jpg;asset_id,{asset_id}"/>""",
+            id="tag",
+        ),
     ],
-    ids=["data", "list-of-tag", "tag"],
 )
 @pytest.mark.parametrize(
     "func",

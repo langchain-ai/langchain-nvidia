@@ -499,6 +499,7 @@ class _NVIDIAClient(BaseModel):
         except requests.HTTPError:
             try:
                 rd = response.json()
+                rd.setdefault("status", response.status_code)
                 if "detail" in rd and "reqId" in rd.get("detail", ""):
                     rd_buf = "- " + str(rd["detail"])
                     rd_buf = rd_buf.replace(": ", ", Error: ").replace(", ", "\n- ")
@@ -622,6 +623,7 @@ class _NVIDIAClient(BaseModel):
         try:
             body_text = body_content.decode("utf-8") if body_content else ""
             rd = json.loads(body_text) if body_text else {}
+            rd.setdefault("status", response.status)
             if "detail" in rd and "reqId" in str(rd.get("detail", "")):
                 rd_buf = "- " + str(rd["detail"])
                 rd_buf = rd_buf.replace(": ", ", Error: ").replace(", ", "\n- ")

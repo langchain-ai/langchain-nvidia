@@ -13,6 +13,21 @@ from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model
 from langchain_nvidia_ai_endpoints.chat_models import (
     _DEFAULT_MODEL_NAME as DEFAULT_CHAT_MODEL,
 )
+from langchain_nvidia_ai_endpoints.chat_models import (
+    _DEFAULT_REASONING_MODEL as DEFAULT_REASONING_MODEL,
+)
+from langchain_nvidia_ai_endpoints.chat_models import (
+    _DEFAULT_STRUCTURED_MODEL as DEFAULT_STRUCTURED_MODEL,
+)
+from langchain_nvidia_ai_endpoints.chat_models import (
+    _DEFAULT_THINKING_MODELS as DEFAULT_THINKING_MODELS,
+)
+from langchain_nvidia_ai_endpoints.chat_models import (
+    _DEFAULT_TOOL_MODEL as DEFAULT_TOOL_MODEL,
+)
+from langchain_nvidia_ai_endpoints.chat_models import (
+    _DEFAULT_VLM_MODEL as DEFAULT_VLM_MODEL,
+)
 from langchain_nvidia_ai_endpoints.embeddings import (
     _DEFAULT_MODEL_NAME as DEFAULT_EMBEDDINGS_MODEL,
 )
@@ -111,18 +126,13 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         return list(MODEL_TABLE.values())
 
     if "reasoning_model" in metafunc.fixturenames:
-        models = ["openai/gpt-oss-120b"]
+        models = [DEFAULT_REASONING_MODEL]
         if model_list := metafunc.config.getoption("reasoning_model_id"):
             models = model_list
         metafunc.parametrize("reasoning_model", models, ids=models)
 
     if "thinking_model" in metafunc.fixturenames:
-        # Default models test two thinking modes:
-        # - nvidia/nemotron-3-nano-30b-a3b: parameter-based on/off control,
-        #   outputs reasoning in reasoning_content
-        # - nvidia/llama-3.3-nemotron-super-49b-v1: tag-based on/off control,
-        #   outputs reasoning in think tags
-        models = ["nvidia/nemotron-3-nano-30b-a3b", "nvidia/nvidia-nemotron-nano-9b-v2"]
+        models = list(DEFAULT_THINKING_MODELS)
         if model_list := metafunc.config.getoption("thinking_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):
@@ -146,7 +156,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("chat_model", models, ids=models)
 
     if "tool_model" in metafunc.fixturenames:
-        models = ["meta/llama-3.3-70b-instruct"]
+        models = [DEFAULT_TOOL_MODEL]
         if model_list := metafunc.config.getoption("tool_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):
@@ -170,7 +180,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("completions_model", models, ids=models)
 
     if "structured_model" in metafunc.fixturenames:
-        models = ["nvidia/llama-3.3-nemotron-super-49b-v1"]
+        models = [DEFAULT_STRUCTURED_MODEL]
         if model_list := metafunc.config.getoption("structured_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):
@@ -190,7 +200,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         metafunc.parametrize("rerank_model", models, ids=models)
 
     if "vlm_model" in metafunc.fixturenames:
-        models = ["meta/llama-3.2-11b-vision-instruct"]
+        models = [DEFAULT_VLM_MODEL]
         if model_list := metafunc.config.getoption("vlm_model_id"):
             models = model_list
         if metafunc.config.getoption("all_models"):
