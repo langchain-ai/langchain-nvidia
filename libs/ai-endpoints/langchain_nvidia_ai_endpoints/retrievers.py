@@ -1,4 +1,4 @@
-"""NVIDIARetriever for NVIDIA RAG Blueprint /search endpoint.
+"""NVIDIARAGRetriever for NVIDIA RAG Blueprint /search endpoint.
 
 Connects to a containerized NVIDIA RAG server that exposes the /v1/search endpoint.
 Supports all DocumentSearch API parameters.
@@ -64,14 +64,14 @@ class NVIDIARAGValidationError(NVIDIARAGError):
 
 
 # -----------------------------------------------------------------------------
-# NVIDIARetriever
+# NVIDIARAGRetriever
 # -----------------------------------------------------------------------------
 
 _SEARCH_PATH = "/v1/search"
 _DEFAULT_TIMEOUT = 60
 
 
-class NVIDIARetriever(BaseRetriever):
+class NVIDIARAGRetriever(BaseRetriever):
     """LangChain retriever that queries the NVIDIA RAG Blueprint /v1/search endpoint.
 
     Targets containerized RAG deployments where the rag-server exposes the search API.
@@ -80,9 +80,9 @@ class NVIDIARetriever(BaseRetriever):
     Example:
         .. code-block:: python
 
-            from langchain_nvidia_ai_endpoints import NVIDIARetriever
+            from langchain_nvidia_ai_endpoints import NVIDIARAGRetriever
 
-            retriever = NVIDIARetriever(
+            retriever = NVIDIARAGRetriever(
                 base_url="http://localhost:8081",
                 collection_names=["test_multimodal_query"],
                 k=4,
