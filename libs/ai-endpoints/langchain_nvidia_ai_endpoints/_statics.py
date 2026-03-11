@@ -765,6 +765,16 @@ CHAT_MODEL_TABLE = {
         supports_structured_output=True,
         supports_tools=True,
     ),
+    "nvidia/nemotron-3-super-120b-a12b": Model(
+        id="nvidia/nemotron-3-super-120b-a12b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
 }
 
 QA_MODEL_TABLE = {
