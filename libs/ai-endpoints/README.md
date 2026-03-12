@@ -292,7 +292,7 @@ for chunk in completions_llm.stream(prompt):
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIADynamo
 
-llm = ChatNVIDIADynamo(model="meta/llama3-8b-instruct", osl=1024, iat=100)
+llm = ChatNVIDIADynamo(model="nvidia/nemotron-3-super-120b-a12b", osl=1024, iat=100)
 result = llm.invoke("Write a short poem.")
 ```
 
