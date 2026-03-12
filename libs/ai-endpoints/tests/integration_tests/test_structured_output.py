@@ -8,20 +8,6 @@ from pydantic import BaseModel, Field
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-from .conftest import DEFAULT_STRUCTURED_MODEL
-
-
-@pytest.fixture(autouse=True)
-def _xfail_default_structured_model(request: pytest.FixtureRequest) -> None:
-    if "structured_model" in request.fixturenames:
-        model = request.getfixturevalue("structured_model")
-        if model == DEFAULT_STRUCTURED_MODEL:
-            request.node.add_marker(
-                pytest.mark.xfail(
-                    reason="Temporarily marking as xfail for model changes"
-                )
-            )
-
 
 def do_invoke(llm: ChatNVIDIA, message: str) -> Any:
     return llm.invoke(message)

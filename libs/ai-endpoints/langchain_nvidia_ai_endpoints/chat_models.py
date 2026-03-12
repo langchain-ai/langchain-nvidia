@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import enum
+import json
 import logging
 import os
 import re
@@ -287,7 +288,8 @@ def _is_structured_output(payload: dict) -> bool:
 
     Structured output is enabled when:
     - payload directly contains guided_json or guided_choice (direct format), or
-    - nvext contains guided_json or guided_choice (nvext format)
+    - nvext contains guided_json or guided_choice (nvext format), or
+    - response_format contains type=json_schema (OpenAI format)
 
     Args:
         payload: The request payload dictionary
@@ -300,6 +302,10 @@ def _is_structured_output(payload: dict) -> bool:
 
     nvext = payload.get("nvext", {})
     if nvext and ("guided_json" in nvext or "guided_choice" in nvext):
+        return True
+
+    response_format = payload.get("response_format", {})
+    if response_format and response_format.get("type") == "json_schema":
         return True
 
     return False
@@ -368,7 +374,7 @@ _DEFAULT_THINKING_MODELS = [
     "nvidia/nvidia-nemotron-nano-9b-v2",
 ]
 _DEFAULT_TOOL_MODEL: str = "meta/llama-3.3-70b-instruct"
-_DEFAULT_STRUCTURED_MODEL: str = "nvidia/llama-3.3-nemotron-super-49b-v1"
+_DEFAULT_STRUCTURED_MODEL: str = "nvidia/nemotron-3-nano-30b-a3b"
 _DEFAULT_VLM_MODEL: str = "meta/llama-3.2-11b-vision-instruct"
 
 
@@ -1327,9 +1333,23 @@ class ChatNVIDIA(BaseChatModel):
                 "Your output may fail at inference time."
             )
 
+        # OpenAI response_format param, set per schema type below
+        openai_response_format: Optional[Dict[str, Any]] = None
+        # Separate output parser for OpenAI format, only needed when
+        # the OpenAI path produces different output than guided json or guided choice
+        # (e.g. enums return JSON instead of raw strings).
+        openai_output_parser: Optional[BaseOutputParser] = None
+
         if isinstance(schema, dict):
             output_parser: BaseOutputParser = JsonOutputParser()
             nvext_param: Dict[str, Any] = {"guided_json": schema}
+            openai_response_format = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "response",
+                    "schema": schema,
+                },
+            }
         elif issubclass(schema, enum.Enum):
             # langchain's EnumOutputParser is not in langchain_core
             # and doesn't support streaming. this is a simple implementation
@@ -1345,6 +1365,20 @@ class ChatNVIDIA(BaseChatModel):
                         pass
                     return None
 
+            class JsonEnumOutputParser(BaseOutputParser):
+                """Parser for enum values returned as JSON from OpenAI
+                response_format. Expects {"choice": "<enum_value>"}."""
+
+                enum: Type[enum.Enum]
+
+                def parse(self, response: str) -> Any:
+                    try:
+                        data = json.loads(response.strip())
+                        return self.enum(data["choice"])
+                    except (json.JSONDecodeError, KeyError, ValueError):
+                        pass
+                    return None
+
             # guided_choice only supports string choices
             choices = [choice.value for choice in schema]
             if not all(isinstance(choice, str) for choice in choices):
@@ -1356,8 +1390,22 @@ class ChatNVIDIA(BaseChatModel):
                     "Use StrEnum or ensure all member values are strings."
                 )
             output_parser = EnumOutputParser(enum=schema)
+            openai_output_parser = JsonEnumOutputParser(enum=schema)
             nvext_param = {"guided_choice": choices}
             guided_schema = choices
+            openai_response_format = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "response",
+                    "schema": {
+                        "type": "object",
+                        "properties": {"choice": {"type": "string", "enum": choices}},
+                        "required": ["choice"],
+                        "additionalProperties": False,
+                    },
+                    "strict": True,
+                },
+            }
 
         elif is_basemodel_subclass(schema):
             # PydanticOutputParser does not support streaming. what we do
@@ -1381,6 +1429,14 @@ class ChatNVIDIA(BaseChatModel):
                 json_schema = schema.schema()
             nvext_param = {"guided_json": json_schema}
             guided_schema = json_schema
+            schema_name = schema.__name__
+            openai_response_format = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": schema_name,
+                    "schema": json_schema,
+                },
+            }
 
         else:
             raise ValueError(
@@ -1392,10 +1448,14 @@ class ChatNVIDIA(BaseChatModel):
             "schema": guided_schema,
         }
 
-        # Support both parameter formats for structured output:
-        # 1. Direct format: guided_json=schema
+        # Support multiple parameter formats for structured output:
+        # 1. Direct format: guided_json=schema or guided_choice=choices
         # 2. nvext format: nvext={"guided_json": schema}
-        # Try direct first, automatically retry with nvext if direct fails.
+        # 3. OpenAI format: response_format={"type": "json_schema", ...}
+        #
+        # For hosted NVIDIA API: try direct → nvext (guided_json is supported)
+        # For remote endpoints: try OpenAI format first (guided_json may not
+        #   be supported), then fall back to direct → nvext
         direct_llm = super().bind(
             **nvext_param, ls_structured_output_format=ls_structured_output_format
         )
@@ -1403,49 +1463,107 @@ class ChatNVIDIA(BaseChatModel):
             nvext=nvext_param, ls_structured_output_format=ls_structured_output_format
         )
 
-        direct_chain = direct_llm | output_parser
-        nvext_chain = nvext_llm | output_parser
+        guided_chains = [
+            direct_llm | output_parser,
+            nvext_llm | output_parser,
+        ]
+
+        if openai_response_format is not None:
+            if openai_output_parser is not None:
+                warnings.warn(
+                    "Enum structured output is not guaranteed to work with the "
+                    "OpenAI response_format because OpenAI's structured "
+                    "output does not natively enforce enum constraints. If the "
+                    "guided_choice format is not supported by the endpoint, "
+                    "the result may be unreliable."
+                )
+            openai_compat_llm = super().bind(
+                response_format=openai_response_format,
+                ls_structured_output_format=ls_structured_output_format,
+            )
+            openai_parser = openai_output_parser or output_parser
+            openai_compat_chain = openai_compat_llm | openai_parser
+
+            if self._client.is_hosted:
+                chains = guided_chains + [openai_compat_chain]
+            else:
+                chains = [openai_compat_chain] + guided_chains
+        else:
+            chains = guided_chains
 
         from langchain_core.runnables import Runnable, RunnableConfig
 
         class _FallbackRunnable(Runnable):
-            """Runnable that tries direct format first, falls back to nvext."""
+            """Runnable that tries formats in order until one succeeds.
+
+            A result of None is treated as a failure (the output parser
+            could not construct the schema object), so the next format
+            is tried.
+            """
 
             def invoke(
                 self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
             ) -> Any:
-                try:
-                    return direct_chain.invoke(input, config, **kwargs)
-                except Exception:
-                    return nvext_chain.invoke(input, config, **kwargs)
+                last_exc: Optional[Exception] = None
+                for chain in chains:
+                    try:
+                        result = chain.invoke(input, config, **kwargs)
+                        if result is not None:
+                            return result
+                    except Exception as e:
+                        last_exc = e
+                if last_exc is not None:
+                    raise last_exc
+                return None
 
             async def ainvoke(
                 self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
             ) -> Any:
-                try:
-                    return await direct_chain.ainvoke(input, config, **kwargs)
-                except Exception:
-                    return await nvext_chain.ainvoke(input, config, **kwargs)
+                last_exc: Optional[Exception] = None
+                for chain in chains:
+                    try:
+                        result = await chain.ainvoke(input, config, **kwargs)
+                        if result is not None:
+                            return result
+                    except Exception as e:
+                        last_exc = e
+                if last_exc is not None:
+                    raise last_exc
+                return None
 
             def stream(
                 self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
             ) -> Iterator:
-                try:
-                    for chunk in direct_chain.stream(input, config, **kwargs):
-                        yield chunk
-                except Exception:
-                    for chunk in nvext_chain.stream(input, config, **kwargs):
-                        yield chunk
+                last_exc: Optional[Exception] = None
+                for chain in chains:
+                    try:
+                        last_chunk = None
+                        for chunk in chain.stream(input, config, **kwargs):
+                            last_chunk = chunk
+                            yield chunk
+                        if last_chunk is not None:
+                            return
+                    except Exception as e:
+                        last_exc = e
+                if last_exc is not None:
+                    raise last_exc
 
             async def astream(
                 self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
             ) -> AsyncIterator:
-                try:
-                    async for chunk in direct_chain.astream(input, config, **kwargs):
-                        yield chunk
-                except Exception:
-                    async for chunk in nvext_chain.astream(input, config, **kwargs):
-                        yield chunk
+                last_exc: Optional[Exception] = None
+                for chain in chains:
+                    try:
+                        last_chunk = None
+                        async for chunk in chain.astream(input, config, **kwargs):
+                            last_chunk = chunk
+                            yield chunk
+                        if last_chunk is not None:
+                            return
+                    except Exception as e:
+                        last_exc = e
+                if last_exc is not None:
+                    raise last_exc
 
         return _FallbackRunnable()
 

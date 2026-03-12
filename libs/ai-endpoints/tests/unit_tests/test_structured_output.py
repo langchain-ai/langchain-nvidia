@@ -389,3 +389,218 @@ def test_fallback_direct_fails_nvext_succeeds(
     assert isinstance(result, Person)
     assert result.name == "Jane"
     assert result.age == 25
+
+
+# Tests for _is_structured_output with OpenAI response_format
+def test_is_structured_output_openai_json_schema() -> None:
+    """Test _is_structured_output detects OpenAI response_format with json_schema."""
+    payload = {
+        "messages": [{"role": "user", "content": "test"}],
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {"name": "response", "schema": {"type": "object"}},
+        },
+    }
+    assert _is_structured_output(payload) is True
+
+
+def test_is_structured_output_openai_wrong_type() -> None:
+    """Test _is_structured_output returns False for
+    response_format with non-json_schema type."""
+    payload = {
+        "messages": [{"role": "user", "content": "test"}],
+        "response_format": {"type": "json_object"},
+    }
+    assert _is_structured_output(payload) is False
+
+
+# Tests for OpenAI format fallback chain ordering
+def _success_response(content: str) -> dict:
+    return {
+        "id": "chatcmpl-ID",
+        "object": "chat.completion",
+        "created": 1234567890,
+        "model": "BOGUS",
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": content},
+                "logprobs": None,
+                "finish_reason": "stop",
+            }
+        ],
+    }
+
+
+def test_hosted_fallback_to_openai_format(
+    requests_mock: requests_mock.Mocker,
+    empty_v1_models: None,
+) -> None:
+    """Test that hosted API tries direct -> nvext -> openai format."""
+    # First two calls fail (direct and nvext), third succeeds (openai format)
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        [
+            {"status_code": 400, "json": {"error": "direct failed"}},
+            {"status_code": 400, "json": {"error": "nvext failed"}},
+            {"json": _success_response('{"name": "Alice", "age": 28}')},
+        ],
+    )
+
+    class Person(pydanticV2BaseModel):
+        name: str
+        age: int
+
+    warnings.filterwarnings("ignore", r".*not known to support structured output.*")
+    llm = ChatNVIDIA(api_key="BOGUS").with_structured_output(Person)
+    result = llm.invoke("test")
+
+    post_calls = [req for req in requests_mock.request_history if req.method == "POST"]
+    assert len(post_calls) == 3, f"Expected 3 POST calls, got {len(post_calls)}"
+
+    # First call: direct format
+    assert "guided_json" in post_calls[0].json()
+    assert "nvext" not in post_calls[0].json()
+
+    # Second call: nvext format
+    assert "nvext" in post_calls[1].json()
+
+    # Third call: openai response_format
+    body = post_calls[2].json()
+    assert "response_format" in body
+    assert body["response_format"]["type"] == "json_schema"
+
+    assert isinstance(result, Person)
+    assert result.name == "Alice"
+
+
+def test_remote_tries_openai_format_first(
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    """Test that remote (non-hosted) endpoints try openai format first."""
+    requests_mock.get(
+        "http://my-nim:8000/v1/models",
+        json={"data": [{"id": "my-model"}]},
+    )
+    requests_mock.post(
+        "http://my-nim:8000/v1/chat/completions",
+        json=_success_response('{"name": "Bob", "age": 35}'),
+    )
+
+    class Person(pydanticV2BaseModel):
+        name: str
+        age: int
+
+    warnings.filterwarnings("ignore", r".*not known to support structured output.*")
+    llm = ChatNVIDIA(
+        base_url="http://my-nim:8000/v1", api_key="BOGUS"
+    ).with_structured_output(Person)
+    result = llm.invoke("test")
+
+    post_calls = [req for req in requests_mock.request_history if req.method == "POST"]
+    assert len(post_calls) == 1
+
+    # First call should be openai format for remote endpoints
+    body = post_calls[0].json()
+    assert "response_format" in body
+    assert body["response_format"]["type"] == "json_schema"
+
+    assert isinstance(result, Person)
+    assert result.name == "Bob"
+
+
+def test_remote_openai_fails_falls_back_to_direct(
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    """Test remote endpoint falls back from openai -> direct -> nvext."""
+    requests_mock.get(
+        "http://my-nim:8000/v1/models",
+        json={"data": [{"id": "my-model"}]},
+    )
+    requests_mock.post(
+        "http://my-nim:8000/v1/chat/completions",
+        [
+            {"status_code": 400, "json": {"error": "response_format unsupported"}},
+            {"json": _success_response('{"name": "Carol", "age": 40}')},
+        ],
+    )
+
+    class Person(pydanticV2BaseModel):
+        name: str
+        age: int
+
+    warnings.filterwarnings("ignore", r".*not known to support structured output.*")
+    llm = ChatNVIDIA(
+        base_url="http://my-nim:8000/v1", api_key="BOGUS"
+    ).with_structured_output(Person)
+    result = llm.invoke("test")
+
+    post_calls = [req for req in requests_mock.request_history if req.method == "POST"]
+    assert len(post_calls) == 2
+
+    # First: openai format (fails)
+    assert "response_format" in post_calls[0].json()
+    # Second: direct format (succeeds)
+    assert "guided_json" in post_calls[1].json()
+    assert "nvext" not in post_calls[1].json()
+
+    assert isinstance(result, Person)
+    assert result.name == "Carol"
+
+
+# Tests for enum with OpenAI response_format (JsonEnumOutputParser)
+def test_enum_openai_format_invoke(
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    """Test enum structured output via OpenAI response_format returns JSON."""
+    requests_mock.get(
+        "http://my-nim:8000/v1/models",
+        json={"data": [{"id": "my-model"}]},
+    )
+    # Remote endpoint → openai format first → enum returned as JSON
+    requests_mock.post(
+        "http://my-nim:8000/v1/chat/completions",
+        json=_success_response('{"choice": "Yes it is"}'),
+    )
+
+    warnings.filterwarnings("ignore", r".*not known to support structured output.*")
+    with pytest.warns(UserWarning, match="Enum structured output is not guaranteed"):
+        llm = ChatNVIDIA(
+            base_url="http://my-nim:8000/v1", api_key="BOGUS"
+        ).with_structured_output(Choices)
+    result = llm.invoke("test")
+
+    assert isinstance(result, Choices)
+    assert result == Choices.YES
+
+    # Verify openai format was used
+    post_calls = [req for req in requests_mock.request_history if req.method == "POST"]
+    body = post_calls[0].json()
+    assert "response_format" in body
+    rf = body["response_format"]
+    assert rf["type"] == "json_schema"
+    assert rf["json_schema"]["strict"] is True
+    assert "choice" in rf["json_schema"]["schema"]["properties"]
+
+
+def test_all_formats_fail_raises_last_exception(
+    requests_mock: requests_mock.Mocker,
+    empty_v1_models: None,
+) -> None:
+    """Test that when all format attempts fail, the last exception is raised."""
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        [
+            {"status_code": 400, "json": {"error": "direct failed"}},
+            {"status_code": 400, "json": {"error": "nvext failed"}},
+            {"status_code": 400, "json": {"error": "openai failed"}},
+        ],
+    )
+
+    class Person(pydanticV2BaseModel):
+        name: str
+
+    warnings.filterwarnings("ignore", r".*not known to support structured output.*")
+    llm = ChatNVIDIA(api_key="BOGUS").with_structured_output(Person)
+    with pytest.raises(Exception):
+        llm.invoke("test")
