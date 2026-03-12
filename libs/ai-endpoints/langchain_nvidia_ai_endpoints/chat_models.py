@@ -23,6 +23,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 
 from langchain_core.callbacks.manager import (
@@ -30,7 +31,12 @@ from langchain_core.callbacks.manager import (
     CallbackManagerForLLMRun,
 )
 from langchain_core.exceptions import OutputParserException
-from langchain_core.language_models import BaseChatModel, LanguageModelInput
+from langchain_core.language_models import (
+    BaseChatModel,
+    LanguageModelInput,
+    ModelProfile,
+    ModelProfileRegistry,
+)
 from langchain_core.language_models.chat_models import LangSmithParams
 from langchain_core.messages import (
     AIMessage,
@@ -59,6 +65,7 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
 from langchain_nvidia_ai_endpoints._statics import Model
 from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
+from langchain_nvidia_ai_endpoints.data._profiles import _PROFILES
 
 # Type variable for generic parser types
 T_Parser = TypeVar("T_Parser", bound="BaseOutputParser")
@@ -66,6 +73,14 @@ T_Parser = TypeVar("T_Parser", bound="BaseOutputParser")
 _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
 
 logger = logging.getLogger(__name__)
+
+_MODEL_PROFILES = cast(ModelProfileRegistry, _PROFILES)
+
+
+def _get_default_model_profile(model_name: str) -> ModelProfile:
+    """Fetch profile from registry; return empty dict if not found."""
+    default = _MODEL_PROFILES.get(model_name) or {}
+    return default.copy()
 
 
 def _is_url(s: str) -> bool:
@@ -548,6 +563,10 @@ class ChatNVIDIA(BaseChatModel):
         self.model = self._client.mdl_name
         # same for base_url
         self.base_url = self._client.base_url
+
+        # set model profile after model name is finalized
+        if self.profile is None and self.model:
+            self.profile = _get_default_model_profile(self.model)
 
     @property
     def available_models(self) -> List[Model]:
