@@ -60,7 +60,7 @@ Use the following code to invoke the core chat interface.
 ## Core LC Chat Interface
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-llm = ChatNVIDIA(model="nvidia/nemotron-3-nano-30b-a3b")
+llm = ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b")
 result = llm.invoke("Write a ballad about LangChain.")
 print(result.content)
 ```
@@ -137,12 +137,12 @@ Use this section to learn about a few examples.
 
 ### Nemotron
 
-[Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. The models deliver strong reasoning and tool-calling performance with high throughput. `nvidia/nemotron-3-nano-30b-a3b` is a recommended starting point: an efficient 30B mixture-of-experts model with a 1M token context window, available on the NVIDIA API Catalog and as a self-hosted NIM.
+[Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. The models deliver strong reasoning and tool-calling performance with high throughput. `nvidia/nemotron-3-super-120b-a12b` is a recommended starting point: a powerful model with 12B active parameters and 120B parameters in total, with a 1M token context window, available on the NVIDIA API Catalog and as a self-hosted NIM.
 
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-llm = ChatNVIDIA(model="nvidia/nemotron-3-nano-30b-a3b")
+llm = ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b")
 result = llm.invoke("Plan a three-step agentic workflow for competitive research.")
 print(result.content)
 ```
@@ -150,7 +150,7 @@ print(result.content)
 
 ### General Chat
 
-Models such as `meta/llama3-8b-instruct` and `mistralai/mixtral-8x22b-instruct-v0.1`
+Models such as `nvidia/nemotron-3-super-120b-a12b` and `mistralai/mixtral-8x22b-instruct-v0.1`
 are good all-around models that you can use for any LangChain chat messages.
 
 The following example generates a simple chat response.
@@ -168,7 +168,7 @@ prompt = ChatPromptTemplate.from_messages(
 )
 chain = (
     prompt
-    | ChatNVIDIA(model="meta/llama3-8b-instruct")
+    | ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b")
     | StrOutputParser()
 )
 
@@ -252,7 +252,7 @@ as shown in the following example.
 ```python
 base64_with_mime_type = f"data:image/png;base64,{b64_string}"
 llm.invoke(
-    f'What\'s in this image?\n<img src="{base64_with_mime_type}" />'
+    f"What's in this image?\n<img src=\"{base64_with_mime_type}\" />"
 )
 ```
 
@@ -361,7 +361,7 @@ The following code connects to locally hosted NIM Microservices.
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
 
 # Connect to an chat NIM running at localhost:8000, and specify a model
-llm = ChatNVIDIA(base_url="http://localhost:8000/v1", model="meta-llama3-8b-instruct")
+llm = ChatNVIDIA(base_url="http://localhost:8000/v1", model="nvidia/nemotron-3-super-120b-a12b")
 
 # Connect to an embedding NIM running at localhost:8080
 embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")
