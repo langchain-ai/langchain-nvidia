@@ -274,6 +274,8 @@ class _NVIDIAClient(BaseModel):
                     )
                 else:
                     warnings.warn("No locally hosted model was found.")
+            else:
+                self.model = determine_model(self.mdl_name)
 
         # Create session function that sets verify parameter
         self.get_session_fn = self._create_session

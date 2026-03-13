@@ -664,3 +664,19 @@ def test_param_based_thinking_deep_merge_chat_template_kwargs(
     payload2 = captured_requests[0]
     # with_thinking_mode(enabled=False) should override user's True
     assert payload2["chat_template_kwargs"]["enable_thinking"] is False
+
+
+def test_self_hosted_nim_picks_up_static_model_config() -> None:
+    """Self-hosted NIM with explicit model name should resolve
+    model config from the static model table."""
+    model_id = "nvidia/nemotron-3-nano-30b-a3b"
+
+    llm = ChatNVIDIA(
+        base_url="http://my-nim:8000/v1",
+        model=model_id,
+        api_key="BOGUS",
+    )
+    assert llm._client.model is not None
+    assert llm._client.model.id == model_id
+    assert llm._client.model.thinking_param_disable is not None
+    assert llm._client.model.thinking_param_enable is not None
