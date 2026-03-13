@@ -875,12 +875,11 @@ class ChatNVIDIA(BaseChatModel):
         # reasoning_content is always set as a unified channel. This allows LangChain
         # to expose a {“type”: “reasoning”} block in response.content_blocks.
         # Different model output formats:
-        # <think> tags only:
+        # <think> tags (in content) only:
         #   .additional_kwargs["reasoning_content"] = from tags
-        #   content = original
+        #   content = original content with the tag
         # reasoning_content field only:
         #   .additional_kwargs["reasoning_content"] = from field
-        #   content = original
         # reasoning field only:
         #   .additional_kwargs["reasoning_content"] = from field
         #   .additional_kwargs["reasoning"] = from field
@@ -1333,8 +1332,6 @@ class ChatNVIDIA(BaseChatModel):
                 "Your output may fail at inference time."
             )
 
-        # OpenAI response_format param, set per schema type below
-        openai_response_format: Optional[Dict[str, Any]] = None
         # Separate output parser for OpenAI format, only needed when
         # the OpenAI path produces different output than guided json or guided choice
         # (e.g. enums return JSON instead of raw strings).
@@ -1348,6 +1345,7 @@ class ChatNVIDIA(BaseChatModel):
                 "json_schema": {
                     "name": "response",
                     "schema": schema,
+                    "strict": True,
                 },
             }
         elif issubclass(schema, enum.Enum):
@@ -1372,6 +1370,13 @@ class ChatNVIDIA(BaseChatModel):
                 enum: Type[enum.Enum]
 
                 def parse(self, response: str) -> Any:
+                    warnings.warn(
+                        "Enum structured output is not guaranteed to "
+                        "work with the OpenAI response_format because "
+                        "OpenAI's structured output does not natively "
+                        "enforce enum constraints. The result may be "
+                        "unreliable.",
+                    )
                     try:
                         data = json.loads(response.strip())
                         return self.enum(data["choice"])
@@ -1435,6 +1440,7 @@ class ChatNVIDIA(BaseChatModel):
                 "json_schema": {
                     "name": schema_name,
                     "schema": json_schema,
+                    "strict": True,
                 },
             }
 
@@ -1449,13 +1455,10 @@ class ChatNVIDIA(BaseChatModel):
         }
 
         # Support multiple parameter formats for structured output:
-        # 1. Direct format: guided_json=schema or guided_choice=choices
+        # 1. Direct format: guided_json=schema
         # 2. nvext format: nvext={"guided_json": schema}
-        # 3. OpenAI format: response_format={"type": "json_schema", ...}
-        #
-        # For hosted NVIDIA API: try direct → nvext (guided_json is supported)
-        # For remote endpoints: try OpenAI format first (guided_json may not
-        #   be supported), then fall back to direct → nvext
+        # 3. OpenAI format with json_schema:
+        #    response_format={"type": "json_schema", ...}
         direct_llm = super().bind(
             **nvext_param, ls_structured_output_format=ls_structured_output_format
         )
@@ -1468,28 +1471,23 @@ class ChatNVIDIA(BaseChatModel):
             nvext_llm | output_parser,
         ]
 
-        if openai_response_format is not None:
-            if openai_output_parser is not None:
-                warnings.warn(
-                    "Enum structured output is not guaranteed to work with the "
-                    "OpenAI response_format because OpenAI's structured "
-                    "output does not natively enforce enum constraints. If the "
-                    "guided_choice format is not supported by the endpoint, "
-                    "the result may be unreliable."
-                )
-            openai_compat_llm = super().bind(
-                response_format=openai_response_format,
-                ls_structured_output_format=ls_structured_output_format,
-            )
-            openai_parser = openai_output_parser or output_parser
-            openai_compat_chain = openai_compat_llm | openai_parser
+        openai_compat_llm = super().bind(
+            response_format=openai_response_format,
+            ls_structured_output_format=ls_structured_output_format,
+        )
+        openai_parser = openai_output_parser or output_parser
+        openai_compat_chain = openai_compat_llm | openai_parser
 
-            if self._client.is_hosted:
-                chains = guided_chains + [openai_compat_chain]
-            else:
-                chains = [openai_compat_chain] + guided_chains
+        # For hosted NVIDIA API endpoint: try OpenAI format first,
+        #   then fall back to direct -> nvext
+        # For self-hosted NIMs: try direct -> nvext first,
+        #   then fall back to OpenAI format
+        # The fallback is mostly defensive. The primary format for each
+        # case is expected to succeed.
+        if self._client.is_hosted:
+            chains = [openai_compat_chain] + guided_chains
         else:
-            chains = guided_chains
+            chains = guided_chains + [openai_compat_chain]
 
         from langchain_core.runnables import Runnable, RunnableConfig
 
