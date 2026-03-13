@@ -865,12 +865,26 @@ class ChatNVIDIA(BaseChatModel):
                     stacklevel=2,
                 )
 
-        # Prioritize reasoning from API fields over tag-based reasoning.
-        # For tag-based reasoning, extract the reasoning to be added in
-        # additional_kwargs["reasoning_content"] so that it can be exposed
-        # through the reasoning content block in the content_blocks property.
-        reasoning_content = reasoning_from_reasoning_content or reasoning_from_tags
-        reasoning_field = reasoning_from_reasoning_field or reasoning_from_tags
+        # Populate additional_kwargs based on the model's reasoning output format.
+        # reasoning_content is always set as a unified channel. This allows LangChain
+        # to expose a {“type”: “reasoning”} block in response.content_blocks.
+        # Different model output formats:
+        # <think> tags only:
+        #   .additional_kwargs["reasoning_content"] = from tags
+        #   content = original
+        # reasoning_content field only:
+        #   .additional_kwargs["reasoning_content"] = from field
+        #   content = original
+        # reasoning field only:
+        #   .additional_kwargs["reasoning_content"] = from field
+        #   .additional_kwargs["reasoning"] = from field
+        # both reasoning_content and reasoning fields:
+        #   .additional_kwargs["reasoning_content"] = from field
+        #   .additional_kwargs["reasoning"] = from field
+        if reasoning_from_reasoning_field and not reasoning_from_reasoning_content:
+            reasoning_content = reasoning_from_reasoning_field
+        else:
+            reasoning_content = reasoning_from_reasoning_content or reasoning_from_tags
         final_content = content_without_tags if structured_output else content_with_tags
 
         out_dict = {
@@ -884,8 +898,8 @@ class ChatNVIDIA(BaseChatModel):
 
         if reasoning_content:
             out_dict["additional_kwargs"]["reasoning_content"] = reasoning_content
-        if reasoning_field:
-            out_dict["additional_kwargs"]["reasoning"] = reasoning_field
+        if reasoning_from_reasoning_field:
+            out_dict["additional_kwargs"]["reasoning"] = reasoning_from_reasoning_field
         # Track which reasoning fields came from API (not tags)
         api_fields = []
         if reasoning_from_reasoning_content:
