@@ -775,6 +775,24 @@ CHAT_MODEL_TABLE = {
         thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
+    "z-ai/glm4.7": Model(
+        id="z-ai/glm4.7",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
+    "z-ai/glm5": Model(
+        id="z-ai/glm5",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
 }
 
 QA_MODEL_TABLE = {
