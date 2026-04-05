@@ -229,17 +229,13 @@ class _NVIDIAClient(BaseModel):
                     # we override the infer_path to use the custom endpoint
                     self.infer_path = model.endpoint
             else:
-                candidates = [
-                    model
+                candidates = {
+                    model.id: model
                     for model in self.available_models
                     if model.id == self.mdl_name
-                ]
-                assert len(candidates) <= 1, (
-                    f"Multiple candidates for {self.mdl_name} "
-                    f"in `available_models`: {candidates}"
-                )
-                if candidates:
-                    model = candidates[0]
+                }
+                if self.mdl_name in candidates:
+                    model = candidates[self.mdl_name]
                     warnings.warn(
                         f"Found {self.mdl_name} in available_models, but type is "
                         "unknown and inference may fail."
@@ -365,20 +361,24 @@ class _NVIDIAClient(BaseModel):
         # }
         assert response.status_code == 200, "Failed to get models"
         assert "data" in response.json(), "No data found in response"
-        self._available_models = []
+        seen: dict[str, Model] = {}
         for element in response.json()["data"]:
             assert "id" in element, f"No id found in {element}"
-            if not (model := determine_model(element["id"])):
+            model_id = element["id"]
+            if model_id in seen:
+                continue
+            if not (model := determine_model(model_id)):
                 # model is not in table of known models, but it exists
                 # so we'll let it through. use of this model will be
                 # accompanied by a warning.
-                model = Model(id=element["id"])
+                model = Model(id=model_id)
 
             # add base model for local-nim mode
             model.base_model = element.get("root")
 
-            self._available_models.append(model)
+            seen[model_id] = model
 
+        self._available_models = list(seen.values())
         return self._available_models
 
     def get_available_models(
