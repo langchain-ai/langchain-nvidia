@@ -23,7 +23,7 @@ nvidia-nat-app = { version = "^1.5.0", allow-prereleases = true }
 optional = true
 
 [tool.poetry.group.test.dependencies]
-pytest = "^7.3.0"
+pytest = ">=7.3,<10.0"
 pytest-mock = "^3.10.0"
 pytest-watcher = "^0.3.4"
 pytest-asyncio = "^0.21.1"
