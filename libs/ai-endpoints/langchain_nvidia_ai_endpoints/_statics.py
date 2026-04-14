@@ -867,6 +867,22 @@ VLM_MODEL_TABLE = {
         thinking_param_enable={"chat_template_kwargs": {"thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"thinking": False}},
     ),
+    "qwen/qwen3.5-122b-a10b": Model(
+        id="qwen/qwen3.5-122b-a10b",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
+    "mistralai/mistral-small-4-119b-2603": Model(
+        id="mistralai/mistral-small-4-119b-2603",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+        thinking_param_enable={"reasoning_effort": "high"},
+        thinking_param_disable={"reasoning_effort": None},
+    ),
 }
 
 EMBEDDING_MODEL_TABLE = {
