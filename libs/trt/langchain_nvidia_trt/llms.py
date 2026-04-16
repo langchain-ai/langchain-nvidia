@@ -13,7 +13,7 @@ import tritonclient.grpc as grpcclient
 from langchain_core.callbacks import CallbackManagerForLLMRun
 from langchain_core.language_models import BaseLLM
 from langchain_core.outputs import Generation, GenerationChunk, LLMResult
-from langchain_core.pydantic_v1 import Field, root_validator
+from pydantic import Field, model_validator
 from tritonclient.grpc.service_pb2 import ModelInferResponse
 from tritonclient.utils import np_to_triton_dtype
 
@@ -76,7 +76,8 @@ class TritonTensorRTLLM(BaseLLM):
         """Ensure the client streaming connection is properly shutdown"""
         self.client.close()
 
-    @root_validator(pre=True, allow_reuse=True)
+    @model_validator(mode="before")
+    @classmethod
     def validate_environment(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate that python package exists in environment."""
         if not values.get("client"):
