@@ -156,8 +156,7 @@ async def test_evaluate_decision_raises_when_no_possible_targets(
     )
     with pytest.raises(InvalidRouterError) as exc_info:
         await evaluator.evaluate_decision("r1", router_info, {})
-    err = exc_info.value
-    assert isinstance(err, InvalidRouterError)
+    err: InvalidRouterError = exc_info.value  # type: ignore[assignment]
     assert err.router_name == "r1"
     assert "no possible targets" in err.reason.lower()
 
@@ -236,8 +235,7 @@ async def test_evaluate_decision_raises_when_edge_not_in_mapping(
     )
     with pytest.raises(InvalidRouterError) as exc_info:
         await evaluator.evaluate_decision("r1", router_info, {})
-    err = exc_info.value
-    assert isinstance(err, InvalidRouterError)
+    err: InvalidRouterError = exc_info.value  # type: ignore[assignment]
     assert err.router_name == "r1"
 
 
@@ -258,8 +256,7 @@ async def test_evaluate_decision_raises_when_callable_raises(
     )
     with pytest.raises(RouterEvaluationError) as exc_info:
         await evaluator.evaluate_decision("r1", router_info, {})
-    err = exc_info.value
-    assert isinstance(err, RouterEvaluationError)
+    err: RouterEvaluationError = exc_info.value  # type: ignore[assignment]
     assert err.router_name == "r1"
     assert isinstance(err.cause, RuntimeError)
     assert "router failed" in str(err.cause)
