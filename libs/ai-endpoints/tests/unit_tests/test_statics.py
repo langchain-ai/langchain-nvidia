@@ -21,11 +21,6 @@ def alias(request: Any) -> str:
     return request.param
 
 
-@pytest.fixture(params=[mid for mid, model in MODEL_TABLE.items() if model.deprecated])
-def deprecated_id(request: Any) -> str:
-    return request.param
-
-
 def test_model_table_integrity_name_id(entry: str) -> None:
     model = MODEL_TABLE[entry]
     assert model.id == entry
@@ -36,14 +31,6 @@ def test_determine_model_deprecated_alternative_warns(alias: str) -> None:
         determine_model(alias)
     assert len(record) == 1
     assert f"Model {alias} is deprecated" in str(record[0].message)
-
-
-def test_determine_model_deprecated_flag_warns(deprecated_id: str) -> None:
-    with pytest.warns(UserWarning) as record:
-        determine_model(deprecated_id)
-    assert len(record) == 1
-    message = str(record[0].message)
-    assert f"Model {deprecated_id} is deprecated" in message
 
 
 def test_model_warns_on_both_thinking_modes() -> None:

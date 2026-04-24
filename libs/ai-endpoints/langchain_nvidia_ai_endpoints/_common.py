@@ -215,6 +215,12 @@ class _NVIDIAClient(BaseModel):
                 self.mdl_name = self.default_hosted_model_name
 
             if model := determine_model(self.mdl_name):
+                if model.deprecated:
+                    warnings.warn(
+                        f"Model {model.id} on endpoint {self.base_url} is "
+                        f"deprecated and may be removed in a future release.",
+                        UserWarning,
+                    )
                 if not model.client:
                     warnings.warn(f"Unable to determine validity of {model.id}")
                 elif model.client != self.cls:

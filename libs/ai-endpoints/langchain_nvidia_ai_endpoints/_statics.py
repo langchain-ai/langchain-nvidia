@@ -1196,10 +1196,4 @@ def determine_model(name: str) -> Optional[Model]:
             warnings.warn(
                 f"Model {name} is deprecated. Using {model.id} instead.", UserWarning
             )
-        elif model.deprecated:
-            warnings.warn(
-                f"Model {model.id} is deprecated and may be removed in a future "
-                f"release.",
-                UserWarning,
-            )
     return model
