@@ -47,7 +47,7 @@ def test_known_does_not_warn(empty_v1_models: None) -> None:
     structured_model = [
         model
         for model in ChatNVIDIA.get_available_models(api_key="BOGUS")
-        if model.supports_structured_output
+        if model.supports_structured_output and not model.deprecated
     ]
     assert structured_model, "No models support structured output"
 
@@ -62,7 +62,7 @@ def test_unknown_warns(empty_v1_models: None) -> None:
     unstructured_model = [
         model
         for model in ChatNVIDIA.get_available_models(api_key="BOGUS")
-        if not model.supports_structured_output
+        if not model.supports_structured_output and not model.deprecated
     ]
     assert unstructured_model, "All models support structured output"
 

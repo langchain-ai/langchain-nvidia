@@ -23,7 +23,7 @@ class Ranking(BaseModel):
     logit: float
 
 
-_DEFAULT_MODEL_NAME: str = "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+_DEFAULT_MODEL_NAME: str = "nvidia/llama-nemotron-rerank-1b-v2"
 _DEFAULT_BATCH_SIZE: int = 32
 
 

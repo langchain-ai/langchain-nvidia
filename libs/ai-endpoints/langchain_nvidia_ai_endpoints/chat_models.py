@@ -367,7 +367,7 @@ def _process_for_vlm(
     return inputs, extra_headers
 
 
-_DEFAULT_MODEL_NAME: str = "meta/llama3-8b-instruct"
+_DEFAULT_MODEL_NAME: str = "meta/llama-3.3-70b-instruct"
 _DEFAULT_REASONING_MODEL: str = "openai/gpt-oss-120b"
 _DEFAULT_THINKING_MODELS = [
     "nvidia/nemotron-3-nano-30b-a3b",

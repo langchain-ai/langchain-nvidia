@@ -167,7 +167,11 @@ def test_default(public_class: type) -> None:
 
 @pytest.mark.parametrize(
     "model, client",
-    [(model.id, model.client) for model in MODEL_TABLE.values()],
+    [
+        (model.id, model.client)
+        for model in MODEL_TABLE.values()
+        if not model.deprecated
+    ],
 )
 def test_all_incompatible(public_class: type, model: str, client: str) -> None:
     if client == public_class.__name__:
