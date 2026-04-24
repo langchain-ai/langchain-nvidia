@@ -12,7 +12,11 @@ from langchain_core.language_models.llms import LLM
 from langchain_core.outputs import GenerationChunk
 from pydantic import ConfigDict, Field, PrivateAttr
 
-from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._common import (
+    _build_clients,
+    _NVIDIAAsyncClient,
+    _NVIDIASyncClient,
+)
 from langchain_nvidia_ai_endpoints._statics import Model
 
 _DEFAULT_MODEL_NAME: str = "nvidia/mistral-nemo-minitron-8b-base"
@@ -25,7 +29,8 @@ class NVIDIA(LLM):
         validate_assignment=True,
     )
 
-    _client: _NVIDIAClient = PrivateAttr()
+    _client: _NVIDIASyncClient = PrivateAttr()
+    _async_client: _NVIDIAAsyncClient = PrivateAttr()
 
     _default_model_name: str = "nvidia/mistral-nemo-minitron-8b-base"
 
@@ -117,7 +122,7 @@ class NVIDIA(LLM):
         # Extract verify_ssl from kwargs, default to True
         verify_ssl = kwargs.pop("verify_ssl", True)
 
-        self._client = _NVIDIAClient(
+        self._client, self._async_client = _build_clients(
             **({"base_url": base_url} if base_url else {}),  # only pass if set
             mdl_name=self.model,
             default_hosted_model_name=_DEFAULT_MODEL_NAME,
@@ -293,7 +298,7 @@ class NVIDIA(LLM):
         **kwargs: Any,
     ) -> str:
         payload = self._prepare_call_payload(prompt, stop, **kwargs)
-        response_text = await self._client.aget_req(payload=payload)
+        response_text = await self._async_client.aget_req(payload=payload)
         result = json.loads(response_text)
         return self._process_result(result)
 
@@ -305,7 +310,7 @@ class NVIDIA(LLM):
         **kwargs: Any,
     ) -> AsyncIterator[GenerationChunk]:
         payload = self._prepare_stream_payload(prompt, stop, **kwargs)
-        async for chunk in self._client.aget_req_stream(payload=payload):
+        async for chunk in self._async_client.aget_req_stream(payload=payload):
             content = chunk["content"]
             generation = GenerationChunk(text=content)
             if run_manager:

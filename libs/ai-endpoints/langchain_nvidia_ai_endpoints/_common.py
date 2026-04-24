@@ -42,7 +42,7 @@ _API_KEY_VAR = "NVIDIA_API_KEY"
 _BASE_URL_VAR = "NVIDIA_BASE_URL"
 
 
-class _NVIDIAClient(BaseModel):
+class _NVIDIAClientBase(BaseModel):
     """Low level client library interface to NIM endpoints."""
 
     default_hosted_model_name: str = Field(..., description="Default model name to use")
@@ -82,8 +82,6 @@ class _NVIDIAClient(BaseModel):
     )
 
     get_session_fn: Callable = Field(requests.Session)
-
-    get_async_session_fn: Callable = Field(aiohttp.ClientSession)
 
     verify_ssl: Union[bool, str] = Field(
         True,
@@ -191,12 +189,15 @@ class _NVIDIAClient(BaseModel):
 
         return v
 
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+        # Create session function that sets verify parameter
+        self.get_session_fn = self._create_session
+
     # final validation after model is constructed
     # todo: when pydantic v2 is available,
     #       use __post_init__ or model_validator(method="after")
-    def __init__(self, **kwargs: Any):
-        super().__init__(**kwargs)
-
+    def _finalize(self) -> None:
         self.is_hosted = urlparse(self.base_url).netloc in [
             "integrate.api.nvidia.com",
             "ai.api.nvidia.com",
@@ -273,29 +274,11 @@ class _NVIDIAClient(BaseModel):
             else:
                 self.model = determine_model(self.mdl_name)
 
-        # Create session function that sets verify parameter
-        self.get_session_fn = self._create_session
-        self.get_async_session_fn = self._create_async_session
-
-    def _build_ssl_context(self) -> Union[bool, ssl.SSLContext]:
-        """Build an SSL context for aiohttp based on `verify_ssl` setting."""
-        if isinstance(self.verify_ssl, bool):
-            return self.verify_ssl
-        if isinstance(self.verify_ssl, str):
-            context = ssl.create_default_context(cafile=self.verify_ssl)
-            return context
-        return True
-
     def _create_session(self) -> requests.Session:
         """Create a session with SSL verification."""
         session = requests.Session()
         session.verify = self.verify_ssl
         return session
-
-    def _create_async_session(self) -> "aiohttp.ClientSession":
-        """Create an aiohttp session with SSL verification via connector."""
-        connector = aiohttp.TCPConnector(ssl=self._build_ssl_context())
-        return aiohttp.ClientSession(connector=connector)
 
     ###################################################################################
     ################### LangChain functions ###########################################
@@ -328,7 +311,7 @@ class _NVIDIAClient(BaseModel):
     ###################################################################################
     ################### Authorization handling ########################################
 
-    def __add_authorization(self, payload: dict) -> dict:
+    def _add_authorization(self, payload: dict) -> dict:
         if self.api_key:
             payload = {**payload}
             payload["headers"] = {
@@ -422,7 +405,7 @@ class _NVIDIAClient(BaseModel):
         }
         session = self.get_session_fn()
         self.last_response = response = session.post(
-            **self.__add_authorization(self.last_inputs)
+            **self._add_authorization(self.last_inputs)
         )
         self._try_raise(response)
         return response, session
@@ -438,7 +421,7 @@ class _NVIDIAClient(BaseModel):
         }
         session = self.get_session_fn()
         self.last_response = response = session.get(
-            **self.__add_authorization(self.last_inputs)
+            **self._add_authorization(self.last_inputs)
         )
         self._try_raise(response)
         return response, session
@@ -471,7 +454,7 @@ class _NVIDIAClient(BaseModel):
                 "headers": self.headers_tmpl["call"],
             }
             self.last_response = response = session.get(
-                **self.__add_authorization(payload)
+                **self._add_authorization(payload)
             )
         self._try_raise(response)
         return response
@@ -523,140 +506,6 @@ class _NVIDIAClient(BaseModel):
             message = self._format_error(rd)
             # todo: raise as an HTTPError
             raise Exception(message) from None
-
-    async def _post_async(
-        self,
-        invoke_url: str,
-        payload: Optional[dict] = {},
-        extra_headers: dict = {},
-    ) -> Tuple[aiohttp.ClientResponse, aiohttp.ClientSession]:
-        """Async version of `_post`"""
-        self.last_inputs = {
-            "url": invoke_url,
-            "headers": {
-                **self.headers_tmpl["call"],
-                **extra_headers,
-            },
-            "json": payload,
-        }
-        session = self.get_async_session_fn()
-        try:
-            self.last_response = response = await session.post(
-                **self.__add_authorization(self.last_inputs)
-            )
-            await self._try_raise_async(response)
-            return response, session
-        except:
-            await session.close()
-            raise
-
-    async def _get_async(
-        self,
-        invoke_url: str,
-    ) -> Tuple[aiohttp.ClientResponse, aiohttp.ClientSession]:
-        """Async version of `_get`"""
-        self.last_inputs = {
-            "url": invoke_url,
-            "headers": self.headers_tmpl["call"],
-        }
-        session = self.get_async_session_fn()
-        try:
-            self.last_response = response = await session.get(
-                **self.__add_authorization(self.last_inputs)
-            )
-            await self._try_raise_async(response)
-            return response, session
-        except:
-            await session.close()
-            raise
-
-    async def _wait_async(
-        self,
-        response: aiohttp.ClientResponse,
-        session: aiohttp.ClientSession,
-    ) -> aiohttp.ClientResponse:
-        """Async version of `_wait`"""
-        loop = asyncio.get_event_loop()
-        start_time = loop.time()
-        # note: the local NIM does not return a 202 status code
-        #       (per RL 22may2024 circa 24.05)
-        while response.status == 202:
-            await asyncio.sleep(self.interval)
-            if (loop.time() - start_time) > self.timeout:
-                raise TimeoutError(
-                    f"Timeout reached without a successful response."
-                    f"\nLast response: {str(response)}"
-                )
-            assert (
-                "NVCF-REQID" in response.headers
-            ), "Received 202 response with no request id to follow"
-            request_id = response.headers.get("NVCF-REQID")
-            payload = {
-                "url": self.polling_url_tmpl.format(request_id=request_id),
-                "headers": self.headers_tmpl["call"],
-            }
-            self.last_response = response = await session.get(
-                **self.__add_authorization(payload)
-            )
-        await self._try_raise_async(response)
-        return response
-
-    async def _try_raise_async(self, response: aiohttp.ClientResponse) -> None:
-        """Async version of `_try_raise` for `aiohttp` responses."""
-        # todo: Add unit tests for _try_raise_async and _try_raise
-        if response.status < 400:
-            return
-
-        # Read error body before session closes
-        try:
-            body_content = await response.read()
-            # Cache response body content in an additional _cached_content attribute
-            # as aiohttp.ClientResponse can only be read once. This allows tests and
-            # debugging tools to access the error response after it has been consumed
-            # by the _try_raise_async method.
-            response._cached_content = body_content  # type: ignore[attr-defined]
-        except Exception as e:
-            rd = {
-                "status": response.status,
-                "reason": response.reason,
-                "detail": f"Failed to read response body: {e}",
-            }
-            raise Exception(self._format_error(rd)) from None
-        try:
-            body_text = body_content.decode("utf-8") if body_content else ""
-            rd = json.loads(body_text) if body_text else {}
-            rd.setdefault("status", response.status)
-            if "detail" in rd and "reqId" in str(rd.get("detail", "")):
-                rd_buf = "- " + str(rd["detail"])
-                rd_buf = rd_buf.replace(": ", ", Error: ").replace(", ", "\n- ")
-                rd["detail"] = rd_buf
-        except json.JSONDecodeError:
-            rd_raw: Union[bytes, str] = body_content
-            # todo: Add WWW-Authenticate logic
-            if isinstance(rd_raw, bytes):
-                rd_raw = rd_raw.decode("utf-8")[5:]  ## remove "data:" prefix
-            try:
-                rd = json.loads(rd_raw)
-            except Exception:
-                rd = {"detail": rd_raw}
-
-        message = self._format_error(rd)
-        # todo: raise as an HTTPError
-        raise Exception(message) from None
-
-    ###################################################################################
-    ## Generation interface to allow users to generate new values from endpoints ######
-
-    def get_req(
-        self,
-        payload: dict = {},
-        extra_headers: dict = {},
-    ) -> Response:
-        """Post to the API."""
-        response, session = self._post(
-            self.infer_url, payload, extra_headers=extra_headers
-        )
-        return self._wait(response, session)
 
     def postprocess(
         self,
@@ -729,6 +578,24 @@ class _NVIDIAClient(BaseModel):
             content_holder.update(finish_reason=finish_reason_holder)
         return content_holder, is_stopped
 
+
+class _NVIDIASyncClient(_NVIDIAClientBase):
+    """Synchronous request interface built on top of the shared base."""
+
+    ###################################################################################
+    ## Generation interface to allow users to generate new values from endpoints ######
+
+    def get_req(
+        self,
+        payload: dict = {},
+        extra_headers: dict = {},
+    ) -> Response:
+        """Post to the API."""
+        response, session = self._post(
+            self.infer_url, payload, extra_headers=extra_headers
+        )
+        return self._wait(response, session)
+
     ###################################################################################
     ## Streaming interface to allow you to iterate through progressive generations ####
 
@@ -747,10 +614,10 @@ class _NVIDIAClient(BaseModel):
         }
 
         response = self.get_session_fn().post(
-            stream=True, **self.__add_authorization(self.last_inputs)
+            stream=True, **self._add_authorization(self.last_inputs)
         )
         self._try_raise(response)
-        call: _NVIDIAClient = self.model_copy()
+        call: _NVIDIASyncClient = self.model_copy()
 
         def out_gen() -> Generator[dict, Any, Any]:
             ## Good for client, since it allows self.last_inputs
@@ -762,6 +629,150 @@ class _NVIDIAClient(BaseModel):
                 self._try_raise(response)
 
         return (r for r in out_gen())
+
+
+class _NVIDIAAsyncClient(_NVIDIAClientBase):
+    """Asynchronous request interface built on top of the shared base."""
+
+    get_async_session_fn: Callable = Field(aiohttp.ClientSession)
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+        self.get_async_session_fn = self._create_async_session
+
+    def _build_ssl_context(self) -> Union[bool, ssl.SSLContext]:
+        """Build an SSL context for aiohttp based on `verify_ssl` setting."""
+        if isinstance(self.verify_ssl, bool):
+            return self.verify_ssl
+        if isinstance(self.verify_ssl, str):
+            context = ssl.create_default_context(cafile=self.verify_ssl)
+            return context
+        return True
+
+    def _create_async_session(self) -> "aiohttp.ClientSession":
+        """Create an aiohttp session with SSL verification via connector."""
+        connector = aiohttp.TCPConnector(ssl=self._build_ssl_context())
+        return aiohttp.ClientSession(connector=connector)
+
+    async def _post_async(
+        self,
+        invoke_url: str,
+        payload: Optional[dict] = {},
+        extra_headers: dict = {},
+    ) -> Tuple[aiohttp.ClientResponse, aiohttp.ClientSession]:
+        """Async version of `_post`"""
+        self.last_inputs = {
+            "url": invoke_url,
+            "headers": {
+                **self.headers_tmpl["call"],
+                **extra_headers,
+            },
+            "json": payload,
+        }
+        session = self.get_async_session_fn()
+        try:
+            self.last_response = response = await session.post(
+                **self._add_authorization(self.last_inputs)
+            )
+            await self._try_raise_async(response)
+            return response, session
+        except:
+            await session.close()
+            raise
+
+    async def _get_async(
+        self,
+        invoke_url: str,
+    ) -> Tuple[aiohttp.ClientResponse, aiohttp.ClientSession]:
+        """Async version of `_get`"""
+        self.last_inputs = {
+            "url": invoke_url,
+            "headers": self.headers_tmpl["call"],
+        }
+        session = self.get_async_session_fn()
+        try:
+            self.last_response = response = await session.get(
+                **self._add_authorization(self.last_inputs)
+            )
+            await self._try_raise_async(response)
+            return response, session
+        except:
+            await session.close()
+            raise
+
+    async def _wait_async(
+        self,
+        response: aiohttp.ClientResponse,
+        session: aiohttp.ClientSession,
+    ) -> aiohttp.ClientResponse:
+        """Async version of `_wait`"""
+        loop = asyncio.get_event_loop()
+        start_time = loop.time()
+        # note: the local NIM does not return a 202 status code
+        #       (per RL 22may2024 circa 24.05)
+        while response.status == 202:
+            await asyncio.sleep(self.interval)
+            if (loop.time() - start_time) > self.timeout:
+                raise TimeoutError(
+                    f"Timeout reached without a successful response."
+                    f"\nLast response: {str(response)}"
+                )
+            assert (
+                "NVCF-REQID" in response.headers
+            ), "Received 202 response with no request id to follow"
+            request_id = response.headers.get("NVCF-REQID")
+            payload = {
+                "url": self.polling_url_tmpl.format(request_id=request_id),
+                "headers": self.headers_tmpl["call"],
+            }
+            self.last_response = response = await session.get(
+                **self._add_authorization(payload)
+            )
+        await self._try_raise_async(response)
+        return response
+
+    async def _try_raise_async(self, response: aiohttp.ClientResponse) -> None:
+        """Async version of `_try_raise` for `aiohttp` responses."""
+        # todo: Add unit tests for _try_raise_async and _try_raise
+        if response.status < 400:
+            return
+
+        # Read error body before session closes
+        try:
+            body_content = await response.read()
+            # Cache response body content in an additional _cached_content attribute
+            # as aiohttp.ClientResponse can only be read once. This allows tests and
+            # debugging tools to access the error response after it has been consumed
+            # by the _try_raise_async method.
+            response._cached_content = body_content  # type: ignore[attr-defined]
+        except Exception as e:
+            rd = {
+                "status": response.status,
+                "reason": response.reason,
+                "detail": f"Failed to read response body: {e}",
+            }
+            raise Exception(self._format_error(rd)) from None
+        try:
+            body_text = body_content.decode("utf-8") if body_content else ""
+            rd = json.loads(body_text) if body_text else {}
+            rd.setdefault("status", response.status)
+            if "detail" in rd and "reqId" in str(rd.get("detail", "")):
+                rd_buf = "- " + str(rd["detail"])
+                rd_buf = rd_buf.replace(": ", ", Error: ").replace(", ", "\n- ")
+                rd["detail"] = rd_buf
+        except json.JSONDecodeError:
+            rd_raw: Union[bytes, str] = body_content
+            # todo: Add WWW-Authenticate logic
+            if isinstance(rd_raw, bytes):
+                rd_raw = rd_raw.decode("utf-8")[5:]  ## remove "data:" prefix
+            try:
+                rd = json.loads(rd_raw)
+            except Exception:
+                rd = {"detail": rd_raw}
+
+        message = self._format_error(rd)
+        # todo: raise as an HTTPError
+        raise Exception(message) from None
 
     ###################################################################################
     ## Async generation and streaming interfaces ######################################
@@ -800,10 +811,10 @@ class _NVIDIAClient(BaseModel):
         session = self.get_async_session_fn()
         try:
             self.last_response = response = await session.post(
-                **self.__add_authorization(self.last_inputs)
+                **self._add_authorization(self.last_inputs)
             )
             await self._try_raise_async(response)
-            call: _NVIDIAClient = self.model_copy()
+            call: _NVIDIAAsyncClient = self.model_copy()
 
             reader = response.content
             while True:
@@ -818,3 +829,21 @@ class _NVIDIAClient(BaseModel):
                 await self._try_raise_async(response)
         finally:
             await session.close()
+
+
+def _build_clients(
+    **kwargs: Any,
+) -> Tuple[_NVIDIASyncClient, _NVIDIAAsyncClient]:
+    """Build an independent (sync, async) client pair with a single validation pass.
+
+    Each client is fully self-contained — neither holds a reference to the other.
+    We run `_finalize` once on the sync client and copy the resolved fields and
+    cached model list to the async client so warnings and the `/v1/models` call
+    don't fire twice per LangChain instance.
+    """
+    sync = _NVIDIASyncClient(**kwargs)
+    sync._finalize()
+    resolved = {f: getattr(sync, f) for f in _NVIDIAClientBase.model_fields}
+    async_ = _NVIDIAAsyncClient(**resolved)
+    async_._available_models = sync._available_models
+    return sync, async_

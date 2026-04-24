@@ -14,7 +14,11 @@ from pydantic import (
     PrivateAttr,
 )
 
-from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._common import (
+    _build_clients,
+    _NVIDIAAsyncClient,
+    _NVIDIASyncClient,
+)
 from langchain_nvidia_ai_endpoints._statics import Model
 
 
@@ -36,7 +40,8 @@ class NVIDIARerank(BaseDocumentCompressor):
         validate_assignment=True,
     )
 
-    _client: _NVIDIAClient = PrivateAttr()
+    _client: _NVIDIASyncClient = PrivateAttr()
+    _async_client: _NVIDIAAsyncClient = PrivateAttr()
 
     base_url: Optional[str] = Field(
         default=None,
@@ -175,7 +180,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         # Extract verify_ssl from kwargs, default to True
         verify_ssl = kwargs.pop("verify_ssl", True)
 
-        self._client = _NVIDIAClient(
+        self._client, self._async_client = _build_clients(
             **({"base_url": base_url} if base_url else {}),  # only pass if set
             mdl_name=self.model,
             default_hosted_model_name=_DEFAULT_MODEL_NAME,
@@ -329,7 +334,7 @@ class NVIDIARerank(BaseDocumentCompressor):
     async def _arank(self, documents: List[str], query: str) -> List[Ranking]:
         """Async version of _rank."""
         payload = self._prepare_payload(documents, query)
-        response_text = await self._client.aget_req(
+        response_text = await self._async_client.aget_req(
             payload=payload, extra_headers=self.default_headers
         )
         result = json.loads(response_text)

@@ -63,7 +63,11 @@ from langchain_core.utils.pydantic import is_basemodel_subclass
 from langchain_core.utils.utils import _build_model_kwargs
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
-from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._common import (
+    _build_clients,
+    _NVIDIAAsyncClient,
+    _NVIDIASyncClient,
+)
 from langchain_nvidia_ai_endpoints._statics import Model
 from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
 from langchain_nvidia_ai_endpoints.data._profiles import _PROFILES
@@ -393,7 +397,8 @@ class ChatNVIDIA(BaseChatModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    _client: _NVIDIAClient = PrivateAttr()
+    _client: _NVIDIASyncClient = PrivateAttr()
+    _async_client: _NVIDIAAsyncClient = PrivateAttr()
 
     base_url: Optional[str] = Field(
         default=None,
@@ -554,7 +559,7 @@ class ChatNVIDIA(BaseChatModel):
         # Extract verify_ssl from kwargs, default to True
         verify_ssl = kwargs.pop("verify_ssl", True)
 
-        self._client = _NVIDIAClient(
+        self._client, self._async_client = _build_clients(
             **({"base_url": base_url} if base_url else {}),  # only pass if set
             mdl_name=self.model,
             default_hosted_model_name=_DEFAULT_MODEL_NAME,
@@ -786,7 +791,7 @@ class ChatNVIDIA(BaseChatModel):
         _, payload, extra_headers = self._prepare_inputs_and_payload(
             messages, stop, stream=False, **kwargs
         )
-        response = await self._client.aget_req(
+        response = await self._async_client.aget_req(
             payload=payload, extra_headers=extra_headers
         )
         return self._process_generate_response(
@@ -805,7 +810,7 @@ class ChatNVIDIA(BaseChatModel):
             messages, stop, stream=True, **kwargs
         )
         structured_output = _is_structured_output(payload)
-        async for response in self._client.aget_req_stream(
+        async for response in self._async_client.aget_req_stream(
             payload=payload, extra_headers=extra_headers
         ):
             chunk = self._process_stream_chunk(response, run_manager, structured_output)
@@ -966,7 +971,7 @@ class ChatNVIDIA(BaseChatModel):
     def _get_payload(
         self, inputs: Sequence[Dict], **kwargs: Any
     ) -> dict:  # todo: remove
-        """Generates payload for the `_NVIDIAClient` API to send to service."""
+        """Generates payload for the `_NVIDIASyncClient` API to send to service."""
         messages: List[Dict[str, Any]] = []
 
         for msg in inputs:

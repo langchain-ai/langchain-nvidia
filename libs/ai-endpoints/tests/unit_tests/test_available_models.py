@@ -5,7 +5,7 @@ from typing import Any
 import requests_mock as rm
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, Model, register_model
-from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._common import _NVIDIASyncClient
 
 
 def test_model_listing(public_class: Any, mock_model: str) -> None:
@@ -42,7 +42,7 @@ def test_duplicate_models_in_api_response(
 
     Regression test for the case where /v1/models returns the same model id
     more than once (e.g. nvidia/nemotron-3-super-120b-a12b). Previously this
-    triggered an AssertionError in _NVIDIAClient.__init__.
+    triggered an AssertionError in _NVIDIASyncClient.__init__.
     """
     duplicate_model = "test-org/duplicate-model"
     requests_mock.get(
@@ -81,7 +81,7 @@ def test_duplicate_models_deduplicated_in_available_models(
         client = ChatNVIDIA(model=duplicate_model)
     # Access the internal client's cached model list (API-only, before
     # get_available_models merges in the static MODEL_TABLE)
-    internal: _NVIDIAClient = client._client  # type: ignore[attr-defined]
+    internal: _NVIDIASyncClient = client._client  # type: ignore[attr-defined]
     ids = [m.id for m in internal.available_models]
     assert ids.count(duplicate_model) == 1
     assert ids.count("test-org/unique-model") == 1
