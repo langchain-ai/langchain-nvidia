@@ -153,6 +153,33 @@ class NVIDIARerank(BaseDocumentCompressor):
             # memory bandwidth at over 2 terabytes per second (TB/s) to run the largest
             # models and datasets.
             ```
+
+        Ranking with a Vision-Language Rerank Model:
+            `NVIDIARerank` can also rerank documents that carry an image
+            alongside their text using a ranking VLM such as
+            ``nvidia/llama-nemotron-rerank-vl-1b-v2``.
+
+
+            ```python
+            from langchain_nvidia_ai_endpoints import NVIDIARerank
+            from langchain_core.documents import Document
+
+            query = "Show me a picture of a cat"
+            documents = [
+                Document(
+                    page_content="The picture of a cat.",
+                    metadata={"image": "/path/to/image"},
+                ),
+                Document(
+                    page_content="",
+                    metadata={"image": "/path/to/image"},
+                ),
+                Document(page_content="The weather today is sunny."),
+            ]
+
+            ranker = NVIDIARerank(model="nvidia/llama-nemotron-rerank-vl-1b-v2")
+            response = ranker.compress_documents(query=query, documents=documents)
+            ```
         """
 
         super().__init__(**kwargs)
