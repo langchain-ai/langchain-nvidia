@@ -775,6 +775,23 @@ CHAT_MODEL_TABLE = {
         thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
+    "minimaxai/minimax-m2.5": Model(
+        id="minimaxai/minimax-m2.5", model_type="chat", client="ChatNVIDIA"
+    ),
+    "google/gemma-4-31b-it": Model(
+        id="google/gemma-4-31b-it",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
+    "minimaxai/minimax-m2.7": Model(
+        id="minimaxai/minimax-m2.7",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
     "z-ai/glm4.7": Model(
         id="z-ai/glm4.7",
         model_type="chat",
@@ -786,6 +803,15 @@ CHAT_MODEL_TABLE = {
     ),
     "z-ai/glm5": Model(
         id="z-ai/glm5",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
+    "z-ai/glm-5.1": Model(
+        id="z-ai/glm-5.1",
         model_type="chat",
         client="ChatNVIDIA",
         supports_tools=True,
@@ -885,6 +911,22 @@ VLM_MODEL_TABLE = {
         thinking_param_enable={"chat_template_kwargs": {"thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"thinking": False}},
     ),
+    "nvidia/nemotron-nano-12b-v2-vl": Model(
+        id="nvidia/nemotron-nano-12b-v2-vl",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+        thinking_prefix="/think",
+        no_thinking_prefix="/no_think",
+    ),
+    "qwen/qwen3.5-397b-a17b": Model(
+        id="qwen/qwen3.5-397b-a17b",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
     "qwen/qwen3.5-122b-a10b": Model(
         id="qwen/qwen3.5-122b-a10b",
         model_type="vlm",
@@ -900,6 +942,14 @@ VLM_MODEL_TABLE = {
         supports_thinking=True,
         thinking_param_enable={"reasoning_effort": "high"},
         thinking_param_disable={"reasoning_effort": None},
+    ),
+    "nvidia/ising-calibration-1-35b-a3b": Model(
+        id="nvidia/ising-calibration-1-35b-a3b",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
 }
 
