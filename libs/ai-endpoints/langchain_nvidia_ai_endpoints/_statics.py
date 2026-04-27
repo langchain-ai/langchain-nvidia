@@ -819,6 +819,26 @@ CHAT_MODEL_TABLE = {
         thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
+    "deepseek-ai/deepseek-v4-pro": Model(
+        id="deepseek-ai/deepseek-v4-pro",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"thinking": False}},
+    ),
+    "deepseek-ai/deepseek-v4-flash": Model(
+        id="deepseek-ai/deepseek-v4-flash",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"thinking": False}},
+    ),
 }
 
 QA_MODEL_TABLE = {
