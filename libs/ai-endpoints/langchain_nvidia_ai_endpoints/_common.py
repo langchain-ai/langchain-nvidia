@@ -197,6 +197,10 @@ class _NVIDIAClientBase(BaseModel):
     # final validation after model is constructed
     # todo: when pydantic v2 is available,
     #       use __post_init__ or model_validator(method="after")
+    # NOTE: `_build_clients` runs this once on the sync client and copies
+    # pydantic model_fields plus `_available_models` to the async client.
+    # Any new attribute set here that is NOT a model field must be propagated
+    # explicitly in `_build_clients`, or the async client will be missing it.
     def _finalize(self) -> None:
         self.is_hosted = urlparse(self.base_url).netloc in [
             "integrate.api.nvidia.com",

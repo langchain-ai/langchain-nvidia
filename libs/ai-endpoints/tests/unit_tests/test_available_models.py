@@ -35,6 +35,42 @@ def test_model_listing_hosted(
     assert any(model.id == mock_model for model in models)
 
 
+def test_single_models_call_per_instance(
+    requests_mock: rm.Mocker,
+) -> None:
+    """Constructing a public class should hit /v1/models and emit each warning
+    at most once.
+
+    Regression test for the sync/async client split: `_build_clients` runs
+    `_finalize` once on the sync client and copies resolved fields plus
+    `_available_models` to the async client. If that ever regresses to
+    instantiating two fully-validated clients, /v1/models would be fetched
+    twice and `_finalize` warnings would double up.
+    """
+    unknown_model = "test-org/unknown-model"
+    requests_mock.get(
+        re.compile(".*/v1/models"),
+        json={"data": [{"id": "test-org/something-else"}]},
+    )
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        ChatNVIDIA(model=unknown_model, api_key="BOGUS")
+
+    models_calls = [
+        req for req in requests_mock.request_history if req.path.endswith("/v1/models")
+    ]
+    assert (
+        len(models_calls) == 1
+    ), f"expected 1 /v1/models call, got {len(models_calls)}"
+
+    unknown_warnings = [w for w in caught if "is unknown" in str(w.message)]
+    assert len(unknown_warnings) == 1, (
+        f"expected 1 'is unknown' warning, got {len(unknown_warnings)}: "
+        f"{[str(w.message) for w in unknown_warnings]}"
+    )
+
+
 def test_duplicate_models_in_api_response(
     requests_mock: rm.Mocker,
 ) -> None:
