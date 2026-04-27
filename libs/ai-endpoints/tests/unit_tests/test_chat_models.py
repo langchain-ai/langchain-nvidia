@@ -19,7 +19,7 @@ def mock_v1_models(requests_mock: Mocker) -> None:
         json={
             "data": [
                 {
-                    "id": "meta/llama3-8b-instruct",
+                    "id": "meta/llama-3.1-8b-instruct",
                     "object": "model",
                     "created": 1234567890,
                     "owned_by": "OWNER",
@@ -55,13 +55,13 @@ def test_base_url_unknown_model(mock_local_models: None) -> None:
 def test_integration_initialization() -> None:
     """Test chat model initialization."""
     ChatNVIDIA(
-        model="meta/llama3-70b-instruct",
+        model="meta/llama-3.3-70b-instruct",
         nvidia_api_key="nvapi-...",
         temperature=0.5,
         top_p=0.9,
         max_tokens=50,
     )
-    ChatNVIDIA(model="meta/llama3-70b-instruct", nvidia_api_key="nvapi-...")
+    ChatNVIDIA(model="meta/llama-3.3-70b-instruct", nvidia_api_key="nvapi-...")
 
 
 def test_unavailable(empty_v1_models: None) -> None:
@@ -78,7 +78,7 @@ def test_max_tokens_deprecation_warning() -> None:
             "in a future version"
         ),
     ):
-        ChatNVIDIA(model="meta/llama3-70b-instruct", max_tokens=50)
+        ChatNVIDIA(model="meta/llama-3.3-70b-instruct", max_tokens=50)
 
 
 def test_max_completion_tokens() -> None:
@@ -86,7 +86,7 @@ def test_max_completion_tokens() -> None:
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         llm = ChatNVIDIA(
-            model="meta/llama3-70b-instruct",
+            model="meta/llama-3.3-70b-instruct",
             max_completion_tokens=50,
             nvidia_api_key="nvapi-...",
         )
@@ -102,7 +102,7 @@ def test_max_completion_tokens() -> None:
 def test_max_tokens_value() -> None:
     """Test that max_tokens value is correctly set and reflected in payload."""
     llm = ChatNVIDIA(
-        model="meta/llama3-70b-instruct",
+        model="meta/llama-3.3-70b-instruct",
         max_tokens=50,
         nvidia_api_key="nvapi-...",
     )
@@ -215,7 +215,7 @@ def test_warning_for_thinking_mode_unsupported_model(thinking_mode: bool) -> Non
         match="does not support thinking mode",
     ):
         ChatNVIDIA(
-            model="meta/llama3-70b-instruct",
+            model="meta/llama-3.3-70b-instruct",
             nvidia_api_key="nvapi-...",
         ).with_thinking_mode(enabled=thinking_mode)
 
@@ -509,7 +509,7 @@ def test_verify_ssl_behavior(
 ) -> None:
     """Test verify_ssl parameter behavior with different values."""
     kwargs: dict[str, Any] = {
-        "model": "meta/llama3-70b-instruct",
+        "model": "meta/llama-3.3-70b-instruct",
         "nvidia_api_key": "nvapi-...",
         "base_url": "https://example.com/v1",
     }
@@ -524,7 +524,7 @@ def test_verify_ssl_behavior(
 
 def test_default_headers(requests_mock: Mocker) -> None:
     """Test that default_headers are passed to requests."""
-    model = "meta/llama3-8b-instruct"
+    model = "meta/llama-3.1-8b-instruct"
     requests_mock.post(
         "https://integrate.api.nvidia.com/v1/chat/completions",
         json={
@@ -562,7 +562,7 @@ def test_model_kwargs_extra_parameters() -> None:
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         llm = ChatNVIDIA(
-            model="meta/llama3-70b-instruct",
+            model="meta/llama-3.3-70b-instruct",
             nvidia_api_key="nvapi-...",
             custom_param="custom_value",
         )
@@ -583,7 +583,7 @@ def test_model_kwargs_extra_parameters() -> None:
 
     # Test 2: Explicit model_kwargs parameter alongside explicit params
     llm2 = ChatNVIDIA(
-        model="meta/llama3-70b-instruct",
+        model="meta/llama-3.3-70b-instruct",
         nvidia_api_key="nvapi-...",
         temperature=0.5,
         model_kwargs={"top_k": 10, "custom_param": "from_model_kwargs"},
