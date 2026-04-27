@@ -42,7 +42,7 @@ _API_KEY_VAR = "NVIDIA_API_KEY"
 _BASE_URL_VAR = "NVIDIA_BASE_URL"
 
 
-class _NVIDIAClientBase(BaseModel):
+class _NVIDIABaseClient(BaseModel):
     """Low level client library interface to NIM endpoints."""
 
     default_hosted_model_name: str = Field(..., description="Default model name to use")
@@ -583,7 +583,7 @@ class _NVIDIAClientBase(BaseModel):
         return content_holder, is_stopped
 
 
-class _NVIDIASyncClient(_NVIDIAClientBase):
+class _NVIDIASyncClient(_NVIDIABaseClient):
     """Synchronous request interface built on top of the shared base."""
 
     ###################################################################################
@@ -635,7 +635,7 @@ class _NVIDIASyncClient(_NVIDIAClientBase):
         return (r for r in out_gen())
 
 
-class _NVIDIAAsyncClient(_NVIDIAClientBase):
+class _NVIDIAAsyncClient(_NVIDIABaseClient):
     """Asynchronous request interface built on top of the shared base."""
 
     get_async_session_fn: Callable = Field(aiohttp.ClientSession)
@@ -847,7 +847,7 @@ def _build_clients(
     """
     sync = _NVIDIASyncClient(**kwargs)
     sync._finalize()
-    resolved = {f: getattr(sync, f) for f in _NVIDIAClientBase.model_fields}
+    resolved = {f: getattr(sync, f) for f in _NVIDIABaseClient.model_fields}
     async_ = _NVIDIAAsyncClient(**resolved)
     async_._available_models = sync._available_models
     return sync, async_

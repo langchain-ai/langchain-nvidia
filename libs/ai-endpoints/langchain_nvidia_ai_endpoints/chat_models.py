@@ -971,7 +971,7 @@ class ChatNVIDIA(BaseChatModel):
     def _get_payload(
         self, inputs: Sequence[Dict], **kwargs: Any
     ) -> dict:  # todo: remove
-        """Generates payload for the `_NVIDIASyncClient` API to send to service."""
+        """Generates payload for the `_NVIDIABaseClient` API to send to service."""
         messages: List[Dict[str, Any]] = []
 
         for msg in inputs:
