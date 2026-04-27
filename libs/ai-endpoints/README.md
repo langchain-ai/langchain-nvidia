@@ -337,6 +337,33 @@ response = client.compress_documents(
 print(f"Most relevant: {response[0].page_content}\nLeast relevant: {response[-1].page_content}")
 ```
 
+### Ranking with a Vision-Language Rerank Model
+
+`NVIDIARerank` can also rerank documents that carry an image alongside their text using a ranking VLM such as
+[nvidia/llama-nemotron-rerank-vl-1b-v2](https://build.nvidia.com/nvidia/llama-nemotron-rerank-vl-1b-v2).
+
+The following example connects to a ranking VLM.
+
+```python
+from langchain_nvidia_ai_endpoints import NVIDIARerank
+from langchain_core.documents import Document
+
+query = "Show me a picture of a cat"
+documents = [
+    Document(
+        page_content="The picture of a cat.",
+        metadata={"image": "/path/to/image"},
+    ),
+    Document(
+        page_content="",
+        metadata={"image": "/path/to/image"},
+    ),
+    Document(page_content="The weather today is sunny."),
+]
+
+ranker = NVIDIARerank(model="nvidia/llama-nemotron-rerank-vl-1b-v2")
+response = ranker.compress_documents(query=query, documents=documents)
+```
 
 ### Retrieval
 

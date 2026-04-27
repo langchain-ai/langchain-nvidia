@@ -47,7 +47,16 @@ class Model(BaseModel):
 
     # why do we have a model_type? because ChatNVIDIA can speak both chat and vlm.
     model_type: Optional[
-        Literal["chat", "vlm", "nv-vlm", "embedding", "ranking", "completions", "qa"]
+        Literal[
+            "chat",
+            "vlm",
+            "nv-vlm",
+            "embedding",
+            "ranking",
+            "ranking-vlm",
+            "completions",
+            "qa",
+        ]
     ] = None
 
     client: Optional[
@@ -83,7 +92,7 @@ class Model(BaseModel):
             supported = {
                 "ChatNVIDIA": ("chat", "vlm", "nv-vlm", "qa"),
                 "NVIDIAEmbeddings": ("embedding",),
-                "NVIDIARerank": ("ranking",),
+                "NVIDIARerank": ("ranking", "ranking-vlm"),
                 "NVIDIA": ("completions",),
             }
             if self.model_type not in supported.get(self.client, ()):
@@ -1070,6 +1079,15 @@ RANKING_MODEL_TABLE = {
     ),
 }
 
+RANKING_VLM_MODEL_TABLE = {
+    "nvidia/llama-nemotron-rerank-vl-1b-v2": Model(
+        id="nvidia/llama-nemotron-rerank-vl-1b-v2",
+        model_type="ranking-vlm",
+        client="NVIDIARerank",
+        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-nemotron-rerank-vl-1b-v2/reranking",
+    ),
+}
+
 COMPLETION_MODEL_TABLE = {
     "bigcode/starcoder2-7b": Model(
         id="bigcode/starcoder2-7b",
@@ -1101,6 +1119,7 @@ MODEL_TABLE = {
     **VLM_MODEL_TABLE,
     **EMBEDDING_MODEL_TABLE,
     **RANKING_MODEL_TABLE,
+    **RANKING_VLM_MODEL_TABLE,
     **COMPLETION_MODEL_TABLE,
 }
 
