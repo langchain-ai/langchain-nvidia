@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 import pytest
 from langchain_core.documents import Document
@@ -185,3 +185,150 @@ async def test_extra_headers(
         )
         assert requests_mock.last_request is not None
         assert requests_mock.last_request.headers["X-Test"] == "test"
+
+
+def _get_passages(requests_mock: Mocker) -> List[Dict[str, Any]]:
+    """Helper to extract passages from the last sync request payload."""
+    assert requests_mock.last_request is not None
+    return requests_mock.last_request.json()["passages"]
+
+
+def test_text_only_payload_has_no_image_key(requests_mock: Mocker) -> None:
+    """Text-only documents should produce passages with only a 'text' key."""
+    warnings.filterwarnings("ignore", ".*Found mock-model in available_models.*")
+    client = NVIDIARerank(api_key="BOGUS", model="mock-model")
+    client.compress_documents(
+        documents=[
+            Document(page_content="first passage"),
+            Document(page_content="second passage"),
+        ],
+        query="test query",
+    )
+    passages = _get_passages(requests_mock)
+    assert len(passages) == 2
+    for p in passages:
+        assert "text" in p
+        assert "image" not in p
+    assert passages[0]["text"] == "first passage"
+    assert passages[1]["text"] == "second passage"
+
+
+def test_text_and_image_payload(requests_mock: Mocker) -> None:
+    """Documents with image metadata should include an 'image' field in the payload."""
+    warnings.filterwarnings("ignore", ".*Found mock-model in available_models.*")
+    client = NVIDIARerank(api_key="BOGUS", model="mock-model")
+    b64_image = "data:image/jpeg;base64,1234567abc"
+    client.compress_documents(
+        documents=[
+            Document(page_content="a caption", metadata={"image": b64_image}),
+        ],
+        query="test query",
+    )
+    passages = _get_passages(requests_mock)
+    assert len(passages) == 1
+    assert passages[0]["text"] == "a caption"
+    assert passages[0]["image"] == b64_image
+
+
+def test_image_only_payload(requests_mock: Mocker) -> None:
+    """Documents with empty text and image metadata should still work."""
+    warnings.filterwarnings("ignore", ".*Found mock-model in available_models.*")
+    client = NVIDIARerank(api_key="BOGUS", model="mock-model")
+    b64_image = "data:image/png;base64,1234567abc"
+    client.compress_documents(
+        documents=[
+            Document(page_content="", metadata={"image": b64_image}),
+        ],
+        query="test query",
+    )
+    passages = _get_passages(requests_mock)
+    assert len(passages) == 1
+    assert passages[0]["text"] == ""
+    assert passages[0]["image"] == b64_image
+
+
+def test_invalid_image_raises(requests_mock: Mocker) -> None:
+    """A bogus metadata['image'] value should raise ValueError."""
+    warnings.filterwarnings("ignore", ".*Found mock-model in available_models.*")
+    client = NVIDIARerank(api_key="BOGUS", model="mock-model")
+    with pytest.raises(ValueError):
+        client.compress_documents(
+            documents=[
+                Document(
+                    page_content="test passage",
+                    metadata={"image": "an image"},
+                ),
+            ],
+            query="test query",
+        )
+
+
+def test_image_on_non_vlm_model_warns(requests_mock: Mocker) -> None:
+    """Image metadata on a non-VLM ranking model should emit a UserWarning."""
+    warnings.filterwarnings("ignore", ".*Found mock-model in available_models.*")
+    client = NVIDIARerank(api_key="BOGUS", model="mock-model")
+    # Simulate a resolved text-only ranking model
+    assert client._client.model is not None
+    client._client.model.model_type = "ranking"
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        client.compress_documents(
+            documents=[
+                Document(
+                    page_content="test passage",
+                    metadata={"image": "data:image/png;base64,1234567abc"},
+                ),
+            ],
+            query="test query",
+        )
+    assert any(
+        "not known to support image" in str(warning.message) for warning in w
+    ), "expected a warning about image support"
+
+
+def test_image_on_ranking_vlm_model_no_warning(requests_mock: Mocker) -> None:
+    """Image metadata on a ranking-vlm model should not emit the guardrail warning."""
+    warnings.filterwarnings("ignore", ".*Found mock-model in available_models.*")
+    client = NVIDIARerank(api_key="BOGUS", model="mock-model")
+    assert client._client.model is not None
+    client._client.model.model_type = "ranking-vlm"
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        client.compress_documents(
+            documents=[
+                Document(
+                    page_content="test passage",
+                    metadata={"image": "data:image/png;base64,1234567abc"},
+                ),
+            ],
+            query="test query",
+        )
+    assert not any(
+        "not known to support image" in str(warning.message) for warning in w
+    )
+
+
+def test_mixed_text_and_image_payload(requests_mock: Mocker) -> None:
+    """A batch with both text-only and text+image docs produces correct payloads."""
+    warnings.filterwarnings("ignore", ".*Found mock-model in available_models.*")
+    client = NVIDIARerank(api_key="BOGUS", model="mock-model")
+    b64_image = "data:image/jpeg;base64,1234567abc"
+    client.compress_documents(
+        documents=[
+            Document(page_content="text only"),
+            Document(page_content="with image", metadata={"image": b64_image}),
+            Document(page_content="another text only"),
+        ],
+        query="test query",
+    )
+    passages = _get_passages(requests_mock)
+    assert len(passages) == 3
+    # first: text-only
+    assert passages[0]["text"] == "text only"
+    assert "image" not in passages[0]
+    # second: text+image
+    assert passages[1]["text"] == "with image"
+    assert passages[1]["image"] == b64_image
+    # third: text-only
+    assert passages[2]["text"] == "another text only"
+    assert "image" not in passages[2]
