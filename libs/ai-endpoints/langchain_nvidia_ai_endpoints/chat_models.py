@@ -349,6 +349,7 @@ class ChatNVIDIA(BaseChatModel):
     max_tokens: Optional[int] = Field(
         1024,
         gt=0,
+        lt=2**31 - 1,
         description="Maximum # of tokens to generate",
         alias="max_completion_tokens",
     )

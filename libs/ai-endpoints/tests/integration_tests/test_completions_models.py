@@ -60,6 +60,19 @@ from typing import Any, Callable, Tuple
 import pytest
 
 from langchain_nvidia_ai_endpoints import NVIDIA
+from langchain_nvidia_ai_endpoints.llm import _DEFAULT_MODEL_NAME
+
+
+@pytest.fixture(autouse=True)
+def _skip_default_completions_model(completions_model: str, mode: dict) -> None:
+    if (
+        NVIDIA(model=completions_model, **mode)._client.is_hosted
+        and completions_model == _DEFAULT_MODEL_NAME
+    ):
+        pytest.skip(
+            "Default completions model is deprecated on the hosted endpoint; "
+            "pass --completions-model-id to run these tests."
+        )
 
 
 def is_async_func(func: Callable) -> bool:

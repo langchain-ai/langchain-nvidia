@@ -304,27 +304,13 @@ async def test_ai_endpoints_invoke_max_tokens_negative_b(
     max_tokens: int,
     func: str,
 ) -> None:
-    """Test invoke's max_tokens' positive bounds."""
+    """Test invoke's max_tokens' positive bounds (caught by client-side validation)."""
     with pytest.raises(Exception):
         llm = ChatNVIDIA(model=chat_model, max_tokens=max_tokens, **mode)
         if func == "invoke":
             llm.invoke("Show me the tokens")
         else:
             await llm.ainvoke("Show me the tokens")
-    assert llm._client.last_response is not None
-    # custom error string -
-    #    model inference failed -- ValueError: A requested length of the model output
-    #    is too big. Maximum allowed output length is X, whereas requested output
-    #    length is Y.
-    #  or
-    #    body -> max_tokens
-    #    Input should be less than or equal to 2048 (type=less_than_equal; le=2048)
-    assert_response_error(
-        llm._client.last_response,
-        [400, 422],
-        lambda content: "length" in content
-        or ("max_tokens" in content and "less_than_equal" in content),
-    )
 
 
 @pytest.mark.parametrize(
@@ -400,11 +386,12 @@ async def test_ai_endpoints_invoke_seed_range(
         llm.invoke("What's in a seed?")
     else:
         await llm.ainvoke("What's in a seed?")
-    assert llm._client.last_response is not None
+    client = llm._async_client if func == "ainvoke" else llm._client
+    assert client.last_response is not None
     if func == "ainvoke":
-        assert llm._client.last_response.status == 200  # type: ignore[union-attr]
+        assert client.last_response.status == 200  # type: ignore[union-attr]
     else:
-        assert llm._client.last_response.status_code == 200  # type: ignore[union-attr]
+        assert client.last_response.status_code == 200  # type: ignore[union-attr]
 
 
 @pytest.mark.xfail(reason="seed does not consistently control determinism")
