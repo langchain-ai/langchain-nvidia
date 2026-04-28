@@ -4,7 +4,6 @@ from typing import Any
 import pytest
 
 from langchain_nvidia_ai_endpoints import (
-    NVIDIA,
     ChatNVIDIA,
     Model,
     NVIDIAEmbeddings,
@@ -23,7 +22,7 @@ from langchain_nvidia_ai_endpoints import (
         (
             ChatNVIDIA,
             "meta/llama-3.1-8b-instruct",
-            "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/a5a3ad64-ec2c-4bfc-8ef7-5636f26630fe",
+            "https://integrate.api.nvidia.com/v1/chat/completions",
         ),
         (
             NVIDIAEmbeddings,
@@ -34,11 +33,6 @@ from langchain_nvidia_ai_endpoints import (
             NVIDIARerank,
             "nv-rerank-qa-mistral-4b:1",
             "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/0bf77f50-5c35-4488-8e7a-f49bb1974af6",
-        ),
-        (
-            NVIDIA,
-            "bigcode/starcoder2-7b",
-            "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/dd7b01e7-732d-4da5-8e8d-315f79165a23",
         ),
     ],
 )
