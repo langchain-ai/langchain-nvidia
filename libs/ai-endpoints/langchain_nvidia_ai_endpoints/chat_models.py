@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import base64
 import enum
 import json
 import logging
-import os
 import re
-import urllib.parse
 import warnings
 from typing import (
     Any,
@@ -63,9 +60,16 @@ from langchain_core.utils.pydantic import is_basemodel_subclass
 from langchain_core.utils.utils import _build_model_kwargs
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
-from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._common import (
+    _build_clients,
+    _NVIDIAAsyncClient,
+    _NVIDIASyncClient,
+)
 from langchain_nvidia_ai_endpoints._statics import Model
-from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
+from langchain_nvidia_ai_endpoints._utils import (
+    _url_to_b64_string,
+    convert_message_to_dict,
+)
 from langchain_nvidia_ai_endpoints.data._profiles import _PROFILES
 
 # Type variable for generic parser types
@@ -82,74 +86,6 @@ def _get_default_model_profile(model_name: str) -> ModelProfile:
     """Fetch profile from registry; return empty dict if not found."""
     default = _MODEL_PROFILES.get(model_name) or {}
     return default.copy()
-
-
-def _is_url(s: str) -> bool:
-    try:
-        result = urllib.parse.urlparse(s)
-        return all([result.scheme, result.netloc])
-    except Exception as e:
-        logger.debug(f"Unable to parse URL: {e}")
-        return False
-
-
-def _url_to_b64_string(image_source: str) -> str:
-    try:
-        if _is_url(image_source):
-            return image_source
-            # import sys
-            # import io
-            # try:
-            #     import PIL.Image
-            #     has_pillow = True
-            # except ImportError:
-            #     has_pillow = False
-            # def _resize_image(img_data: bytes, max_dim: int = 1024) -> str:
-            #     if not has_pillow:
-            #         print(  # noqa: T201
-            #             "Pillow is required to resize images down to reasonable scale."  # noqa: E501
-            #             " Please install it using `pip install pillow`."
-            #             " For now, not resizing; may cause NVIDIA API to fail."
-            #         )
-            #         return base64.b64encode(img_data).decode("utf-8")
-            #     image = PIL.Image.open(io.BytesIO(img_data))
-            #     max_dim_size = max(image.size)
-            #     aspect_ratio = max_dim / max_dim_size
-            #     new_h = int(image.size[1] * aspect_ratio)
-            #     new_w = int(image.size[0] * aspect_ratio)
-            #     resized_image = image.resize((new_w, new_h), PIL.Image.Resampling.LANCZOS)  # noqa: E501
-            #     output_buffer = io.BytesIO()
-            #     resized_image.save(output_buffer, format="JPEG")
-            #     output_buffer.seek(0)
-            #     resized_b64_string = base64.b64encode(output_buffer.read()).decode("utf-8")  # noqa: E501
-            #     return resized_b64_string
-            # b64_template = "data:image/png;base64,{b64_string}"
-            # response = requests.get(
-            #     image_source, headers={"User-Agent": "langchain-nvidia-ai-endpoints"}
-            # )
-            # response.raise_for_status()
-            # encoded = base64.b64encode(response.content).decode("utf-8")
-            # if sys.getsizeof(encoded) > 200000:
-            #     ## (VK) Temporary fix. NVIDIA API has a limit of 250KB for the input.
-            #     encoded = _resize_image(response.content)
-            # return b64_template.format(b64_string=encoded)
-        elif image_source.startswith("data:image"):
-            return image_source
-        elif os.path.exists(image_source):
-            with open(image_source, "rb") as f:
-                image_data = f.read()
-                import filetype  # type: ignore
-
-                kind = filetype.guess(image_data)
-                image_type = kind.extension if kind else "unknown"
-                encoded = base64.b64encode(image_data).decode("utf-8")
-                return f"data:image/{image_type};base64,{encoded}"
-        else:
-            raise ValueError(
-                "The provided string is not a valid URL, base64, or file path."
-            )
-    except Exception as e:
-        raise ValueError(f"Unable to process the provided image source: {e}")
 
 
 def _deep_merge(base: dict, update: dict) -> dict:
@@ -367,7 +303,7 @@ def _process_for_vlm(
     return inputs, extra_headers
 
 
-_DEFAULT_MODEL_NAME: str = "meta/llama3-8b-instruct"
+_DEFAULT_MODEL_NAME: str = "meta/llama-3.3-70b-instruct"
 _DEFAULT_REASONING_MODEL: str = "openai/gpt-oss-120b"
 _DEFAULT_THINKING_MODELS = [
     "nvidia/nemotron-3-nano-30b-a3b",
@@ -393,7 +329,8 @@ class ChatNVIDIA(BaseChatModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    _client: _NVIDIAClient = PrivateAttr()
+    _client: _NVIDIASyncClient = PrivateAttr()
+    _async_client: _NVIDIAAsyncClient = PrivateAttr()
 
     base_url: Optional[str] = Field(
         default=None,
@@ -554,7 +491,7 @@ class ChatNVIDIA(BaseChatModel):
         # Extract verify_ssl from kwargs, default to True
         verify_ssl = kwargs.pop("verify_ssl", True)
 
-        self._client = _NVIDIAClient(
+        self._client, self._async_client = _build_clients(
             **({"base_url": base_url} if base_url else {}),  # only pass if set
             mdl_name=self.model,
             default_hosted_model_name=_DEFAULT_MODEL_NAME,
@@ -786,7 +723,7 @@ class ChatNVIDIA(BaseChatModel):
         _, payload, extra_headers = self._prepare_inputs_and_payload(
             messages, stop, stream=False, **kwargs
         )
-        response = await self._client.aget_req(
+        response = await self._async_client.aget_req(
             payload=payload, extra_headers=extra_headers
         )
         return self._process_generate_response(
@@ -805,7 +742,7 @@ class ChatNVIDIA(BaseChatModel):
             messages, stop, stream=True, **kwargs
         )
         structured_output = _is_structured_output(payload)
-        async for response in self._client.aget_req_stream(
+        async for response in self._async_client.aget_req_stream(
             payload=payload, extra_headers=extra_headers
         ):
             chunk = self._process_stream_chunk(response, run_manager, structured_output)
@@ -966,7 +903,7 @@ class ChatNVIDIA(BaseChatModel):
     def _get_payload(
         self, inputs: Sequence[Dict], **kwargs: Any
     ) -> dict:  # todo: remove
-        """Generates payload for the `_NVIDIAClient` API to send to service."""
+        """Generates payload for the `_NVIDIABaseClient` API to send to service."""
         messages: List[Dict[str, Any]] = []
 
         for msg in inputs:

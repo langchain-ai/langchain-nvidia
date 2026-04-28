@@ -14,8 +14,13 @@ from pydantic import (
     PrivateAttr,
 )
 
-from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._common import (
+    _build_clients,
+    _NVIDIAAsyncClient,
+    _NVIDIASyncClient,
+)
 from langchain_nvidia_ai_endpoints._statics import Model
+from langchain_nvidia_ai_endpoints._utils import _url_to_b64_string
 
 
 class Ranking(BaseModel):
@@ -23,7 +28,8 @@ class Ranking(BaseModel):
     logit: float
 
 
-_DEFAULT_MODEL_NAME: str = "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+_DEFAULT_MODEL_NAME: str = "nvidia/llama-nemotron-rerank-1b-v2"
+_DEFAULT_VLM_MODEL_NAME: str = "nvidia/llama-nemotron-rerank-vl-1b-v2"
 _DEFAULT_BATCH_SIZE: int = 32
 
 
@@ -36,7 +42,8 @@ class NVIDIARerank(BaseDocumentCompressor):
         validate_assignment=True,
     )
 
-    _client: _NVIDIAClient = PrivateAttr()
+    _client: _NVIDIASyncClient = PrivateAttr()
+    _async_client: _NVIDIAAsyncClient = PrivateAttr()
 
     base_url: Optional[str] = Field(
         default=None,
@@ -151,6 +158,33 @@ class NVIDIARerank(BaseDocumentCompressor):
             # memory bandwidth at over 2 terabytes per second (TB/s) to run the largest
             # models and datasets.
             ```
+
+        Ranking with a Vision-Language Rerank Model:
+            `NVIDIARerank` can also rerank documents that carry an image
+            alongside their text using a ranking VLM such as
+            ``nvidia/llama-nemotron-rerank-vl-1b-v2``.
+
+
+            ```python
+            from langchain_nvidia_ai_endpoints import NVIDIARerank
+            from langchain_core.documents import Document
+
+            query = "Show me a picture of a cat"
+            documents = [
+                Document(
+                    page_content="The picture of a cat.",
+                    metadata={"image": "/path/to/image"},
+                ),
+                Document(
+                    page_content="",
+                    metadata={"image": "/path/to/image"},
+                ),
+                Document(page_content="The weather today is sunny."),
+            ]
+
+            ranker = NVIDIARerank(model="nvidia/llama-nemotron-rerank-vl-1b-v2")
+            response = ranker.compress_documents(query=query, documents=documents)
+            ```
         """
 
         super().__init__(**kwargs)
@@ -175,7 +209,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         # Extract verify_ssl from kwargs, default to True
         verify_ssl = kwargs.pop("verify_ssl", True)
 
-        self._client = _NVIDIAClient(
+        self._client, self._async_client = _build_clients(
             **({"base_url": base_url} if base_url else {}),  # only pass if set
             mdl_name=self.model,
             default_hosted_model_name=_DEFAULT_MODEL_NAME,
@@ -205,20 +239,42 @@ class NVIDIARerank(BaseDocumentCompressor):
         """Get a list of available models that work with `NVIDIARerank`."""
         return cls(**kwargs).available_models
 
-    def _prepare_payload(self, documents: List[str], query: str) -> Dict[str, Any]:
+    def _prepare_payload(self, documents: List[Document], query: str) -> Dict[str, Any]:
         """Prepare payload for both sync and async methods.
 
         Args:
-            documents: List of document texts to rank
+            documents: List of documents to rank
             query: Query text
 
         Returns:
             Payload dictionary
         """
-        payload = {
+        passages = []
+        has_image = False
+        for doc in documents:
+            passage: Dict[str, Any] = {"text": doc.page_content}
+            if image := doc.metadata.get("image"):
+                passage["image"] = _url_to_b64_string(image)
+                has_image = True
+            passages.append(passage)
+
+        if has_image:
+            model_info = getattr(self._client, "model", None)
+            model_type = getattr(model_info, "model_type", None)
+            if model_type and model_type != "ranking-vlm":
+                warnings.warn(
+                    (
+                        f"Passage image metadata was supplied, but the "
+                        f"reranking model '{self.model}' is not known to "
+                        f"support image inputs."
+                    ),
+                    UserWarning,
+                )
+
+        payload: Dict[str, Any] = {
             "model": self.model,
             "query": {"text": query},
-            "passages": [{"text": passage} for passage in documents],
+            "passages": passages,
         }
         if self.truncate:
             payload["truncate"] = self.truncate
@@ -282,7 +338,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         results.sort(key=lambda x: x.metadata["relevance_score"], reverse=True)
 
     # todo: batching when len(documents) > endpoint's max batch size
-    def _rank(self, documents: List[str], query: str) -> List[Ranking]:
+    def _rank(self, documents: List[Document], query: str) -> List[Ranking]:
         payload = self._prepare_payload(documents, query)
         response = self._client.get_req(
             payload=payload, extra_headers=self.default_headers
@@ -315,9 +371,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         doc_list = list(documents)
         results: List[Document] = []
         for doc_batch in self._batch(doc_list, self.max_batch_size):
-            rankings = self._rank(
-                query=query, documents=[d.page_content for d in doc_batch]
-            )
+            rankings = self._rank(query=query, documents=doc_batch)
             self._process_batch_rankings(doc_batch, rankings, results)
 
         # if we batched, we need to sort the results
@@ -326,10 +380,10 @@ class NVIDIARerank(BaseDocumentCompressor):
 
         return results[: self.top_n]
 
-    async def _arank(self, documents: List[str], query: str) -> List[Ranking]:
+    async def _arank(self, documents: List[Document], query: str) -> List[Ranking]:
         """Async version of _rank."""
         payload = self._prepare_payload(documents, query)
-        response_text = await self._client.aget_req(
+        response_text = await self._async_client.aget_req(
             payload=payload, extra_headers=self.default_headers
         )
         result = json.loads(response_text)
@@ -348,9 +402,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         doc_list = list(documents)
         results: List[Document] = []
         for doc_batch in self._batch(doc_list, self.max_batch_size):
-            rankings = await self._arank(
-                query=query, documents=[d.page_content for d in doc_batch]
-            )
+            rankings = await self._arank(query=query, documents=doc_batch)
             self._process_batch_rankings(doc_batch, rankings, results)
 
         # if we batched, we need to sort the results

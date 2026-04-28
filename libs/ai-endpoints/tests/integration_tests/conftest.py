@@ -9,7 +9,11 @@ from langchain_nvidia_ai_endpoints import (
     NVIDIAEmbeddings,
     NVIDIARerank,
 )
-from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model
+from langchain_nvidia_ai_endpoints._statics import (
+    MODEL_TABLE,
+    RANKING_VLM_MODEL_TABLE,
+    Model,
+)
 from langchain_nvidia_ai_endpoints.chat_models import (
     _DEFAULT_MODEL_NAME as DEFAULT_CHAT_MODEL,
 )
@@ -36,6 +40,9 @@ from langchain_nvidia_ai_endpoints.llm import (
 )
 from langchain_nvidia_ai_endpoints.reranking import (
     _DEFAULT_MODEL_NAME as DEFAULT_RERANKING_MODEL,
+)
+from langchain_nvidia_ai_endpoints.reranking import (
+    _DEFAULT_VLM_MODEL_NAME as DEFAULT_RERANKING_VLM_MODEL,
 )
 
 
@@ -100,6 +107,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         action="store",
         nargs="+",
         help="Run tests for a specific rerank model or list of models",
+    )
+    parser.addoption(
+        "--rerank-vlm-model-id",
+        action="store",
+        nargs="+",
+        help="Run tests for a specific rerank VLM model or list of models",
     )
     parser.addoption(
         "--vlm-model-id",
@@ -198,6 +211,14 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         if metafunc.config.getoption("all_models"):
             models = [model.id for model in NVIDIARerank(**mode).available_models]
         metafunc.parametrize("rerank_model", models, ids=models)
+
+    if "rerank_vlm_model" in metafunc.fixturenames:
+        models = [DEFAULT_RERANKING_VLM_MODEL]
+        if model_list := metafunc.config.getoption("rerank_vlm_model_id"):
+            models = model_list
+        if metafunc.config.getoption("all_models"):
+            models = list(RANKING_VLM_MODEL_TABLE.keys())
+        metafunc.parametrize("rerank_vlm_model", models, ids=models)
 
     if "vlm_model" in metafunc.fixturenames:
         models = [DEFAULT_VLM_MODEL]

@@ -10,7 +10,11 @@ from pydantic import (
     PrivateAttr,
 )
 
-from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._common import (
+    _build_clients,
+    _NVIDIAAsyncClient,
+    _NVIDIASyncClient,
+)
 from langchain_nvidia_ai_endpoints._statics import Model
 from langchain_nvidia_ai_endpoints.callbacks import usage_callback_var
 
@@ -35,7 +39,8 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         validate_assignment=True,
     )
 
-    _client: _NVIDIAClient = PrivateAttr()
+    _client: _NVIDIASyncClient = PrivateAttr()
+    _async_client: _NVIDIAAsyncClient = PrivateAttr()
 
     base_url: Optional[str] = Field(
         default=None,
@@ -135,7 +140,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         # Extract verify_ssl from kwargs, default to True
         verify_ssl = kwargs.pop("verify_ssl", True)
 
-        self._client = _NVIDIAClient(
+        self._client, self._async_client = _build_clients(
             **({"base_url": base_url} if base_url else {}),  # only pass if set
             mdl_name=self.model,
             default_hosted_model_name=_DEFAULT_MODEL_NAME,
@@ -260,7 +265,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
     ) -> List[List[float]]:
         """Async version of _embed."""
         payload = self._prepare_payload(texts, model_type)
-        response_text = await self._client.aget_req(
+        response_text = await self._async_client.aget_req(
             payload=payload,
             extra_headers=self.default_headers,
         )

@@ -135,8 +135,14 @@ async def test_thinking_mode_unsupported_model(
     thinking_model: str, mode: dict, func: Callable
 ) -> None:
     """Test that thinking mode is handled gracefully for unsupported models."""
-    unsupported_model = "meta/llama3-8b-instruct"
-    llm = ChatNVIDIA(model=unsupported_model, **mode).with_thinking_mode(enabled=True)
+    unsupported_model = "meta/llama-3.1-8b-instruct"
+    base_llm = ChatNVIDIA(model=unsupported_model, **mode)
+    if not base_llm._client.is_hosted:
+        pytest.xfail(
+            "Downloadable/local NIM may not host the hardcoded unsupported model "
+            "`meta/llama-3.1-8b-instruct` and can return 404."
+        )
+    llm = base_llm.with_thinking_mode(enabled=True)
 
     if is_async_func(func):
         response = await func(llm, "What is 2+2?")

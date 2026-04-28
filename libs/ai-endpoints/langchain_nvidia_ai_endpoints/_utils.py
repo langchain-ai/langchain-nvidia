@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import base64
+import logging
+import os
+import urllib.parse
 from typing import (
     Any,
     Dict,
@@ -14,6 +18,40 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _is_url(s: str) -> bool:
+    try:
+        result = urllib.parse.urlparse(s)
+        return all([result.scheme, result.netloc])
+    except Exception as e:
+        logger.debug(f"Unable to parse URL: {e}")
+        return False
+
+
+def _url_to_b64_string(image_source: str) -> str:
+    try:
+        if _is_url(image_source):
+            return image_source
+        elif image_source.startswith("data:image"):
+            return image_source
+        elif os.path.exists(image_source):
+            with open(image_source, "rb") as f:
+                image_data = f.read()
+                import filetype  # type: ignore
+
+                kind = filetype.guess(image_data)
+                image_type = kind.extension if kind else "unknown"
+                encoded = base64.b64encode(image_data).decode("utf-8")
+                return f"data:image/{image_type};base64,{encoded}"
+        else:
+            raise ValueError(
+                "The provided string is not a valid URL, base64, or file path."
+            )
+    except Exception as e:
+        raise ValueError(f"Unable to process the provided image source: {e}")
 
 
 def _normalize_content(content: Any) -> Any:

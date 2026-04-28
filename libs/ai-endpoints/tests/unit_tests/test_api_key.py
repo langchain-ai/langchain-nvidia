@@ -28,7 +28,7 @@ def mock_endpoint_models(requests_mock: Mocker) -> None:
         json={
             "data": [
                 {
-                    "id": "meta/llama3-8b-instruct",
+                    "id": "meta/llama-3.1-8b-instruct",
                     "object": "model",
                     "created": 1234567890,
                     "owned_by": "OWNER",
@@ -61,8 +61,13 @@ def test_create_without_api_key(public_class: type) -> None:
     with no_env_var("NVIDIA_API_KEY"):
         with pytest.warns(UserWarning) as record:
             public_class()
-        assert len(record) == 1
-        assert "API key is required for the hosted" in str(record[0].message)
+        records = [
+            r
+            for r in record
+            if "is deprecated and may be removed" not in str(r.message)
+        ]
+        assert len(records) == 1
+        assert "API key is required for the hosted" in str(records[0].message)
 
 
 def test_create_unknown_url_no_api_key(public_class: type) -> None:

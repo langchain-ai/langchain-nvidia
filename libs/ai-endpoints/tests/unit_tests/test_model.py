@@ -1,3 +1,4 @@
+import warnings
 from itertools import chain
 from typing import Any
 
@@ -167,7 +168,11 @@ def test_default(public_class: type) -> None:
 
 @pytest.mark.parametrize(
     "model, client",
-    [(model.id, model.client) for model in MODEL_TABLE.values()],
+    [
+        (model.id, model.client)
+        for model in MODEL_TABLE.values()
+        if not model.deprecated
+    ],
 )
 def test_all_incompatible(public_class: type, model: str, client: str) -> None:
     if client == public_class.__name__:
@@ -178,3 +183,19 @@ def test_all_incompatible(public_class: type, model: str, client: str) -> None:
 
     assert len(record) == 1
     assert "incompatible with client" in str(record[0].message)
+
+
+def test_deprecated_model_hosted_warns() -> None:
+    with pytest.warns(UserWarning, match="is deprecated and may be removed"):
+        ChatNVIDIA(model="meta/llama3-8b-instruct", api_key="BOGUS")
+
+
+def test_deprecated_model_self_hosted_does_not_warn() -> None:
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        ChatNVIDIA(
+            model="meta/llama3-8b-instruct",
+            base_url="https://test_url/v1",
+            api_key="BOGUS",
+        )
+    assert not any("is deprecated and may be removed" in str(w.message) for w in record)

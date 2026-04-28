@@ -47,7 +47,16 @@ class Model(BaseModel):
 
     # why do we have a model_type? because ChatNVIDIA can speak both chat and vlm.
     model_type: Optional[
-        Literal["chat", "vlm", "nv-vlm", "embedding", "ranking", "completions", "qa"]
+        Literal[
+            "chat",
+            "vlm",
+            "nv-vlm",
+            "embedding",
+            "ranking",
+            "ranking-vlm",
+            "completions",
+            "qa",
+        ]
     ] = None
 
     client: Optional[
@@ -74,6 +83,8 @@ class Model(BaseModel):
 
     base_model: Optional[str] = None
 
+    deprecated: Optional[bool] = False
+
     def __hash__(self) -> int:
         return hash(self.id)
 
@@ -83,7 +94,7 @@ class Model(BaseModel):
             supported = {
                 "ChatNVIDIA": ("chat", "vlm", "nv-vlm", "qa"),
                 "NVIDIAEmbeddings": ("embedding",),
-                "NVIDIARerank": ("ranking",),
+                "NVIDIARerank": ("ranking", "ranking-vlm"),
                 "NVIDIA": ("completions",),
             }
             if self.model_type not in supported.get(self.client, ()):
@@ -123,12 +134,14 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-gemma-7b", "playground_gemma_7b", "gemma_7b"],
+        deprecated=True,
     ),
     "mistralai/mistral-7b-instruct-v0.2": Model(
         id="mistralai/mistral-7b-instruct-v0.2",
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-mistral-7b-instruct-v2", "playground_mistral_7b", "mistral_7b"],
+        deprecated=True,
     ),
     "mistralai/mixtral-8x7b-instruct-v0.1": Model(
         id="mistralai/mixtral-8x7b-instruct-v0.1",
@@ -146,6 +159,7 @@ CHAT_MODEL_TABLE = {
         id="gotocompany/gemma-2-9b-cpt-sahabatai-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "mistralai/mixtral-8x22b-instruct-v0.1": Model(
         id="mistralai/mixtral-8x22b-instruct-v0.1",
@@ -163,48 +177,56 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-llama3-8b"],
+        deprecated=True,
     ),
     "meta/llama3-70b-instruct": Model(
         id="meta/llama3-70b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-llama3-70b"],
+        deprecated=True,
     ),
     "microsoft/phi-3-mini-128k-instruct": Model(
         id="microsoft/phi-3-mini-128k-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-phi-3-mini"],
+        deprecated=True,
     ),
     "microsoft/phi-3-mini-4k-instruct": Model(
         id="microsoft/phi-3-mini-4k-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-phi-3-mini-4k", "playground_phi2", "phi2"],
+        deprecated=True,
     ),
     "aisingapore/sea-lion-7b-instruct": Model(
         id="aisingapore/sea-lion-7b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-sea-lion-7b-instruct"],
+        deprecated=True,
     ),
     "microsoft/phi-3-small-8k-instruct": Model(
         id="microsoft/phi-3-small-8k-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-phi-3-small-8k-instruct"],
+        deprecated=True,
     ),
     "microsoft/phi-3-small-128k-instruct": Model(
         id="microsoft/phi-3-small-128k-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-phi-3-small-128k-instruct"],
+        deprecated=True,
     ),
     "microsoft/phi-3-medium-4k-instruct": Model(
         id="microsoft/phi-3-medium-4k-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-phi-3-medium-4k-instruct"],
+        deprecated=True,
     ),
     "ibm/granite-3.3-8b-instruct": Model(
         id="ibm/granite-3.3-8b-instruct",
@@ -214,17 +236,20 @@ CHAT_MODEL_TABLE = {
         supports_tools=True,
         thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+        deprecated=True,
     ),
     "ibm/granite-guardian-3.0-8b": Model(
         id="ibm/granite-guardian-3.0-8b",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "mediatek/breeze-7b-instruct": Model(
         id="mediatek/breeze-7b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-breeze-7b-instruct"],
+        deprecated=True,
     ),
     "upstage/solar-10.7b-instruct": Model(
         id="upstage/solar-10.7b-instruct",
@@ -256,12 +281,14 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-gemma-2-9b-it"],
+        deprecated=True,
     ),
     "google/gemma-2-27b-it": Model(
         id="google/gemma-2-27b-it",
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-gemma-2-27b-it"],
+        deprecated=True,
     ),
     "google/gemma-3-12b-it": Model(
         id="google/gemma-3-12b-it",
@@ -272,6 +299,7 @@ CHAT_MODEL_TABLE = {
         id="google/gemma-3-1b-it",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "google/gemma-3-27b-it": Model(
         id="google/gemma-3-27b-it",
@@ -297,12 +325,14 @@ CHAT_MODEL_TABLE = {
         id="google/shieldgemma-9b",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "microsoft/phi-3-medium-128k-instruct": Model(
         id="microsoft/phi-3-medium-128k-instruct",
         model_type="chat",
         client="ChatNVIDIA",
         aliases=["ai-phi-3-medium-128k-instruct"],
+        deprecated=True,
     ),
     "nv-mistralai/mistral-nemo-12b-instruct": Model(
         id="nv-mistralai/mistral-nemo-12b-instruct",
@@ -310,6 +340,7 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_tools=True,
         supports_structured_output=True,
+        deprecated=True,
     ),
     "meta/llama-3.1-8b-instruct": Model(
         id="meta/llama-3.1-8b-instruct",
@@ -331,6 +362,7 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_tools=True,
         supports_structured_output=True,
+        deprecated=True,
     ),
     "meta/llama-guard-4-12b": Model(
         id="meta/llama-guard-4-12b",
@@ -341,6 +373,7 @@ CHAT_MODEL_TABLE = {
         id="mistralai/mamba-codestral-7b-v0.1",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "google/gemma-2-2b-it": Model(
         id="google/gemma-2-2b-it",
@@ -351,11 +384,13 @@ CHAT_MODEL_TABLE = {
         id="mistralai/magistral-small-2506",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "mistralai/mistral-medium-3-instruct": Model(
         id="mistralai/mistral-medium-3-instruct",
         model_type="vlm",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "mistralai/mistral-nemotron": Model(
         id="mistralai/mistral-nemotron",
@@ -367,12 +402,14 @@ CHAT_MODEL_TABLE = {
         id="mistralai/mistral-small-24b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "mistralai/mistral-small-3.1-24b-instruct-2503": Model(
         id="mistralai/mistral-small-3.1-24b-instruct-2503",
         model_type="vlm",
         client="ChatNVIDIA",
         supports_tools=True,
+        deprecated=True,
     ),
     "mistralai/mathstral-7b-v0.1": Model(
         id="mistralai/mathstral-7b-v0.1",
@@ -383,36 +420,43 @@ CHAT_MODEL_TABLE = {
         id="rakuten/rakutenai-7b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "rakuten/rakutenai-7b-chat": Model(
         id="rakuten/rakutenai-7b-chat",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "baichuan-inc/baichuan2-13b-chat": Model(
         id="baichuan-inc/baichuan2-13b-chat",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "thudm/chatglm3-6b": Model(
         id="thudm/chatglm3-6b",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "tiiuae/falcon3-7b-instruct": Model(
         id="tiiuae/falcon3-7b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "microsoft/phi-3.5-mini-instruct": Model(
         id="microsoft/phi-3.5-mini-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "microsoft/phi-4-mini-flash-reasoning": Model(
         id="microsoft/phi-4-mini-flash-reasoning",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "microsoft/phi-4-mini-instruct": Model(
         id="microsoft/phi-4-mini-instruct",
@@ -429,6 +473,7 @@ CHAT_MODEL_TABLE = {
         id="utter-project/eurollm-9b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "nvidia/nemotron-mini-4b-instruct": Model(
         id="nvidia/nemotron-mini-4b-instruct",
@@ -439,11 +484,13 @@ CHAT_MODEL_TABLE = {
         id="yentinglin/llama-3-taiwan-70b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "tokyotech-llm/llama-3-swallow-70b-instruct-v0.1": Model(
         id="tokyotech-llm/llama-3-swallow-70b-instruct-v0.1",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "abacusai/dracarys-llama-3.1-70b-instruct": Model(
         id="abacusai/dracarys-llama-3.1-70b-instruct",
@@ -454,6 +501,7 @@ CHAT_MODEL_TABLE = {
         id="qwen/qwen2-7b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "meta/llama-3.2-1b-instruct": Model(
         id="meta/llama-3.2-1b-instruct",
@@ -474,22 +522,26 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         supports_structured_output=True,
+        deprecated=True,
     ),
     "institute-of-science-tokyo/llama-3.1-swallow-70b-instruct-v0.1": Model(
         id="institute-of-science-tokyo/llama-3.1-swallow-70b-instruct-v0.1",
         model_type="chat",
         client="ChatNVIDIA",
         supports_structured_output=True,
+        deprecated=True,
     ),
     "igenius/colosseum_355b_instruct_16k": Model(
         id="igenius/colosseum_355b_instruct_16k",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "igenius/italia_10b_instruct_16k": Model(
         id="igenius/italia_10b_instruct_16k",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "zyphra/zamba2-7b-instruct": Model(
         id="zyphra/zamba2-7b-instruct",
@@ -501,6 +553,7 @@ CHAT_MODEL_TABLE = {
         model_type="chat",
         client="ChatNVIDIA",
         supports_structured_output=True,
+        deprecated=True,
     ),
     "nvidia/llama-3.1-nemoguard-8b-content-safety": Model(
         id="nvidia/llama-3.1-nemoguard-8b-content-safety",
@@ -534,11 +587,13 @@ CHAT_MODEL_TABLE = {
         id="qwen/qwen2.5-coder-7b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "qwen/qwen2.5-7b-instruct": Model(
         id="qwen/qwen2.5-7b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "qwen/qwen3-235b-a22b": Model(
         id="qwen/qwen3-235b-a22b",
@@ -548,48 +603,57 @@ CHAT_MODEL_TABLE = {
         supports_tools=True,
         thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+        deprecated=True,
     ),
     "qwen/qwq-32b": Model(
         id="qwen/qwq-32b",
         model_type="chat",
         client="ChatNVIDIA",
         supports_tools=True,
+        deprecated=True,
     ),
     "nvidia/llama-3.1-nemotron-70b-reward": Model(
         id="nvidia/llama-3.1-nemotron-70b-reward",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "deepseek-ai/deepseek-r1": Model(
         id="deepseek-ai/deepseek-r1",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "deepseek-ai/deepseek-r1-0528": Model(
         id="deepseek-ai/deepseek-r1-0528",
         model_type="chat",
         client="ChatNVIDIA",
         supports_tools=True,
+        deprecated=True,
     ),
     "deepseek-ai/deepseek-r1-distill-llama-8b": Model(
         id="deepseek-ai/deepseek-r1-distill-llama-8b",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "deepseek-ai/deepseek-r1-distill-qwen-14b": Model(
         id="deepseek-ai/deepseek-r1-distill-qwen-14b",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "deepseek-ai/deepseek-r1-distill-qwen-32b": Model(
         id="deepseek-ai/deepseek-r1-distill-qwen-32b",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "deepseek-ai/deepseek-r1-distill-qwen-7b": Model(
         id="deepseek-ai/deepseek-r1-distill-qwen-7b",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "nvidia/llama-3.1-nemotron-nano-8b-v1": Model(
         id="nvidia/llama-3.1-nemotron-nano-8b-v1",
@@ -607,6 +671,7 @@ CHAT_MODEL_TABLE = {
         thinking_prefix="detailed thinking on",
         no_thinking_prefix="detailed thinking off",
         supports_tools=True,
+        deprecated=True,
     ),
     "nvidia/llama-3.1-nemotron-ultra-253b-v1": Model(
         id="nvidia/llama-3.1-nemotron-ultra-253b-v1",
@@ -616,6 +681,7 @@ CHAT_MODEL_TABLE = {
         thinking_prefix="detailed thinking on",
         no_thinking_prefix="detailed thinking off",
         supports_tools=True,
+        deprecated=True,
     ),
     "nvidia/llama-3.3-nemotron-super-49b-v1": Model(
         id="nvidia/llama-3.3-nemotron-super-49b-v1",
@@ -662,11 +728,13 @@ CHAT_MODEL_TABLE = {
         id="marin/marin-8b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "speakleash/bielik-11b-v2.3-instruct": Model(
         id="speakleash/bielik-11b-v2.3-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "nvidia/nvidia-nemotron-nano-9b-v2": Model(
         id="nvidia/nvidia-nemotron-nano-9b-v2",
@@ -685,6 +753,7 @@ CHAT_MODEL_TABLE = {
         supports_thinking=True,
         thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+        deprecated=True,
     ),
     "bytedance/seed-oss-36b-instruct": Model(
         id="bytedance/seed-oss-36b-instruct",
@@ -730,6 +799,7 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_tools=True,
         supports_structured_output=True,
+        deprecated=True,
     ),
     "moonshotai/kimi-k2-thinking": Model(
         id="moonshotai/kimi-k2-thinking",
@@ -775,6 +845,72 @@ CHAT_MODEL_TABLE = {
         thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
+    "minimaxai/minimax-m2.5": Model(
+        id="minimaxai/minimax-m2.5", model_type="chat", client="ChatNVIDIA"
+    ),
+    "google/gemma-4-31b-it": Model(
+        id="google/gemma-4-31b-it",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
+    "minimaxai/minimax-m2.7": Model(
+        id="minimaxai/minimax-m2.7",
+        model_type="chat",
+        client="ChatNVIDIA",
+    ),
+    "z-ai/glm4.7": Model(
+        id="z-ai/glm4.7",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+        deprecated=True,
+    ),
+    "z-ai/glm5": Model(
+        id="z-ai/glm5",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+        deprecated=True,
+    ),
+    "z-ai/glm-5.1": Model(
+        id="z-ai/glm-5.1",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
+    "deepseek-ai/deepseek-v4-pro": Model(
+        id="deepseek-ai/deepseek-v4-pro",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"thinking": False}},
+    ),
+    "deepseek-ai/deepseek-v4-flash": Model(
+        id="deepseek-ai/deepseek-v4-flash",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"thinking": False}},
+    ),
 }
 
 QA_MODEL_TABLE = {
@@ -783,6 +919,7 @@ QA_MODEL_TABLE = {
         model_type="qa",
         client="ChatNVIDIA",
         aliases=["ai-chatqa-1.5-8b"],
+        deprecated=True,
     ),
 }
 
@@ -805,6 +942,7 @@ VLM_MODEL_TABLE = {
         id="microsoft/phi-3.5-vision-instruct",
         model_type="vlm",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "nvidia/nvclip": Model(
         id="nvidia/nvclip",
@@ -820,6 +958,7 @@ VLM_MODEL_TABLE = {
         id="nvidia/riva-translate-4b-instruct",
         model_type="chat",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "meta/llama-3.2-11b-vision-instruct": Model(
         id="meta/llama-3.2-11b-vision-instruct",
@@ -842,6 +981,7 @@ VLM_MODEL_TABLE = {
         id="meta/llama-4-scout-17b-16e-instruct",
         model_type="vlm",
         client="ChatNVIDIA",
+        deprecated=True,
     ),
     "nvidia/llama-3.1-nemotron-nano-vl-8b-v1": Model(
         id="nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
@@ -866,6 +1006,47 @@ VLM_MODEL_TABLE = {
         supports_thinking=True,
         thinking_param_enable={"chat_template_kwargs": {"thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"thinking": False}},
+        deprecated=True,
+    ),
+    "nvidia/nemotron-nano-12b-v2-vl": Model(
+        id="nvidia/nemotron-nano-12b-v2-vl",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+        thinking_prefix="/think",
+        no_thinking_prefix="/no_think",
+    ),
+    "qwen/qwen3.5-397b-a17b": Model(
+        id="qwen/qwen3.5-397b-a17b",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
+    "qwen/qwen3.5-122b-a10b": Model(
+        id="qwen/qwen3.5-122b-a10b",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
+    "mistralai/mistral-small-4-119b-2603": Model(
+        id="mistralai/mistral-small-4-119b-2603",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+        thinking_param_enable={"reasoning_effort": "high"},
+        thinking_param_disable={"reasoning_effort": None},
+    ),
+    "nvidia/ising-calibration-1-35b-a3b": Model(
+        id="nvidia/ising-calibration-1-35b-a3b",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
 }
 
@@ -875,6 +1056,7 @@ EMBEDDING_MODEL_TABLE = {
         model_type="embedding",
         client="NVIDIAEmbeddings",
         aliases=["ai-arctic-embed-l"],
+        deprecated=True,
     ),
     "NV-Embed-QA": Model(
         id="NV-Embed-QA",
@@ -895,6 +1077,7 @@ EMBEDDING_MODEL_TABLE = {
         id="nvidia/nv-embedqa-mistral-7b-v2",
         model_type="embedding",
         client="NVIDIAEmbeddings",
+        deprecated=True,
     ),
     "nvidia/nv-embedqa-e5-v5": Model(
         id="nvidia/nv-embedqa-e5-v5",
@@ -915,11 +1098,13 @@ EMBEDDING_MODEL_TABLE = {
         id="nvidia/llama-3.2-nv-embedqa-1b-v2",
         model_type="embedding",
         client="NVIDIAEmbeddings",
+        deprecated=True,
     ),
     "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1": Model(
         id="nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
         model_type="embedding",
         client="NVIDIAEmbeddings",
+        deprecated=True,
     ),
     "nvidia/nv-embedcode-7b-v1": Model(
         id="nvidia/nv-embedcode-7b-v1",
@@ -957,6 +1142,7 @@ RANKING_MODEL_TABLE = {
         model_type="ranking",
         client="NVIDIARerank",
         endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-3_2-nv-rerankqa-1b-v2/reranking",
+        deprecated=True,
     ),
     "nvidia/llama-nemotron-rerank-1b-v2": Model(
         id="nvidia/llama-nemotron-rerank-1b-v2",
@@ -966,16 +1152,27 @@ RANKING_MODEL_TABLE = {
     ),
 }
 
+RANKING_VLM_MODEL_TABLE = {
+    "nvidia/llama-nemotron-rerank-vl-1b-v2": Model(
+        id="nvidia/llama-nemotron-rerank-vl-1b-v2",
+        model_type="ranking-vlm",
+        client="NVIDIARerank",
+        endpoint="https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-nemotron-rerank-vl-1b-v2/reranking",
+    ),
+}
+
 COMPLETION_MODEL_TABLE = {
     "bigcode/starcoder2-7b": Model(
         id="bigcode/starcoder2-7b",
         model_type="completions",
         client="NVIDIA",
+        deprecated=True,
     ),
     "nvidia/mistral-nemo-minitron-8b-base": Model(
         id="nvidia/mistral-nemo-minitron-8b-base",
         model_type="completions",
         client="NVIDIA",
+        deprecated=True,
     ),
 }
 
@@ -997,6 +1194,7 @@ MODEL_TABLE = {
     **VLM_MODEL_TABLE,
     **EMBEDDING_MODEL_TABLE,
     **RANKING_MODEL_TABLE,
+    **RANKING_VLM_MODEL_TABLE,
     **COMPLETION_MODEL_TABLE,
 }
 

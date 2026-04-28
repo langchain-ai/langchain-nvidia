@@ -229,8 +229,13 @@ async def test_params_unknown(
 
     with pytest.warns(UserWarning) as record:
         llm = NVIDIA(api_key="BOGUS", init_unknown="INIT")
-    assert len(record) == 1
-    assert "Unrecognized, ignored arguments: {'init_unknown'}" in str(record[0].message)
+    records = [
+        r for r in record if "is deprecated and may be removed" not in str(r.message)
+    ]
+    assert len(records) == 1
+    assert "Unrecognized, ignored arguments: {'init_unknown'}" in str(
+        records[0].message
+    )
 
     with pytest.warns(UserWarning) as record:
         if is_async:
