@@ -13,7 +13,7 @@ from langchain_nvidia_ai_endpoints import (
     NVIDIAEmbeddings,
     NVIDIARerank,
 )
-from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
+from langchain_nvidia_ai_endpoints._common import _NVIDIAAsyncClient
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE
 
 
@@ -181,7 +181,10 @@ def mock_http(
     aio_sess.get.side_effect = _get_side_effect
 
     monkeypatch.setattr(
-        _NVIDIAClient, "_create_async_session", lambda self: aio_sess, raising=True
+        _NVIDIAAsyncClient,
+        "_create_async_session",
+        lambda self: aio_sess,
+        raising=True,
     )
 
     return MockHTTP(requests_mock, aio_sess, _history)
