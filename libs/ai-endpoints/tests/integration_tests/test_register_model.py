@@ -22,7 +22,7 @@ from langchain_nvidia_ai_endpoints import (
         (
             ChatNVIDIA,
             "meta/llama-3.1-8b-instruct",
-            "https://integrate.api.nvidia.com/v1/chat/completions",
+            "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/e62a4350-2218-4cf5-9262-112432d239f8",
         ),
         (
             NVIDIAEmbeddings,
