@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  POETRY_VERSION: "1.7.1"
+  POETRY_VERSION: "2.3.3"
 
 jobs:
   build:
