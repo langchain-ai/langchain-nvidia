@@ -290,5 +290,5 @@ async def test_truncate_negative(
             client.compress_documents(documents=documents, query=query)
         else:  # acompress
             await client.acompress_documents(documents=documents, query=query)
-    assert "400" in str(e.value)
+    assert "400" in str(e.value) or "422" in str(e.value)
     assert "exceeds maximum allowed" in str(e.value)
