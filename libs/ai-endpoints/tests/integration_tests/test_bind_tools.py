@@ -789,8 +789,9 @@ def test_unknown_warns(mode: dict) -> None:
         model for model in ChatNVIDIA.get_available_models() if not model.supports_tools
     ]
     assert candidates, "All models support tools"
+    llm = ChatNVIDIA(model=candidates[0].id, **mode)
     with pytest.warns(UserWarning) as record:
-        ChatNVIDIA(model=candidates[0].id, **mode).bind_tools([xxyyzz])
+        llm.bind_tools([xxyyzz])
     assert len(record) == 1
     assert "not known to support tools" in str(record[0].message)
 
