@@ -116,7 +116,7 @@ def test_notebook_zen_tool_pattern(real_backend: OpenShellSandbox) -> None:
     """Validate the demo notebook's @tool-around-execute pattern end-to-end.
 
     This mirrors `make_zen_tool` in
-    ``docs/nvidia_openshell_sandbox.ipynb``. We don't assert on whether the
+    ``docs/sandboxes/nvidia_openshell_sandbox.ipynb``. We don't assert on whether the
     sandbox's network policy allows ``api.github.com`` (that's the
     operator's choice and is what the notebook explicitly demos both ways).
     We only assert the wrapper composes cleanly with a

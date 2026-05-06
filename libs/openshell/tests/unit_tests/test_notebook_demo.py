@@ -1,6 +1,6 @@
 """Validate the deny->allow tool pattern shown in the demo notebook.
 
-The notebook (`libs/openshell/docs/nvidia_openshell_sandbox.ipynb`)
+The notebook (`libs/openshell/docs/sandboxes/nvidia_openshell_sandbox.ipynb`)
 demonstrates a `langchain_core.tools.@tool`-decorated function that calls
 `OpenShellSandbox.execute("curl ...")` and returns the result to a Deep
 Agent. We assert that the wrapper composes correctly with that pattern in
@@ -119,7 +119,10 @@ def test_deny_then_allow_flow_with_one_backend(fake_sandbox: FakeSandbox) -> Non
 @pytest.fixture(scope="module")
 def notebook() -> dict:
     nb_path = (
-        Path(__file__).resolve().parents[2] / "docs" / "nvidia_openshell_sandbox.ipynb"
+        Path(__file__).resolve().parents[2]
+        / "docs"
+        / "sandboxes"
+        / "nvidia_openshell_sandbox.ipynb"
     )
     return json.loads(nb_path.read_text())
 

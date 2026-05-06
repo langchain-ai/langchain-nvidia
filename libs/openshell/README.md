@@ -115,7 +115,7 @@ openshell policy set <sandbox-name> --policy ./tighten.yaml --wait
 ```
 
 A complete example policy covering all four layers ships in
-[`docs/example-policy.yaml`](docs/example-policy.yaml). Copy, edit, point
+[`docs/sandboxes/example-policy.yaml`](docs/sandboxes/example-policy.yaml). Copy, edit, point
 the CLI at it. To change the locked Filesystem or Process defaults
 permanently for a fleet, bake a custom `/etc/openshell/policy.yaml` into a
 container image (see the OpenShell
@@ -180,9 +180,11 @@ the Daytona, Modal, and Runloop integrations.
 
 ## Notebook walkthrough
 
-See [`docs/nvidia_openshell_sandbox.ipynb`](docs/nvidia_openshell_sandbox.ipynb)
+See [`docs/sandboxes/nvidia_openshell_sandbox.ipynb`](docs/sandboxes/nvidia_openshell_sandbox.ipynb)
 for a step-by-step tutorial including local-only setup, `ChatNVIDIA` agent
-integration, file transfer, and policy-enforced behavior demos.
+integration, file transfer, and policy-enforced behavior demos. See
+[`docs/providers/nvidia.md`](docs/providers/nvidia.md) for the umbrella
+provider page.
 
 ## Compatibility
 
