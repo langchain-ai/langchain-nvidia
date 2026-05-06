@@ -45,13 +45,15 @@ This is the **sandbox-as-tool** pattern: the agent stays out, the tools go in.
 pip install langchain-nvidia-openshell
 ```
 
-You also need [the OpenShell CLI / gateway](https://docs.nvidia.com/openshell/latest/get-started/quickstart/):
+You also need [the OpenShell CLI / gateway](https://docs.nvidia.com/openshell/latest/get-started/quickstart/), pinned to match the SDK:
 
 ```bash
-uv tool install -U openshell
-# or
+uv tool install -U "openshell>=0.0.36,<0.1"
+# or, via the official installer (latest):
 curl -LsSf https://raw.githubusercontent.com/NVIDIA/OpenShell/main/install.sh | sh
 ```
+
+Confirm with `openshell --version` — the wire protocol expects 0.0.36+.
 
 ## Quickstart (local)
 
@@ -190,7 +192,7 @@ integration, file transfer, and policy-enforced behavior demos.
 |---|---|
 | Python | 3.12 – 3.13 (the OpenShell SDK requires 3.12+) |
 | `deepagents` | `>=0.5.0,<0.6.0` |
-| `openshell` (NVIDIA SDK) | `>=0.0.36,<0.1` (alpha; pinned tightly) |
+| `openshell` (NVIDIA SDK + CLI) | `>=0.0.36,<0.1` — both ship from the same `openshell` package; verify with `openshell --version` |
 | LangChain Deep Agents `BaseSandbox` | follows `deepagents` |
 
 ## License
