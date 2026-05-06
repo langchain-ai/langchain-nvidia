@@ -112,6 +112,37 @@ def test_python_invocation(real_backend: OpenShellSandbox) -> None:
     assert "4" in result.output
 
 
+def test_notebook_zen_tool_pattern(real_backend: OpenShellSandbox) -> None:
+    """Validate the demo notebook's @tool-around-execute pattern end-to-end.
+
+    This mirrors `make_zen_tool` in
+    ``docs/nvidia_openshell_sandbox.ipynb``. We don't assert on whether the
+    sandbox's network policy allows ``api.github.com`` (that's the
+    operator's choice and is what the notebook explicitly demos both ways).
+    We only assert the wrapper composes cleanly with a
+    ``langchain_core.tools.@tool``: success returns a non-empty string,
+    denial returns a ``Tool failed`` string. Either is a valid outcome.
+    """
+    from langchain_core.tools import tool
+
+    @tool
+    def github_zen() -> str:
+        """Fetch a Zen of GitHub quote (a short proverb)."""
+        result = real_backend.execute(
+            "curl -sSf --max-time 5 https://api.github.com/zen",
+        )
+        if result.exit_code != 0:
+            return f"Tool failed (exit {result.exit_code}): {result.output[:200]}"
+        return result.output.strip()
+
+    out = github_zen.invoke({})
+
+    assert isinstance(out, str)
+    assert out  # non-empty either way
+    # Cross-check: the output is either a quote or a structured failure.
+    assert out.startswith("Tool failed") or len(out.splitlines()) <= 3
+
+
 # ---------------------------------------------------------------------------
 # Standard conformance suite
 # ---------------------------------------------------------------------------
