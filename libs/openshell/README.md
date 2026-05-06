@@ -76,6 +76,59 @@ with openshell.Sandbox() as sb:
     print(backend.download_files(["/sandbox/hello.py"])[0].content)
 ```
 
+## Policies & security model
+
+OpenShell enforces isolation across **four declarative policy layers**.
+`OpenShellSandbox` is policy-agnostic — the sandbox you pass in already
+carries its policy. Authoring and applying policy stays entirely in the
+OpenShell CLI (no Python protobufs).
+
+| Layer | What it controls | Enforced by | Set at create | Hot-reloadable |
+|---|---|---|---|---|
+| **Filesystem** | RO/RW mounts inside the sandbox | Linux Landlock LSM | ✅ | ❌ locked once running |
+| **Network** | Outbound hosts, ports, HTTP methods/paths | In-sandbox HTTP CONNECT proxy + OPA/Rego | ✅ | ✅ via `openshell policy set` |
+| **Process** | Run-as user/group, syscall filter | seccomp BPF + dropped privileges | ✅ | ❌ locked once running |
+| **Inference** | Which LLM endpoints `inference.local` proxies to | Sandbox-local inference router | ✅ | ✅ via `openshell policy set` |
+
+The stock `base` image ships a sensible default: RO `/usr /lib /etc
+/app /var/log /proc/self /dev/urandom`, RW `/sandbox /tmp /dev/null`,
+**default-deny outbound network**, restricted `sandbox` user, local
+inference router. Run `openshell sandbox create -- bash` and you get all of
+the above.
+
+### Two CLI workflows for picking your own policy
+
+**1. Set everything at create time** — the only path that can change the
+locked Filesystem and Process layers:
+
+```bash
+openshell sandbox create \
+  --policy ./example-policy.yaml \
+  --keep --no-tty -- bash
+```
+
+**2. Hot-reload the running sandbox** — works for Network and Inference,
+no recreate required:
+
+```bash
+openshell policy set <sandbox-name> --policy ./tighten.yaml --wait
+```
+
+A complete example policy covering all four layers ships in
+[`docs/example-policy.yaml`](docs/example-policy.yaml). Copy, edit, point
+the CLI at it. To change the locked Filesystem or Process defaults
+permanently for a fleet, bake a custom `/etc/openshell/policy.yaml` into a
+container image (see the OpenShell
+[BYOC example](https://github.com/NVIDIA/OpenShell/tree/main/examples/bring-your-own-container)).
+
+### Further reading
+
+- [OpenShell docs](https://docs.nvidia.com/openshell/latest/) — top-level.
+- [Security controls & defaults](https://docs.nvidia.com/openshell/latest/security) — what each setting protects against.
+- [Policy schema reference](https://docs.nvidia.com/openshell/latest/reference/policy-schema) — every YAML field.
+- [`security-policy.md`](https://github.com/NVIDIA/OpenShell/blob/main/architecture/security-policy.md) — design doc with locked-vs-hot-reloadable rationale.
+- [`sandbox-policy-quickstart`](https://github.com/NVIDIA/OpenShell/tree/main/examples/sandbox-policy-quickstart) — runnable demo of the create-then-tighten workflow.
+
 ## Use with Deep Agents + ChatNVIDIA
 
 ```python
