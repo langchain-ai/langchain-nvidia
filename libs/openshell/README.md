@@ -182,9 +182,7 @@ the Daytona, Modal, and Runloop integrations.
 
 See [`docs/sandboxes/nvidia_openshell_sandbox.ipynb`](docs/sandboxes/nvidia_openshell_sandbox.ipynb)
 for a step-by-step tutorial including local-only setup, `ChatNVIDIA` agent
-integration, file transfer, and policy-enforced behavior demos. See
-[`docs/providers/nvidia.md`](docs/providers/nvidia.md) for the umbrella
-provider page.
+integration, file transfer, and policy-enforced behavior demos.
 
 ## Compatibility
 
