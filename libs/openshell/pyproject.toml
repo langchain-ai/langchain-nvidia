@@ -14,9 +14,10 @@ packages = [
 "Source Code" = "https://github.com/langchain-ai/langchain-nvidia/tree/main/libs/openshell"
 
 [tool.poetry.dependencies]
-python = ">=3.11,<4.0"
+# OpenShell's SDK requires Python 3.12+; we follow that floor.
+python = ">=3.12,<4.0"
 deepagents = ">=0.5.0,<0.6.0"
-openshell = ">=0.1"
+openshell = ">=0.0.36,<0.1"
 
 [tool.poetry.group.test]
 optional = true

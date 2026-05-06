@@ -188,9 +188,9 @@ integration, file transfer, and policy-enforced behavior demos.
 
 | Layer | Version |
 |---|---|
-| Python | 3.11 – 3.13 |
+| Python | 3.12 – 3.13 (the OpenShell SDK requires 3.12+) |
 | `deepagents` | `>=0.5.0,<0.6.0` |
-| `openshell` (NVIDIA SDK) | `>=0.1` |
+| `openshell` (NVIDIA SDK) | `>=0.0.36,<0.1` (alpha; pinned tightly) |
 | LangChain Deep Agents `BaseSandbox` | follows `deepagents` |
 
 ## License
