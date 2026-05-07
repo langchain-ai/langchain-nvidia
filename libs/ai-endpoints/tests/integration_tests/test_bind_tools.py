@@ -786,7 +786,9 @@ def test_known_does_not_warn(tool_model: str, mode: dict) -> None:
 
 def test_unknown_warns(mode: dict) -> None:
     candidates = [
-        model for model in ChatNVIDIA.get_available_models() if not model.supports_tools
+        model
+        for model in ChatNVIDIA.get_available_models()
+        if not model.supports_tools and not model.deprecated
     ]
     assert candidates, "All models support tools"
     with pytest.warns(UserWarning) as record:

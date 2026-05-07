@@ -140,6 +140,14 @@ class TestNVIDIAStandard(ChatModelIntegrationTests):
         # Don't return anything since the return type is None
         super().test_structured_output_optional_param(model)
 
+    @pytest.mark.xfail(
+        reason="Backend occasionally ignores tool_choice='required' on benign "
+        "prompts (e.g. 'Hello!'), returning no tool calls",
+        strict=False,
+    )
+    def test_tool_choice(self, model: BaseChatModel) -> None:
+        return super().test_tool_choice(model)
+
     @pytest.mark.xfail(reason="Some models return double-escapes Unicode in tool calls")
     def test_unicode_tool_call_integration(
         self,
