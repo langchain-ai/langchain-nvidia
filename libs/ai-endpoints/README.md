@@ -1,4 +1,4 @@
-# NVIDIA NIM Microservices
+# LangChain NVIDIA AI Endpoints
 
 The `langchain-nvidia-ai-endpoints` package contains LangChain integrations for chat models and embeddings powered by [NVIDIA AI Foundation Models](https://www.nvidia.com/en-us/ai-data-science/foundation-models/), and hosted on the [NVIDIA API Catalog](https://build.nvidia.com/).
 
