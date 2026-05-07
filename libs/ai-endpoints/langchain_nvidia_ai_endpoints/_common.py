@@ -473,7 +473,11 @@ class _NVIDIABaseClient(BaseModel):
         """Format error dictionary"""
         status = rd.get("status") or rd.get("status_code") or "###"
         title = (
-            rd.get("title") or rd.get("error") or rd.get("reason") or "Unknown Error"
+            rd.get("title")
+            or rd.get("message")
+            or rd.get("error")
+            or rd.get("reason")
+            or "Unknown Error"
         )
         header = f"[{status}] {title}"
         body = ""
