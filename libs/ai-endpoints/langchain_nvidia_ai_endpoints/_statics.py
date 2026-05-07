@@ -993,6 +993,11 @@ VLM_MODEL_TABLE = {
         model_type="vlm",
         client="ChatNVIDIA",
     ),
+   "mistralai/ministral-3-14b-instruct-2512": Model(
+        id="mistralai/ministral-3-14b-instruct-2512",
+        model_type="vlm",
+      	client="ChatNVIDIA",
+    ),
     "mistralai/mistral-large-3-675b-instruct-2512": Model(
         id="mistralai/mistral-large-3-675b-instruct-2512",
         model_type="vlm",
