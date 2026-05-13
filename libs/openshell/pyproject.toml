@@ -17,7 +17,7 @@ packages = [
 # OpenShell's SDK requires Python 3.12+; we follow that floor.
 python = ">=3.12,<4.0"
 deepagents = ">=0.5.0,<0.6.0"
-openshell = ">=0.0.36,<0.1"
+openshell = ">=0.0.40,<0.1"
 
 [tool.poetry.group.test]
 optional = true

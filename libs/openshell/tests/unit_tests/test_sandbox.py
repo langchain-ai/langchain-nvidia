@@ -16,6 +16,10 @@ import base64
 import pytest
 
 from langchain_nvidia_openshell import OpenShellSandbox
+from langchain_nvidia_openshell.sandbox import (
+    _DOWNLOAD_BOOTSTRAP,
+    _UPLOAD_BOOTSTRAP,
+)
 
 from .conftest import (
     FakeExecResult,
@@ -27,6 +31,11 @@ from .conftest import (
 # ---------------------------------------------------------------------------
 # Construction / argument validation
 # ---------------------------------------------------------------------------
+
+
+def test_inline_bootstraps_compile() -> None:
+    compile(_UPLOAD_BOOTSTRAP, "<openshell-upload-bootstrap>", "exec")
+    compile(_DOWNLOAD_BOOTSTRAP, "<openshell-download-bootstrap>", "exec")
 
 
 def test_id_proxies_underlying_sandbox(fake_sandbox: FakeSandbox) -> None:

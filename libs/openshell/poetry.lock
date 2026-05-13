@@ -1279,15 +1279,15 @@ files = [
 
 [[package]]
 name = "openshell"
-version = "0.0.36"
+version = "0.0.40"
 description = "OpenShell is the safe, private runtime for autonomous AI agents. "
 optional = false
 python-versions = ">=3.12"
 groups = ["main"]
 files = [
-    {file = "openshell-0.0.36-py3-none-macosx_13_0_arm64.whl", hash = "sha256:35d6fdda7875b46d6d678b001fdf66fe3392cb91aceec631fb030eed362a7eed"},
-    {file = "openshell-0.0.36-py3-none-manylinux_2_39_aarch64.whl", hash = "sha256:e255aa58f3f1b4198674692f770e9f21203e53ae1852c06b372791f9b21e3b67"},
-    {file = "openshell-0.0.36-py3-none-manylinux_2_39_x86_64.whl", hash = "sha256:2f79097e822ada56d123f71555c045dce721cc0991bc5d94c2625f3a759a9c82"},
+    {file = "openshell-0.0.40-py3-none-macosx_13_0_arm64.whl", hash = "sha256:b067839ccffab1cc86ec11627c2f7f2537ce1eed850b32ac74dd1fe93e03f8a0"},
+    {file = "openshell-0.0.40-py3-none-manylinux_2_39_aarch64.whl", hash = "sha256:75c6e0d3c0668476bc9946b198548fb6de41471d06c756889fae41d1c410aee5"},
+    {file = "openshell-0.0.40-py3-none-manylinux_2_39_x86_64.whl", hash = "sha256:9cbb2b3f303f56a13a45fc94bbf46d2bce48383e8f83b8937b103774ca15a5d6"},
 ]
 
 [package.dependencies]
@@ -2727,4 +2727,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "90dfe519cc023b9831edf05d05b0a26ac7c17e849b4540d77d6f532d1b9f7f1d"
+content-hash = "f9db985317cd755060bc0fa55a82a26319ecbc8554d34a21c7c6f746abc2e908"
