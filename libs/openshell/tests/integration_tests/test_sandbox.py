@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+_OPENSHELL_IMPORT_ERROR: ImportError | None
 try:
     import openshell
 except ImportError as exc:  # pragma: no cover - environment-dependent
