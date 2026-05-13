@@ -63,8 +63,8 @@ _UPLOAD_BOOTSTRAP = (
 _DOWNLOAD_BOOTSTRAP = (
     "import base64,os,sys;"
     "p=os.environ['OPENSHELL_DOWNLOAD_PATH'];"
-    "(_=sys.stderr.write('error: is a directory\\n') or sys.exit(2)) "
-    "if os.path.isdir(p) else None;"
+    "os.path.isdir(p) and (sys.stderr.write('error: is a directory\\n'),"
+    "sys.exit(2));"
     "sys.stdout.buffer.write(base64.b64encode(open(p,'rb').read()))"
 )
 
@@ -79,7 +79,8 @@ class _OpenShellExec(Protocol):
     """
 
     @property
-    def id(self) -> str: ...
+    def id(self) -> str:
+        ...
 
     def exec(  # noqa: A003 - matches OpenShell SDK method name
         self,
@@ -90,7 +91,8 @@ class _OpenShellExec(Protocol):
         env: Mapping[str, str] | None = ...,
         stdin: bytes | None = ...,
         timeout_seconds: int | None = ...,
-    ) -> Any: ...
+    ) -> Any:
+        ...
 
 
 # Default per-call timeout (seconds). 30 minutes mirrors the Daytona partner.
