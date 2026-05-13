@@ -30,8 +30,13 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-# Skip the entire module unless the OpenShell SDK is present.
-openshell = pytest.importorskip("openshell")
+try:
+    import openshell
+except ImportError as exc:  # pragma: no cover - environment-dependent
+    openshell = None
+    _OPENSHELL_IMPORT_ERROR = exc
+else:
+    _OPENSHELL_IMPORT_ERROR = None
 
 from langchain_nvidia_openshell import OpenShellSandbox  # noqa: E402
 
@@ -55,15 +60,6 @@ def _gateway_configured() -> bool:
     return (config_home / "openshell" / "active_gateway").exists()
 
 
-pytestmark = pytest.mark.skipif(
-    not _gateway_configured(),
-    reason=(
-        "no OpenShell gateway configured — set OPENSHELL_GATEWAY or run "
-        "`openshell sandbox create` once to populate ~/.config/openshell/."
-    ),
-)
-
-
 # ---------------------------------------------------------------------------
 # Compile-only marker so the file is collectable without a live gateway.
 # Mirrors the convention used in libs/ai-endpoints/tests/integration_tests.
@@ -75,6 +71,17 @@ def test_compile_marker() -> None:
     """Placeholder so `pytest --collect-only` picks something up."""
 
 
+def _require_openshell_gateway() -> None:
+    """Skip runtime tests unless the SDK imports and a gateway is configured."""
+    if _OPENSHELL_IMPORT_ERROR is not None:
+        pytest.skip(f"OpenShell SDK import failed: {_OPENSHELL_IMPORT_ERROR}")
+    if not _gateway_configured():
+        pytest.skip(
+            "no OpenShell gateway configured — set OPENSHELL_GATEWAY or run "
+            "`openshell sandbox create` once to populate ~/.config/openshell/."
+        )
+
+
 # ---------------------------------------------------------------------------
 # Smoke: end-to-end against a real sandbox
 # ---------------------------------------------------------------------------
@@ -82,6 +89,8 @@ def test_compile_marker() -> None:
 
 @pytest.fixture(scope="module")
 def real_backend() -> "Iterator[OpenShellSandbox]":
+    _require_openshell_gateway()
+    assert openshell is not None
     sandbox = openshell.Sandbox()
     sandbox.__enter__()
     try:
@@ -166,6 +175,8 @@ if SandboxIntegrationTests is not None:
 
         @pytest.fixture(scope="class")
         def sandbox(self) -> "Iterator[SandboxBackendProtocol]":
+            _require_openshell_gateway()
+            assert openshell is not None
             sandbox = openshell.Sandbox()
             sandbox.__enter__()
             try:
