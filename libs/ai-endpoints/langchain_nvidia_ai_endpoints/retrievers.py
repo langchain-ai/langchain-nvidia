@@ -133,9 +133,12 @@ class NVIDIARAGRetriever(BaseRetriever):
         description=("Number of top results from vector DB before reranking."),
     )
 
-    vdb_endpoint: str = Field(
-        default="http://milvus:19530",
-        description="Endpoint URL of the vector database server.",
+    vdb_endpoint: Optional[str] = Field(
+        default=None,
+        description=(
+            "Endpoint URL of the vector database server. "
+            "When omitted, the RAG server uses its configured vector store URL."
+        ),
     )
 
     enable_reranker: bool = Field(
@@ -212,7 +215,6 @@ class NVIDIARAGRetriever(BaseRetriever):
             "query": query,
             "reranker_top_k": self.k,
             "vdb_top_k": self.vdb_top_k,
-            "vdb_endpoint": self.vdb_endpoint,
             "collection_names": self.collection_names,
             "messages": self.messages,
             "enable_query_rewriting": self.enable_query_rewriting,
@@ -221,6 +223,8 @@ class NVIDIARAGRetriever(BaseRetriever):
             "enable_citations": self.enable_citations,
             "confidence_threshold": self.confidence_threshold,
         }
+        if self.vdb_endpoint is not None:
+            payload["vdb_endpoint"] = self.vdb_endpoint
         if self.filter_expr is not None:
             payload["filter_expr"] = self.filter_expr
         if self.embedding_model is not None:

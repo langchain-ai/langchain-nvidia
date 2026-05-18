@@ -72,6 +72,18 @@ def test_nvidia_retriever_build_payload() -> None:
     assert payload["collection_names"] == ["col1"]
     assert payload["enable_reranker"] is True
     assert payload["filter_expr"] == 'content_metadata["x"] == "y"'
+    assert "vdb_endpoint" not in payload
+
+
+def test_nvidia_retriever_build_payload_with_vdb_endpoint() -> None:
+    """Test vdb_endpoint is included only when explicitly set."""
+    retriever = NVIDIARAGRetriever(
+        base_url="http://localhost:8081",
+        collection_names=["col1"],
+        vdb_endpoint="http://elasticsearch:9200",
+    )
+    payload = retriever._build_payload("test query")
+    assert payload["vdb_endpoint"] == "http://elasticsearch:9200"
 
 
 def test_nvidia_retriever_results_to_documents() -> None:
@@ -139,6 +151,7 @@ def test_nvidia_retriever_invoke_success() -> None:
         assert req_body["query"] == "What is AI?"
         assert req_body["collection_names"] == ["test_multimodal_query"]
         assert req_body["reranker_top_k"] == 2
+        assert "vdb_endpoint" not in req_body
 
 
 def test_nvidia_retriever_connection_error() -> None:
