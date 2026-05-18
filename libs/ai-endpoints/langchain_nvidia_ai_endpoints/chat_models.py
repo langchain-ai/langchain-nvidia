@@ -541,7 +541,7 @@ class ChatNVIDIA(BaseChatModel):
             ls_provider="NVIDIA",
             # error: Incompatible types (expression has type "Optional[str]",
             #  TypedDict item "ls_model_name" has type "str")  [typeddict-item]
-            ls_model_name=self.model or "UNKNOWN",
+            ls_model_name=params.get("model") or self.model or "UNKNOWN",
             ls_model_type="chat",
             ls_temperature=params.get("temperature", self.temperature),
             # TODO: remove max_tokens once all models support max_completion_tokens
