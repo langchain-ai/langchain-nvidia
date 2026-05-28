@@ -1034,6 +1034,7 @@ VLM_MODEL_TABLE = {
         id="qwen/qwen3.5-122b-a10b",
         model_type="vlm",
         client="ChatNVIDIA",
+        supports_tools=True,
         supports_thinking=True,
         thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
