@@ -479,18 +479,21 @@ class ChatNVIDIA(BaseChatModel):
         if default_headers is not None:
             init_kwargs["default_headers"] = default_headers
 
+        # allow nvidia_base_url as an alternative for base_url
+        nvidia_base_url = kwargs.pop("nvidia_base_url", None)
+
+        # Extract verify_ssl from kwargs, default to True. This is a client
+        # transport option, not a model parameter.
+        verify_ssl = kwargs.pop("verify_ssl", True)
+
         init_kwargs.update(kwargs)
 
         super().__init__(**init_kwargs)
 
-        # allow nvidia_base_url as an alternative for base_url
-        base_url = kwargs.pop("nvidia_base_url", self.base_url)
+        base_url = nvidia_base_url if nvidia_base_url is not None else self.base_url
 
         # allow nvidia_api_key as an alternative for api_key
         api_key = nvidia_api_key or api_key
-
-        # Extract verify_ssl from kwargs, default to True
-        verify_ssl = kwargs.pop("verify_ssl", True)
 
         self._client, self._async_client = _build_clients(
             **({"base_url": base_url} if base_url else {}),  # only pass if set
