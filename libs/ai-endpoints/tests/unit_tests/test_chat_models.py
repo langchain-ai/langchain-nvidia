@@ -520,6 +520,13 @@ def test_verify_ssl_behavior(
 
     # Test that session factory creates sessions with correct verify setting
     assert llm._client.get_session_fn().verify is expected_verify_ssl
+    assert "verify_ssl" not in llm.model_kwargs
+
+    payload = llm._get_payload(
+        inputs=[{"role": "user", "content": "test"}],
+        stop=None,
+    )
+    assert "verify_ssl" not in payload
 
 
 def test_default_headers(requests_mock: Mocker) -> None:
