@@ -527,7 +527,27 @@ def test_verify_ssl_behavior(
         stop=None,
     )
     assert "verify_ssl" not in payload
+    
 
+def test_timeout_behavior() -> None:
+    """Test timeout is treated as a client parameter, not a model parameter."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        timeout=123,
+    )
+
+    assert llm._client.timeout == 123
+    assert llm._async_client.timeout == 123
+
+    assert "timeout" not in llm.model_kwargs
+
+    payload = llm._get_payload(
+        inputs=[{"role": "user", "content": "test"}],
+        stop=None,
+    )
+
+    assert "timeout" not in payload
 
 def test_default_headers(requests_mock: Mocker) -> None:
     """Test that default_headers are passed to requests."""
