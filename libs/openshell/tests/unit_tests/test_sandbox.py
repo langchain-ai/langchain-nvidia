@@ -76,6 +76,30 @@ def test_execute_returns_stdout_and_zero_exit(fake_sandbox: FakeSandbox) -> None
     assert fake_sandbox.calls[0].command == ["bash", "-c", "echo hi"]
 
 
+def test_execute_sends_multiline_default_shell_script_over_stdin(
+    fake_sandbox: FakeSandbox,
+) -> None:
+    fake_sandbox.queue(FakeExecResult(exit_code=0, stdout="ok\n"))
+    sb = OpenShellSandbox(sandbox=fake_sandbox)
+
+    result = sb.execute("python3 - <<'PY'\nprint('ok')\nPY")
+
+    assert result.exit_code == 0
+    assert fake_sandbox.calls[0].command == ["bash", "-s"]
+    assert fake_sandbox.calls[0].stdin == b"python3 - <<'PY'\nprint('ok')\nPY"
+
+
+def test_execute_sends_multiline_custom_shell_script_over_stdin(
+    fake_sandbox: FakeSandbox,
+) -> None:
+    fake_sandbox.queue(FakeExecResult())
+    sb = OpenShellSandbox(sandbox=fake_sandbox, shell=("sh", "-c"))
+
+    sb.execute("printf '%s\\n' one\nprintf '%s\\n' two")
+
+    assert fake_sandbox.calls[0].command == ["sh", "-s"]
+
+
 def test_execute_propagates_nonzero_exit(fake_sandbox: FakeSandbox) -> None:
     fake_sandbox.queue(FakeExecResult(exit_code=1, stderr="bad command\n"))
     sb = OpenShellSandbox(sandbox=fake_sandbox)

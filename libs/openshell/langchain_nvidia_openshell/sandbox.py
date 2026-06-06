@@ -10,8 +10,10 @@ Implementation notes
 --------------------
 
 * OpenShell's ``ExecSandbox`` RPC takes an argv ``Sequence[str]``, not a shell
-  string. To honour ``BaseSandbox.execute(command: str)`` we wrap every call as
-  ``[*shell, command]`` (default ``("bash", "-c")``).
+  string. To honour ``BaseSandbox.execute(command: str)`` we wrap normal calls
+  as ``[*shell, command]`` (default ``("bash", "-c")``). Multiline shell
+  payloads are sent over stdin to ``bash -s`` / ``sh -s`` because OpenShell
+  0.0.57 rejects newline-bearing ``bash -c`` argv payloads at the RPC layer.
 * OpenShell does not expose a typed file upload / download SDK call. We
   implement those over ``exec`` itself: stdin-fed base64 for uploads and
   stdout-captured base64 for downloads. Two tiny inline ``python3 -c``
@@ -100,9 +102,10 @@ _DEFAULT_TIMEOUT_SECONDS = 30 * 60
 # Maximum combined stdout+stderr returned to the LLM. 1 MiB keeps the agent
 # context bounded against pathological commands like ``cat /var/log/...``.
 _DEFAULT_MAX_OUTPUT_BYTES = 1 << 20
-# gRPC's default max message size is 4 MiB. We chunk large uploads to stay
-# safely below that ceiling on stdin payloads.
-_DEFAULT_MAX_UPLOAD_CHUNK_BYTES = 4 * (1 << 20)
+# OpenShell 0.0.57's VM driver rejects stdin payloads before gRPC's nominal
+# 4 MiB default. Uploads are base64-encoded first, so keep raw chunks at a
+# measured-safe size.
+_DEFAULT_MAX_UPLOAD_CHUNK_BYTES = 512 * 1024
 # Exit code we synthesize for our own preconditions / timeouts (matches the
 # coreutils convention used by Daytona's wrapper).
 _TIMEOUT_EXIT_CODE = 124
@@ -190,10 +193,11 @@ class OpenShellSandbox(BaseSandbox):
             )
 
         effective_timeout = self._resolve_timeout(timeout)
-        argv = list(self._shell) + [command]
+        argv, stdin = self._build_shell_invocation(command)
         try:
             result = self._sandbox.exec(
                 argv,
+                stdin=stdin,
                 timeout_seconds=effective_timeout,
             )
         except Exception as exc:  # noqa: BLE001 - SDK wraps a wide set of grpc errors
@@ -204,6 +208,16 @@ class OpenShellSandbox(BaseSandbox):
             stderr=getattr(result, "stderr", "") or "",
             exit_code=getattr(result, "exit_code", None),
         )
+
+    def _build_shell_invocation(self, command: str) -> tuple[list[str], bytes | None]:
+        """Build the OpenShell argv/stdin pair for a shell command string."""
+        if "\n" not in command:
+            return list(self._shell) + [command], None
+
+        if len(self._shell) >= 2 and self._shell[1] == "-c":
+            return [self._shell[0], "-s", *self._shell[2:]], command.encode("utf-8")
+
+        return list(self._shell) + [command], None
 
     def upload_files(
         self,

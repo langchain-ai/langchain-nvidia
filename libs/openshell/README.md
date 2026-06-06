@@ -34,7 +34,8 @@ This is the **sandbox-as-tool** pattern: the agent stays out, the tools go in.
                                  │  ExecSandbox stream
                                  ▼
                   ┌──────────────────────────────┐
-                  │   Sandbox (Docker/VM/K8s)    │
+                  │   Sandbox compute driver     │
+                  │   Docker/Podman/K8s/MicroVM  │
                   │   policy-enforced execution  │
                   └──────────────────────────────┘
 ```
@@ -48,28 +49,31 @@ pip install langchain-nvidia-openshell
 You also need [the OpenShell CLI / gateway](https://docs.nvidia.com/openshell/latest/get-started/quickstart/), pinned to match the SDK:
 
 ```bash
-uv tool install -U "openshell>=0.0.36,<0.1"
+uv tool install -U "openshell>=0.0.57,<0.1"
 # or, via the official installer (latest):
 curl -LsSf https://raw.githubusercontent.com/NVIDIA/OpenShell/main/install.sh | sh
 ```
 
-Confirm with `openshell --version` — the wire protocol expects 0.0.36+.
+Confirm with `openshell --version`; this integration is tested against
+OpenShell `0.0.57+`.
 
 ## Quickstart (local)
 
-Bring up a local sandbox first (this also boots a local gateway on `127.0.0.1:8080`):
+Install or start a local OpenShell gateway first, then confirm the CLI can see
+it:
 
 ```bash
-openshell sandbox create --keep --no-tty -- bash
+openshell status
+openshell sandbox list
 ```
 
-Then drive it from Python:
+Then create and drive a temporary sandbox from Python:
 
 ```python
 import openshell
 from langchain_nvidia_openshell import OpenShellSandbox
 
-with openshell.Sandbox() as sb:
+with openshell.Sandbox(delete_on_exit=True) as sb:
     backend = OpenShellSandbox(sandbox=sb)
 
     print(backend.execute("uname -a").output)
@@ -92,11 +96,12 @@ OpenShell CLI (no Python protobufs).
 | **Process** | Run-as user/group, syscall filter | seccomp BPF + dropped privileges | ✅ | ❌ locked once running |
 | **Inference** | Which LLM endpoints `inference.local` proxies to | Sandbox-local inference router | ✅ | ✅ via `openshell policy set` |
 
-The stock `base` image ships a sensible default: RO `/usr /lib /etc
-/app /var/log /proc/self /dev/urandom`, RW `/sandbox /tmp /dev/null`,
-**default-deny outbound network**, restricted `sandbox` user, local
-inference router. Run `openshell sandbox create -- bash` and you get all of
-the above.
+The stock community `base` image ships a default policy, but agent coverage is
+not universal: NVIDIA's current default policy reference lists Claude Code as
+fully covered, OpenCode as partially covered, and Codex as requiring a custom
+policy. For LangChain Deep Agents, prefer an explicit policy that permits the
+runtime tools you need (`bash`, `python3`, `curl`, package managers, and exact
+network destinations) rather than depending on an agent preset.
 
 ### Two CLI workflows for picking your own policy
 
@@ -150,6 +155,34 @@ with openshell.Sandbox() as sb:
         "content": "Compute the sha256 of '/etc/hostname' inside the sandbox."}]}))
 ```
 
+## Deployment support matrix
+
+OpenShell `0.0.57` supports the following deployment targets. Treat this table
+as the minimum cross-platform validation matrix for this adapter.
+
+| Target | Status | Required runtime |
+|---|---|---|
+| Linux Debian/Ubuntu amd64 | Supported | Docker Engine/Desktop 28.04+, Podman 5.x, Kubernetes 1.29+, or MicroVM host virtualization |
+| Linux Debian/Ubuntu arm64 | Supported | Docker Engine/Desktop 28.04+, Podman 5.x, Kubernetes 1.29+, or MicroVM host virtualization |
+| macOS Apple Silicon | Supported | Docker Desktop for container-backed sandboxes or Hypervisor.framework for MicroVM |
+| Windows WSL 2 amd64 | Experimental | Docker Desktop through WSL 2 |
+
+Compute drivers are selected at the gateway layer: `docker`, `podman`,
+`kubernetes`, or `vm` for MicroVM-backed sandboxes. The OpenShell gateway image
+is published for `linux/amd64` and `linux/arm64`; sandbox images are maintained
+separately in the NVIDIA OpenShell Community repository.
+
+On macOS with the `vm` driver, the gateway may need explicit driver selection
+when Docker/Podman is unavailable:
+
+```bash
+OPENSHELL_DRIVERS=vm openshell-gateway
+```
+
+OpenShell `0.0.57` also expects `mkfs.ext4` from `e2fsprogs` while preparing
+MicroVM root filesystems. With Homebrew, install `e2fsprogs` and make sure
+`mkfs.ext4` is visible under the prefix used by the gateway service.
+
 ## API
 
 ```python
@@ -161,7 +194,7 @@ class OpenShellSandbox(BaseSandbox):
         timeout: int = 30 * 60,
         shell: tuple[str, ...] = ("bash", "-c"),
         max_output_bytes: int = 1 << 20,           # 1 MiB
-        max_upload_chunk_bytes: int = 4 * (1 << 20),  # 4 MiB
+        max_upload_chunk_bytes: int = 512 * 1024,  # 512 KiB
     ) -> None: ...
 
     @property
@@ -180,19 +213,28 @@ sandbox. The user creates and disposes of it (via `with openshell.Sandbox()`,
 or by calling `sandbox.delete()` directly). This matches the convention of
 the Daytona, Modal, and Runloop integrations.
 
+For OpenShell `0.0.57`, multiline shell commands are sent through shell stdin
+instead of `bash -c` argv because the VM driver rejects newline-bearing command
+argv payloads. File uploads are chunked to 512 KiB raw payloads to stay within
+the observed stdin transport limit after base64 encoding.
+
 ## Notebook walkthrough
 
 See [`docs/sandboxes/nvidia_openshell_sandbox.ipynb`](docs/sandboxes/nvidia_openshell_sandbox.ipynb)
 for a step-by-step tutorial including local-only setup, `ChatNVIDIA` agent
 integration, file transfer, and policy-enforced behavior demos.
 
+See [`docs/sandboxes/openshell_0_0_57_validation_report.md`](docs/sandboxes/openshell_0_0_57_validation_report.md)
+for the completed local validation report, live-test results, deployment
+findings, and AI-Q adoption notes.
+
 ## Compatibility
 
 | Layer | Version |
 |---|---|
-| Python | 3.12 – 3.13 (the OpenShell SDK requires 3.12+) |
+| Python | 3.12 – 3.14 (the OpenShell SDK requires 3.12+) |
 | `deepagents` | `>=0.5.0,<0.6.0` |
-| `openshell` (NVIDIA SDK + CLI) | `>=0.0.36,<0.1` — both ship from the same `openshell` package; verify with `openshell --version` |
+| `openshell` (NVIDIA SDK + CLI) | `>=0.0.57,<0.1` — both ship from the same `openshell` package; verify with `openshell --version` |
 | LangChain Deep Agents `BaseSandbox` | follows `deepagents` |
 
 ## License
