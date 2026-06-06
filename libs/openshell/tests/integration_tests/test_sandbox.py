@@ -30,14 +30,16 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-_OPENSHELL_IMPORT_ERROR: ImportError | None
+_OPENSHELL_IMPORT_ERROR: Exception | None
 try:
     import openshell
-except ImportError as exc:  # pragma: no cover - environment-dependent
+except Exception as exc:  # pragma: no cover - environment-dependent
     openshell = None
     _OPENSHELL_IMPORT_ERROR = exc
 else:
     _OPENSHELL_IMPORT_ERROR = None
+
+_OPENSHELL_GATEWAY_ERROR: str | None = None
 
 from langchain_nvidia_openshell import OpenShellSandbox  # noqa: E402
 
@@ -52,13 +54,45 @@ def _gateway_configured() -> bool:
 
     We check both the ``OPENSHELL_GATEWAY`` env override and the CLI's
     ``~/.config/openshell/active_gateway`` pointer (the same lookup the SDK
-    performs in :meth:`SandboxClient.from_active_cluster`).
+    performs in :meth:`SandboxClient.from_active_cluster`). A stale
+    ``active_gateway`` file is not enough: the SDK must be able to perform a
+    cheap list request without creating a sandbox.
     """
-    if os.environ.get("OPENSHELL_GATEWAY"):
-        return True
+    global _OPENSHELL_GATEWAY_ERROR
+    _OPENSHELL_GATEWAY_ERROR = None
+
+    has_gateway_pointer = bool(os.environ.get("OPENSHELL_GATEWAY"))
     xdg = os.environ.get("XDG_CONFIG_HOME")
     config_home = pathlib.Path(xdg) if xdg else (pathlib.Path.home() / ".config")
-    return (config_home / "openshell" / "active_gateway").exists()
+    has_gateway_pointer = (
+        has_gateway_pointer or (config_home / "openshell" / "active_gateway").exists()
+    )
+    if not has_gateway_pointer or openshell is None:
+        return False
+
+    try:
+        client = openshell.SandboxClient.from_active_cluster(timeout=2.0)
+        try:
+            client.list(limit=1)
+        finally:
+            client.close()
+    except Exception as exc:  # noqa: BLE001 - SDK/grpc readiness failures vary
+        _OPENSHELL_GATEWAY_ERROR = _brief_error(exc)
+        return False
+    return True
+
+
+def _brief_error(exc: Exception) -> str:
+    details = getattr(exc, "details", None)
+    if callable(details):
+        try:
+            message = details()
+        except Exception:  # pragma: no cover - defensive around grpc internals
+            message = ""
+        if message:
+            return str(message)
+    message = str(exc).strip()
+    return message.splitlines()[0] if message else type(exc).__name__
 
 
 # ---------------------------------------------------------------------------
@@ -77,9 +111,11 @@ def _require_openshell_gateway() -> None:
     if _OPENSHELL_IMPORT_ERROR is not None:
         pytest.skip(f"OpenShell SDK import failed: {_OPENSHELL_IMPORT_ERROR}")
     if not _gateway_configured():
+        detail = f" ({_OPENSHELL_GATEWAY_ERROR})" if _OPENSHELL_GATEWAY_ERROR else ""
         pytest.skip(
             "no OpenShell gateway configured — set OPENSHELL_GATEWAY or run "
             "`openshell sandbox create` once to populate ~/.config/openshell/."
+            f"{detail}"
         )
 
 
@@ -151,6 +187,48 @@ def test_notebook_zen_tool_pattern(real_backend: OpenShellSandbox) -> None:
     assert out  # non-empty either way
     # Cross-check: the output is either a quote or a structured failure.
     assert out.startswith("Tool failed") or len(out.splitlines()) <= 3
+
+
+def test_deep_agent_execute_tool_uses_openshell_backend(
+    real_backend: OpenShellSandbox,
+) -> None:
+    """Run Deep Agents' built-in execute tool against OpenShell without API keys."""
+    from deepagents import create_deep_agent
+    from langchain_core.language_models.fake_chat_models import (
+        FakeMessagesListChatModel,
+    )
+    from langchain_core.messages import AIMessage, ToolMessage
+
+    class ToolCallingFakeModel(FakeMessagesListChatModel):
+        def bind_tools(self, tools, *, tool_choice=None, **kwargs):  # type: ignore[no-untyped-def]
+            return self
+
+    model = ToolCallingFakeModel(
+        responses=[
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "execute",
+                        "args": {"command": "printf deepagents-openshell-smoke"},
+                        "id": "call_execute_1",
+                    }
+                ],
+            ),
+            AIMessage(content="done"),
+        ]
+    )
+    agent = create_deep_agent(model=model, backend=real_backend)
+
+    result = agent.invoke(
+        {"messages": [{"role": "user", "content": "Run the smoke command."}]}
+    )
+
+    tool_messages = [msg for msg in result["messages"] if isinstance(msg, ToolMessage)]
+    assert tool_messages
+    assert tool_messages[0].name == "execute"
+    assert "deepagents-openshell-smoke" in tool_messages[0].content
+    assert "[Command succeeded with exit code 0]" in tool_messages[0].content
 
 
 # ---------------------------------------------------------------------------

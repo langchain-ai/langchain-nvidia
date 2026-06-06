@@ -105,6 +105,14 @@ def test_notebook_requires_nvidia_api_key(notebook: dict) -> None:
     assert "ready to run the Deep Agent" in joined
 
 
+def test_notebook_uses_current_openshell_pin(notebook: dict) -> None:
+    joined = "\n".join(_cell_sources(notebook))
+    assert "openshell>=0.0.57,<0.1" in joined
+    assert "langchain-nvidia-openshell-demo:0.0.57" in joined
+    assert "0.0.40" not in joined
+    assert "0.0.39" not in joined
+
+
 def test_notebook_cleans_up_at_the_end(notebook: dict) -> None:
     sources = _cell_sources(notebook)
     cleanup = "\n".join(sources[-3:])  # last few cells
