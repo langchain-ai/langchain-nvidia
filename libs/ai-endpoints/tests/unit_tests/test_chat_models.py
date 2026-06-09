@@ -528,7 +528,7 @@ def test_verify_ssl_behavior(
     )
     assert "verify_ssl" not in payload
     
-
+    
 def test_timeout_behavior() -> None:
     """Test timeout is treated as a client parameter, not a model parameter."""
     llm = ChatNVIDIA(
@@ -548,6 +548,7 @@ def test_timeout_behavior() -> None:
     )
 
     assert "timeout" not in payload
+
 
 def test_default_headers(requests_mock: Mocker) -> None:
     """Test that default_headers are passed to requests."""
