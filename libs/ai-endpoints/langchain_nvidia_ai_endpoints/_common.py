@@ -415,7 +415,8 @@ class _NVIDIABaseClient(BaseModel):
         }
         session = self.get_session_fn()
         self.last_response = response = session.post(
-            **self._add_authorization(self.last_inputs)
+            **self._add_authorization(self.last_inputs),
+            timeout=self.timeout,
         )
         self._try_raise(response)
         return response, session
@@ -431,7 +432,8 @@ class _NVIDIABaseClient(BaseModel):
         }
         session = self.get_session_fn()
         self.last_response = response = session.get(
-            **self._add_authorization(self.last_inputs)
+            **self._add_authorization(self.last_inputs),
+            timeout=self.timeout,
         )
         self._try_raise(response)
         return response, session
@@ -666,7 +668,11 @@ class _NVIDIAAsyncClient(_NVIDIABaseClient):
     def _create_async_session(self) -> "aiohttp.ClientSession":
         """Create an aiohttp session with SSL verification via connector."""
         connector = aiohttp.TCPConnector(ssl=self._build_ssl_context())
-        return aiohttp.ClientSession(connector=connector)
+        timeout = aiohttp.ClientTimeout(total=self.timeout)
+        return aiohttp.ClientSession(
+            connector=connector,
+            timeout=timeout,
+        )
 
     async def _post_async(
         self,
