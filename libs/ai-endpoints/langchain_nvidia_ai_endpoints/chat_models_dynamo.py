@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Optional, Union
 
 from pydantic import Field
 
@@ -12,10 +12,10 @@ from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA, _deep_merge
 
 
 class ChatNVIDIADynamo(ChatNVIDIA):
-    """ChatNVIDIA subclass that injects ``nvext.agent_hints`` into requests
+    """ChatNVIDIA subclass that injects `nvext.agent_hints` into requests
     for Dynamo KV cache routing optimization.
 
-    A unique ``prefix_id`` is auto-generated for every request.
+    A unique `prefix_id` is auto-generated for every request.
 
     Example:
         ```python
@@ -43,6 +43,45 @@ class ChatNVIDIADynamo(ChatNVIDIA):
         default=1,
         description="Request priority hint for Dynamo routing.",
     )
+
+    # Keep the inherited ChatNVIDIA constructor parameters visible to type checkers;
+    # otherwise Pydantic only exposes this subclass's Dynamo fields.
+    def __init__(
+        self,
+        *,
+        model: Optional[str] = None,
+        nvidia_api_key: Optional[str] = None,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_completion_tokens: Optional[int] = None,
+        top_p: Optional[float] = None,
+        seed: Optional[int] = None,
+        stop: Optional[Union[str, list[str]]] = None,
+        default_headers: Optional[dict[str, str]] = None,
+        osl: int = 512,
+        iat: int = 250,
+        latency_sensitivity: float = 1.0,
+        priority: int = 1,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            model=model,
+            nvidia_api_key=nvidia_api_key,
+            api_key=api_key,
+            base_url=base_url,
+            temperature=temperature,
+            max_completion_tokens=max_completion_tokens,
+            top_p=top_p,
+            seed=seed,
+            stop=stop,
+            default_headers=default_headers,
+            osl=osl,
+            iat=iat,
+            latency_sensitivity=latency_sensitivity,
+            priority=priority,
+            **kwargs,
+        )
 
     @property
     def _llm_type(self) -> str:

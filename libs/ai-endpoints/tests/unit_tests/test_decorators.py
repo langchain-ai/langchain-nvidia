@@ -209,7 +209,7 @@ async def test_concurrent_async_tasks_isolated() -> None:
 
 
 def test_plain_chat_nvidia_unaffected(requests_mock: Mocker) -> None:
-    """ChatNVIDIA has no ``priority`` field — context should not inject."""
+    """ChatNVIDIA has no `priority` field — context should not inject."""
     llm = ChatNVIDIA(model="mock-model", nvidia_api_key="nvapi-test")
 
     with inference_priority(priority=10):

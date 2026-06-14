@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 from requests_mock import Mocker
 
+from langchain_nvidia_ai_endpoints._version import __version__
 from langchain_nvidia_ai_endpoints.chat_models_dynamo import ChatNVIDIADynamo
 
 
@@ -61,6 +62,12 @@ def test_custom_field_values() -> None:
 def test_llm_type() -> None:
     llm = _make_llm()
     assert llm._llm_type == "chat-nvidia-ai-playground-dynamo"
+
+
+def test_version_metadata() -> None:
+    llm = _make_llm()
+    assert llm.metadata is not None
+    assert llm.metadata["lc_versions"]["langchain-nvidia-ai-endpoints"] == __version__
 
 
 # --- Payload ---

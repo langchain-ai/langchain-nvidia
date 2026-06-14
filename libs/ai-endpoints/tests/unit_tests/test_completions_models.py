@@ -8,6 +8,7 @@ import pytest
 import requests_mock
 
 from langchain_nvidia_ai_endpoints import NVIDIA
+from langchain_nvidia_ai_endpoints._version import __version__
 
 from .conftest import MockHTTP
 
@@ -262,3 +263,9 @@ async def test_params_unknown(
 def test_identifying_params() -> None:
     llm = NVIDIA(api_key="BOGUS")
     assert set(llm._identifying_params.keys()) == {"model", "base_url"}
+
+
+def test_version_metadata() -> None:
+    llm = NVIDIA(api_key="BOGUS")
+    assert llm.metadata is not None
+    assert llm.metadata["lc_versions"]["langchain-nvidia-ai-endpoints"] == __version__

@@ -10,7 +10,8 @@ from langchain_core.callbacks.manager import (
 )
 from langchain_core.language_models.llms import LLM
 from langchain_core.outputs import GenerationChunk
-from pydantic import ConfigDict, Field, PrivateAttr
+from pydantic import ConfigDict, Field, PrivateAttr, model_validator
+from typing_extensions import Self
 
 from langchain_nvidia_ai_endpoints._common import (
     _build_clients,
@@ -18,6 +19,7 @@ from langchain_nvidia_ai_endpoints._common import (
     _NVIDIASyncClient,
 )
 from langchain_nvidia_ai_endpoints._statics import Model
+from langchain_nvidia_ai_endpoints._version import __version__
 
 _DEFAULT_MODEL_NAME: str = "nvidia/mistral-nemo-minitron-8b-base"
 
@@ -44,6 +46,12 @@ class NVIDIA(LLM):
     _init_args: Dict[str, Any] = PrivateAttr()
     """Stashed arguments given to the constructor that can be passed to
     the Completions API endpoint."""
+
+    @model_validator(mode="after")
+    def _set_nvidia_version(self) -> Self:
+        """Set package version in metadata."""
+        self._add_version("langchain-nvidia-ai-endpoints", __version__)
+        return self
 
     def __check_kwargs(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
         """Check kwargs, warn for unknown keys, and return a copy recognized keys."""

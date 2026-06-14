@@ -7,6 +7,7 @@ import pytest
 from requests_mock import Mocker
 
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, register_model
+from langchain_nvidia_ai_endpoints._version import __version__
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
 from .conftest import MockHTTP
@@ -62,6 +63,12 @@ def test_integration_initialization() -> None:
         max_tokens=50,
     )
     ChatNVIDIA(model="meta/llama-3.3-70b-instruct", nvidia_api_key="nvapi-...")
+
+
+def test_version_metadata() -> None:
+    llm = ChatNVIDIA(model="meta/llama-3.3-70b-instruct", nvidia_api_key="nvapi-...")
+    assert llm.metadata is not None
+    assert llm.metadata["lc_versions"]["langchain-nvidia-ai-endpoints"] == __version__
 
 
 def test_unavailable(empty_v1_models: None) -> None:
