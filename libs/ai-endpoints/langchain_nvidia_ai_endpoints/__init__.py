@@ -44,6 +44,7 @@ embedding_output = embed_model.embed_query("Exploring AI capabilities.")
 """  # noqa: E501
 
 from langchain_nvidia_ai_endpoints._statics import Model, register_model
+from langchain_nvidia_ai_endpoints._version import __version__
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 from langchain_nvidia_ai_endpoints.chat_models_dynamo import ChatNVIDIADynamo
 from langchain_nvidia_ai_endpoints.decorators import (
@@ -56,6 +57,7 @@ from langchain_nvidia_ai_endpoints.reranking import NVIDIARerank
 from langchain_nvidia_ai_endpoints.retrievers import NVIDIARAGRetriever
 
 __all__ = [
+    "__version__",
     "ChatNVIDIA",
     "ChatNVIDIADynamo",
     "NVIDIA",

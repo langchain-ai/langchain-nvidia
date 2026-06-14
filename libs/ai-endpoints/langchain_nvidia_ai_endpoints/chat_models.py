@@ -59,6 +59,7 @@ from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_core.utils.pydantic import is_basemodel_subclass
 from langchain_core.utils.utils import _build_model_kwargs
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
+from typing_extensions import Self
 
 from langchain_nvidia_ai_endpoints._common import (
     _build_clients,
@@ -70,6 +71,7 @@ from langchain_nvidia_ai_endpoints._utils import (
     _url_to_b64_string,
     convert_message_to_dict,
 )
+from langchain_nvidia_ai_endpoints._version import __version__
 from langchain_nvidia_ai_endpoints.data._profiles import _PROFILES
 
 # Type variable for generic parser types
@@ -396,6 +398,12 @@ class ChatNVIDIA(BaseChatModel):
         """Build extra kwargs from additional params that were passed in."""
         all_required_field_names = get_pydantic_field_names(cls)
         return _build_model_kwargs(values, all_required_field_names)
+
+    @model_validator(mode="after")
+    def _set_nvidia_version(self) -> Self:
+        """Set package version in metadata."""
+        self._add_version("langchain-nvidia-ai-endpoints", __version__)
+        return self
 
     def __init__(
         self,
