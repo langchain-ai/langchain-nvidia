@@ -1,0 +1,37 @@
+libs/ai-endpoints/tests/unit_tests/test_completions_models.py
+  s_63bbd61397c7b9::t_21535125cbe386 11,266-271
+libs/ai-endpoints/langchain_nvidia_ai_endpoints/chat_models.py
+  s_63bbd61397c7b9::t_21535125cbe386 62,74,402-406
+libs/ai-endpoints/pyproject.toml
+  s_63bbd61397c7b9::t_21535125cbe386 19
+libs/ai-endpoints/poetry.lock
+  s_63bbd61397c7b9::t_21535125cbe386 811,817-818,2928
+libs/ai-endpoints/langchain_nvidia_ai_endpoints/llm.py
+  s_63bbd61397c7b9::t_21535125cbe386 13-14,22,50-54
+libs/ai-endpoints/tests/unit_tests/test_chat_models_dynamo.py
+  s_63bbd61397c7b9::t_21535125cbe386 8,67-70
+libs/ai-endpoints/langchain_nvidia_ai_endpoints/__init__.py
+  s_63bbd61397c7b9::t_21535125cbe386 47,60
+libs/ai-endpoints/langchain_nvidia_ai_endpoints/_version.py
+  s_63bbd61397c7b9::t_21535125cbe386 1-3
+libs/ai-endpoints/tests/unit_tests/test_imports.py
+  s_63bbd61397c7b9::t_21535125cbe386 3,6,23-26
+libs/ai-endpoints/tests/unit_tests/test_chat_models.py
+  s_63bbd61397c7b9::t_21535125cbe386 10,68-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "374c29a0f0c49f0b5d9f464cfb708b3ca73e91c1",
+  "prompts": {},
+  "sessions": {
+    "s_63bbd61397c7b9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec847-4312-7a63-b705-11b78bd5c74d",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Mason Daugherty <github@mdrxy.com>"
+    }
+  }
+}
