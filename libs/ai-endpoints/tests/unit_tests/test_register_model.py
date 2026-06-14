@@ -1,4 +1,5 @@
 import warnings
+from typing import Any, cast
 
 import pytest
 
@@ -37,8 +38,8 @@ def test_mismatched_type_client(model_type: str, client: str) -> None:
         register_model(
             Model(
                 id="model",
-                model_type=model_type,
-                client=client,
+                model_type=cast(Any, model_type),
+                client=cast(Any, client),
                 endpoint="BOGUS",
             )
         )
@@ -67,8 +68,8 @@ def test_registered_model_usable(public_class: type, mock_model: str) -> None:
         warnings.simplefilter("error")
         model = Model(
             id=mock_model,
-            model_type=model_type,
-            client=public_class.__name__,
+            model_type=cast(Any, model_type),
+            client=cast(Any, public_class.__name__),
             endpoint="BOGUS",
         )
         register_model(model)

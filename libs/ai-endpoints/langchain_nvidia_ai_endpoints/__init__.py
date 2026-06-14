@@ -8,9 +8,9 @@ This comprehensive module integrates NVIDIA's state-of-the-art AI Foundation Mod
 
 **Features**
 
-1. **Chat Models** (``ChatNVIDIA``): This class serves as the primary interface for interacting with NVIDIA's Foundation chat models. Users can effortlessly utilize NVIDIA's advanced models like 'Mistral' to engage in rich, context-aware conversations, applicable across diverse domains from customer support to interactive storytelling.
+1. **Chat Models** (`ChatNVIDIA`): This class serves as the primary interface for interacting with NVIDIA's Foundation chat models. Users can effortlessly utilize NVIDIA's advanced models like 'Mistral' to engage in rich, context-aware conversations, applicable across diverse domains from customer support to interactive storytelling.
 
-2. **Semantic Embeddings** (``NVIDIAEmbeddings``): The module offers capabilities to generate sophisticated embeddings using NVIDIA's AI models. These embeddings are instrumental for tasks like semantic analysis, text similarity assessments, and contextual understanding, significantly enhancing the depth of NLP applications.
+2. **Semantic Embeddings** (`NVIDIAEmbeddings`): The module offers capabilities to generate sophisticated embeddings using NVIDIA's AI models. These embeddings are instrumental for tasks like semantic analysis, text similarity assessments, and contextual understanding, significantly enhancing the depth of NLP applications.
 
 **Installation**
 

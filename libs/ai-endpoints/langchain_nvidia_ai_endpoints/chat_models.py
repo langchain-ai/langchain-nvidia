@@ -1366,7 +1366,7 @@ class ChatNVIDIA(BaseChatModel):
             # instead is ignore all inputs that are incomplete wrt the
             # underlying Pydantic schema. if the entire input is invalid,
             # we return None.
-            class ForgivingPydanticOutputParser(PydanticOutputParser):
+            class ForgivingPydanticOutputParser(PydanticOutputParser[Any]):  # type: ignore[override]
                 def parse_result(
                     self, result: List[Generation], *, partial: bool = False
                 ) -> Any:

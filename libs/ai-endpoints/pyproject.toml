@@ -54,7 +54,7 @@ optional = true
 ruff = "^0.1.5"
 
 [tool.poetry.group.typing.dependencies]
-mypy = "^0.991"
+mypy = ">=2.1.0,<2.2.0"
 types-requests = ">=2.32.0,<3.0.0"
 types-pillow = "^10.2.0.20240125"
 

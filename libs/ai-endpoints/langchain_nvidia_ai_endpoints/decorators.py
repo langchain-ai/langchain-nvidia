@@ -1,13 +1,13 @@
 """Inference-priority decorator for LangChain chat models.
 
-Provides a decorator / context manager that sets ``priority`` for every
+Provides a decorator / context manager that sets `priority` for every
 :class:`~langchain_core.language_models.BaseChatModel` call in scope.
 
-The mechanism is **universal**: any ``BaseChatModel`` subclass whose Pydantic
-``model_fields`` include ``priority`` will automatically receive the value as
+The mechanism is **universal**: any `BaseChatModel` subclass whose Pydantic
+`model_fields` include `priority` will automatically receive the value as
 a keyword argument — no per-model integration required.
 
-Lower number = higher priority (``priority=1`` is most urgent).
+Lower number = higher priority (`priority=1` is most urgent).
 
 Example — decorator (deprioritize background work)::
 
@@ -52,13 +52,13 @@ _patched = False
 
 
 def _ensure_patched() -> None:
-    """Apply a one-time patch to ``BaseChatModel`` so that *invoke*,
-    *ainvoke*, *stream* and *astream* inject ``priority`` from context.
+    """Apply a one-time patch to `BaseChatModel` so that *invoke*,
+    *ainvoke*, *stream* and *astream* inject `priority` from context.
 
     The patch is a no-op when:
-    * the context variable is unset (``None``), **or**
-    * the LLM class does not declare ``priority`` in its Pydantic
-      ``model_fields``.
+    * the context variable is unset (`None`), **or**
+    * the LLM class does not declare `priority` in its Pydantic
+      `model_fields`.
     """
     global _patched
     if _patched:
@@ -142,7 +142,7 @@ def _ensure_patched() -> None:
 class inference_priority:  # noqa: N801
     """Set inference priority for all LLM calls within scope.
 
-    Lower number = higher priority (``priority=1`` is most urgent).
+    Lower number = higher priority (`priority=1` is most urgent).
 
     Works as **both** a decorator and a context manager::
 
@@ -162,8 +162,8 @@ class inference_priority:  # noqa: N801
 
     **Precedence** (wins first → last):
 
-    1. Active ``inference_priority`` context
-    2. Instance default: ``ChatNVIDIADynamo(priority=1)``
+    1. Active `inference_priority` context
+    2. Instance default: `ChatNVIDIADynamo(priority=1)`
 
     Nesting: inner scopes fully replace outer scopes.
     """
