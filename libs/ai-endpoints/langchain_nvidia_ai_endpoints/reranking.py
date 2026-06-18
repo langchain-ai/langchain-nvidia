@@ -162,7 +162,7 @@ class NVIDIARerank(BaseDocumentCompressor):
         Ranking with a Vision-Language Rerank Model:
             `NVIDIARerank` can also rerank documents that carry an image
             alongside their text using a ranking VLM such as
-            ``nvidia/llama-nemotron-rerank-vl-1b-v2``.
+            `nvidia/llama-nemotron-rerank-vl-1b-v2`.
 
 
             ```python

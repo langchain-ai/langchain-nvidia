@@ -506,8 +506,9 @@ class _NVIDIABaseClient(BaseModel):
             except json.JSONDecodeError:
                 rd = response.__dict__
                 if "status_code" in rd:
-                    if "headers" in rd and "WWW-Authenticate" in rd["headers"]:
-                        rd["detail"] = rd.get("headers").get("WWW-Authenticate")
+                    headers = rd.get("headers") or {}
+                    if "WWW-Authenticate" in headers:
+                        rd["detail"] = headers.get("WWW-Authenticate")
                         rd["detail"] = rd["detail"].replace(", ", "\n")
                 else:
                     rd = rd.get("_content", rd)

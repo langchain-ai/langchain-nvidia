@@ -8,9 +8,9 @@ This comprehensive module integrates NVIDIA's state-of-the-art AI Foundation Mod
 
 **Features**
 
-1. **Chat Models** (``ChatNVIDIA``): This class serves as the primary interface for interacting with NVIDIA's Foundation chat models. Users can effortlessly utilize NVIDIA's advanced models like 'Mistral' to engage in rich, context-aware conversations, applicable across diverse domains from customer support to interactive storytelling.
+1. **Chat Models** (`ChatNVIDIA`): This class serves as the primary interface for interacting with NVIDIA's Foundation chat models. Users can effortlessly utilize NVIDIA's advanced models like 'Mistral' to engage in rich, context-aware conversations, applicable across diverse domains from customer support to interactive storytelling.
 
-2. **Semantic Embeddings** (``NVIDIAEmbeddings``): The module offers capabilities to generate sophisticated embeddings using NVIDIA's AI models. These embeddings are instrumental for tasks like semantic analysis, text similarity assessments, and contextual understanding, significantly enhancing the depth of NLP applications.
+2. **Semantic Embeddings** (`NVIDIAEmbeddings`): The module offers capabilities to generate sophisticated embeddings using NVIDIA's AI models. These embeddings are instrumental for tasks like semantic analysis, text similarity assessments, and contextual understanding, significantly enhancing the depth of NLP applications.
 
 **Installation**
 
@@ -44,6 +44,7 @@ embedding_output = embed_model.embed_query("Exploring AI capabilities.")
 """  # noqa: E501
 
 from langchain_nvidia_ai_endpoints._statics import Model, register_model
+from langchain_nvidia_ai_endpoints._version import __version__
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 from langchain_nvidia_ai_endpoints.chat_models_dynamo import ChatNVIDIADynamo
 from langchain_nvidia_ai_endpoints.decorators import (
@@ -56,6 +57,7 @@ from langchain_nvidia_ai_endpoints.reranking import NVIDIARerank
 from langchain_nvidia_ai_endpoints.retrievers import NVIDIARAGRetriever
 
 __all__ = [
+    "__version__",
     "ChatNVIDIA",
     "ChatNVIDIADynamo",
     "NVIDIA",

@@ -217,7 +217,9 @@ class UsageCallbackHandler(BaseCallbackHandler):
     ) -> None:
         pass
 
-    def on_llm_new_token(self, token: str, **kwargs: Any) -> None:
+    def on_llm_new_token(
+        self, token: str | list[str | dict[str, Any]], **kwargs: Any
+    ) -> None:
         pass
 
     def on_llm_end(self, response: LLMResult, **kwargs: Any) -> None:

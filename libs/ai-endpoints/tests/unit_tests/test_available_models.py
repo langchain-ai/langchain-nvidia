@@ -1,6 +1,6 @@
 import re
 import warnings
-from typing import Any
+from typing import Any, cast
 
 import requests_mock as rm
 
@@ -21,13 +21,16 @@ def test_model_listing_hosted(
 ) -> None:
     model = Model(
         id=mock_model,
-        model_type={
-            "ChatNVIDIA": "chat",
-            "NVIDIAEmbeddings": "embedding",
-            "NVIDIARerank": "ranking",
-            "NVIDIA": "completions",
-        }[public_class.__name__],
-        client=public_class.__name__,
+        model_type=cast(
+            Any,
+            {
+                "ChatNVIDIA": "chat",
+                "NVIDIAEmbeddings": "embedding",
+                "NVIDIARerank": "ranking",
+                "NVIDIA": "completions",
+            }[public_class.__name__],
+        ),
+        client=cast(Any, public_class.__name__),
         endpoint="BOGUS",
     )
     register_model(model)
