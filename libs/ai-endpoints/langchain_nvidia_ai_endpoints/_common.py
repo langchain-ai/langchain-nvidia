@@ -466,7 +466,8 @@ class _NVIDIABaseClient(BaseModel):
                 "headers": self.headers_tmpl["call"],
             }
             self.last_response = response = session.get(
-                **self._add_authorization(payload)
+                **self._add_authorization(payload),
+                timeout=self.timeout,
             )
         self._try_raise(response)
         return response
@@ -630,7 +631,7 @@ class _NVIDIASyncClient(_NVIDIABaseClient):
         }
 
         response = self.get_session_fn().post(
-            stream=True, **self._add_authorization(self.last_inputs)
+            stream=True, **self._add_authorization(self.last_inputs), timeout=self.timeout
         )
         self._try_raise(response)
         call: _NVIDIASyncClient = self.model_copy()
