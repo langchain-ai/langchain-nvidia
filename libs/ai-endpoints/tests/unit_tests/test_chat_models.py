@@ -2,8 +2,10 @@
 
 import warnings
 from typing import Any, Optional, Union
+from unittest.mock import MagicMock
 
 import pytest
+import requests
 from requests_mock import Mocker
 
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, register_model
@@ -536,6 +538,27 @@ def test_verify_ssl_behavior(
     assert "verify_ssl" not in payload
 
 
+def test_timeout_behavior() -> None:
+    """Test timeout is treated as a client parameter, not a model parameter."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        timeout=123,
+    )
+
+    assert llm._client.timeout == 123
+    assert llm._async_client.timeout == 123
+
+    assert "timeout" not in llm.model_kwargs
+
+    payload = llm._get_payload(
+        inputs=[{"role": "user", "content": "test"}],
+        stop=None,
+    )
+
+    assert "timeout" not in payload
+
+
 def test_default_headers(requests_mock: Mocker) -> None:
     """Test that default_headers are passed to requests."""
     model = "meta/llama-3.1-8b-instruct"
@@ -694,3 +717,113 @@ def test_self_hosted_nim_picks_up_static_model_config() -> None:
     assert llm._client.model.id == model_id
     assert llm._client.model.thinking_param_disable is not None
     assert llm._client.model.thinking_param_enable is not None
+
+
+def test_sync_post_passes_timeout() -> None:
+    """sync _post() must pass timeout=self.timeout to session.post()."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        timeout=42,
+    )
+    mock_response = MagicMock(spec=requests.Response)
+    mock_response.status_code = 200
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json.return_value = {"choices": [{"message": {"content": "ok"}}]}
+    mock_session = MagicMock()
+    mock_session.post.return_value = mock_response
+    setattr(llm._client, "get_session_fn", lambda: mock_session)
+
+    llm._client._post(llm._client.infer_url, {})
+
+    mock_session.post.assert_called_once()
+    assert (
+        mock_session.post.call_args.kwargs.get("timeout") == 42
+    ), f"_post() must pass timeout=42, got {mock_session.post.call_args.kwargs}"
+
+
+def test_sync_get_passes_timeout() -> None:
+    """sync _get() must pass timeout=self.timeout to session.get()."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        timeout=37,
+    )
+    mock_response = MagicMock(spec=requests.Response)
+    mock_response.status_code = 200
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json.return_value = {"data": [{"id": "some-model"}]}
+    mock_session = MagicMock()
+    mock_session.get.return_value = mock_response
+    setattr(llm._client, "get_session_fn", lambda: mock_session)
+
+    llm._client._get(llm._client.listing_path.format(base_url=llm._client.base_url))
+
+    mock_session.get.assert_called_once()
+    assert (
+        mock_session.get.call_args.kwargs.get("timeout") == 37
+    ), f"_get() must pass timeout=37, got {mock_session.get.call_args.kwargs}"
+
+
+def test_sync_wait_passes_timeout() -> None:
+    """sync _wait() polling must pass timeout=self.timeout to session.get()."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        timeout=55,
+    )
+    resp_202 = MagicMock(spec=requests.Response)
+    resp_202.status_code = 202
+    resp_202.headers = {"NVCF-REQID": "test-request-id-123"}
+
+    resp_200 = MagicMock(spec=requests.Response)
+    resp_200.status_code = 200
+    resp_200.raise_for_status = MagicMock()
+
+    mock_session = MagicMock()
+    mock_session.get.return_value = resp_200
+
+    llm._client._wait(resp_202, mock_session)
+
+    mock_session.get.assert_called_once()
+    assert (
+        mock_session.get.call_args.kwargs.get("timeout") == 55
+    ), f"_wait() must pass timeout=55, got {mock_session.get.call_args.kwargs}"
+
+
+def test_sync_stream_passes_timeout() -> None:
+    """sync get_req_stream() must pass timeout=self.timeout to session.post()."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        timeout=99,
+    )
+    mock_response = MagicMock(spec=requests.Response)
+    mock_response.status_code = 200
+    mock_response.raise_for_status = MagicMock()
+    mock_response.iter_lines.return_value = iter([])
+    mock_session = MagicMock()
+    mock_session.post.return_value = mock_response
+    setattr(llm._client, "get_session_fn", lambda: mock_session)
+
+    list(llm._client.get_req_stream({"model": llm.model, "messages": []}))
+
+    mock_session.post.assert_called_once()
+    got = mock_session.post.call_args.kwargs.get("timeout")
+    assert got == 99, f"get_req_stream() must pass timeout=99, got {got}"
+
+
+async def test_async_session_uses_client_timeout() -> None:
+    """Async sessions must be created with aiohttp.ClientTimeout(total=self.timeout)."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        timeout=77,
+    )
+    session = llm._async_client._create_async_session()
+    try:
+        assert (
+            session.timeout.total == 77
+        ), f"aiohttp session timeout should be 77, got {session.timeout.total}"
+    finally:
+        await session.close()

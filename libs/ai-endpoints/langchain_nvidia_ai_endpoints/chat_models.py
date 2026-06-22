@@ -494,6 +494,10 @@ class ChatNVIDIA(BaseChatModel):
         # transport option, not a model parameter.
         verify_ssl = kwargs.pop("verify_ssl", True)
 
+        # Extract timeout from kwargs. This is a client transport option,
+        # not a model parameter.
+        timeout = kwargs.pop("timeout", None)
+
         init_kwargs.update(kwargs)
 
         super().__init__(**init_kwargs)
@@ -512,6 +516,7 @@ class ChatNVIDIA(BaseChatModel):
             # instead of self.__class__.__name__ to assist in subclassing ChatNVIDIA
             cls="ChatNVIDIA",
             verify_ssl=verify_ssl,
+            **({"timeout": timeout} if timeout is not None else {}),
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
