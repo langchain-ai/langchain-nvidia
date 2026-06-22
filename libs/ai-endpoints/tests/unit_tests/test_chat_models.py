@@ -725,14 +725,14 @@ def test_sync_post_passes_timeout() -> None:
     mock_response.json.return_value = {"choices": [{"message": {"content": "ok"}}]}
     mock_session = MagicMock()
     mock_session.post.return_value = mock_response
-    llm._client.get_session_fn = lambda: mock_session
+    setattr(llm._client, "get_session_fn", lambda: mock_session)
 
     llm._client._post(llm._client.infer_url, {})
 
     mock_session.post.assert_called_once()
-    assert mock_session.post.call_args.kwargs.get("timeout") == 42, (
-        f"_post() must pass timeout=42, got {mock_session.post.call_args.kwargs}"
-    )
+    assert (
+        mock_session.post.call_args.kwargs.get("timeout") == 42
+    ), f"_post() must pass timeout=42, got {mock_session.post.call_args.kwargs}"
 
 
 def test_sync_get_passes_timeout() -> None:
@@ -748,14 +748,14 @@ def test_sync_get_passes_timeout() -> None:
     mock_response.json.return_value = {"data": [{"id": "some-model"}]}
     mock_session = MagicMock()
     mock_session.get.return_value = mock_response
-    llm._client.get_session_fn = lambda: mock_session
+    setattr(llm._client, "get_session_fn", lambda: mock_session)
 
     llm._client._get(llm._client.listing_path.format(base_url=llm._client.base_url))
 
     mock_session.get.assert_called_once()
-    assert mock_session.get.call_args.kwargs.get("timeout") == 37, (
-        f"_get() must pass timeout=37, got {mock_session.get.call_args.kwargs}"
-    )
+    assert (
+        mock_session.get.call_args.kwargs.get("timeout") == 37
+    ), f"_get() must pass timeout=37, got {mock_session.get.call_args.kwargs}"
 
 
 def test_sync_wait_passes_timeout() -> None:
@@ -779,9 +779,9 @@ def test_sync_wait_passes_timeout() -> None:
     llm._client._wait(resp_202, mock_session)
 
     mock_session.get.assert_called_once()
-    assert mock_session.get.call_args.kwargs.get("timeout") == 55, (
-        f"_wait() must pass timeout=55, got {mock_session.get.call_args.kwargs}"
-    )
+    assert (
+        mock_session.get.call_args.kwargs.get("timeout") == 55
+    ), f"_wait() must pass timeout=55, got {mock_session.get.call_args.kwargs}"
 
 
 def test_sync_stream_passes_timeout() -> None:
@@ -797,7 +797,7 @@ def test_sync_stream_passes_timeout() -> None:
     mock_response.iter_lines.return_value = iter([])
     mock_session = MagicMock()
     mock_session.post.return_value = mock_response
-    llm._client.get_session_fn = lambda: mock_session
+    setattr(llm._client, "get_session_fn", lambda: mock_session)
 
     list(llm._client.get_req_stream({"model": llm.model, "messages": []}))
 
@@ -815,8 +815,8 @@ async def test_async_session_uses_client_timeout() -> None:
     )
     session = llm._async_client._create_async_session()
     try:
-        assert session.timeout.total == 77, (
-            f"aiohttp session timeout should be 77, got {session.timeout.total}"
-        )
+        assert (
+            session.timeout.total == 77
+        ), f"aiohttp session timeout should be 77, got {session.timeout.total}"
     finally:
         await session.close()
