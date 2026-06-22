@@ -60,9 +60,9 @@ def test_single_models_call_per_instance(
     models_calls = [
         req for req in requests_mock.request_history if req.path.endswith("/v1/models")
     ]
-    assert (
-        len(models_calls) == 1
-    ), f"expected 1 /v1/models call, got {len(models_calls)}"
+    assert len(models_calls) == 1, (
+        f"expected 1 /v1/models call, got {len(models_calls)}"
+    )
 
     unknown_warnings = [w for w in caught if "is unknown" in str(w.message)]
     assert len(unknown_warnings) == 1, (

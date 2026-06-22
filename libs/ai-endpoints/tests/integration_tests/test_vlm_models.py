@@ -48,16 +48,16 @@ from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
                 "image_url": {
                     "url": f"""data:image/jpg;base64,{
                         base64.b64encode(
-                            open('tests/data/nvidia-picasso.jpg', 'rb').read()
-                        ).decode('utf-8')
+                            open("tests/data/nvidia-picasso.jpg", "rb").read()
+                        ).decode("utf-8")
                     }"""
                 },
             }
         ],
         f"""<img src="data:image/jpg;base64,{
-            base64.b64encode(
-                open('tests/data/nvidia-picasso.jpg', 'rb').read()
-            ).decode('utf-8')
+            base64.b64encode(open("tests/data/nvidia-picasso.jpg", "rb").read()).decode(
+                "utf-8"
+            )
         }"/>""",
     ],
     ids=["url", "file", "data", "tag"],

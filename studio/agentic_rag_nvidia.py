@@ -1,5 +1,3 @@
-
-
 import operator
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict, List, Annotated, Literal
@@ -33,7 +31,7 @@ doc_splits = text_splitter.split_documents(docs_list)
 # Add to vectorDB
 vectorstore = InMemoryVectorStore.from_documents(
     documents=doc_splits,
-    embedding=NVIDIAEmbeddings(model='NV-Embed-QA'),
+    embedding=NVIDIAEmbeddings(model="NV-Embed-QA"),
 )
 
 # Create retriever
@@ -150,12 +148,14 @@ Return structured output with binary_score is 'yes' or 'no' score to indicate wh
 
 # Schemas
 
+
 class GradeDocuments(BaseModel):
     """Binary score for relevance check on retrieved documents."""
 
     binary_score: str = Field(
         description="Documents are relevant to the question, 'yes' or 'no'"
     )
+
 
 class GradeHallucinations(BaseModel):
     """Binary score for hallucination present in generation answer."""
@@ -164,12 +164,14 @@ class GradeHallucinations(BaseModel):
         description="Answer is grounded in the facts, 'yes' or 'no'"
     )
 
+
 class GradeAnswer(BaseModel):
     """Binary score to assess answer addresses question."""
 
     binary_score: str = Field(
         description="Answer addresses the question, 'yes' or 'no'"
     )
+
 
 class RouteQuery(BaseModel):
     """Route a user query to the most relevant datasource."""
@@ -179,13 +181,16 @@ class RouteQuery(BaseModel):
         description="Given a user question choose to route it to web search or a vectorstore.",
     )
 
+
 ## ------------------------------------------------------------
 
 # Utils
 
+
 # Post-processing
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
+
 
 ### Search
 web_search_tool = TavilySearchResults(k=3)
@@ -194,12 +199,14 @@ web_search_tool = TavilySearchResults(k=3)
 
 # LangGraph
 
+
 class GraphStateInput(TypedDict):
     """
     Input state for the graph
     """
 
     question: str  # User question
+
 
 class GraphState(TypedDict):
     """
@@ -213,6 +220,7 @@ class GraphState(TypedDict):
     answers: int  # Number of answers generated
     loop_step: Annotated[int, operator.add]
     documents: List[str]  # List of retrieved documents
+
 
 ### Nodes
 def retrieve(state):
@@ -231,6 +239,7 @@ def retrieve(state):
     # Write retrieved documents to documents key in state
     documents = retriever.invoke(question)
     return {"documents": documents}
+
 
 def generate(state):
     """
@@ -252,6 +261,7 @@ def generate(state):
     rag_prompt_formatted = rag_prompt.format(context=docs_txt, question=question)
     generation = llm.invoke([HumanMessage(content=rag_prompt_formatted)])
     return {"generation": generation, "loop_step": loop_step + 1}
+
 
 def grade_documents(state):
     """
@@ -277,7 +287,7 @@ def grade_documents(state):
         doc_grader_prompt_formatted = doc_grader_prompt.format(
             document=d.page_content, question=question
         )
-        
+
         result = structured_llm_grader.invoke(
             [SystemMessage(content=doc_grader_instructions)]
             + [HumanMessage(content=doc_grader_prompt_formatted)]
@@ -319,7 +329,9 @@ def web_search(state):
     documents.append(web_results)
     return {"documents": documents}
 
+
 ### Edges
+
 
 def route_question(state):
     """
@@ -345,6 +357,7 @@ def route_question(state):
     elif source == "vectorstore":
         print("---ROUTE QUESTION TO RAG---")
         return "vectorstore"
+
 
 def decide_to_generate(state):
     """
@@ -373,6 +386,7 @@ def decide_to_generate(state):
         # We have relevant documents, so generate answer
         print("---DECISION: GENERATE---")
         return "generate"
+
 
 def grade_generation_v_documents_and_question(state):
     """
@@ -432,7 +446,8 @@ def grade_generation_v_documents_and_question(state):
     else:
         print("---DECISION: MAX RETRIES REACHED---")
         return "max retries"
-    
+
+
 workflow = StateGraph(GraphState, input=GraphStateInput)
 
 # Define the nodes

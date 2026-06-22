@@ -37,6 +37,6 @@ async def test_ttft(chat_model: str, mode: dict, func: str) -> None:
             chunk_times.append(time.time())
     ttft = chunk_times[1] - chunk_times[0]
     total_time = chunk_times[-1] - chunk_times[0]
-    assert ttft < (
-        total_time / 2
-    ), "potential streaming issue, TTFT should be less than half of the total time"
+    assert ttft < (total_time / 2), (
+        "potential streaming issue, TTFT should be less than half of the total time"
+    )
