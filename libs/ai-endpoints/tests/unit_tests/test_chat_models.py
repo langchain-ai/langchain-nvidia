@@ -2,17 +2,16 @@
 
 import warnings
 from typing import Any, Optional, Union
+from unittest.mock import MagicMock
 
 import pytest
+import requests
 from requests_mock import Mocker
 
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, register_model
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
 from .conftest import MockHTTP
-
-import requests
-from unittest.mock import MagicMock
 
 
 @pytest.fixture(autouse=True)
@@ -803,9 +802,8 @@ def test_sync_stream_passes_timeout() -> None:
     list(llm._client.get_req_stream({"model": llm.model, "messages": []}))
 
     mock_session.post.assert_called_once()
-    assert mock_session.post.call_args.kwargs.get("timeout") == 99, (
-        f"get_req_stream() must pass timeout=99, got {mock_session.post.call_args.kwargs}"
-    )
+    got = mock_session.post.call_args.kwargs.get("timeout")
+    assert got == 99, f"get_req_stream() must pass timeout=99, got {got}"
 
 
 async def test_async_session_uses_client_timeout() -> None:
