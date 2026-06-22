@@ -117,9 +117,8 @@ class SpeculativeRouteExecutor:
         self.state_manager = ChannelStateManager(graph)
         self.node_executor = LangGraphNodeExecutor(graph, runnable_config)
         self.result_handler = ResultHandler(
-            command_checker=lambda result: (
-                hasattr(result, "update") and not callable(result.update)
-            ),
+            command_checker=lambda result: hasattr(result, "update")
+            and not callable(result.update),
         )
 
         if self.config.log_level:
@@ -298,7 +297,7 @@ class SpeculativeGraphWrapper(Runnable[dict[str, Any], dict[str, Any]]):
         self._runnable_config = runnable_config
         self._node_rw = node_rw
         self._last_metrics: dict[str, Any] | None = None
-        self._invoke_executor: concurrent.futures.ThreadPoolExecutor | None = None
+        self._invoke_executor: (concurrent.futures.ThreadPoolExecutor | None) = None
 
     def _get_invoke_executor(self) -> concurrent.futures.ThreadPoolExecutor:
         """Lazily create thread pool for sync invoke from async context."""

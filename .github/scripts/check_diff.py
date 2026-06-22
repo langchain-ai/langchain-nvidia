@@ -64,25 +64,23 @@ if __name__ == "__main__":
     test_matrix = [
         {
             "working-directory": dir_,
-            "python-versions": json.dumps(
-                PYTHON_VERSIONS.get(dir_, ["3.8", "3.9", "3.10", "3.11"])
-            ),
+            "python-versions": json.dumps(PYTHON_VERSIONS.get(dir_, ["3.8", "3.9", "3.10", "3.11"]))
         }
         for dir_ in dirs_to_run["test"]
     ]
-
+    
     lint_matrix = [
         {
             "working-directory": dir_,
-            "python-versions": json.dumps(
-                LINT_PYTHON_VERSIONS.get(dir_, ["3.8", "3.11"])
-            ),
+            "python-versions": json.dumps(LINT_PYTHON_VERSIONS.get(dir_, ["3.8", "3.11"]))
         }
         for dir_ in (dirs_to_run["lint"] | dirs_to_run["test"])
     ]
-
+    
     outputs = {
-        "dirs-to-lint": list(dirs_to_run["lint"] | dirs_to_run["test"]),
+        "dirs-to-lint": list(
+            dirs_to_run["lint"] | dirs_to_run["test"]
+        ),
         "dirs-to-test": list(dirs_to_run["test"]),
         "test-matrix": test_matrix,
         "lint-matrix": lint_matrix,

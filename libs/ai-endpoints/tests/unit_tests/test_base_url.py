@@ -177,9 +177,9 @@ def test_expect_not_skip_check(
     try:
         os.environ["NVIDIA_APPEND_API_VERSION"] = true_value
         obj = public_class(model="model1", base_url=base_url)
-        assert obj.base_url.rstrip("/").endswith("/v1"), (
-            f"Expected {obj.base_url} to end with '/v1'"
-        )
+        assert obj.base_url.rstrip("/").endswith(
+            "/v1"
+        ), f"Expected {obj.base_url} to end with '/v1'"
     finally:
         warnings.resetwarnings()
         if orig is None:

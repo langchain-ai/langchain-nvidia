@@ -14,9 +14,9 @@ from langchain_nvidia_ai_endpoints import NVIDIARerank
         "tests/data/nvidia-picasso.webp",
         "tests/data/nvidia-picasso.gif",
         f"""data:image/jpg;base64,{
-            base64.b64encode(open("tests/data/nvidia-picasso.jpg", "rb").read()).decode(
-                "utf-8"
-            )
+            base64.b64encode(
+                open('tests/data/nvidia-picasso.jpg', 'rb').read()
+            ).decode('utf-8')
         }""",
     ],
     ids=["jpg", "png", "webp", "gif", "data"],

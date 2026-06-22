@@ -1,5 +1,4 @@
 """Test TritonTensorRT Chat API wrapper."""
-
 from langchain_nvidia_trt import TritonTensorRTLLM
 
 

@@ -48,9 +48,9 @@ def check_reasoning_content(
     if should_have_reasoning:
         assert has_reasoning_block, "No reasoning content found in content_blocks"
     else:
-        assert not has_reasoning_block, (
-            "Found reasoning content when it should not be present"
-        )
+        assert (
+            not has_reasoning_block
+        ), "Found reasoning content when it should not be present"
 
 
 @pytest.mark.parametrize(
@@ -113,7 +113,9 @@ async def test_thinking_mode_default(
     """Test that model works without explicitly setting thinking mode."""
 
     llm = ChatNVIDIA(model=thinking_model, **mode)
-    prompt = "John is taller than Mike. Mike is taller than Sara. Who is the tallest?"
+    prompt = (
+        "John is taller than Mike. Mike is taller than Sara. " "Who is the tallest?"
+    )
 
     if is_async_func(func):
         response = await func(llm, prompt)

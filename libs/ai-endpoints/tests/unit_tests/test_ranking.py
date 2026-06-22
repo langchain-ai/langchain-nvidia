@@ -281,9 +281,9 @@ def test_image_on_non_vlm_model_warns(requests_mock: Mocker) -> None:
             ],
             query="test query",
         )
-    assert any("not known to support image" in str(warning.message) for warning in w), (
-        "expected a warning about image support"
-    )
+    assert any(
+        "not known to support image" in str(warning.message) for warning in w
+    ), "expected a warning about image support"
 
 
 def test_image_on_ranking_vlm_model_no_warning(requests_mock: Mocker) -> None:

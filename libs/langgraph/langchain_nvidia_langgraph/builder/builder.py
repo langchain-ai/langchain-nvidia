@@ -213,17 +213,17 @@ class OptimizedGraphBuilder:
                 if not entry_point:
                     entry_point = edge.target
                 if edge.conditional:
-                    conditional_sources.setdefault(edge.source, {})[edge.target] = (
+                    conditional_sources.setdefault(edge.source, {})[
                         edge.target
-                    )
+                    ] = edge.target
                 continue
             if edge.target == "__end__":
                 g.terminal_nodes.add(edge.source)
                 continue
             if edge.conditional:
-                conditional_sources.setdefault(edge.source, {})[edge.target] = (
+                conditional_sources.setdefault(edge.source, {})[
                     edge.target
-                )
+                ] = edge.target
             else:
                 g.add_edge(edge.source, edge.target)
 
