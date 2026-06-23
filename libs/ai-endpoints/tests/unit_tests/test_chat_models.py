@@ -1,9 +1,14 @@
 """Test chat model integration."""
 
+import asyncio
+import json
 import warnings
 from typing import Any, Optional, Union
+from unittest.mock import MagicMock
 
 import pytest
+import requests
+from aiohttp import web as aiohttp_web
 from requests_mock import Mocker
 
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, register_model
@@ -536,6 +541,27 @@ def test_verify_ssl_behavior(
     assert "verify_ssl" not in payload
 
 
+def test_timeout_behavior() -> None:
+    """Test timeout is treated as a client parameter, not a model parameter."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        timeout=123,
+    )
+
+    assert llm._client.timeout == 123
+    assert llm._async_client.timeout == 123
+
+    assert "timeout" not in llm.model_kwargs
+
+    payload = llm._get_payload(
+        inputs=[{"role": "user", "content": "test"}],
+        stop=None,
+    )
+
+    assert "timeout" not in payload
+
+
 def test_default_headers(requests_mock: Mocker) -> None:
     """Test that default_headers are passed to requests."""
     model = "meta/llama-3.1-8b-instruct"
@@ -694,3 +720,195 @@ def test_self_hosted_nim_picks_up_static_model_config() -> None:
     assert llm._client.model.id == model_id
     assert llm._client.model.thinking_param_disable is not None
     assert llm._client.model.thinking_param_enable is not None
+
+
+def test_sync_post_passes_timeout() -> None:
+    """sync _post() must pass timeout=self.timeout to session.post()."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        timeout=42,
+    )
+    mock_response = MagicMock(spec=requests.Response)
+    mock_response.status_code = 200
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json.return_value = {"choices": [{"message": {"content": "ok"}}]}
+    mock_session = MagicMock()
+    mock_session.post.return_value = mock_response
+    setattr(llm._client, "get_session_fn", lambda: mock_session)
+
+    llm._client._post(llm._client.infer_url, {})
+
+    mock_session.post.assert_called_once()
+    assert (
+        mock_session.post.call_args.kwargs.get("timeout") == 42
+    ), f"_post() must pass timeout=42, got {mock_session.post.call_args.kwargs}"
+
+
+def test_sync_get_passes_timeout() -> None:
+    """sync _get() must pass timeout=self.timeout to session.get()."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        timeout=37,
+    )
+    mock_response = MagicMock(spec=requests.Response)
+    mock_response.status_code = 200
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json.return_value = {"data": [{"id": "some-model"}]}
+    mock_session = MagicMock()
+    mock_session.get.return_value = mock_response
+    setattr(llm._client, "get_session_fn", lambda: mock_session)
+
+    llm._client._get(llm._client.listing_path.format(base_url=llm._client.base_url))
+
+    mock_session.get.assert_called_once()
+    assert (
+        mock_session.get.call_args.kwargs.get("timeout") == 37
+    ), f"_get() must pass timeout=37, got {mock_session.get.call_args.kwargs}"
+
+
+def test_sync_wait_passes_timeout() -> None:
+    """sync _wait() polling must pass timeout=self.timeout to session.get()."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        timeout=55,
+    )
+    resp_202 = MagicMock(spec=requests.Response)
+    resp_202.status_code = 202
+    resp_202.headers = {"NVCF-REQID": "test-request-id-123"}
+
+    resp_200 = MagicMock(spec=requests.Response)
+    resp_200.status_code = 200
+    resp_200.raise_for_status = MagicMock()
+
+    mock_session = MagicMock()
+    mock_session.get.return_value = resp_200
+
+    llm._client._wait(resp_202, mock_session)
+
+    mock_session.get.assert_called_once()
+    assert (
+        mock_session.get.call_args.kwargs.get("timeout") == 55
+    ), f"_wait() must pass timeout=55, got {mock_session.get.call_args.kwargs}"
+
+
+def test_sync_stream_passes_timeout() -> None:
+    """sync get_req_stream() must pass timeout=self.timeout to session.post()."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        timeout=99,
+    )
+    mock_response = MagicMock(spec=requests.Response)
+    mock_response.status_code = 200
+    mock_response.raise_for_status = MagicMock()
+    mock_response.iter_lines.return_value = iter([])
+    mock_session = MagicMock()
+    mock_session.post.return_value = mock_response
+    setattr(llm._client, "get_session_fn", lambda: mock_session)
+
+    list(llm._client.get_req_stream({"model": llm.model, "messages": []}))
+
+    mock_session.post.assert_called_once()
+    got = mock_session.post.call_args.kwargs.get("timeout")
+    assert got == 99, f"get_req_stream() must pass timeout=99, got {got}"
+
+
+async def test_async_session_uses_client_timeout() -> None:
+    """Async sessions must apply self.timeout as connect/read (inactivity) timeouts
+    rather than `total`, so long but active streams are not cut off."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        timeout=77,
+    )
+    session = llm._async_client._create_async_session()
+    try:
+        assert (
+            session.timeout.sock_read == 77
+        ), f"aiohttp sock_read timeout should be 77, got {session.timeout.sock_read}"
+        assert (
+            session.timeout.sock_connect == 77
+        ), f"aiohttp sock_connect should be 77, got {session.timeout.sock_connect}"
+        assert (
+            session.timeout.connect == 77
+        ), f"aiohttp connect should be 77, got {session.timeout.connect}"
+        assert (
+            session.timeout.total is None
+        ), f"aiohttp total should be unset, got {session.timeout.total}"
+    finally:
+        await session.close()
+
+
+def _sse_chunk(content: str) -> bytes:
+    """Build one SSE chat-completion chunk line."""
+    payload = {
+        "id": "ID0",
+        "object": "chat.completion.chunk",
+        "created": 1,
+        "model": "bogus",
+        "choices": [
+            {
+                "index": 0,
+                "delta": {"role": None, "content": content},
+                "finish_reason": None,
+            }
+        ],
+    }
+    return f"data: {json.dumps(payload)}\n\n".encode()
+
+
+async def _start_stream_server(handler: Any) -> Any:
+    """Start a local aiohttp server exposing the chat-completions + models routes.
+
+    Returns (runner, port). Caller must `await runner.cleanup()`.
+    """
+
+    async def models_handler(_request: Any) -> Any:
+        return aiohttp_web.json_response({"data": [{"id": "mock-model"}]})
+
+    app = aiohttp_web.Application()
+    app.router.add_post("/v1/chat/completions", handler)
+    app.router.add_get("/v1/models", models_handler)
+    runner = aiohttp_web.AppRunner(app)
+    await runner.setup()
+    site = aiohttp_web.TCPSite(runner, "127.0.0.1", 0)
+    await site.start()
+    return runner, runner.addresses[0][1]
+
+
+async def test_astream_not_capped_by_total_duration() -> None:
+    """A long but actively-streaming async response must run to completion.
+
+    The total stream duration deliberately exceeds `timeout`, while each
+    inter-chunk gap stays under it. With a `total=` timeout this would be cut
+    off mid-stream; with sock_read (inactivity) semantics it completes.
+    """
+    timeout_s, gap_s, n_chunks = 0.4, 0.15, 5  # total ~0.75s > timeout, gap << timeout
+
+    async def handler(request: Any) -> Any:
+        resp = aiohttp_web.StreamResponse(
+            status=200, headers={"Content-Type": "text/event-stream"}
+        )
+        await resp.prepare(request)
+        for i in range(n_chunks):
+            await asyncio.sleep(gap_s)
+            await resp.write(_sse_chunk(f"tok{i}"))
+        await resp.write(b"data: [DONE]\n\n")
+        await resp.write_eof()
+        return resp
+
+    runner, port = await _start_stream_server(handler)
+    try:
+        llm = ChatNVIDIA(
+            model="mock-model",
+            base_url=f"http://127.0.0.1:{port}/v1",
+            api_key="BOGUS",
+            timeout=timeout_s,
+        )
+        collected = [str(chunk.content) async for chunk in llm.astream("hi")]
+        assert "".join(collected) == "tok0tok1tok2tok3tok4", collected
+    finally:
+        await runner.cleanup()

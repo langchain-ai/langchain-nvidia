@@ -6,20 +6,22 @@ from langchain_core.documents import Document
 from langchain_nvidia_ai_endpoints import NVIDIARerank
 
 
+def _image_data_uri(image_path: str) -> str:
+    image_type = image_path.rsplit(".", 1)[1]
+    with open(image_path, "rb") as image_file:
+        encoded = base64.b64encode(image_file.read()).decode("utf-8")
+    return f"data:image/{image_type};base64,{encoded}"
+
+
 @pytest.mark.parametrize(
     "img",
     [
-        "tests/data/nvidia-picasso.jpg",
-        "tests/data/nvidia-picasso.png",
-        "tests/data/nvidia-picasso.webp",
-        "tests/data/nvidia-picasso.gif",
-        f"""data:image/jpg;base64,{
-            base64.b64encode(
-                open('tests/data/nvidia-picasso.jpg', 'rb').read()
-            ).decode('utf-8')
-        }""",
+        _image_data_uri("tests/data/nvidia-picasso.jpg"),
+        _image_data_uri("tests/data/nvidia-picasso.png"),
+        _image_data_uri("tests/data/nvidia-picasso.webp"),
+        _image_data_uri("tests/data/nvidia-picasso.gif"),
     ],
-    ids=["jpg", "png", "webp", "gif", "data"],
+    ids=["jpg", "png", "webp", "gif"],
 )
 @pytest.mark.parametrize(
     "func", ["compress", "acompress"], ids=["compress", "acompress"]
@@ -50,10 +52,10 @@ async def test_vlm_reranker_image_type(
 @pytest.mark.parametrize(
     "img",
     [
-        "tests/data/nvidia-picasso.jpg",
-        "tests/data/nvidia-picasso.png",
-        "tests/data/nvidia-picasso.webp",
-        "tests/data/nvidia-picasso.gif",
+        _image_data_uri("tests/data/nvidia-picasso.jpg"),
+        _image_data_uri("tests/data/nvidia-picasso.png"),
+        _image_data_uri("tests/data/nvidia-picasso.webp"),
+        _image_data_uri("tests/data/nvidia-picasso.gif"),
     ],
     ids=["jpg", "png", "webp", "gif"],
 )

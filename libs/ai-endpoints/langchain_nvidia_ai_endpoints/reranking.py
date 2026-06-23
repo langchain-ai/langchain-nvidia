@@ -170,14 +170,15 @@ class NVIDIARerank(BaseDocumentCompressor):
             from langchain_core.documents import Document
 
             query = "Show me a picture of a cat"
+            image = "data:image/png;base64,<base64-encoded-image>"
             documents = [
                 Document(
                     page_content="The picture of a cat.",
-                    metadata={"image": "/path/to/image"},
+                    metadata={"image": image},
                 ),
                 Document(
                     page_content="",
-                    metadata={"image": "/path/to/image"},
+                    metadata={"image": image},
                 ),
                 Document(page_content="The weather today is sunny."),
             ]
