@@ -672,7 +672,16 @@ class _NVIDIAAsyncClient(_NVIDIABaseClient):
     def _create_async_session(self) -> "aiohttp.ClientSession":
         """Create an aiohttp session with SSL verification via connector."""
         connector = aiohttp.TCPConnector(ssl=self._build_ssl_context())
-        timeout = aiohttp.ClientTimeout(total=self.timeout)
+        # Use connect/read (inactivity) timeouts rather than `total` so that long
+        # but actively-streaming responses (e.g. astream) are not cut off mid-stream.
+        # `connect` guards connection establishment (incl. DNS resolution and pool
+        # wait) since `sock_connect` only covers the socket connect itself; without
+        # it a hung DNS lookup would never time out.
+        timeout = aiohttp.ClientTimeout(
+            connect=self.timeout,
+            sock_connect=self.timeout,
+            sock_read=self.timeout,
+        )
         return aiohttp.ClientSession(
             connector=connector,
             timeout=timeout,
