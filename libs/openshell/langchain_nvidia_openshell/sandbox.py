@@ -52,8 +52,8 @@ if TYPE_CHECKING:
 _UPLOAD_BOOTSTRAP = (
     "import base64,os,sys;"
     "data=base64.b64decode(sys.stdin.buffer.read());"
-    "p=os.environ['OPENSHELL_UPLOAD_PATH'];"
-    "m=os.environ.get('OPENSHELL_UPLOAD_MODE','wb');"
+    "p=sys.argv[1] if len(sys.argv)>1 else os.environ['OPENSHELL_UPLOAD_PATH'];"
+    "m=sys.argv[2] if len(sys.argv)>2 else os.environ.get('OPENSHELL_UPLOAD_MODE','wb');"
     "d=os.path.dirname(p);"
     "(os.makedirs(d,exist_ok=True) if d else None);"
     "open(p,m).write(data)"
@@ -64,7 +64,7 @@ _UPLOAD_BOOTSTRAP = (
 # FileOperationError code on the LangChain side.
 _DOWNLOAD_BOOTSTRAP = (
     "import base64,os,sys;"
-    "p=os.environ['OPENSHELL_DOWNLOAD_PATH'];"
+    "p=sys.argv[1] if len(sys.argv)>1 else os.environ['OPENSHELL_DOWNLOAD_PATH'];"
     "os.path.isdir(p) and (sys.stderr.write('error: is a directory\\n'),"
     "sys.exit(2));"
     "sys.stdout.buffer.write(base64.b64encode(open(p,'rb').read()))"
@@ -324,7 +324,7 @@ class OpenShellSandbox(BaseSandbox):
         stdin = base64.b64encode(content)
         try:
             result = self._sandbox.exec(
-                ["python3", "-c", _UPLOAD_BOOTSTRAP],
+                ["python3", "-c", _UPLOAD_BOOTSTRAP, path, "ab" if append else "wb"],
                 env=env,
                 stdin=stdin,
                 timeout_seconds=self._resolve_timeout(None),
@@ -354,7 +354,7 @@ class OpenShellSandbox(BaseSandbox):
         env = {"OPENSHELL_DOWNLOAD_PATH": path}
         try:
             result = self._sandbox.exec(
-                ["python3", "-c", _DOWNLOAD_BOOTSTRAP],
+                ["python3", "-c", _DOWNLOAD_BOOTSTRAP, path],
                 env=env,
                 timeout_seconds=self._resolve_timeout(None),
             )
