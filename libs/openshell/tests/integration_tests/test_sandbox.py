@@ -26,17 +26,19 @@ from __future__ import annotations
 
 import os
 import pathlib
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
+openshell: Any | None
 _OPENSHELL_IMPORT_ERROR: Exception | None
 try:
-    import openshell
+    import openshell as _openshell
 except Exception as exc:  # pragma: no cover - environment-dependent
     openshell = None
     _OPENSHELL_IMPORT_ERROR = exc
 else:
+    openshell = _openshell
     _OPENSHELL_IMPORT_ERROR = None
 
 _OPENSHELL_GATEWAY_ERROR: str | None = None
