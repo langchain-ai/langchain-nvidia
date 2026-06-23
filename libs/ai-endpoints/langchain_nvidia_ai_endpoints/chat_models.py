@@ -135,7 +135,7 @@ def _nv_vlm_adjust_input(
     This function converts the OpenAI VLM API input message to NVIDIA VLM API input
     message, in place.
 
-    In the process, it accepts a url or file and converts them to data urls.
+    In the process, it accepts remote URLs or data:image URIs.
     """
     if content := message_dict.get("content"):
         if isinstance(content, list):
