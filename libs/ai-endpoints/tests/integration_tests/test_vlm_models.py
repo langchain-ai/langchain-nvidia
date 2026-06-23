@@ -8,6 +8,14 @@ from langchain_core.messages import BaseMessage, HumanMessage
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
+
+def _image_data_uri(image_path: str) -> str:
+    image_type = image_path.rsplit(".", 1)[1]
+    with open(image_path, "rb") as image_file:
+        encoded = base64.b64encode(image_file.read()).decode("utf-8")
+    return f"data:image/{image_type};base64,{encoded}"
+
+
 # todo: multiple texts
 # todo: accuracy tests
 
@@ -26,7 +34,7 @@ from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 # note: differences between api catalog and openai api
 #  - openai api supports server-side image download, api catalog does not consistently
 #   - ChatNVIDIA does client side download to simulate the same behavior
-#  - ChatNVIDIA will automatically read local files and convert them to base64
+#  - local files should be read explicitly by the caller and passed as data URIs
 #  - openai api always uses {"image_url": {"url": "..."}}
 #     where api catalog sometimes uses {"image_url": "..."}
 #
@@ -41,26 +49,15 @@ from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
                 "image_url": {"url": "https://picsum.photos/800/600"},
             }
         ],
-        [{"type": "image_url", "image_url": {"url": "tests/data/nvidia-picasso.jpg"}}],
         [
             {
                 "type": "image_url",
-                "image_url": {
-                    "url": f"""data:image/jpg;base64,{
-                        base64.b64encode(
-                            open('tests/data/nvidia-picasso.jpg', 'rb').read()
-                        ).decode('utf-8')
-                    }"""
-                },
+                "image_url": {"url": _image_data_uri("tests/data/nvidia-picasso.jpg")},
             }
         ],
-        f"""<img src="data:image/jpg;base64,{
-            base64.b64encode(
-                open('tests/data/nvidia-picasso.jpg', 'rb').read()
-            ).decode('utf-8')
-        }"/>""",
+        f"""<img src="{_image_data_uri("tests/data/nvidia-picasso.jpg")}"/>""",
     ],
-    ids=["url", "file", "data", "tag"],
+    ids=["url", "data", "tag"],
 )
 @pytest.mark.parametrize(
     "func",
@@ -111,7 +108,7 @@ async def test_vlm_detail_accepted(
                 {
                     "type": "image_url",
                     "image_url": {
-                        "url": "tests/data/nvidia-picasso.jpg",
+                        "url": _image_data_uri("tests/data/nvidia-picasso.jpg"),
                         "detail": detail,
                     },
                 }
@@ -152,7 +149,7 @@ async def test_vlm_detail_invalid(
                 {
                     "type": "image_url",
                     "image_url": {
-                        "url": "tests/data/nvidia-picasso.jpg",
+                        "url": _image_data_uri("tests/data/nvidia-picasso.jpg"),
                         "detail": invalid_detail,
                     },
                 }
@@ -170,10 +167,10 @@ async def test_vlm_detail_invalid(
 @pytest.mark.parametrize(
     "img",
     [
-        "tests/data/nvidia-picasso.jpg",
-        "tests/data/nvidia-picasso.png",
-        "tests/data/nvidia-picasso.webp",
-        "tests/data/nvidia-picasso.gif",
+        _image_data_uri("tests/data/nvidia-picasso.jpg"),
+        _image_data_uri("tests/data/nvidia-picasso.png"),
+        _image_data_uri("tests/data/nvidia-picasso.webp"),
+        _image_data_uri("tests/data/nvidia-picasso.gif"),
     ],
     ids=["jpg", "png", "webp", "gif"],
 )
@@ -225,7 +222,9 @@ async def test_vlm_image_large(
                 {
                     "type": "image_url",
                     "image_url": {
-                        "url": "tests/data/nvidia-picasso-large.png",
+                        "url": _image_data_uri(
+                            "tests/data/nvidia-picasso-large.png"
+                        ),
                     },
                 }
             ]
@@ -280,13 +279,13 @@ async def test_vlm_two_images(
                 {
                     "type": "image_url",
                     "image_url": {
-                        "url": "tests/data/nvidia-picasso.jpg",
+                        "url": _image_data_uri("tests/data/nvidia-picasso.jpg"),
                     },
                 },
                 {
                     "type": "image_url",
                     "image_url": {
-                        "url": "tests/data/nvidia-picasso.jpg",
+                        "url": _image_data_uri("tests/data/nvidia-picasso.jpg"),
                     },
                 },
             ]

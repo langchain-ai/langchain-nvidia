@@ -2,7 +2,23 @@ from typing import Any, Dict, List, Union
 
 import pytest
 
+from langchain_nvidia_ai_endpoints._utils import _url_to_b64_string
 from langchain_nvidia_ai_endpoints.chat_models import _nv_vlm_get_asset_ids
+
+
+def test_url_to_b64_string_rejects_local_file_path(
+    monkeypatch: Any, tmp_path: Any
+) -> None:
+    local_file = tmp_path / "secret.txt"
+    local_file.write_text("TOP-SECRET", encoding="utf-8")
+
+    def fail_open(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("local files must not be opened")
+
+    monkeypatch.setattr("builtins.open", fail_open)
+
+    with pytest.raises(ValueError, match="Local file paths are no longer supported"):
+        _url_to_b64_string(str(local_file))
 
 
 @pytest.mark.parametrize(

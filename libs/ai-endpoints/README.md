@@ -207,6 +207,9 @@ for txt in chain.stream({"input": "How do I solve this fizz buzz problem?"}):
 NVIDIA also has models that support multimodal inputs, such as `nvidia/neva-22b`. 
 You can provide both images and text for the model to reason over. 
 These models accept LangChain's standard image formats. 
+Local file paths are no longer accepted directly. If you are upgrading code that
+passed local paths, read trusted local files explicitly and pass them as
+`data:image/...;base64,...` URIs.
 
 The following example asks the model to describe an image.
 
@@ -349,14 +352,15 @@ from langchain_nvidia_ai_endpoints import NVIDIARerank
 from langchain_core.documents import Document
 
 query = "Show me a picture of a cat"
+image = "data:image/png;base64,<base64-encoded-image>"
 documents = [
     Document(
         page_content="The picture of a cat.",
-        metadata={"image": "/path/to/image"},
+        metadata={"image": image},
     ),
     Document(
         page_content="",
-        metadata={"image": "/path/to/image"},
+        metadata={"image": image},
     ),
     Document(page_content="The weather today is sunny."),
 ]

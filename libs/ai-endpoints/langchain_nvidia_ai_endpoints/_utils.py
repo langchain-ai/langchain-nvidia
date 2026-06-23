@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import base64
 import logging
-import os
 import urllib.parse
 from typing import (
     Any,
@@ -37,18 +35,12 @@ def _url_to_b64_string(image_source: str) -> str:
             return image_source
         elif image_source.startswith("data:image"):
             return image_source
-        elif os.path.exists(image_source):
-            with open(image_source, "rb") as f:
-                image_data = f.read()
-                import filetype  # type: ignore
-
-                kind = filetype.guess(image_data)
-                image_type = kind.extension if kind else "unknown"
-                encoded = base64.b64encode(image_data).decode("utf-8")
-                return f"data:image/{image_type};base64,{encoded}"
         else:
             raise ValueError(
-                "The provided string is not a valid URL, base64, or file path."
+                "The provided string is not a valid URL or data:image URI. "
+                "Local file paths are no longer supported for image inputs. "
+                "To use a trusted local file, read it explicitly and pass a "
+                "data:image/...;base64 URI."
             )
     except Exception as e:
         raise ValueError(f"Unable to process the provided image source: {e}")
