@@ -1,11 +1,14 @@
 """Test chat model integration."""
 
+import asyncio
+import json
 import warnings
 from typing import Any, Optional, Union
 from unittest.mock import MagicMock
 
 import pytest
 import requests
+from aiohttp import web as aiohttp_web
 from requests_mock import Mocker
 
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, register_model
@@ -814,7 +817,8 @@ def test_sync_stream_passes_timeout() -> None:
 
 
 async def test_async_session_uses_client_timeout() -> None:
-    """Async sessions must be created with aiohttp.ClientTimeout(total=self.timeout)."""
+    """Async sessions must apply self.timeout as connect/read (inactivity) timeouts
+    rather than `total`, so long but active streams are not cut off."""
     llm = ChatNVIDIA(
         model="meta/llama-3.3-70b-instruct",
         nvidia_api_key="nvapi-...",
@@ -823,7 +827,88 @@ async def test_async_session_uses_client_timeout() -> None:
     session = llm._async_client._create_async_session()
     try:
         assert (
-            session.timeout.total == 77
-        ), f"aiohttp session timeout should be 77, got {session.timeout.total}"
+            session.timeout.sock_read == 77
+        ), f"aiohttp sock_read timeout should be 77, got {session.timeout.sock_read}"
+        assert (
+            session.timeout.sock_connect == 77
+        ), f"aiohttp sock_connect should be 77, got {session.timeout.sock_connect}"
+        assert (
+            session.timeout.connect == 77
+        ), f"aiohttp connect should be 77, got {session.timeout.connect}"
+        assert (
+            session.timeout.total is None
+        ), f"aiohttp total should be unset, got {session.timeout.total}"
     finally:
         await session.close()
+
+
+def _sse_chunk(content: str) -> bytes:
+    """Build one SSE chat-completion chunk line."""
+    payload = {
+        "id": "ID0",
+        "object": "chat.completion.chunk",
+        "created": 1,
+        "model": "bogus",
+        "choices": [
+            {
+                "index": 0,
+                "delta": {"role": None, "content": content},
+                "finish_reason": None,
+            }
+        ],
+    }
+    return f"data: {json.dumps(payload)}\n\n".encode()
+
+
+async def _start_stream_server(handler: Any) -> Any:
+    """Start a local aiohttp server exposing the chat-completions + models routes.
+
+    Returns (runner, port). Caller must `await runner.cleanup()`.
+    """
+
+    async def models_handler(_request: Any) -> Any:
+        return aiohttp_web.json_response({"data": [{"id": "mock-model"}]})
+
+    app = aiohttp_web.Application()
+    app.router.add_post("/v1/chat/completions", handler)
+    app.router.add_get("/v1/models", models_handler)
+    runner = aiohttp_web.AppRunner(app)
+    await runner.setup()
+    site = aiohttp_web.TCPSite(runner, "127.0.0.1", 0)
+    await site.start()
+    return runner, runner.addresses[0][1]
+
+
+async def test_astream_not_capped_by_total_duration() -> None:
+    """A long but actively-streaming async response must run to completion.
+
+    The total stream duration deliberately exceeds `timeout`, while each
+    inter-chunk gap stays under it. With a `total=` timeout this would be cut
+    off mid-stream; with sock_read (inactivity) semantics it completes.
+    """
+    timeout_s, gap_s, n_chunks = 0.4, 0.15, 5  # total ~0.75s > timeout, gap << timeout
+
+    async def handler(request: Any) -> Any:
+        resp = aiohttp_web.StreamResponse(
+            status=200, headers={"Content-Type": "text/event-stream"}
+        )
+        await resp.prepare(request)
+        for i in range(n_chunks):
+            await asyncio.sleep(gap_s)
+            await resp.write(_sse_chunk(f"tok{i}"))
+        await resp.write(b"data: [DONE]\n\n")
+        await resp.write_eof()
+        return resp
+
+    runner, port = await _start_stream_server(handler)
+    try:
+        llm = ChatNVIDIA(
+            model="mock-model",
+            base_url=f"http://127.0.0.1:{port}/v1",
+            api_key="BOGUS",
+            timeout=timeout_s,
+        )
+        collected = [str(chunk.content) async for chunk in llm.astream("hi")]
+        assert "".join(collected) == "tok0tok1tok2tok3tok4", collected
+    finally:
+        await runner.cleanup()
