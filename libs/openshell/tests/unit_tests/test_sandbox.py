@@ -24,7 +24,6 @@ from langchain_nvidia_openshell.sandbox import (
 from .conftest import (
     FakeExecResult,
     FakeSandbox,
-    find_call_with_env_key,
     make_filesystem_handler,
 )
 
@@ -214,11 +213,11 @@ def test_upload_files_round_trips_via_storage() -> None:
 
     assert responses == [type(responses[0])(path="/sandbox/a.txt", error=None)]
     assert storage["/sandbox/a.txt"] == b"hello"
-    # The bootstrap was invoked (env var present + stdin payload)
-    call = find_call_with_env_key(sandbox, "OPENSHELL_UPLOAD_PATH")
-    assert call is not None
+    # The bootstrap is invoked with path/mode argv and a base64 stdin payload.
+    call = sandbox.calls[0]
+    assert call.command[3:] == ["/sandbox/a.txt", "wb"]
+    assert call.env == {}
     assert base64.b64decode(call.stdin or b"") == b"hello"
-    assert call.env["OPENSHELL_UPLOAD_MODE"] == "wb"
 
 
 def test_upload_files_round_trips_binary_content() -> None:
@@ -274,11 +273,11 @@ def test_upload_files_chunks_large_payloads() -> None:
 
     assert responses[0].error is None
     assert storage["/sandbox/big.bin"] == payload
-    upload_calls = [c for c in sandbox.calls if "OPENSHELL_UPLOAD_PATH" in c.env]
+    upload_calls = [c for c in sandbox.calls if c.command[:2] == ["python3", "-c"]]
     assert len(upload_calls) == 3
-    assert upload_calls[0].env["OPENSHELL_UPLOAD_MODE"] == "wb"
-    assert upload_calls[1].env["OPENSHELL_UPLOAD_MODE"] == "ab"
-    assert upload_calls[2].env["OPENSHELL_UPLOAD_MODE"] == "ab"
+    assert upload_calls[0].command[3:] == ["/sandbox/big.bin", "wb"]
+    assert upload_calls[1].command[3:] == ["/sandbox/big.bin", "ab"]
+    assert upload_calls[2].command[3:] == ["/sandbox/big.bin", "ab"]
 
 
 def test_upload_files_maps_permission_error(fake_sandbox: FakeSandbox) -> None:

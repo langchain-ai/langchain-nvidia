@@ -43,7 +43,7 @@ class FakeSandbox:
       consumed in FIFO order; or
     * a ``handler(call) -> FakeExecResult`` callable that decides each
       response dynamically (used for the upload/download bootstraps which
-      need to react to the env vars + stdin payload).
+      need to react to the bootstrap argv + stdin payload).
     """
 
     def __init__(
@@ -118,8 +118,8 @@ def make_filesystem_handler(
 
     The handler interprets the upload/download bootstraps the wrapper sends:
 
-    * ``OPENSHELL_UPLOAD_PATH`` + base64 stdin → write into ``storage[path]``.
-    * ``OPENSHELL_DOWNLOAD_PATH`` → emit ``base64(storage[path])`` on stdout.
+    * upload bootstrap argv + base64 stdin → write into ``storage[path]``.
+    * download bootstrap argv → emit ``base64(storage[path])`` on stdout.
 
     Any other command is reported as a no-op success (so callers can mix in
     arbitrary ``execute`` checks against the same fake).
@@ -127,9 +127,9 @@ def make_filesystem_handler(
     storage: dict[str, bytes] = dict(initial or {})
 
     def handler(call: FakeExecCall) -> FakeExecResult:
-        path = call.env.get("OPENSHELL_UPLOAD_PATH")
-        if path is not None:
-            mode = call.env.get("OPENSHELL_UPLOAD_MODE", "wb")
+        if len(call.command) >= 5 and call.command[:2] == ["python3", "-c"]:
+            path = call.command[3]
+            mode = call.command[4]
             payload = base64.b64decode(call.stdin or b"")
             if mode == "ab":
                 storage[path] = storage.get(path, b"") + payload
@@ -137,8 +137,8 @@ def make_filesystem_handler(
                 storage[path] = payload
             return FakeExecResult(exit_code=0)
 
-        path = call.env.get("OPENSHELL_DOWNLOAD_PATH")
-        if path is not None:
+        if len(call.command) == 4 and call.command[:2] == ["python3", "-c"]:
+            path = call.command[3]
             if path not in storage:
                 return FakeExecResult(
                     exit_code=1,
