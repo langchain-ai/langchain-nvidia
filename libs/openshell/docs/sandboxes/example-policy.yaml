@@ -1,16 +1,20 @@
 # Example OpenShell sandbox policy for use with langchain-nvidia-openshell.
 #
-# Apply at create time (covers all four security layers):
+# Apply at create time. Filesystem and process settings are locked once the
+# sandbox is running:
 #   openshell sandbox create \
 #     --policy ./example-policy.yaml \
 #     --keep --no-tty -- bash
 #
-# Hot-reload network/inference rules on a running sandbox:
+# Hot-reload network rules on a running sandbox:
 #   openshell policy set <name> --policy ./example-policy.yaml --wait
 #
-# Filesystem and process rules are locked once the sandbox is running -
-# changing them requires recreating the sandbox (or baking a new
-# /etc/openshell/policy.yaml into a custom image).
+# Managed inference routing is configured separately from policy:
+#   openshell provider create --name nvidia-prod --type nvidia --from-existing
+#   openshell inference set --provider nvidia-prod --model nvidia/nemotron-3-nano-30b-a3b
+#
+# This policy may allow or deny access to inference.local, but provider
+# credentials and model routing live in OpenShell provider/inference settings.
 #
 # Schema reference: https://docs.nvidia.com/openshell/latest/reference/policy-schema
 # Architecture:     https://github.com/NVIDIA/OpenShell/blob/main/architecture/security-policy.md
@@ -71,12 +75,10 @@ network_policies:
       - { path: /usr/bin/python3 }
       - { path: /usr/bin/pip3 }
 
-  # ---------- Layer 4: Inference (router, hot-reloadable) ----------
-  # Inference is configured as a network policy targeting `inference.local`,
-  # plus a provider registered separately via `openshell provider create`.
-  # The sandbox proxy intercepts requests to `inference.local` and routes
-  # them according to the active provider, keeping API keys out of the
-  # sandbox itself. See architecture/inference-routing.md.
+  # Optional managed inference route. This only permits traffic from the
+  # sandbox to `inference.local`; it does not choose the upstream provider or
+  # model. Configure those with `openshell provider ...` and
+  # `openshell inference ...`.
   inference:
     name: Local inference router
     endpoints:

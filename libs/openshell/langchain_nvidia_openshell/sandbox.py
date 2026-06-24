@@ -12,8 +12,9 @@ Implementation notes
 * OpenShell's ``ExecSandbox`` RPC takes an argv ``Sequence[str]``, not a shell
   string. To honour ``BaseSandbox.execute(command: str)`` we wrap normal calls
   as ``[*shell, command]`` (default ``("bash", "-c")``). Multiline shell
-  payloads are sent over stdin to ``bash -s`` / ``sh -s`` because OpenShell
-  0.0.57 rejects newline-bearing ``bash -c`` argv payloads at the RPC layer.
+  payloads are sent over stdin to ``bash -s`` / ``sh -s`` because tested
+  OpenShell releases reject newline-bearing ``bash -c`` argv payloads at the
+  RPC layer.
 * OpenShell does not expose a typed file upload / download SDK call. We
   implement those over ``exec`` itself: stdin-fed base64 for uploads and
   stdout-captured base64 for downloads. Two tiny inline ``python3 -c``
@@ -45,26 +46,26 @@ if TYPE_CHECKING:
 # Both are kept as compact one-liners (statements separated by ``;``) so the
 # argv stays a single small token, well under the gRPC message-size budget.
 #
-# Upload: read stdin (base64-encoded payload), decode, write to
-# ``OPENSHELL_UPLOAD_PATH``. Mode is ``wb`` by default (truncate + write); when
-# chunking large uploads, subsequent calls set ``OPENSHELL_UPLOAD_MODE=ab`` to
-# append. ``os.makedirs`` ensures the parent exists when the policy permits.
+# Upload: read stdin (base64-encoded payload), decode, write to the path argv.
+# Mode is ``wb`` by default (truncate + write); large uploads pass ``ab`` on
+# subsequent chunks. ``os.makedirs`` ensures the parent exists when the policy
+# permits.
 _UPLOAD_BOOTSTRAP = (
     "import base64,os,sys;"
     "data=base64.b64decode(sys.stdin.buffer.read());"
-    "p=sys.argv[1] if len(sys.argv)>1 else os.environ['OPENSHELL_UPLOAD_PATH'];"
-    "m=sys.argv[2] if len(sys.argv)>2 else os.environ.get('OPENSHELL_UPLOAD_MODE','wb');"
+    "p=sys.argv[1];"
+    "m=sys.argv[2];"
     "d=os.path.dirname(p);"
     "(os.makedirs(d,exist_ok=True) if d else None);"
     "open(p,m).write(data)"
 )
 
-# Download: read ``OPENSHELL_DOWNLOAD_PATH`` and write base64 of its bytes
-# to stdout. Distinguishes "is a directory" because that has its own
-# FileOperationError code on the LangChain side.
+# Download: read the path argv and write base64 of its bytes to stdout.
+# Distinguishes "is a directory" because that has its own FileOperationError
+# code on the LangChain side.
 _DOWNLOAD_BOOTSTRAP = (
     "import base64,os,sys;"
-    "p=sys.argv[1] if len(sys.argv)>1 else os.environ['OPENSHELL_DOWNLOAD_PATH'];"
+    "p=sys.argv[1];"
     "os.path.isdir(p) and (sys.stderr.write('error: is a directory\\n'),"
     "sys.exit(2));"
     "sys.stdout.buffer.write(base64.b64encode(open(p,'rb').read()))"
@@ -102,7 +103,7 @@ _DEFAULT_TIMEOUT_SECONDS = 30 * 60
 # Maximum combined stdout+stderr returned to the LLM. 1 MiB keeps the agent
 # context bounded against pathological commands like ``cat /var/log/...``.
 _DEFAULT_MAX_OUTPUT_BYTES = 1 << 20
-# OpenShell 0.0.57's VM driver rejects stdin payloads before gRPC's nominal
+# Tested OpenShell VM drivers reject stdin payloads before gRPC's nominal
 # 4 MiB default. Uploads are base64-encoded first, so keep raw chunks at a
 # measured-safe size.
 _DEFAULT_MAX_UPLOAD_CHUNK_BYTES = 512 * 1024
@@ -317,15 +318,11 @@ class OpenShellSandbox(BaseSandbox):
         *,
         append: bool,
     ) -> FileUploadResponse:
-        env = {
-            "OPENSHELL_UPLOAD_PATH": path,
-            "OPENSHELL_UPLOAD_MODE": "ab" if append else "wb",
-        }
         stdin = base64.b64encode(content)
+        mode = "ab" if append else "wb"
         try:
             result = self._sandbox.exec(
-                ["python3", "-c", _UPLOAD_BOOTSTRAP, path, "ab" if append else "wb"],
-                env=env,
+                ["python3", "-c", _UPLOAD_BOOTSTRAP, path, mode],
                 stdin=stdin,
                 timeout_seconds=self._resolve_timeout(None),
             )
@@ -351,11 +348,9 @@ class OpenShellSandbox(BaseSandbox):
                 error="invalid_path",
             )
 
-        env = {"OPENSHELL_DOWNLOAD_PATH": path}
         try:
             result = self._sandbox.exec(
                 ["python3", "-c", _DOWNLOAD_BOOTSTRAP, path],
-                env=env,
                 timeout_seconds=self._resolve_timeout(None),
             )
         except Exception as exc:  # noqa: BLE001

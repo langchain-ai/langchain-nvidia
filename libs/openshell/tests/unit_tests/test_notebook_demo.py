@@ -107,10 +107,32 @@ def test_notebook_requires_nvidia_api_key(notebook: dict) -> None:
 
 def test_notebook_uses_current_openshell_pin(notebook: dict) -> None:
     joined = "\n".join(_cell_sources(notebook))
-    assert "openshell>=0.0.57,<0.1" in joined
-    assert "langchain-nvidia-openshell-demo:0.0.57" in joined
+    assert "./setup_openshell.sh --openshell-version 0.0.68" in joined
+    assert "langchain-nvidia-openshell-demo:0.0.68" in joined
+    assert "grpcio" in joined
+    assert "0.0.57" not in joined
     assert "0.0.40" not in joined
     assert "0.0.39" not in joined
+
+
+def test_notebook_uses_nemotron_default_model(notebook: dict) -> None:
+    joined = "\n".join(_cell_sources(notebook))
+    assert 'NVIDIA_DEEP_AGENT_MODEL", "nvidia/nemotron-3-nano-30b-a3b"' in joined
+    assert "openai/gpt-oss-120b" not in joined
+
+
+def test_notebook_explains_named_sandbox_lifecycle(notebook: dict) -> None:
+    joined = "\n".join(_cell_sources(notebook))
+    assert "Create a named OpenShell sandbox with a policy" in joined
+    assert 'SandboxClient.get_session("openshell-demo")' in joined
+    assert "OpenShellSandbox` does not create or delete this sandbox" in joined
+
+
+def test_notebook_setup_uses_bash_script(notebook: dict) -> None:
+    joined = "\n".join(_cell_sources(notebook))
+    assert "setup_openshell.sh" in joined
+    assert "Poetry environment" in joined
+    assert "Python SDK wheel compatibility" in joined
 
 
 def test_notebook_cleans_up_at_the_end(notebook: dict) -> None:
