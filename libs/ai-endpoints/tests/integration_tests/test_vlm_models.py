@@ -222,9 +222,7 @@ async def test_vlm_image_large(
                 {
                     "type": "image_url",
                     "image_url": {
-                        "url": _image_data_uri(
-                            "tests/data/nvidia-picasso-large.png"
-                        ),
+                        "url": _image_data_uri("tests/data/nvidia-picasso-large.png"),
                     },
                 }
             ]
