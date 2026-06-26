@@ -911,6 +911,24 @@ CHAT_MODEL_TABLE = {
         thinking_param_enable={"chat_template_kwargs": {"thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"thinking": False}},
     ),
+    "nvidia/nemotron-3-ultra-550b-a55b": Model(
+        id="nvidia/nemotron-3-ultra-550b-a55b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
+    "minimaxai/minimax-m3": Model(
+        id="minimaxai/minimax-m3",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"thinking_mode": "enabled"}},
+        thinking_param_disable={"chat_template_kwargs": {"thinking_mode": "disabled"}},
+    ),
 }
 
 QA_MODEL_TABLE = {
@@ -1054,6 +1072,27 @@ VLM_MODEL_TABLE = {
         supports_thinking=True,
         thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
+    "moonshotai/kimi-k2.6": Model(
+        id="moonshotai/kimi-k2.6",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"thinking": False}},
+    ),
+    "stepfun-ai/step-3.7-flash": Model(
+        id="stepfun-ai/step-3.7-flash",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_tools=True,
+    ),
+    "mistralai/mistral-medium-3.5-128b": Model(
+        id="mistralai/mistral-medium-3.5-128b",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_tools=True,
     ),
 }
 
