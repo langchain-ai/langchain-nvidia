@@ -137,7 +137,46 @@ def _nv_vlm_adjust_input(
 
     In the process, it accepts remote URLs or data:image URIs.
     """
+    _img_tag_pattern = re.compile(
+        r'<img\s+src=["\']([^"\']+)["\'][^>]*/?>',
+        re.IGNORECASE,
+    )
+
     if content := message_dict.get("content"):
+        if isinstance(content, list):
+            new_content = []
+            for part in content:
+                # Convert <img src="..."/> in text parts to image_url parts.
+                # Without this, vLLM's Mistral tokenizer detects the image token
+                # in the text but the multimodal preprocessor finds 0 image_url
+                # items, causing a RuntimeError and HTTP 500.
+                if (
+                    isinstance(part, dict)
+                    and part.get("type") == "text"
+                    and isinstance(part.get("text"), str)
+                ):
+                    text = part["text"]
+                    matches = list(_img_tag_pattern.finditer(text))
+                    if matches:
+                        last_end = 0
+                        for m in matches:
+                            if m.start() > last_end:
+                                before = text[last_end : m.start()].strip()
+                                if before:
+                                    new_content.append({"type": "text", "text": before})
+                            new_content.append(
+                                {"type": "image_url", "image_url": {"url": m.group(1)}}
+                            )
+                            last_end = m.end()
+                        if last_end < len(text):
+                            after = text[last_end:].strip()
+                            if after:
+                                new_content.append({"type": "text", "text": after})
+                        continue
+                new_content.append(part)
+            content = new_content
+            message_dict["content"] = new_content
+
         if isinstance(content, list):
             for part in content:
                 if isinstance(part, dict) and "image_url" in part:
