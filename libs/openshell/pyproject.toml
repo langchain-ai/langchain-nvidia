@@ -52,7 +52,7 @@ optional = true
 ruff = "^0.1.5"
 
 [tool.poetry.group.typing.dependencies]
-mypy = "^0.991"
+mypy = ">=1.20.2,<2"
 
 [tool.ruff.lint]
 select = [
