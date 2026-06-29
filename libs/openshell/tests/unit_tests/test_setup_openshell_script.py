@@ -1,46 +1,24 @@
-"""Tests for the OpenShell notebook setup shell script."""
+"""Tests for the minimal OpenShell notebook setup script."""
 
 from __future__ import annotations
 
 import os
-import socket
 import subprocess
-import tempfile
 from pathlib import Path
 
 SCRIPT = (
-    Path(__file__).resolve().parents[2]
-    / "docs"
-    / "sandboxes"
-    / "setup_openshell.sh"
+    Path(__file__).resolve().parents[2] / "docs" / "sandboxes" / "setup_openshell.sh"
 )
 
 
-def _run_check(
-    *,
-    os_release: str | None = None,
-    env: dict[str, str] | None = None,
-    args: list[str] | None = None,
-) -> subprocess.CompletedProcess[str]:
-    test_env = os.environ.copy()
-    test_env.update(env or {})
-    test_env["OPENSHELL_SETUP_TESTING"] = "0"
-    if os_release is not None:
-        path = Path(os_release)
-        test_env["OPENSHELL_TEST_OS_RELEASE"] = str(path)
-    return subprocess.run(
-        args or ["bash", str(SCRIPT), "--check-only", "--skip-system-install"],
-        capture_output=True,
-        text=True,
-        env=test_env,
-        timeout=90,
-        check=False,
-    )
+def _write_executable(path: Path, content: str) -> None:
+    path.write_text(content)
+    path.chmod(0o755)
 
 
-def _ubuntu_release(tmp_path: Path, version: str) -> str:
-    p = tmp_path / f"ubuntu-{version}.os-release"
-    p.write_text(
+def _ubuntu_release(tmp_path: Path, version: str) -> Path:
+    path = tmp_path / "os-release"
+    path.write_text(
         "\n".join(
             [
                 "ID=ubuntu",
@@ -50,283 +28,271 @@ def _ubuntu_release(tmp_path: Path, version: str) -> str:
         )
         + "\n"
     )
-    return str(p)
+    return path
 
 
-def test_ubuntu_18_is_rejected_before_setup(tmp_path: Path) -> None:
-    result = _run_check(
-        os_release=_ubuntu_release(tmp_path, "18.04"),
-        env={
-            "OPENSHELL_TEST_UNAME_S": "Linux",
-            "OPENSHELL_TEST_UNAME_M": "x86_64",
-            "OPENSHELL_TEST_GLIBC_VERSION": "2.27",
-        },
+def _fake_tools(tmp_path: Path, *, docker_version: str | None = "29.6.0") -> Path:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    docker_output = f'echo "{docker_version}"' if docker_version else "exit 1"
+    _write_executable(
+        bin_dir / "docker",
+        f"""#!/usr/bin/env bash
+if [[ "$*" == *".Server.Version"* ]]; then
+  {docker_output}
+  exit $?
+fi
+exit 0
+""",
     )
-
-    assert result.returncode == 1
-    assert "UNSUPPORTED: glibc 2.27 is below gateway floor 2.28" in result.stdout
-    assert "UNSUPPORTED: Ubuntu 18.04 is unsupported" in result.stdout
-    assert (
-        "Stopping before environment changes because prerequisite validation failed"
-        in result.stdout
+    _write_executable(
+        bin_dir / "poetry",
+        """#!/usr/bin/env bash
+echo "Poetry (version 2.1.3)"
+""",
     )
+    return bin_dir
 
 
-def test_ubuntu_19_is_rejected_even_when_glibc_floor_passes(tmp_path: Path) -> None:
-    result = _run_check(
-        os_release=_ubuntu_release(tmp_path, "19.10"),
-        env={
-            "OPENSHELL_TEST_UNAME_S": "Linux",
-            "OPENSHELL_TEST_UNAME_M": "x86_64",
-            "OPENSHELL_TEST_GLIBC_VERSION": "2.30",
-        },
-    )
-
-    assert result.returncode == 1
-    assert "PASS: glibc 2.30 satisfies gateway floor 2.28" in result.stdout
-    assert "UNSUPPORTED: Ubuntu 19.10 is unsupported" in result.stdout
-
-
-def test_ubuntu_20_reports_gateway_compatible_but_sdk_incompatible(
+def _run_check(
     tmp_path: Path,
-) -> None:
-    result = _run_check(
-        os_release=_ubuntu_release(tmp_path, "20.04"),
-        env={
-            "OPENSHELL_TEST_UNAME_S": "Linux",
-            "OPENSHELL_TEST_UNAME_M": "x86_64",
-            "OPENSHELL_TEST_GLIBC_VERSION": "2.31",
-        },
-    )
-
-    assert result.returncode == 1
-    assert "PASS: glibc 2.31 satisfies gateway floor 2.28" in result.stdout
-    assert "SDK wheels are manylinux_2_39; detected glibc 2.31" in result.stdout
-
-
-def test_ubuntu_21_reports_gateway_compatible_but_sdk_incompatible(
-    tmp_path: Path,
-) -> None:
-    result = _run_check(
-        os_release=_ubuntu_release(tmp_path, "21.10"),
-        env={
-            "OPENSHELL_TEST_UNAME_S": "Linux",
-            "OPENSHELL_TEST_UNAME_M": "x86_64",
-            "OPENSHELL_TEST_GLIBC_VERSION": "2.34",
-        },
-    )
-
-    assert result.returncode == 1
-    assert "PASS: glibc 2.34 satisfies gateway floor 2.28" in result.stdout
-    assert "SDK wheels are manylinux_2_39; detected glibc 2.34" in result.stdout
-
-
-def test_ubuntu_22_reports_gateway_compatible_but_sdk_risky(tmp_path: Path) -> None:
-    result = _run_check(
-        os_release=_ubuntu_release(tmp_path, "22.04"),
-        env={
-            "OPENSHELL_TEST_UNAME_S": "Linux",
-            "OPENSHELL_TEST_UNAME_M": "x86_64",
-            "OPENSHELL_TEST_GLIBC_VERSION": "2.35",
-        },
-    )
-
-    assert result.returncode == 1
-    assert "PASS: glibc 2.35 satisfies gateway floor 2.28" in result.stdout
-    assert "manylinux_2_39" in result.stdout
-    assert "can install missing Python/Poetry prerequisites" not in result.stdout
-
-
-def test_ubuntu_24_reaches_driver_validation(tmp_path: Path) -> None:
-    result = _run_check(
-        os_release=_ubuntu_release(tmp_path, "24.04"),
-        env={
+    *,
+    ubuntu_version: str = "24.04",
+    openshell_version: str = "0.0.72",
+    docker_version: str | None = "29.6.0",
+    extra_env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    bin_dir = _fake_tools(tmp_path, docker_version=docker_version)
+    env = os.environ.copy()
+    env.update(
+        {
+            "PATH": f"{bin_dir}:{env['PATH']}",
             "OPENSHELL_TEST_UNAME_S": "Linux",
             "OPENSHELL_TEST_UNAME_M": "x86_64",
             "OPENSHELL_TEST_GLIBC_VERSION": "2.39",
-            "OPENSHELL_TEST_NO_DOCKER": "1",
-        },
+            "OPENSHELL_TEST_OS_RELEASE": str(_ubuntu_release(tmp_path, ubuntu_version)),
+        }
     )
-
-    assert result.returncode == 1
-    assert (
-        "PASS: glibc 2.39 satisfies OpenShell SDK wheel tag floor 2.39"
-        in result.stdout
-    )
-    assert (
-        "PASS: pip can resolve openshell==0.0.68 for manylinux_2_39_x86_64"
-        in result.stdout
-    )
-    assert (
-        "FAIL: Docker is required for the notebook's local demo image path"
-        in result.stdout
-    )
-
-
-def test_ubuntu_24_check_only_reports_installable_prereqs(tmp_path: Path) -> None:
-    result = _run_check(
-        os_release=_ubuntu_release(tmp_path, "24.04"),
-        env={
-            "OPENSHELL_TEST_UNAME_S": "Linux",
-            "OPENSHELL_TEST_UNAME_M": "x86_64",
-            "OPENSHELL_TEST_GLIBC_VERSION": "2.39",
-            "OPENSHELL_TEST_NO_PYTHON": "1",
-            "OPENSHELL_TEST_NO_POETRY": "1",
-            "OPENSHELL_TEST_NO_DOCKER": "1",
-        },
-    )
-
-    assert result.returncode == 1
-    assert (
-        "CHECK_ONLY: compatible Ubuntu host can install missing Python/Poetry "
-        "prerequisites with apt and pipx"
-    ) in result.stdout
-    assert (
-        "CHECK_ONLY: compatible Ubuntu host can install Docker Engine from Docker's "
-        "official apt repository"
-    ) in result.stdout
-    assert "Installing Ubuntu Python" not in result.stdout
-
-
-def test_skip_prereq_install_preserves_report_only_behavior(tmp_path: Path) -> None:
-    result = _run_check(
-        os_release=_ubuntu_release(tmp_path, "24.04"),
-        env={
-            "OPENSHELL_TEST_UNAME_S": "Linux",
-            "OPENSHELL_TEST_UNAME_M": "x86_64",
-            "OPENSHELL_TEST_GLIBC_VERSION": "2.39",
-            "OPENSHELL_TEST_NO_PYTHON": "1",
-            "OPENSHELL_TEST_NO_POETRY": "1",
-            "OPENSHELL_TEST_NO_DOCKER": "1",
-        },
-        args=[
+    env.update(extra_env or {})
+    return subprocess.run(
+        [
             "bash",
             str(SCRIPT),
-            "--skip-prereq-install",
-            "--skip-system-install",
+            "--check-only",
+            "--openshell-version",
+            openshell_version,
         ],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=30,
+        check=False,
     )
 
+
+def test_help_describes_the_small_public_interface() -> None:
+    result = subprocess.run(
+        ["bash", str(SCRIPT), "--help"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert "--openshell-version VERSION" in result.stdout
+    assert "--check-only" in result.stdout
+    assert "--skip-system-install" in result.stdout
+    assert "--driver" not in result.stdout
+    assert "--skip-prereq-install" not in result.stdout
+
+
+def test_version_comparison_handles_patch_versions() -> None:
+    command = f"""
+OPENSHELL_SETUP_TESTING=1 source {SCRIPT!s}
+version_ge 24.04.4 24.04
+! version_ge 2.38 2.39
+version_ge 0.0.72 0.0.72
+"""
+    result = subprocess.run(
+        ["bash", "-c", command], capture_output=True, text=True, check=False
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_ubuntu_22_is_rejected_at_the_sdk_wheel_boundary(tmp_path: Path) -> None:
+    result = _run_check(tmp_path, ubuntu_version="22.04")
+
     assert result.returncode == 1
-    assert "Skipping Ubuntu Python/Poetry prerequisite install" in result.stdout
-    assert "Skipping Ubuntu Docker prerequisite install" in result.stdout
-    assert "Install missing Ubuntu Python/Poetry prerequisites" not in result.stdout
+    assert "Ubuntu 22.04 is below the notebook SDK floor of 24.04" in result.stdout
 
 
-def test_macos_intel_is_rejected() -> None:
-    result = _run_check(
-        env={
-            "OPENSHELL_TEST_UNAME_S": "Darwin",
+def test_ubuntu_24_prerequisites_pass_without_mutation(tmp_path: Path) -> None:
+    marker = tmp_path / "sudo-called"
+    bin_dir = _fake_tools(tmp_path)
+    _write_executable(
+        bin_dir / "sudo",
+        f"""#!/usr/bin/env bash
+touch {marker}
+exit 1
+""",
+    )
+    env = os.environ.copy()
+    env.update(
+        {
+            "PATH": f"{bin_dir}:{env['PATH']}",
+            "OPENSHELL_TEST_UNAME_S": "Linux",
             "OPENSHELL_TEST_UNAME_M": "x86_64",
-            "OPENSHELL_TEST_MACOS_VERSION": "14.5",
-        },
+            "OPENSHELL_TEST_GLIBC_VERSION": "2.39",
+            "OPENSHELL_TEST_OS_RELEASE": str(_ubuntu_release(tmp_path, "24.04.4")),
+        }
     )
 
+    result = subprocess.run(
+        ["bash", str(SCRIPT), "--check-only"],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=30,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "PASS: Ubuntu 24.04.4 x86_64 with glibc 2.39" in result.stdout
+    assert "PASS: Docker 29.6.0 is reachable without sudo" in result.stdout
+    assert "SUCCESS: prerequisites are ready; no changes were made" in result.stdout
+    assert not marker.exists()
+
+
+def test_release_before_pr_2029_fix_is_rejected(
+    tmp_path: Path,
+) -> None:
+    result = _run_check(tmp_path, openshell_version="0.0.71")
+
     assert result.returncode == 1
-    assert "UNSUPPORTED: Intel macOS is not supported" in result.stdout
+    assert "predates the fixed Linux wheels in 0.0.72" in result.stdout
 
 
-def test_macos_12_arm64_is_rejected_for_sdk_wheel() -> None:
+def test_first_fixed_release_reaches_prerequisite_checks(tmp_path: Path) -> None:
+    result = _run_check(tmp_path, openshell_version="0.0.72")
+
+    assert result.returncode == 0
+
+
+def test_missing_docker_fails_with_a_prerequisite_message(tmp_path: Path) -> None:
     result = _run_check(
-        env={
-            "OPENSHELL_TEST_UNAME_S": "Darwin",
-            "OPENSHELL_TEST_UNAME_M": "arm64",
-            "OPENSHELL_TEST_MACOS_VERSION": "12.7",
-        },
+        tmp_path,
+        extra_env={"OPENSHELL_TEST_NO_DOCKER": "1"},
     )
 
     assert result.returncode == 1
-    assert "below OpenShell SDK wheel tag macosx_13_0_arm64" in result.stdout
+    assert "docker is required" in result.stdout
 
 
-def test_macos_arm64_missing_docker_offers_colima() -> None:
-    result = _run_check(
-        env={
-            "OPENSHELL_TEST_UNAME_S": "Darwin",
-            "OPENSHELL_TEST_UNAME_M": "arm64",
-            "OPENSHELL_TEST_MACOS_VERSION": "14.5",
-            "OPENSHELL_TEST_NO_DOCKER": "1",
-        },
-    )
-
-    assert result.returncode == 1
-    assert (
-        "CHECK_ONLY: compatible macOS host can install/start Colima with Homebrew"
-        in result.stdout
-    )
-
-
-def test_colima_socket_detection_prefers_openshell_profile() -> None:
-    with tempfile.TemporaryDirectory(prefix="os-", dir="/tmp") as home:
-        home_path = Path(home)
-        openshell_socket = home_path / ".colima" / "openshell" / "docker.sock"
-        default_socket = home_path / ".colima" / "default" / "docker.sock"
-        openshell_socket.parent.mkdir(parents=True)
-        default_socket.parent.mkdir(parents=True)
-
-        sockets: list[socket.socket] = []
-        for path in (openshell_socket, default_socket):
-            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.bind(str(path))
-            sockets.append(sock)
-        try:
-            result = _run_check(
-                env={
-                    "HOME": str(home_path),
-                    "OPENSHELL_TEST_UNAME_S": "Darwin",
-                    "OPENSHELL_TEST_UNAME_M": "arm64",
-                    "OPENSHELL_TEST_MACOS_VERSION": "14.5",
-                    "OPENSHELL_TEST_NO_DOCKER": "1",
-                },
-            )
-        finally:
-            for sock in sockets:
-                sock.close()
-
-        assert result.returncode == 1
-        assert f"Using Colima Docker socket at {openshell_socket}" in result.stdout
-
-
-def test_docker_group_membership_rerun_guidance_is_present() -> None:
-    text = SCRIPT.read_text()
-    assert "newgrp docker" in text
-    assert "refreshed group membership" in text
-
-
-def test_docker_client_without_daemon_fails_validation(tmp_path: Path) -> None:
-    fake_bin = tmp_path / "bin"
-    fake_bin.mkdir()
-    docker = fake_bin / "docker"
-    docker.write_text(
+def test_inaccessible_docker_reports_group_membership_when_sudo_works(
+    tmp_path: Path,
+) -> None:
+    bin_dir = _fake_tools(tmp_path, docker_version=None)
+    _write_executable(
+        bin_dir / "sudo",
         """#!/usr/bin/env bash
-if [[ "$*" == *".Client.Version"* ]]; then
+if [[ "$*" == *"docker version"* ]]; then
   echo "29.6.0"
   exit 0
 fi
-if [[ "$*" == *".Server.Version"* ]]; then
-  exit 1
-fi
-echo "Docker version 29.6.0"
-"""
+exit 1
+""",
     )
-    docker.chmod(0o755)
-
-    result = _run_check(
-        os_release=_ubuntu_release(tmp_path, "24.04"),
-        env={
-            "PATH": f"{fake_bin}:{os.environ['PATH']}",
+    env = os.environ.copy()
+    env.update(
+        {
+            "PATH": f"{bin_dir}:{env['PATH']}",
             "OPENSHELL_TEST_UNAME_S": "Linux",
             "OPENSHELL_TEST_UNAME_M": "x86_64",
             "OPENSHELL_TEST_GLIBC_VERSION": "2.39",
-        },
+            "OPENSHELL_TEST_OS_RELEASE": str(_ubuntu_release(tmp_path, "24.04")),
+        }
+    )
+
+    result = subprocess.run(
+        ["bash", str(SCRIPT), "--check-only"],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=30,
+        check=False,
     )
 
     assert result.returncode == 1
-    assert "Docker CLI 29.6.0 exists but daemon is not reachable" in result.stdout
+    assert "Docker works only through sudo" in result.stdout
+    assert "Log out and back in" in result.stdout
 
 
-def test_script_mentions_grpc_runtime_floor() -> None:
+def test_macos_intel_is_rejected() -> None:
+    env = os.environ.copy()
+    env.update(
+        {
+            "OPENSHELL_TEST_UNAME_S": "Darwin",
+            "OPENSHELL_TEST_UNAME_M": "x86_64",
+            "OPENSHELL_TEST_MACOS_VERSION": "14.5",
+        }
+    )
+    result = subprocess.run(
+        ["bash", str(SCRIPT), "--check-only"],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "supports Apple Silicon macOS" in result.stdout
+
+
+def test_script_delegates_gateway_ownership_to_upstream() -> None:
     text = SCRIPT.read_text()
-    assert "MIN_GRPCIO_VERSION=\"1.78.0\"" in text
-    assert "grpcio" in text
-    assert "1.78.0" in text
+
+    assert "raw.githubusercontent.com/NVIDIA/OpenShell/main/install.sh" in text
+    assert "loginctl enable-linger" in text
+    assert "systemctl --user show-environment" in text
+    assert "gateway add" not in text
+    assert "nohup openshell-gateway" not in text
+    assert "apt-get" not in text
+    assert "docker.sources" not in text
+
+
+def test_install_confirmation_precedes_user_systemd_mutation() -> None:
+    text = SCRIPT.read_text()
+
+    assert 'MIN_DOCKER_VERSION="28.0.4"' in text
+    assert (
+        "confirm_install\n  prepare_linux_user_systemd\n  "
+        "configure_gateway_environment\n  install_openshell_system" in text
+    )
+
+
+def test_legacy_wheel_repair_has_been_removed() -> None:
+    text = SCRIPT.read_text()
+
+    assert 'DEFAULT_OPENSHELL_VERSION="0.0.72"' in text
+    assert "repair_legacy_linux_wheel" not in text
+    assert "macosx_13_0_arm64" not in text
+    assert "zipfile" not in text
+
+
+def test_named_colima_socket_is_passed_to_the_gateway_service() -> None:
+    text = SCRIPT.read_text()
+
+    assert '"${HOME}/.colima/openshell/docker.sock"' in text
+    assert "select_docker_host" in text
+    assert "configure_gateway_environment" in text
+    assert "OPENSHELL_DRIVERS=docker" in text
+    assert "DOCKER_HOST=%q" in text
+
+
+def test_shell_script_has_valid_syntax() -> None:
+    result = subprocess.run(
+        ["bash", "-n", str(SCRIPT)], capture_output=True, text=True, check=False
+    )
+
+    assert result.returncode == 0, result.stderr

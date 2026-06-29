@@ -49,12 +49,12 @@ pip install langchain-nvidia-openshell
 You also need [the OpenShell CLI / gateway](https://docs.nvidia.com/openshell/latest/get-started/quickstart/), pinned to match the SDK:
 
 ```bash
-OPENSHELL_VERSION=v0.0.68 \
-  curl -LsSf https://raw.githubusercontent.com/NVIDIA/OpenShell/main/install.sh | sh
+curl -LsSf https://raw.githubusercontent.com/NVIDIA/OpenShell/main/install.sh \
+  | OPENSHELL_VERSION=v0.0.72 sh
 ```
 
 Confirm with `openshell --version`; this integration is tested against
-OpenShell `0.0.68+`.
+OpenShell `0.0.72+`.
 
 ## Quickstart (local)
 
@@ -217,7 +217,7 @@ with openshell.Sandbox() as sb:
 
 ## Deployment support matrix
 
-OpenShell `0.0.68` has two relevant compatibility layers: the gateway/CLI host
+OpenShell `0.0.72` has two relevant compatibility layers: the gateway/CLI host
 matrix from NVIDIA, and the Python SDK wheels required by this notebook.
 
 | Target | Gateway status | Notebook SDK status | Required runtime |
@@ -239,7 +239,7 @@ when Docker/Podman is unavailable:
 OPENSHELL_DRIVERS=vm openshell-gateway
 ```
 
-OpenShell `0.0.68` also expects `mkfs.ext4` from `e2fsprogs` while preparing
+OpenShell `0.0.72` also expects `mkfs.ext4` from `e2fsprogs` while preparing
 MicroVM root filesystems. With Homebrew, install `e2fsprogs` and make sure
 `mkfs.ext4` is visible under the prefix used by the gateway service.
 
@@ -249,7 +249,7 @@ driver readiness, Poetry environment, and Jupyter kernel registration:
 
 ```bash
 cd libs/openshell/docs/sandboxes
-./setup_openshell.sh --openshell-version 0.0.68
+./setup_openshell.sh --openshell-version 0.0.72
 ```
 
 ## API
@@ -288,7 +288,7 @@ across multiple Deep Agent runs. Reused sandboxes keep filesystem and process
 state until deleted, so they are best for demos, debugging, and workflows that
 intentionally preserve state.
 
-For OpenShell `0.0.68`, multiline shell commands are sent through shell stdin
+For OpenShell `0.0.72`, multiline shell commands are sent through shell stdin
 instead of `bash -c` argv because the VM driver rejects newline-bearing command
 argv payloads. File uploads are chunked to 512 KiB raw payloads to stay within
 the observed stdin transport limit after base64 encoding.
