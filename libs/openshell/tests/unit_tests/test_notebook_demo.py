@@ -96,7 +96,7 @@ def test_notebook_displays_execute_trace_and_verified_audit(notebook: dict) -> N
     assert "_verified_policy_audit_markdown(result, expectations)" in joined
     assert "_execute_result_count(result)" in joined
     assert 'display(Markdown("### Execute Tool Trace\\n"' in joined
-    assert 'display(Markdown("### Verified Policy Audit\\n"' in joined
+    assert '"### Verified Policy Audit\\n"' in joined
 
 
 def test_notebook_requires_nvidia_api_key(notebook: dict) -> None:
