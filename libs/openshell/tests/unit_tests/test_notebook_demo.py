@@ -84,23 +84,26 @@ def test_notebook_prompts_agent_to_call_execute_for_each_policy_check(
     joined = "\n".join(_cell_sources(notebook))
     assert "Use the `execute` tool for every command" in joined
     assert "Do not combine commands; call `execute` once per listed command" in joined
-    assert "github_zen" in joined
-    assert "github_repo_summary" in joined
+    assert "github_repo_page" in joined
+    assert "github_readme" in joined
     assert "pypi_openshell_version" in joined
     assert "external_ip_probe" in joined
 
 
-def test_notebook_displays_execute_trace_and_agent_audit(notebook: dict) -> None:
+def test_notebook_displays_execute_trace_and_verified_audit(notebook: dict) -> None:
     joined = "\n".join(_cell_sources(notebook))
     assert "_execute_trace_markdown(result)" in joined
-    assert "_final_message(result)" in joined
+    assert "_verified_policy_audit_markdown(result, expectations)" in joined
+    assert "_execute_result_count(result)" in joined
     assert 'display(Markdown("### Execute Tool Trace\\n"' in joined
-    assert 'display(Markdown("### Agent Audit\\n"' in joined
+    assert 'display(Markdown("### Verified Policy Audit\\n"' in joined
 
 
 def test_notebook_requires_nvidia_api_key(notebook: dict) -> None:
     joined = "\n".join(_cell_sources(notebook))
     assert "NVIDIA_API_KEY" in joined
+    assert "find_dotenv(usecwd=True)" in joined
+    assert "load_dotenv(dotenv_path)" in joined
     assert "getpass.getpass" in joined
     assert "ready to run the Deep Agent" in joined
 
