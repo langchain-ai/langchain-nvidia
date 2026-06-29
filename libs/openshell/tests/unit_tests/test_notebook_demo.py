@@ -107,8 +107,8 @@ def test_notebook_requires_nvidia_api_key(notebook: dict) -> None:
 
 def test_notebook_uses_current_openshell_pin(notebook: dict) -> None:
     joined = "\n".join(_cell_sources(notebook))
-    assert "./setup_openshell.sh --openshell-version 0.0.68" in joined
-    assert "langchain-nvidia-openshell-demo:0.0.68" in joined
+    assert "./setup_openshell.sh --openshell-version 0.0.72" in joined
+    assert "langchain-nvidia-openshell-demo:0.0.72" in joined
     assert "grpcio" in joined
     assert "0.0.57" not in joined
     assert "0.0.40" not in joined
