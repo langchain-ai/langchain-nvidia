@@ -290,6 +290,15 @@ def test_named_colima_socket_is_passed_to_the_gateway_service() -> None:
     assert "DOCKER_HOST=%q" in text
 
 
+def test_setup_preserves_locked_versions_and_hides_stale_sandboxes() -> None:
+    text = SCRIPT.read_text()
+
+    assert '"$python_bin" -m pip install --upgrade' not in text
+    assert '"$python_bin" -m pip install --disable-pip-version-check --quiet' in text
+    assert '"$cli" sandbox list >/dev/null' in text
+    assert "existing sandbox states are unchanged" in text
+
+
 def test_shell_script_has_valid_syntax() -> None:
     result = subprocess.run(
         ["bash", "-n", str(SCRIPT)], capture_output=True, text=True, check=False
