@@ -312,7 +312,7 @@ configure_python_environment() {
   [ -x "$python_bin" ] || die "Poetry environment has no Python executable at ${python_bin}"
 
   "$python_bin" -m pip --version >/dev/null 2>&1 || "$python_bin" -m ensurepip --upgrade
-  "$python_bin" -m pip install --upgrade \
+  "$python_bin" -m pip install --disable-pip-version-check --quiet \
     "openshell==${OPENSHELL_VERSION}" \
     "grpcio>=${MIN_GRPCIO_VERSION},<2" \
     ipykernel
@@ -335,6 +335,16 @@ validate_installation() {
   [ -x "$cli" ] || die "OpenShell CLI is missing from ${env_path}/bin"
 
   "$python_bin" - <<'PY'
+import warnings
+
+from langchain_core._api.deprecation import LangChainPendingDeprecationWarning
+
+warnings.filterwarnings(
+    "ignore",
+    message="The default value of `allowed_objects` will change.*",
+    category=LangChainPendingDeprecationWarning,
+)
+
 import grpc
 import google.protobuf
 import openshell
@@ -356,11 +366,11 @@ PY
     dump_gateway_diagnostics
     die "OpenShell CLI cannot reach the gateway"
   fi
-  if ! "$cli" sandbox list; then
+  if ! "$cli" sandbox list >/dev/null; then
     dump_gateway_diagnostics
     die "OpenShell gateway cannot list sandboxes"
   fi
-  pass "OpenShell gateway is connected and can list sandboxes"
+  pass "OpenShell gateway is connected and the sandbox API is reachable; existing sandbox states are unchanged"
 }
 
 main() {
