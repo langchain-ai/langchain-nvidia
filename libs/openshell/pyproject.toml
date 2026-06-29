@@ -66,10 +66,17 @@ disallow_untyped_defs = "True"
 exclude = ["notebooks", "examples", "example_data", "docs"]
 
 [[tool.mypy.overrides]]
-# OpenShell SDK ships its own gRPC stubs; the deepagents typing surface for
-# BaseSandbox is sufficient at runtime even when the deepagents package is
-# not installed in the type-check environment.
-module = ["openshell", "openshell.*", "deepagents", "deepagents.*", "cloudpickle"]
+# OpenShell SDK ships its own gRPC stubs. Some transitive SDK dependencies
+# also expose untyped modules that mypy follows through typed packages.
+module = [
+  "openshell",
+  "openshell.*",
+  "deepagents",
+  "deepagents.*",
+  "cloudpickle",
+  "google",
+  "google.*",
+]
 ignore_missing_imports = true
 
 [tool.coverage.run]
