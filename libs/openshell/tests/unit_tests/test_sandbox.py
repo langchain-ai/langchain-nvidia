@@ -142,6 +142,19 @@ def test_execute_truncates_when_output_exceeds_cap(fake_sandbox: FakeSandbox) ->
     assert len(result.output.encode("utf-8")) <= 100
 
 
+def test_execute_truncation_preserves_byte_cap_for_multibyte_text(
+    fake_sandbox: FakeSandbox,
+) -> None:
+    fake_sandbox.queue(FakeExecResult(exit_code=0, stdout="x" * 99 + "€"))
+    sb = OpenShellSandbox(sandbox=fake_sandbox, max_output_bytes=100)
+
+    result = sb.execute("dump")
+
+    assert result.truncated is True
+    assert result.output == "x" * 99
+    assert len(result.output.encode("utf-8")) <= 100
+
+
 def test_execute_forwards_default_timeout(fake_sandbox: FakeSandbox) -> None:
     fake_sandbox.queue(FakeExecResult())
     sb = OpenShellSandbox(sandbox=fake_sandbox, timeout=42)
@@ -366,6 +379,17 @@ def test_download_files_maps_is_directory(fake_sandbox: FakeSandbox) -> None:
     [resp] = sb.download_files(["/sandbox/somedir"])
 
     assert resp.error == "is_directory"
+
+
+def test_download_files_rejects_non_base64_output(fake_sandbox: FakeSandbox) -> None:
+    payload = base64.b64encode(b"hello").decode("ascii")
+    fake_sandbox.queue(FakeExecResult(exit_code=0, stdout=f"{payload} unexpected"))
+    sb = OpenShellSandbox(sandbox=fake_sandbox)
+
+    [resp] = sb.download_files(["/sandbox/file.txt"])
+
+    assert resp.content is None
+    assert resp.error is not None
 
 
 # ---------------------------------------------------------------------------
