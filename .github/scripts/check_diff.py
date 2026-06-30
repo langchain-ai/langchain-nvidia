@@ -54,10 +54,12 @@ if __name__ == "__main__":
                     # for extended testing
                     dirs_to_run["test"].add(dir_)
         elif file.startswith("libs/"):
-            raise ValueError(
-                f"Unknown lib: {file}. check_diff.py likely needs "
-                "an update for this new library!"
-            )
+            lib_dir = "/".join(file.split("/")[:2])
+            if os.path.isdir(lib_dir):
+                raise ValueError(
+                    f"Unknown lib: {file}. check_diff.py likely needs "
+                    "an update for this new library!"
+                )
         # elif any(file.startswith(p) for p in ["docs/", "templates/", "cookbook/"]):
         #     dirs_to_run["lint"].add(".")
 
