@@ -193,7 +193,7 @@ prompt = ChatPromptTemplate.from_messages(
 )
 chain = (
     prompt
-    | ChatNVIDIA(model="meta/codellama-70b", max_tokens=419)
+    | ChatNVIDIA(model="meta/codellama-70b", max_completion_tokens=419)
     | StrOutputParser()
 )
 
