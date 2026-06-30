@@ -6,21 +6,18 @@ from typing import Dict
 NVIDIA_DIRS = [
     "libs/ai-endpoints",
     "libs/langgraph",
-    "libs/openshell",
     "libs/trt",
 ]
 
 PYTHON_VERSIONS = {
     "libs/ai-endpoints": ["3.10", "3.11", "3.12", "3.13"],
     "libs/langgraph": ["3.11", "3.12", "3.13"],
-    "libs/openshell": ["3.12", "3.13"],
     "libs/trt": ["3.10", "3.11"],
 }
 
 LINT_PYTHON_VERSIONS = {
     "libs/ai-endpoints": ["3.10", "3.13"],
     "libs/langgraph": ["3.11", "3.13"],
-    "libs/openshell": ["3.12", "3.13"],
     "libs/trt": ["3.10", "3.11"],
 }
 
@@ -57,10 +54,12 @@ if __name__ == "__main__":
                     # for extended testing
                     dirs_to_run["test"].add(dir_)
         elif file.startswith("libs/"):
-            raise ValueError(
-                f"Unknown lib: {file}. check_diff.py likely needs "
-                "an update for this new library!"
-            )
+            lib_dir = "/".join(file.split("/")[:2])
+            if os.path.isdir(lib_dir):
+                raise ValueError(
+                    f"Unknown lib: {file}. check_diff.py likely needs "
+                    "an update for this new library!"
+                )
         # elif any(file.startswith(p) for p in ["docs/", "templates/", "cookbook/"]):
         #     dirs_to_run["lint"].add(".")
 
