@@ -276,7 +276,7 @@ class OpenShellSandbox(BaseSandbox):
         truncated = False
         encoded = output.encode("utf-8")
         if len(encoded) > self._max_output_bytes:
-            output = encoded[: self._max_output_bytes].decode("utf-8", errors="replace")
+            output = encoded[: self._max_output_bytes].decode("utf-8", errors="ignore")
             truncated = True
         return ExecuteResponse(
             output=output,
@@ -365,7 +365,10 @@ class OpenShellSandbox(BaseSandbox):
         stderr = getattr(result, "stderr", "") or ""
         if exit_code == 0:
             try:
-                content = base64.b64decode(stdout.encode("ascii"), validate=False)
+                content = base64.b64decode(
+                    stdout.strip().encode("ascii"),
+                    validate=True,
+                )
             except (ValueError, base64.binascii.Error) as exc:  # type: ignore[attr-defined]
                 return FileDownloadResponse(
                     path=path,
