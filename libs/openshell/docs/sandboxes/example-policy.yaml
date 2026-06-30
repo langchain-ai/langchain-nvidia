@@ -1,0 +1,91 @@
+# Example OpenShell sandbox policy for use with langchain-nvidia-openshell.
+#
+# Apply at create time. Filesystem and process settings are locked once the
+# sandbox is running:
+#   openshell sandbox create \
+#     --policy ./example-policy.yaml \
+#     --keep --no-tty -- bash
+#
+# Hot-reload network rules on a running sandbox:
+#   openshell policy set <name> --policy ./example-policy.yaml --wait
+#
+# Managed inference routing is configured separately from policy:
+#   openshell provider create --name nvidia-prod --type nvidia --from-existing
+#   openshell inference set --provider nvidia-prod --model nvidia/nemotron-3-nano-30b-a3b
+#
+# This policy may allow or deny access to inference.local, but provider
+# credentials and model routing live in OpenShell provider/inference settings.
+#
+# Schema reference: https://docs.nvidia.com/openshell/latest/reference/policy-schema
+# Architecture:     https://github.com/NVIDIA/OpenShell/blob/main/architecture/security-policy.md
+
+version: 1
+
+# ---------- Layer 1: Filesystem (Landlock-enforced, locked at create) ----------
+# Read-only mounts give the sandbox the language runtime, system libs, and
+# /etc/resolv.conf etc. Read-write is constrained to scratch space.
+filesystem_policy:
+  include_workdir: true
+  read_only:
+    - /usr
+    - /lib
+    - /etc
+    - /app
+    - /var/log
+    - /proc/self
+    - /dev/urandom
+  read_write:
+    - /sandbox
+    - /tmp
+    - /dev/null
+
+landlock:
+  # `best_effort` falls back gracefully on kernels without Landlock; flip to
+  # `hard_requirement` to refuse to start without it.
+  compatibility: best_effort
+
+# ---------- Layer 2: Process (seccomp + dropped privileges, locked at create) ----------
+process:
+  run_as_user: sandbox
+  run_as_group: sandbox
+
+# ---------- Layer 3: Network (HTTP CONNECT proxy + OPA/Rego, hot-reloadable) ----------
+# Default is deny-all outbound. Each entry below is a specific allowance.
+# `access: read-only` blocks POST/PUT/PATCH/DELETE at L7. `protocol: rest`
+# enables HTTP method/path inspection. `binaries` scopes the rule to a
+# specific executable - other binaries in the sandbox cannot use this rule.
+network_policies:
+  github_api:
+    name: github-api-readonly
+    endpoints:
+      - host: api.github.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        access: read-only
+    binaries:
+      - { path: /usr/bin/curl }
+
+  pypi:
+    name: PyPI (for pip install)
+    endpoints:
+      - { host: pypi.org, port: 443 }
+      - { host: files.pythonhosted.org, port: 443 }
+    binaries:
+      - { path: /usr/bin/python3 }
+      - { path: /usr/bin/pip3 }
+
+  # Optional managed inference route. This only permits traffic from the
+  # sandbox to `inference.local`; it does not choose the upstream provider or
+  # model. Configure those with `openshell provider ...` and
+  # `openshell inference ...`.
+  inference:
+    name: Local inference router
+    endpoints:
+      - host: inference.local
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        access: full
+    binaries:
+      - { path: /usr/bin/python3 }
