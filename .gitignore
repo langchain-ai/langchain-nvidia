@@ -151,8 +151,6 @@ wandb/
 # integration test artifacts
 data_map*
 \[('_type', 'fake'), ('stop', None)]
-libs/openshell/docs/sandboxes/openshell_setup_report.txt
-libs/openshell/poetry.toml
 
 # Replit files
 *replit*
