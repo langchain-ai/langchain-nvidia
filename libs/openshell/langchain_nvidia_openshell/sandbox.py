@@ -28,7 +28,7 @@ Implementation notes
 from __future__ import annotations
 
 import base64
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 
 from deepagents.backends.protocol import (
     ExecuteResponse,
@@ -60,7 +60,7 @@ _UPLOAD_BOOTSTRAP = (
     "open(p,m).write(data)"
 )
 
-# Download: read the path argv and write base64 of its bytes to stdout.
+# Download: read one chunk at the requested offset and write its base64 to stdout.
 # Distinguishes "is a directory" because that has its own FileOperationError
 # code on the LangChain side.
 _DOWNLOAD_BOOTSTRAP = (
@@ -68,7 +68,10 @@ _DOWNLOAD_BOOTSTRAP = (
     "p=sys.argv[1];"
     "os.path.isdir(p) and (sys.stderr.write('error: is a directory\\n'),"
     "sys.exit(2));"
-    "sys.stdout.buffer.write(base64.b64encode(open(p,'rb').read()))"
+    "f=open(p,'rb');"
+    "f.seek(int(sys.argv[2]));"
+    "data=f.read(int(sys.argv[3]));"
+    "sys.stdout.buffer.write(base64.b64encode(data))"
 )
 
 
@@ -107,6 +110,9 @@ _DEFAULT_MAX_OUTPUT_BYTES = 1 << 20
 # 4 MiB default. Uploads are base64-encoded first, so keep raw chunks at a
 # measured-safe size.
 _DEFAULT_MAX_UPLOAD_CHUNK_BYTES = 512 * 1024
+# Keep each base64 download response comfortably below transport limits while
+# avoiding whole-file buffering in the sandbox and OpenShell SDK.
+_DEFAULT_MAX_DOWNLOAD_CHUNK_BYTES = 512 * 1024
 # Exit code we synthesize for our own preconditions / timeouts (matches the
 # coreutils convention used by Daytona's wrapper).
 _TIMEOUT_EXIT_CODE = 124
@@ -133,6 +139,8 @@ class OpenShellSandbox(BaseSandbox):
             longer is truncated and ``truncated=True`` is set.
         max_upload_chunk_bytes: Maximum payload size per ``upload_files``
             ``exec`` call before we split into multiple appends.
+        max_download_chunk_bytes: Maximum raw payload size per ``download_files``
+            ``exec`` call before requesting the next file offset.
     """
 
     def __init__(
@@ -143,6 +151,7 @@ class OpenShellSandbox(BaseSandbox):
         shell: tuple[str, ...] = ("bash", "-c"),
         max_output_bytes: int = _DEFAULT_MAX_OUTPUT_BYTES,
         max_upload_chunk_bytes: int = _DEFAULT_MAX_UPLOAD_CHUNK_BYTES,
+        max_download_chunk_bytes: int = _DEFAULT_MAX_DOWNLOAD_CHUNK_BYTES,
     ) -> None:
         if not shell:
             raise ValueError("`shell` must contain at least one element")
@@ -150,11 +159,14 @@ class OpenShellSandbox(BaseSandbox):
             raise ValueError("`max_output_bytes` must be positive")
         if max_upload_chunk_bytes <= 0:
             raise ValueError("`max_upload_chunk_bytes` must be positive")
+        if max_download_chunk_bytes <= 0:
+            raise ValueError("`max_download_chunk_bytes` must be positive")
         self._sandbox = sandbox
         self._default_timeout = timeout
         self._shell = tuple(shell)
         self._max_output_bytes = max_output_bytes
         self._max_upload_chunk_bytes = max_upload_chunk_bytes
+        self._max_download_chunk_bytes = max_download_chunk_bytes
 
     # ------------------------------------------------------------------
     # SandboxBackendProtocol surface
@@ -348,16 +360,40 @@ class OpenShellSandbox(BaseSandbox):
                 error="invalid_path",
             )
 
+        content = bytearray()
+        offset = 0
+        while True:
+            response = self._download_chunk(path, offset)
+            if response.error is not None:
+                return response
+            chunk = response.content or b""
+            content.extend(chunk)
+            if len(chunk) < self._max_download_chunk_bytes:
+                return FileDownloadResponse(
+                    path=path,
+                    content=bytes(content),
+                    error=None,
+                )
+            offset += len(chunk)
+
+    def _download_chunk(self, path: str, offset: int) -> FileDownloadResponse:
         try:
             result = self._sandbox.exec(
-                ["python3", "-c", _DOWNLOAD_BOOTSTRAP, path],
+                [
+                    "python3",
+                    "-c",
+                    _DOWNLOAD_BOOTSTRAP,
+                    path,
+                    str(offset),
+                    str(self._max_download_chunk_bytes),
+                ],
                 timeout_seconds=self._resolve_timeout(None),
             )
         except Exception as exc:  # noqa: BLE001
-            return FileDownloadResponse(
-                path=path,
-                content=None,
-                error=_classify_fs_error(_format_exception(exc)),
+            return _download_failure(
+                path,
+                "download_failed",
+                _format_exception(exc),
             )
 
         exit_code = getattr(result, "exit_code", None)
@@ -370,11 +406,7 @@ class OpenShellSandbox(BaseSandbox):
                     validate=True,
                 )
             except (ValueError, base64.binascii.Error) as exc:  # type: ignore[attr-defined]
-                return FileDownloadResponse(
-                    path=path,
-                    content=None,
-                    error=_classify_fs_error(f"decode_failed: {exc}"),
-                )
+                return _download_failure(path, "decode_failed", str(exc))
             return FileDownloadResponse(path=path, content=content, error=None)
         return FileDownloadResponse(
             path=path,
@@ -392,6 +424,14 @@ def _format_exception(exc: BaseException) -> str:
     """Render a brief, single-line summary of ``exc``."""
     text = f"{type(exc).__name__}: {exc}".strip()
     return text.splitlines()[0] if text else type(exc).__name__
+
+
+def _download_failure(path: str, kind: str, detail: str) -> FileDownloadResponse:
+    """Return a backend-specific download error allowed by Deep Agents."""
+    # Deep Agents documents backend-specific strings here, but currently types
+    # the field as the narrower FileOperationError literal.
+    error = cast(FileOperationError, f"{kind}: {detail}")
+    return FileDownloadResponse(path=path, content=None, error=error)
 
 
 def _exception_to_response(exc: BaseException) -> ExecuteResponse:

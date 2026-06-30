@@ -119,7 +119,7 @@ def make_filesystem_handler(
     The handler interprets the upload/download bootstraps the wrapper sends:
 
     * upload bootstrap argv + base64 stdin → write into ``storage[path]``.
-    * download bootstrap argv → emit ``base64(storage[path])`` on stdout.
+    * download bootstrap argv → emit a base64 slice from ``storage[path]``.
 
     Any other command is reported as a no-op success (so callers can mix in
     arbitrary ``execute`` checks against the same fake).
@@ -127,7 +127,7 @@ def make_filesystem_handler(
     storage: dict[str, bytes] = dict(initial or {})
 
     def handler(call: FakeExecCall) -> FakeExecResult:
-        if len(call.command) >= 5 and call.command[:2] == ["python3", "-c"]:
+        if len(call.command) == 5 and call.command[:2] == ["python3", "-c"]:
             path = call.command[3]
             mode = call.command[4]
             payload = base64.b64decode(call.stdin or b"")
@@ -137,16 +137,19 @@ def make_filesystem_handler(
                 storage[path] = payload
             return FakeExecResult(exit_code=0)
 
-        if len(call.command) == 4 and call.command[:2] == ["python3", "-c"]:
+        if len(call.command) == 6 and call.command[:2] == ["python3", "-c"]:
             path = call.command[3]
             if path not in storage:
                 return FakeExecResult(
                     exit_code=1,
                     stderr=f"python3: {path}: No such file or directory\n",
                 )
+            offset = int(call.command[4])
+            chunk_size = int(call.command[5])
+            chunk = storage[path][offset : offset + chunk_size]
             return FakeExecResult(
                 exit_code=0,
-                stdout=base64.b64encode(storage[path]).decode("ascii"),
+                stdout=base64.b64encode(chunk).decode("ascii"),
             )
 
         return FakeExecResult(exit_code=0)

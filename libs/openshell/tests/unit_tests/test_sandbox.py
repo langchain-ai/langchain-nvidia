@@ -22,6 +22,7 @@ from langchain_nvidia_openshell.sandbox import (
 )
 
 from .conftest import (
+    FakeExecCall,
     FakeExecResult,
     FakeSandbox,
     make_filesystem_handler,
@@ -55,6 +56,13 @@ def test_rejects_nonpositive_max_output_bytes(fake_sandbox: FakeSandbox) -> None
 def test_rejects_nonpositive_max_upload_chunk_bytes(fake_sandbox: FakeSandbox) -> None:
     with pytest.raises(ValueError, match="max_upload_chunk_bytes"):
         OpenShellSandbox(sandbox=fake_sandbox, max_upload_chunk_bytes=-1)
+
+
+def test_rejects_nonpositive_max_download_chunk_bytes(
+    fake_sandbox: FakeSandbox,
+) -> None:
+    with pytest.raises(ValueError, match="max_download_chunk_bytes"):
+        OpenShellSandbox(sandbox=fake_sandbox, max_download_chunk_bytes=0)
 
 
 # ---------------------------------------------------------------------------
@@ -348,6 +356,51 @@ def test_download_files_round_trip_with_upload() -> None:
     assert resp.content == bytes(range(64))
 
 
+def test_download_files_reads_multiple_chunks() -> None:
+    payload = b"abcdefghij"
+    sandbox = FakeSandbox()
+    storage, handler = make_filesystem_handler({"/sandbox/chunked.bin": payload})
+    sandbox.set_handler(handler)
+    sb = OpenShellSandbox(sandbox=sandbox, max_download_chunk_bytes=4)
+
+    [resp] = sb.download_files(["/sandbox/chunked.bin"])
+
+    assert resp.error is None
+    assert resp.content == payload
+    assert [call.command[4:] for call in sandbox.calls] == [
+        ["0", "4"],
+        ["4", "4"],
+        ["8", "4"],
+    ]
+
+
+def test_download_files_exact_chunk_multiple_requests_eof() -> None:
+    payload = b"abcdefgh"
+    sandbox = FakeSandbox()
+    storage, handler = make_filesystem_handler({"/sandbox/exact.bin": payload})
+    sandbox.set_handler(handler)
+    sb = OpenShellSandbox(sandbox=sandbox, max_download_chunk_bytes=4)
+
+    [resp] = sb.download_files(["/sandbox/exact.bin"])
+
+    assert resp.error is None
+    assert resp.content == payload
+    assert [call.command[4] for call in sandbox.calls] == ["0", "4", "8"]
+
+
+def test_download_files_returns_empty_file() -> None:
+    sandbox = FakeSandbox()
+    storage, handler = make_filesystem_handler({"/sandbox/empty": b""})
+    sandbox.set_handler(handler)
+    sb = OpenShellSandbox(sandbox=sandbox, max_download_chunk_bytes=4)
+
+    [resp] = sb.download_files(["/sandbox/empty"])
+
+    assert resp.error is None
+    assert resp.content == b""
+    assert len(sandbox.calls) == 1
+
+
 def test_download_files_missing_returns_file_not_found() -> None:
     sandbox = FakeSandbox()
     storage, handler = make_filesystem_handler()
@@ -381,6 +434,21 @@ def test_download_files_maps_is_directory(fake_sandbox: FakeSandbox) -> None:
     assert resp.error == "is_directory"
 
 
+def test_download_files_maps_permission_error(fake_sandbox: FakeSandbox) -> None:
+    fake_sandbox.queue(
+        FakeExecResult(
+            exit_code=1,
+            stderr="PermissionError: [Errno 13] Permission denied: '/etc/x'\n",
+        ),
+    )
+    sb = OpenShellSandbox(sandbox=fake_sandbox)
+
+    [resp] = sb.download_files(["/etc/x"])
+
+    assert resp.content is None
+    assert resp.error == "permission_denied"
+
+
 def test_download_files_rejects_non_base64_output(fake_sandbox: FakeSandbox) -> None:
     payload = base64.b64encode(b"hello").decode("ascii")
     fake_sandbox.queue(FakeExecResult(exit_code=0, stdout=f"{payload} unexpected"))
@@ -390,6 +458,55 @@ def test_download_files_rejects_non_base64_output(fake_sandbox: FakeSandbox) -> 
 
     assert resp.content is None
     assert resp.error is not None
+    assert resp.error.startswith("decode_failed:")
+    assert resp.error != "permission_denied"
+
+
+def test_download_files_reports_transport_failure(fake_sandbox: FakeSandbox) -> None:
+    fake_sandbox.raise_next(RuntimeError("transport lost"))
+    sb = OpenShellSandbox(sandbox=fake_sandbox)
+
+    [resp] = sb.download_files(["/sandbox/file.txt"])
+
+    assert resp.content is None
+    assert resp.error == "download_failed: RuntimeError: transport lost"
+
+
+def test_download_files_discards_partial_content_after_failure() -> None:
+    sandbox = FakeSandbox()
+    download_calls = 0
+
+    def handler(call: FakeExecCall) -> FakeExecResult:
+        nonlocal download_calls
+        download_calls += 1
+        if download_calls == 1:
+            return FakeExecResult(stdout=base64.b64encode(b"abcd").decode("ascii"))
+        raise RuntimeError("stream interrupted")
+
+    sandbox.set_handler(handler)
+    sb = OpenShellSandbox(sandbox=sandbox, max_download_chunk_bytes=4)
+
+    [resp] = sb.download_files(["/sandbox/file.txt"])
+
+    assert resp.content is None
+    assert resp.error == "download_failed: RuntimeError: stream interrupted"
+    assert download_calls == 2
+
+
+def test_download_files_preserves_batch_partial_success() -> None:
+    sandbox = FakeSandbox()
+    storage, handler = make_filesystem_handler({"/sandbox/good.txt": b"good"})
+    sandbox.set_handler(handler)
+    sb = OpenShellSandbox(sandbox=sandbox, max_download_chunk_bytes=4)
+
+    responses = sb.download_files(
+        ["/sandbox/missing.txt", "/sandbox/good.txt"],
+    )
+
+    assert responses[0].content is None
+    assert responses[0].error == "file_not_found"
+    assert responses[1].content == b"good"
+    assert responses[1].error is None
 
 
 # ---------------------------------------------------------------------------

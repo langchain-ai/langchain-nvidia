@@ -153,6 +153,15 @@ def test_upload_download_round_trip(real_backend: OpenShellSandbox) -> None:
     assert down.content == payload
 
 
+def test_large_upload_download_round_trip(real_backend: OpenShellSandbox) -> None:
+    payload = bytes(range(256)) * 2049
+    [up] = real_backend.upload_files([("/sandbox/large-round-trip.bin", payload)])
+    assert up.error is None
+    [down] = real_backend.download_files(["/sandbox/large-round-trip.bin"])
+    assert down.error is None
+    assert down.content == payload
+
+
 def test_python_invocation(real_backend: OpenShellSandbox) -> None:
     """Run a small Python script inside the sandbox via execute()."""
     result = real_backend.execute("python3 -c 'print(2 + 2)'")
