@@ -1,4 +1,5 @@
 import enum
+import sys
 import warnings
 from typing import Callable, List, Optional, Type
 
@@ -145,7 +146,13 @@ def test_stream_enum_incomplete(
 @pytest.mark.parametrize(
     "pydanticBaseModel",
     [
-        pydanticV1BaseModel,
+        pytest.param(
+            pydanticV1BaseModel,
+            marks=pytest.mark.xfail(
+                sys.version_info >= (3, 14),
+                reason="Pydantic v1 is not compatible with Python 3.14+",
+            ),
+        ),
         pydanticV2BaseModel,
     ],
     ids=["pydantic-v1", "pydantic-v2"],
