@@ -100,6 +100,7 @@ jobs:
       - build
       - test-pypi-publish
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -175,10 +176,10 @@ jobs:
         run: make tests
         working-directory: ${{ inputs.working-directory }}
 
-      - name: Run integration tests
-        env:
-          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
-        run: make integration_tests
+      # Full hosted-service integration coverage runs in the scheduled workflow.
+      # Keep releases independent of external model health and API rate limits.
+      - name: Check integration tests compile
+        run: make integration_tests PYTEST_ARGS="-m compile"
         working-directory: ${{ inputs.working-directory }}
 
       - name: Get minimum versions
