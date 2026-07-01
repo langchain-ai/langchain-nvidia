@@ -18,7 +18,7 @@ from langchain_nvidia_ai_endpoints._common import (
 from langchain_nvidia_ai_endpoints._statics import Model
 from langchain_nvidia_ai_endpoints.callbacks import usage_callback_var
 
-_DEFAULT_MODEL_NAME: str = "nvidia/nv-embedqa-e5-v5"
+_DEFAULT_MODEL_NAME: str = "nvidia/llama-nemotron-embed-1b-v2"
 _DEFAULT_BATCH_SIZE: int = 50
 
 

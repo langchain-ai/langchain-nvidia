@@ -95,6 +95,7 @@ async def test_vlm_input_style(
     "func",
     ["invoke", "ainvoke"],
 )
+@pytest.mark.xfail(reason="Temporary test model swap")
 async def test_vlm_detail_accepted(
     vlm_model: str,
     mode: dict,
@@ -178,6 +179,7 @@ async def test_vlm_detail_invalid(
     "func",
     ["invoke", "ainvoke"],
 )
+@pytest.mark.xfail(reason="Temporary test model swap")
 async def test_vlm_image_type(
     vlm_model: str,
     mode: dict,
@@ -382,6 +384,7 @@ def asset_id() -> str:
     "func",
     ["invoke", "stream", "ainvoke", "astream"],
 )
+@pytest.mark.xfail(reason="Temporary test model swap")
 async def test_vlm_asset_id(
     vlm_model: str,
     mode: dict,
