@@ -305,13 +305,13 @@ def _process_for_vlm(
     return inputs, extra_headers
 
 
-_DEFAULT_MODEL_NAME: str = "meta/llama-3.3-70b-instruct"
+_DEFAULT_MODEL_NAME: str = "nvidia/nemotron-3-nano-30b-a3b"
 _DEFAULT_REASONING_MODEL: str = "openai/gpt-oss-120b"
 _DEFAULT_THINKING_MODELS = [
     "nvidia/nemotron-3-nano-30b-a3b",
     "nvidia/nvidia-nemotron-nano-9b-v2",
 ]
-_DEFAULT_TOOL_MODEL: str = "meta/llama-3.3-70b-instruct"
+_DEFAULT_TOOL_MODEL: str = "nvidia/nemotron-3-nano-30b-a3b"
 _DEFAULT_STRUCTURED_MODEL: str = "nvidia/nemotron-3-nano-30b-a3b"
 _DEFAULT_VLM_MODEL: str = "meta/llama-3.2-11b-vision-instruct"
 
