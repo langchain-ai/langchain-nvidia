@@ -23,4 +23,4 @@ def test_all_imports() -> None:
 
 
 def test_version_import() -> None:
-    assert __version__ == "1.4.2"
+    assert __version__ == "1.4.3"
