@@ -482,6 +482,7 @@ async def test_accuracy_tool_choice_negative_no_args(
     [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
     ids=["invoke", "stream", "ainvoke", "astream"],
 )
+@pytest.mark.xfail(reason="Temporary test model swap")
 @pytest.mark.asyncio
 async def test_tool_choice_negative_duplicate_tool(
     tool_model: str,
