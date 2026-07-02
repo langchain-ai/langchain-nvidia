@@ -309,9 +309,8 @@ _DEFAULT_MODEL_NAME: str = "nvidia/nemotron-3-nano-30b-a3b"
 _DEFAULT_REASONING_MODEL: str = "openai/gpt-oss-120b"
 _DEFAULT_THINKING_MODELS = [
     "nvidia/nemotron-3-nano-30b-a3b",
-    "nvidia/nvidia-nemotron-nano-9b-v2",
 ]
-_DEFAULT_TOOL_MODEL: str = "nvidia/nvidia-nemotron-nano-9b-v2"
+_DEFAULT_TOOL_MODEL: str = "nvidia/nemotron-3-nano-30b-a3b"
 _DEFAULT_STRUCTURED_MODEL: str = "nvidia/nemotron-3-nano-30b-a3b"
 _DEFAULT_VLM_MODEL: str = "nvidia/llama-3.1-nemotron-nano-vl-8b-v1"
 
