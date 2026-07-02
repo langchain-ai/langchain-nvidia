@@ -17,7 +17,11 @@ class TestNVIDIAStandard(ChatModelIntegrationTests):
 
     @property
     def chat_model_params(self) -> dict:
-        return {"model": "meta/llama-3.3-70b-instruct", "temperature": 0}
+        return {
+            "model": "nvidia/nemotron-3-nano-30b-a3b",
+            "temperature": 0,
+            "model_kwargs": {"chat_template_kwargs": {"enable_thinking": False}},
+        }
 
     @pytest.mark.parametrize("model", [{}, {"output_version": "v1"}], indirect=True)
     @pytest.mark.xfail(
