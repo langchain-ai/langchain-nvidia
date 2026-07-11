@@ -609,18 +609,22 @@ class ChatNVIDIA(BaseChatModel):
             extra_headers = {**self.default_headers, **extra_headers}
 
         if stream:
+            # Honor a per-call / bound stream_options (it arrives via kwargs)
+            # instead of passing it both explicitly and through **kwargs, which
+            # raised "got multiple values for keyword argument 'stream_options'".
+            stream_options = kwargs.pop("stream_options", self.stream_options)
             payload = self._get_payload(
                 inputs=inputs,
                 stop=stop,
                 stream=True,
-                stream_options=self.stream_options,
+                stream_options=stream_options,
                 **kwargs,
             )
             # remove stream_options if user set it to None or if model
             # doesn't support it
             # todo: get vlm endpoints fixed and remove this
             #       vlm endpoints do not accept standard stream_options parameter
-            if self.stream_options is None or (
+            if stream_options is None or (
                 self._client.model
                 and self._client.model.model_type
                 and self._client.model.model_type in ["nv-vlm", "qa"]
