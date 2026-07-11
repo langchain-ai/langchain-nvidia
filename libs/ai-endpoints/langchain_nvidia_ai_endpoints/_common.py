@@ -366,6 +366,10 @@ class _NVIDIABaseClient(BaseModel):
                 # accompanied by a warning.
                 model = Model(id=model_id)
 
+            # `determine_model` returns the shared MODEL_TABLE entry; copy it so
+            # setting `base_model` below doesn't mutate the global registry (which
+            # would leak into every other client in the process).
+            model = model.model_copy()
             # add base model for local-nim mode
             model.base_model = element.get("root")
 
