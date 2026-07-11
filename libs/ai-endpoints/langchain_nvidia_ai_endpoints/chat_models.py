@@ -133,12 +133,13 @@ def _nv_vlm_adjust_input(
         }
 
     This function converts the OpenAI VLM API input message to NVIDIA VLM API input
-    message, in place.
+    message, returning a new message dict without mutating the caller's message.
 
     In the process, it accepts remote URLs or data:image URIs.
     """
     if content := message_dict.get("content"):
         if isinstance(content, list):
+            new_content = []
             for part in content:
                 if isinstance(part, dict) and "image_url" in part:
                     if (
@@ -153,10 +154,18 @@ def _nv_vlm_adjust_input(
                                     "Must be one of 'auto', 'low', or 'high'. "
                                 )
                         url = _url_to_b64_string(part["image_url"]["url"])
+                        # Build new dicts instead of mutating `part`: the content
+                        # blocks are aliased into the caller's message, so an
+                        # in-place write corrupts a reused HumanMessage.
                         if model_type == "nv-vlm":
-                            part["image_url"] = url
+                            part = {**part, "image_url": url}
                         else:
-                            part["image_url"]["url"] = url
+                            part = {
+                                **part,
+                                "image_url": {**part["image_url"], "url": url},
+                            }
+                new_content.append(part)
+            message_dict = {**message_dict, "content": new_content}
     return message_dict
 
 
