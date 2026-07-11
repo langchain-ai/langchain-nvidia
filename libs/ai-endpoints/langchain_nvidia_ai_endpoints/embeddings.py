@@ -79,7 +79,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
         nvidia_api_key: Optional[str] = None,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
-        trucate: Optional[Literal["NONE", "START", "END"]] = None,
+        truncate: Optional[Literal["NONE", "START", "END"]] = None,
         dimensions: Optional[int] = None,
         **kwargs: Any,
     ):
@@ -98,7 +98,7 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             api_key: Alternative to `nvidia_api_key`.
             base_url: The base URL of the NIM to connect to.
                 Format for base URL is http://host:port
-            trucate: `'NONE'`, `'START'`, `'END'`, truncate input text if it
+            truncate: `'NONE'`, `'START'`, `'END'`, truncate input text if it
                 exceeds the model's context length. Default is `'NONE'`, which raises
                 an error if an input is too long.
             dimensions: The number of dimensions for the embeddings. This
@@ -117,13 +117,19 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
             embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")
             ```
         """
+        # `trucate` was a misspelling of `truncate` in the public signature of
+        # earlier releases; honor it for backward compatibility when the
+        # correctly-spelled argument isn't provided.
+        if truncate is None:
+            truncate = kwargs.pop("trucate", None)
+
         init_kwargs: Dict[str, Any] = {}
         if model is not None:
             init_kwargs["model"] = model
         if base_url is not None:
             init_kwargs["base_url"] = base_url
-        if trucate is not None:
-            init_kwargs["truncate"] = trucate
+        if truncate is not None:
+            init_kwargs["truncate"] = truncate
         if dimensions is not None:
             init_kwargs["dimensions"] = dimensions
 
