@@ -207,7 +207,12 @@ def parse_thinking_content(
             and think_start_idx < think_end_idx
         ):
             reasoning_part = content[think_start_idx + len("<think>") : think_end_idx]
-            actual_content = content[think_end_idx + len("</think>") :]
+            # Preserve any content that precedes <think> — it is model output,
+            # not reasoning, and dropping it silently loses text (e.g. a
+            # preamble emitted before the thinking block).
+            actual_content = (
+                content[:think_start_idx] + content[think_end_idx + len("</think>") :]
+            )
 
             reasoning = reasoning_part.strip("\n").strip()
             actual = actual_content.strip("\n").strip()

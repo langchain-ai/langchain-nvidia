@@ -199,6 +199,20 @@ def test_thinking_content_parsing_and_blocks(
         assert text_blocks[0]["text"] == expected_content_without_tags  # type: ignore[typeddict-item]
 
 
+@pytest.mark.parametrize("remove_tags", [True, False])
+def test_thinking_content_preserves_text_before_think_tag(remove_tags: bool) -> None:
+    """Text before a paired <think> block is model output and must not be dropped."""
+    content = "Intro sentence.<think>internal reasoning</think>Final answer."
+
+    reasoning, _, content_without_tags = parse_thinking_content(
+        content, remove_tags=remove_tags
+    )
+
+    assert reasoning == "internal reasoning"
+    # Previously the "Intro sentence." prefix was silently dropped.
+    assert content_without_tags == "Intro sentence.Final answer."
+
+
 def test_content_blocks_with_reasoning_content_from_response(
     requests_mock: requests_mock.Mocker,
 ) -> None:
