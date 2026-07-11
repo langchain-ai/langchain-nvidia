@@ -665,8 +665,12 @@ class _NVIDIAAsyncClient(_NVIDIABaseClient):
         if isinstance(self.verify_ssl, bool):
             return self.verify_ssl
         if isinstance(self.verify_ssl, str):
-            context = ssl.create_default_context(cafile=self.verify_ssl)
-            return context
+            # verify_ssl may be a CA file OR directory (documented, and the sync
+            # path supports both via requests). cafile= rejects a directory, so
+            # route directories through capath= to mirror the sync behavior.
+            if os.path.isdir(self.verify_ssl):
+                return ssl.create_default_context(capath=self.verify_ssl)
+            return ssl.create_default_context(cafile=self.verify_ssl)
         return True
 
     def _create_async_session(self) -> "aiohttp.ClientSession":
