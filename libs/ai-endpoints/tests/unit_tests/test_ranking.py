@@ -114,6 +114,44 @@ def test_truncate_invalid(truncate: Any) -> None:
     ["compress_documents", "acompress_documents"],
 )
 @pytest.mark.asyncio
+async def test_compress_documents_does_not_mutate_input(
+    requests_mock: Mocker,
+    mock_http: MockHTTP,
+    func: str,
+) -> None:
+    """Reranking must not mutate the caller's Document objects (#41).
+
+    The score was previously written onto the input documents in place, so a
+    second call with the same list corrupted the first call's results.
+    """
+    warnings.filterwarnings("ignore", ".*Found mock-model in available_models.*")
+    client = NVIDIARerank(api_key="BOGUS", model="mock-model")
+    docs = [
+        Document(page_content="first", metadata={"id": 1}),
+        Document(page_content="second", metadata={"id": 2}),
+    ]
+
+    if func == "acompress_documents":
+        result = await client.acompress_documents(documents=docs, query="q")
+    else:
+        result = client.compress_documents(documents=docs, query="q")
+
+    # The caller's documents are left untouched.
+    assert docs[0].metadata == {"id": 1}
+    assert docs[1].metadata == {"id": 2}
+
+    # Returned documents carry the score and are copies, not the input objects.
+    assert len(result) >= 1
+    for doc in result:
+        assert "relevance_score" in doc.metadata
+        assert all(doc is not original for original in docs)
+
+
+@pytest.mark.parametrize(
+    "func",
+    ["compress_documents", "acompress_documents"],
+)
+@pytest.mark.asyncio
 async def test_default_headers(
     requests_mock: Mocker,
     mock_http: MockHTTP,
