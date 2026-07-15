@@ -22,10 +22,10 @@ protobuf = ">=5.29.6,<6"
 optional = true
 
 [tool.poetry.group.test.dependencies]
-pytest = "^7.3.0"
+pytest = ">=9.0.3,<10.0"
 freezegun = "^1.2.2"
 pytest-mock = "^3.10.0"
-syrupy = "^4.0.2"
+syrupy = "^5.5.3"
 pytest-watcher = "^0.3.4"
 pytest-asyncio = "^0.21.1"
 langchain-core = { git = "https://github.com/langchain-ai/langchain.git", subdirectory = "libs/core" }
