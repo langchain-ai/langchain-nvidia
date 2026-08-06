@@ -20,7 +20,7 @@ to a capable model.
 
 > [!WARNING]
 > This integration is experimental. Its APIs and behavior are subject to breaking changes without
-> notice. The `switchyard-langchain` distribution is not yet a stable release and currently
+> notice. The `langchain-nvidia-switchyard` distribution is not yet a stable release and currently
 > supports buffered text, reasoning, tool calling, and structured output. See
 > [Limitations](#limitations) before using it in an application.
 
@@ -80,7 +80,7 @@ python -m pip install -e "./langchain-nvidia/libs/switchyard[openrouter]"
 
 The published metadata declares a normal `nemo-switchyard>=0.2.0` dependency. Installing the
 Switchyard checkout first satisfies that dependency while making the source-built `libsy` bindings
-available to `switchyard-langchain`.
+available to `langchain-nvidia-switchyard`.
 
 For an application that only needs the generic LangChain adapter and supplies its own provider
 integration:

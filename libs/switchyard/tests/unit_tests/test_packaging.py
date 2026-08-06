@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
 """Test the installable Switchyard LangChain package contract."""
 
 from __future__ import annotations
@@ -9,7 +6,7 @@ import tomllib
 from pathlib import Path
 from typing import cast
 
-from conftest import PACKAGE_ROOT
+from conftest import PACKAGE_ROOT, REPOSITORY_ROOT
 
 
 def _poetry() -> dict[str, object]:
@@ -20,7 +17,8 @@ def _poetry() -> dict[str, object]:
 def test_package_metadata_declares_installable_public_contract() -> None:
     poetry = _poetry()
 
-    assert poetry["name"] == "switchyard-langchain"
+    assert poetry["name"] == "langchain-nvidia-switchyard"
+    assert poetry["license"] == "MIT"
     assert poetry["readme"] == "README.md"
     assert poetry["packages"] == [{"include": "switchyard_langchain"}]
     assert poetry["dependencies"] == {
@@ -35,6 +33,10 @@ def test_package_metadata_declares_installable_public_contract() -> None:
         "deepagents": ["deepagents"],
         "openrouter": ["deepagents", "langchain-openrouter", "python-dotenv"],
     }
+
+
+def test_package_carries_the_repository_mit_license() -> None:
+    assert (PACKAGE_ROOT / "LICENSE").read_text() == (REPOSITORY_ROOT / "LICENSE").read_text()
 
 
 def test_pytest_defaults_never_select_paid_e2e() -> None:
@@ -55,15 +57,6 @@ def test_env_example_contains_names_but_no_secret() -> None:
         "OPENROUTER_EFFICIENT_MODEL=nvidia/nemotron-3-ultra-550b-a55b\n"
         "OPENROUTER_CAPABLE_MODEL=anthropic/claude-sonnet-4.6\n"
     )
-
-
-def test_all_python_files_have_spdx_header() -> None:
-    for path in PACKAGE_ROOT.rglob("*.py"):
-        if any(part.startswith(".") for part in path.parts):
-            continue
-        first_lines = path.read_text().splitlines()[:4]
-        assert any("SPDX-FileCopyrightText:" in line for line in first_lines), path
-        assert any(line == "# SPDX-License-Identifier: Apache-2.0" for line in first_lines), path
 
 
 def test_public_package_exports_only_the_two_adapters() -> None:
