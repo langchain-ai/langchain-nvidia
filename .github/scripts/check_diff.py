@@ -1,12 +1,13 @@
 import json
-import sys
 import os
+import sys
 from typing import Dict
 
 NVIDIA_DIRS = [
     "libs/ai-endpoints",
     "libs/langgraph",
     "libs/openshell",
+    "libs/switchyard",
     "libs/trt",
 ]
 
@@ -14,6 +15,7 @@ PYTHON_VERSIONS = {
     "libs/ai-endpoints": ["3.10", "3.11", "3.12", "3.13"],
     "libs/langgraph": ["3.11", "3.12", "3.13"],
     "libs/openshell": ["3.12", "3.13"],
+    "libs/switchyard": ["3.12", "3.13"],
     "libs/trt": ["3.10", "3.11"],
 }
 
@@ -21,6 +23,7 @@ LINT_PYTHON_VERSIONS = {
     "libs/ai-endpoints": ["3.10", "3.13"],
     "libs/langgraph": ["3.11", "3.13"],
     "libs/openshell": ["3.12", "3.13"],
+    "libs/switchyard": ["3.12", "3.13"],
     "libs/trt": ["3.10", "3.11"],
 }
 

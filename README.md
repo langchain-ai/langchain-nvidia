@@ -7,6 +7,7 @@ This repository contains packages with NVIDIA integrations with LangChain:
 - [langchain-nvidia-trt](https://pypi.org/project/langchain-nvidia-trt/) implements integrations of NVIDIA [TensorRT](https://developer.nvidia.com/tensorrt) models.
 - [langchain-nvidia-langgraph](./libs/langgraph/) provides NVIDIA-optimized LangGraph execution with parallel and speculative execution strategies.
 - [langchain-nvidia-openshell](./libs/openshell/) connects [NVIDIA OpenShell](https://github.com/NVIDIA/OpenShell) sandboxes to LangChain Deep Agents.
+- [switchyard-langchain](./libs/switchyard/) routes LangChain and Deep Agent model calls through NVIDIA Switchyard's `libsy` algorithms.
 
 > [!TIP]
 > For developing, debugging, and deploying AI agents and LLM applications, see [LangSmith](https://docs.langchain.com/langsmith/home).
