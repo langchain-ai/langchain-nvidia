@@ -52,7 +52,7 @@ def test_pytest_defaults_never_select_paid_e2e() -> None:
 def test_env_example_contains_names_but_no_secret() -> None:
     assert (PACKAGE_ROOT / ".env.example").read_text() == (
         "OPENROUTER_API_KEY=\n"
-        "OPENROUTER_EFFICIENT_MODEL=openai/gpt-5-mini\n"
+        "OPENROUTER_EFFICIENT_MODEL=nvidia/nemotron-3-ultra-550b-a55b\n"
         "OPENROUTER_CAPABLE_MODEL=anthropic/claude-sonnet-4.6\n"
     )
 

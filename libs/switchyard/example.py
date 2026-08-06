@@ -23,7 +23,7 @@ from switchyard.libsy import LlmTarget, algorithms
 
 from switchyard_langchain import LangChainLlmClient, SwitchyardRoutingMiddleware
 
-EFFICIENT_MODEL_DEFAULT = "openai/gpt-5-mini"
+EFFICIENT_MODEL_DEFAULT = "nvidia/nemotron-3-ultra-550b-a55b"
 CAPABLE_MODEL_DEFAULT = "anthropic/claude-sonnet-4.6"
 
 

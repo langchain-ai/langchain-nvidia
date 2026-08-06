@@ -18,6 +18,19 @@ def test_repository_env_path_targets_the_checkout_root() -> None:
     assert example.repository_env_path() == REPOSITORY_ROOT / ".env"
 
 
+def test_create_models_uses_nemotron_as_the_default_efficient_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.delenv("OPENROUTER_EFFICIENT_MODEL", raising=False)
+    monkeypatch.delenv("OPENROUTER_CAPABLE_MODEL", raising=False)
+
+    efficient, capable = example._create_models()
+
+    assert efficient.model_name == "nvidia/nemotron-3-ultra-550b-a55b"
+    assert capable.model_name == "anthropic/claude-sonnet-4.6"
+
+
 async def test_demo_requires_explicit_spend_opt_in_before_model_construction(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

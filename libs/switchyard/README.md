@@ -59,7 +59,7 @@ The default OpenRouter targets are:
 
 | Switchyard target | OpenRouter model |
 |---|---|
-| `efficient` | `openai/gpt-5-mini` |
+| `efficient` | `nvidia/nemotron-3-ultra-550b-a55b` |
 | `capable` | `anthropic/claude-sonnet-4.6` |
 
 Both IDs can be overridden in `.env`. Model availability and pricing can change, so check the
@@ -127,7 +127,7 @@ Edit `.env`:
 
 ```dotenv
 OPENROUTER_API_KEY=sk-or-v1-your-key
-OPENROUTER_EFFICIENT_MODEL=openai/gpt-5-mini
+OPENROUTER_EFFICIENT_MODEL=nvidia/nemotron-3-ultra-550b-a55b
 OPENROUTER_CAPABLE_MODEL=anthropic/claude-sonnet-4.6
 ```
 
@@ -175,7 +175,7 @@ from langchain_openrouter import ChatOpenRouter
 from switchyard.libsy import LlmTarget, algorithms
 from switchyard_langchain import LangChainLlmClient, SwitchyardRoutingMiddleware
 
-efficient_model = ChatOpenRouter(model="openai/gpt-5-mini")
+efficient_model = ChatOpenRouter(model="nvidia/nemotron-3-ultra-550b-a55b")
 capable_model = ChatOpenRouter(model="anthropic/claude-sonnet-4.6")
 
 router = algorithms.stage_router(
