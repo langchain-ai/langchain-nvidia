@@ -400,9 +400,10 @@ Ordinary synchronous applications may use:
 result = agent.invoke({"messages": [{"role": "user", "content": "Hello"}]})
 ```
 
-The synchronous adapter runs the same async libsy algorithm with `asyncio.run`. Calling
-`agent.invoke` from an already running event loop—such as a Jupyter notebook, async web handler,
-or async test—raises a clear error. Use `await agent.ainvoke(...)` there.
+The synchronous adapter runs the same async libsy algorithm on a persistent `asyncio.Runner`, so
+async model clients remain bound to one event loop across multiple turns. Calling `agent.invoke`
+from an already running event loop—such as a Jupyter notebook, async web handler, or async test—
+raises a clear error. Use `await agent.ainvoke(...)` there.
 
 Token-by-token model streaming is not supported because the published Python binding currently
 exposes buffered `Algorithm.run`. LangGraph's `agent.astream(...)` can still emit graph or node

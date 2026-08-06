@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextvars
 from collections.abc import Callable, Sequence
 from typing import Any, cast
 
@@ -13,7 +14,7 @@ from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 
 from .request_mapper import SwitchyardRequestMapper
 from .response_mapper import SwitchyardResponseMapper
@@ -23,6 +24,7 @@ class _SwitchyardChatModel(BaseChatModel):
     """Present an opaque libsy algorithm as one buffered LangChain chat model."""
 
     algorithm: Any = Field(exclude=True)
+    _sync_runner: asyncio.Runner = PrivateAttr(default_factory=asyncio.Runner)
 
     @property
     def _llm_type(self) -> str:
@@ -76,7 +78,10 @@ class _SwitchyardChatModel(BaseChatModel):
         try:
             asyncio.get_running_loop()
         except RuntimeError:
-            return asyncio.run(self._agenerate(messages, stop=stop, **kwargs))
+            return self._sync_runner.run(
+                self._agenerate(messages, stop=stop, **kwargs),
+                context=contextvars.copy_context(),
+            )
         raise RuntimeError(
             "synchronous Switchyard routing cannot run inside an active event loop; "
             "use await agent.ainvoke(...) instead"

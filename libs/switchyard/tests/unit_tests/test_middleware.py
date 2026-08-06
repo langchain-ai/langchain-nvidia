@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+from contextvars import ContextVar
 from typing import Any
 
 import pytest
@@ -72,6 +74,45 @@ class RecordingAlgorithm:
                 "usage": {"input_tokens": 4, "output_tokens": 2, "total_tokens": 6},
             },
         )
+
+
+class LoopBoundAlgorithm(RecordingAlgorithm):
+    """Fail when a persistent async client is reused on a different event loop."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.loop: asyncio.AbstractEventLoop | None = None
+
+    async def run(
+        self,
+        request: dict[str, object],
+        headers: object | None = None,
+    ) -> tuple[list[dict[str, object]], dict[str, object]]:
+        loop = asyncio.get_running_loop()
+        if self.loop is None:
+            self.loop = loop
+        elif loop is not self.loop:
+            raise RuntimeError("persistent async client used on a different event loop")
+        return await super().run(request, headers)
+
+
+_SYNC_CALL_CONTEXT = ContextVar("sync_call_context", default="unset")
+
+
+class ContextRecordingAlgorithm(RecordingAlgorithm):
+    """Record caller context propagated into each synchronous async run."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.context_values: list[str] = []
+
+    async def run(
+        self,
+        request: dict[str, object],
+        headers: object | None = None,
+    ) -> tuple[list[dict[str, object]], dict[str, object]]:
+        self.context_values.append(_SYNC_CALL_CONTEXT.get())
+        return await super().run(request, headers)
 
 
 def _request() -> ModelRequest:
@@ -166,6 +207,39 @@ def test_sync_middleware_runs_the_same_async_algorithm() -> None:
 
     assert response.result[0].text == "routed response"
     assert len(algorithm.requests) == 1
+
+
+def test_sync_middleware_reuses_one_event_loop_across_model_calls() -> None:
+    algorithm = LoopBoundAlgorithm()
+    middleware = SwitchyardRoutingMiddleware(algorithm)
+
+    def handler(request: ModelRequest) -> ModelResponse:
+        return ModelResponse(result=[request.model.invoke(request.messages)])
+
+    first = middleware.wrap_model_call(_request(), handler)
+    second = middleware.wrap_model_call(_request(), handler)
+
+    assert first.result[0].text == "routed response"
+    assert second.result[0].text == "routed response"
+    assert len(algorithm.requests) == 2
+
+
+def test_sync_middleware_propagates_each_callers_context() -> None:
+    algorithm = ContextRecordingAlgorithm()
+    middleware = SwitchyardRoutingMiddleware(algorithm)
+
+    def handler(request: ModelRequest) -> ModelResponse:
+        return ModelResponse(result=[request.model.invoke(request.messages)])
+
+    token = _SYNC_CALL_CONTEXT.set("first")
+    try:
+        middleware.wrap_model_call(_request(), handler)
+        _SYNC_CALL_CONTEXT.set("second")
+        middleware.wrap_model_call(_request(), handler)
+    finally:
+        _SYNC_CALL_CONTEXT.reset(token)
+
+    assert algorithm.context_values == ["first", "second"]
 
 
 async def test_sync_model_call_inside_event_loop_directs_user_to_ainvoke() -> None:
