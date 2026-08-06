@@ -12,7 +12,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 from langchain_core.outputs import ChatResult
 
-from switchyard_langchain import SwitchyardRoutingMiddleware
+from langchain_nvidia_Switchyard import SwitchyardRoutingMiddleware
 
 
 class UnusedChatModel(BaseChatModel):

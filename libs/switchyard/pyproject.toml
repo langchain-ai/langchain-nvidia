@@ -7,7 +7,7 @@ readme = "README.md"
 repository = "https://github.com/langchain-ai/langchain-nvidia"
 license = "MIT"
 packages = [
-  { include = "switchyard_langchain" },
+  { include = "langchain_nvidia_Switchyard" },
 ]
 
 [tool.poetry.urls]

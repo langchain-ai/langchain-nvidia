@@ -18,7 +18,7 @@ from langchain_openrouter import ChatOpenRouter
 from pydantic import BaseModel, Field
 from switchyard.libsy import LlmTarget, algorithms
 
-from switchyard_langchain import LangChainLlmClient, SwitchyardRoutingMiddleware
+from langchain_nvidia_Switchyard import LangChainLlmClient, SwitchyardRoutingMiddleware
 
 EFFICIENT_MODEL_DEFAULT = "nvidia/nemotron-3-ultra-550b-a55b"
 CAPABLE_MODEL_DEFAULT = "anthropic/claude-sonnet-4.6"
