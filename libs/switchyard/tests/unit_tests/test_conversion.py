@@ -7,7 +7,7 @@ from typing import Any, cast
 import pytest
 from langchain.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
-from langchain_nvidia_Switchyard.conversion import (
+from langchain_nvidia_switchyard.conversion import (
     ai_message_from_response,
     messages_from_request,
     model_options_from_request,

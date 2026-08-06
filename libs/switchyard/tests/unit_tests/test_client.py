@@ -13,7 +13,7 @@ from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.runnables import Runnable
 from pydantic import Field
 
-from langchain_nvidia_Switchyard import LangChainLlmClient
+from langchain_nvidia_switchyard import LangChainLlmClient
 
 
 class RecordingChatModel(BaseChatModel):

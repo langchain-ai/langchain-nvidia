@@ -18,7 +18,7 @@ from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 from switchyard.libsy import LlmTarget, TaskClassifierConfig, algorithms
 
-from langchain_nvidia_Switchyard import LangChainLlmClient, SwitchyardRoutingMiddleware
+from langchain_nvidia_switchyard import LangChainLlmClient, SwitchyardRoutingMiddleware
 
 
 class StaticChatModel(BaseChatModel):

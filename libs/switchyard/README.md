@@ -173,7 +173,7 @@ from deepagents import create_deep_agent
 from langchain_openrouter import ChatOpenRouter
 
 from switchyard.libsy import LlmTarget, algorithms
-from langchain_nvidia_Switchyard import LangChainLlmClient, SwitchyardRoutingMiddleware
+from langchain_nvidia_switchyard import LangChainLlmClient, SwitchyardRoutingMiddleware
 
 efficient_model = ChatOpenRouter(model="nvidia/nemotron-3-ultra-550b-a55b")
 capable_model = ChatOpenRouter(model="anthropic/claude-sonnet-4.6")
@@ -483,7 +483,7 @@ Run the strict package checks:
 
 ```bash
 poetry check --lock
-poetry run mypy langchain_nvidia_Switchyard
+poetry run mypy langchain_nvidia_switchyard
 make lint_package
 make lint_tests
 poetry build
@@ -554,7 +554,7 @@ libs/switchyard/
 ├── example.py                     # paid two-route OpenRouter demo
 ├── poetry.lock                    # reproducible development environment
 ├── pyproject.toml                 # install metadata and test config
-├── langchain_nvidia_Switchyard/
+├── langchain_nvidia_switchyard/
 │   ├── __init__.py                # two public exports
 │   ├── client.py                  # LangChainLlmClient
 │   ├── conversion.py              # neutral request/response translation

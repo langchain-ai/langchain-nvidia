@@ -14,14 +14,14 @@ e2e:
 	SWITCHYARD_LANGCHAIN_E2E=1 poetry run pytest \
 		tests/unit_tests/test_e2e.py -v -m e2e -o addopts=
 
-check_imports: $(shell find langchain_nvidia_Switchyard -name '*.py')
+check_imports: $(shell find langchain_nvidia_switchyard -name '*.py')
 	poetry run python ./scripts/check_imports.py $^
 
 PYTHON_FILES=.
 MYPY_CACHE=.mypy_cache
 lint format: PYTHON_FILES=.
 lint_diff format_diff: PYTHON_FILES=$(shell git diff --name-only --diff-filter=d master | grep -E '\.py$$|\.ipynb$$')
-lint_package: PYTHON_FILES=langchain_nvidia_Switchyard
+lint_package: PYTHON_FILES=langchain_nvidia_switchyard
 lint_tests: PYTHON_FILES=tests
 lint_tests: MYPY_CACHE=.mypy_cache_test
 

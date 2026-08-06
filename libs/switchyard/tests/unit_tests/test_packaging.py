@@ -20,7 +20,7 @@ def test_package_metadata_declares_installable_public_contract() -> None:
     assert poetry["name"] == "langchain-nvidia-switchyard"
     assert poetry["license"] == "MIT"
     assert poetry["readme"] == "README.md"
-    assert poetry["packages"] == [{"include": "langchain_nvidia_Switchyard"}]
+    assert poetry["packages"] == [{"include": "langchain_nvidia_switchyard"}]
     assert poetry["dependencies"] == {
         "python": ">=3.12,<4.0",
         "nemo-switchyard": ">=0.2.0",
@@ -60,9 +60,9 @@ def test_env_example_contains_names_but_no_secret() -> None:
 
 
 def test_public_package_exports_only_the_two_adapters() -> None:
-    import langchain_nvidia_Switchyard
+    import langchain_nvidia_switchyard
 
-    assert langchain_nvidia_Switchyard.__all__ == [
+    assert langchain_nvidia_switchyard.__all__ == [
         "LangChainLlmClient",
         "SwitchyardRoutingMiddleware",
     ]
