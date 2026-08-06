@@ -8,10 +8,9 @@ from typing import Any, cast
 from deepagents import create_deep_agent
 from langchain.agents.middleware import ModelRequest, ModelResponse
 from langchain.agents.structured_output import ProviderStrategy
-from langchain.messages import AIMessage, AnyMessage, HumanMessage, ToolMessage
 from langchain_core.callbacks import AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import AIMessage, AnyMessage, BaseMessage, HumanMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool

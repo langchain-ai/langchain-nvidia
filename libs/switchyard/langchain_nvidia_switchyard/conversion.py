@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
-from langchain.messages import AIMessage
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage
 
 from .request_mapper import SwitchyardRequestMapper
 from .response_mapper import SwitchyardResponseMapper

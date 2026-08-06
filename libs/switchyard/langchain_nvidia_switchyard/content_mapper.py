@@ -5,8 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from langchain.messages import AIMessage
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage
 
 from .utils.type_validation import require_mapping, require_sequence
 

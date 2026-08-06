@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any, cast
 
-from langchain.messages import AIMessage
 from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import AIMessage
 
 from .request_mapper import SwitchyardRequestMapper
 from .response_mapper import SwitchyardResponseMapper

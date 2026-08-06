@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, cast
 
 import pytest
-from langchain.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from langchain_nvidia_switchyard.conversion import (
     ai_message_from_response,

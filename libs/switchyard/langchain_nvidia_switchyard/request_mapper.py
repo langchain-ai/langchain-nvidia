@@ -5,9 +5,12 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any, cast
 
-from langchain.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.messages import (
+    AIMessage,
     BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
     convert_to_messages,
     convert_to_openai_messages,
 )

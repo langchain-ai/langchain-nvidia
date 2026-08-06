@@ -6,10 +6,9 @@ from typing import Any
 
 import pytest
 from langchain.agents.middleware import ModelRequest, ModelResponse
-from langchain.messages import HumanMessage
 from langchain_core.callbacks import AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.outputs import ChatResult
 
 from langchain_nvidia_switchyard import SwitchyardRoutingMiddleware

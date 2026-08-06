@@ -13,7 +13,7 @@ from typing import Any, Literal, cast
 from deepagents import create_deep_agent
 from dotenv import load_dotenv
 from langchain.agents.structured_output import ProviderStrategy
-from langchain.messages import AIMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_openrouter import ChatOpenRouter
 from pydantic import BaseModel, Field
 from switchyard.libsy import LlmTarget, algorithms

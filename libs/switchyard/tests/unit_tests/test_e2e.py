@@ -6,7 +6,7 @@ import os
 
 import pytest
 from conftest import REPOSITORY_ROOT
-from langchain.messages import AIMessage
+from langchain_core.messages import AIMessage
 
 import example
 

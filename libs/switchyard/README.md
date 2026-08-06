@@ -356,7 +356,7 @@ middleware = SwitchyardRoutingMiddleware(algorithms.noop())
 Every routed `AIMessage` contains the complete ordered decision trace:
 
 ```python
-from langchain.messages import AIMessage
+from langchain_core.messages import AIMessage
 
 message = next(
     message
