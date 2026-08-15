@@ -818,6 +818,22 @@ CHAT_MODEL_TABLE = {
         thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
+    "nvidia/nemotron-3.5-lightning-30b-a3b": Model(
+        id="nvidia/nemotron-3.5-lightning-30b-a3b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
+    "meta/muse-glimmer-30b": Model(
+        id="meta/muse-glimmer-30b",
+        model_type="chat",
+        client="ChatNVIDIA",
+        supports_tools=True,
+    ),
     "deepseek-ai/deepseek-v3.2": Model(
         id="deepseek-ai/deepseek-v3.2",
         model_type="chat",
@@ -1084,12 +1100,6 @@ VLM_MODEL_TABLE = {
     ),
     "stepfun-ai/step-3.7-flash": Model(
         id="stepfun-ai/step-3.7-flash",
-        model_type="vlm",
-        client="ChatNVIDIA",
-        supports_tools=True,
-    ),
-    "mistralai/mistral-medium-3.5-128b": Model(
-        id="mistralai/mistral-medium-3.5-128b",
         model_type="vlm",
         client="ChatNVIDIA",
         supports_tools=True,
