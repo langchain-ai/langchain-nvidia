@@ -43,6 +43,15 @@ class NVIDIA(LLM):
 
     model: Optional[str] = Field(None, description="The model to use for completions.")
 
+    usage_telemetry_enabled: Optional[bool] = Field(
+        default=None,
+        exclude=True,
+        repr=False,
+        description=(
+            "Enable content-free aggregate usage telemetry. Disabled by default."
+        ),
+    )
+
     _init_args: Dict[str, Any] = PrivateAttr()
     """Stashed arguments given to the constructor that can be passed to
     the Completions API endpoint."""
@@ -100,6 +109,8 @@ class NVIDIA(LLM):
         Args:
             nvidia_api_key: The API key to use for connecting to the hosted NIM.
             api_key: Alternative to `nvidia_api_key`.
+            usage_telemetry_enabled: Enable content-free hourly usage aggregates for
+                NVIDIA-hosted NIMs. Disabled by default.
             **kwargs: Additional parameters passed to the underlying client.
 
         The recommended way to provide the API key is through the `NVIDIA_API_KEY`
@@ -138,6 +149,11 @@ class NVIDIA(LLM):
             infer_path="{base_url}/completions",
             cls=self.__class__.__name__,
             verify_ssl=verify_ssl,
+            **(
+                {"usage_telemetry_enabled": self.usage_telemetry_enabled}
+                if self.usage_telemetry_enabled is not None
+                else {}
+            ),
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization
@@ -151,6 +167,7 @@ class NVIDIA(LLM):
             "model",
             "nvidia_base_url",
             "base_url",
+            "usage_telemetry_enabled",
         ]:
             if key in kwargs:
                 del kwargs[key]

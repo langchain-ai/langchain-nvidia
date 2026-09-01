@@ -35,6 +35,16 @@ from pydantic import (
 from requests.models import Response
 
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, determine_model
+from langchain_nvidia_ai_endpoints._telemetry import (
+    _TokenUsage,
+    classify_error,
+    merge_token_usage,
+    record_usage,
+    token_usage,
+)
+from langchain_nvidia_ai_endpoints._telemetry import (
+    usage_telemetry_enabled as _usage_telemetry_enabled,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +108,16 @@ class _NVIDIABaseClient(BaseModel):
         if _API_KEY_VAR in os.environ
         else None,
         description="API Key for service of choice",
+    )
+
+    usage_telemetry_enabled: bool = Field(
+        default_factory=_usage_telemetry_enabled,
+        exclude=True,
+        repr=False,
+        description=(
+            "Enable content-free aggregate usage telemetry for NVIDIA-hosted NIMs. "
+            "Disabled by default."
+        ),
     )
 
     ## Generation arguments
@@ -329,6 +349,34 @@ class _NVIDIABaseClient(BaseModel):
                 "Authorization": f"Bearer {self.api_key.get_secret_value()}",
             }
         return payload
+
+    def _record_usage_success(self, value: Any) -> None:
+        try:
+            usage = value if isinstance(value, _TokenUsage) else token_usage(value)
+            record_usage(
+                enabled=self.usage_telemetry_enabled,
+                is_hosted=self.is_hosted,
+                client_name=self.cls,
+                model_name=self.mdl_name,
+                success=True,
+                usage=usage,
+            )
+        except Exception:
+            pass
+
+    def _record_usage_failure(self, error: BaseException) -> None:
+        try:
+            record_usage(
+                enabled=self.usage_telemetry_enabled,
+                is_hosted=self.is_hosted,
+                client_name=self.cls,
+                model_name=self.mdl_name,
+                success=False,
+                usage=_TokenUsage(),
+                error_category=classify_error(self.last_response, error),
+            )
+        except Exception:
+            pass
 
     ###################################################################################
     ################### Model discovery and selection #################################
@@ -609,10 +657,16 @@ class _NVIDIASyncClient(_NVIDIABaseClient):
         extra_headers: dict = {},
     ) -> Response:
         """Post to the API."""
-        response, session = self._post(
-            self.infer_url, payload, extra_headers=extra_headers
-        )
-        return self._wait(response, session)
+        try:
+            response, session = self._post(
+                self.infer_url, payload, extra_headers=extra_headers
+            )
+            response = self._wait(response, session)
+            self._record_usage_success(response)
+            return response
+        except BaseException as error:
+            self._record_usage_failure(error)
+            raise
 
     ###################################################################################
     ## Streaming interface to allow you to iterate through progressive generations ####
@@ -631,22 +685,36 @@ class _NVIDIASyncClient(_NVIDIABaseClient):
             "json": payload,
         }
 
-        response = self.get_session_fn().post(
-            stream=True,
-            **self._add_authorization(self.last_inputs),
-            timeout=self.timeout,
-        )
-        self._try_raise(response)
+        try:
+            self.last_response = response = self.get_session_fn().post(
+                stream=True,
+                **self._add_authorization(self.last_inputs),
+                timeout=self.timeout,
+            )
+            self._try_raise(response)
+        except BaseException as error:
+            self._record_usage_failure(error)
+            raise
         call: _NVIDIASyncClient = self.model_copy()
 
         def out_gen() -> Generator[dict, Any, Any]:
-            ## Good for client, since it allows self.last_inputs
-            for line in response.iter_lines():
-                if line and line.strip() != b"data: [DONE]":
-                    line = line.decode("utf-8")
-                    msg, final_line = call.postprocess(line)
-                    yield msg
-                self._try_raise(response)
+            usage = _TokenUsage()
+            completed = False
+            try:
+                for line in response.iter_lines():
+                    if line and line.strip() != b"data: [DONE]":
+                        line = line.decode("utf-8")
+                        msg, final_line = call.postprocess(line)
+                        usage = merge_token_usage(usage, token_usage(msg))
+                        yield msg
+                    self._try_raise(response)
+                completed = True
+            except BaseException as error:
+                self._record_usage_failure(error)
+                raise
+            finally:
+                if completed:
+                    self._record_usage_success(usage)
 
         return (r for r in out_gen())
 
@@ -816,15 +884,20 @@ class _NVIDIAAsyncClient(_NVIDIABaseClient):
         extra_headers: dict = {},
     ) -> str:
         """Async version of `get_req`."""
-        response, session = await self._post_async(
-            self.infer_url, payload, extra_headers=extra_headers
-        )
         try:
-            response = await self._wait_async(response, session)
-            text = await response.text()
-            return text
-        finally:
-            await session.close()
+            response, session = await self._post_async(
+                self.infer_url, payload, extra_headers=extra_headers
+            )
+            try:
+                response = await self._wait_async(response, session)
+                text = await response.text()
+                self._record_usage_success(text)
+                return text
+            finally:
+                await session.close()
+        except BaseException as error:
+            self._record_usage_failure(error)
+            raise
 
     async def aget_req_stream(
         self,
@@ -842,6 +915,8 @@ class _NVIDIAAsyncClient(_NVIDIABaseClient):
         }
 
         session = self.get_async_session_fn()
+        usage = _TokenUsage()
+        completed = False
         try:
             self.last_response = response = await session.post(
                 **self._add_authorization(self.last_inputs)
@@ -858,10 +933,17 @@ class _NVIDIAAsyncClient(_NVIDIABaseClient):
                 if line and line != b"data: [DONE]":
                     line_str = line.decode("utf-8")
                     msg, final_line = call.postprocess(line_str)
+                    usage = merge_token_usage(usage, token_usage(msg))
                     yield msg
                 await self._try_raise_async(response)
+            completed = True
+        except BaseException as error:
+            self._record_usage_failure(error)
+            raise
         finally:
             await session.close()
+            if completed:
+                self._record_usage_success(usage)
 
 
 def _build_clients(

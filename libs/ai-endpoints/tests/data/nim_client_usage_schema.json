@@ -1,0 +1,249 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "schemaMeta": {
+    "schemaVersion": "0.1",
+    "clientId": "623344073512268",
+    "clientName": "NIM_OSS",
+    "definitionVersion": "1.0",
+    "personalization": ""
+  },
+  "description": "Privacy-safe aggregate usage telemetry for NVIDIA NIM integrations in supported open-source connector libraries.",
+  "definitions": {
+    "types": {
+      "NimFrameworkEnum": {
+        "type": "string",
+        "description": "Closed framework ID; unknown is used when an approved mapping is unavailable.",
+        "enum": [
+          "langchain",
+          "unknown"
+        ]
+      },
+      "NimOperationEnum": {
+        "type": "string",
+        "description": "Coarse logical operation category.",
+        "enum": [
+          "chat",
+          "completion",
+          "embedding",
+          "rerank",
+          "retrieval",
+          "other"
+        ]
+      },
+      "NimModelFamilyEnum": {
+        "type": "string",
+        "description": "Versioned, approved model-family classification; never a raw model name or endpoint value.",
+        "enum": [
+          "llama",
+          "mistral",
+          "mixtral",
+          "gemma",
+          "qwen",
+          "nemotron",
+          "unknown"
+        ]
+      },
+      "NimErrorCategoryEnum": {
+        "type": "string",
+        "description": "Coarse final logical outcome category; transient retry errors are not reported.",
+        "enum": [
+          "none",
+          "authentication",
+          "authorization",
+          "rate_limited",
+          "timeout",
+          "network",
+          "provider_4xx",
+          "provider_5xx",
+          "client_validation",
+          "cancelled",
+          "unknown"
+        ]
+      },
+      "NimVersionBucket": {
+        "type": "string",
+        "description": "Major.minor version bucket without package, prerelease, build, or patch identifiers.",
+        "maxLength": 32,
+        "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+      },
+      "NimFrameworkVersionBucket": {
+        "type": "string",
+        "description": "Major.minor framework version bucket or unknown when an approved mapping is unavailable.",
+        "maxLength": 32,
+        "pattern": "^(unknown|(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*))$"
+      },
+      "NimUtcHour": {
+        "type": "string",
+        "description": "UTC aggregation window rounded to the hour with no per-invocation timestamp.",
+        "maxLength": 20,
+        "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):00:00Z$"
+      },
+      "NimBatchId": {
+        "type": "string",
+        "description": "Ephemeral random UUIDv4 generated once per transmission batch for bounded deduplication; never persisted, reused, or joined to identity-bearing data.",
+        "maxLength": 36,
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+      },
+      "NimAggregateCount": {
+        "type": "integer",
+        "description": "Bounded nonnegative aggregate count.",
+        "minimum": 0,
+        "maximum": 2147483647
+      },
+      "NimPositiveAggregateCount": {
+        "type": "integer",
+        "description": "Bounded positive aggregate count.",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "NimTokenSum": {
+        "type": "integer",
+        "description": "Bounded nonnegative aggregate token sum; collection remains subject to privacy approval.",
+        "minimum": 0,
+        "maximum": 9223372036854775807
+      }
+    },
+    "events": {
+      "nim_client_usage": {
+        "description": "Hourly aggregate for explicitly enabled NIM OSS connector usage. Contains no content, endpoint details, arbitrary strings, or durable user, device, installation, or session identifiers.",
+        "type": "object",
+        "eventMeta": {
+          "service": "telemetry",
+          "gdpr": {
+            "category": "functional",
+            "description": "Content-free, identity-free aggregate metadata with ephemeral transmission-batch deduplication.",
+            "personalization": ""
+          }
+        },
+        "properties": {
+          "eventSchemaVersion": {
+            "type": "string",
+            "description": "Version of the nim_client_usage event contract, independent of the registry schema version.",
+            "const": "1.0"
+          },
+          "windowStart": {
+            "$ref": "#/definitions/types/NimUtcHour"
+          },
+          "connector": {
+            "type": "string",
+            "description": "The only connector in the approval-gated MVP.",
+            "const": "langchain-nvidia-ai-endpoints"
+          },
+          "connectorVersion": {
+            "$ref": "#/definitions/types/NimVersionBucket"
+          },
+          "framework": {
+            "$ref": "#/definitions/types/NimFrameworkEnum"
+          },
+          "frameworkVersion": {
+            "$ref": "#/definitions/types/NimFrameworkVersionBucket"
+          },
+          "operation": {
+            "$ref": "#/definitions/types/NimOperationEnum"
+          },
+          "modelFamily": {
+            "$ref": "#/definitions/types/NimModelFamilyEnum"
+          },
+          "nimId": {
+            "type": "string",
+            "description": "Canonical public NIM identifier emitted only after an exact match to the connector's versioned allowlist; raw and unrecognized model inputs map to 'unknown'.",
+            "maxLength": 192,
+            "pattern": "^(unknown|[A-Za-z0-9][A-Za-z0-9._-]{0,63}/[A-Za-z0-9][A-Za-z0-9._-]{0,126})$"
+          },
+          "successCount": {
+            "$ref": "#/definitions/types/NimAggregateCount"
+          },
+          "failureCount": {
+            "$ref": "#/definitions/types/NimAggregateCount"
+          },
+          "requestCount": {
+            "$ref": "#/definitions/types/NimPositiveAggregateCount"
+          },
+          "attemptCount": {
+            "$ref": "#/definitions/types/NimPositiveAggregateCount"
+          },
+          "inputTokenSum": {
+            "$ref": "#/definitions/types/NimTokenSum"
+          },
+          "outputTokenSum": {
+            "$ref": "#/definitions/types/NimTokenSum"
+          },
+          "missingTokenCount": {
+            "$ref": "#/definitions/types/NimAggregateCount"
+          },
+          "errorCategory": {
+            "$ref": "#/definitions/types/NimErrorCategoryEnum"
+          },
+          "batchId": {
+            "$ref": "#/definitions/types/NimBatchId"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "errorCategory": {
+                  "const": "none"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "failureCount": {
+                  "const": 0
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "errorCategory": {
+                  "not": {
+                    "const": "none"
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "successCount": {
+                  "const": 0
+                },
+                "failureCount": {
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        ],
+        "additionalProperties": false,
+        "required": [
+          "eventSchemaVersion",
+          "windowStart",
+          "connector",
+          "connectorVersion",
+          "framework",
+          "frameworkVersion",
+          "operation",
+          "modelFamily",
+          "nimId",
+          "successCount",
+          "failureCount",
+          "requestCount",
+          "attemptCount",
+          "inputTokenSum",
+          "outputTokenSum",
+          "missingTokenCount",
+          "errorCategory",
+          "batchId"
+        ]
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/definitions/events/nim_client_usage"
+    }
+  ]
+}

@@ -382,6 +382,15 @@ class ChatNVIDIA(BaseChatModel):
         description="Default headers merged into all requests.",
     )
 
+    usage_telemetry_enabled: Optional[bool] = Field(
+        default=None,
+        exclude=True,
+        repr=False,
+        description=(
+            "Enable content-free aggregate usage telemetry. Disabled by default."
+        ),
+    )
+
     model_kwargs: Dict[str, Any] = Field(
         default_factory=dict,
         description=(
@@ -441,6 +450,10 @@ class ChatNVIDIA(BaseChatModel):
             seed: A seed for deterministic results.
             stop: A string or list of strings specifying stop sequences.
             default_headers: Default headers merged into all requests.
+            usage_telemetry_enabled: Enable content-free hourly usage aggregates for
+                NVIDIA-hosted NIMs. Disabled by default. The
+                `NVIDIA_USAGE_TELEMETRY_ENABLED` environment variable provides the
+                default when this argument is omitted.
             **kwargs: Additional parameters passed to the underlying client.
 
         The recommended way to provide the API key is through the `NVIDIA_API_KEY`
@@ -516,6 +529,11 @@ class ChatNVIDIA(BaseChatModel):
             cls="ChatNVIDIA",
             verify_ssl=verify_ssl,
             **({"timeout": timeout} if timeout is not None else {}),
+            **(
+                {"usage_telemetry_enabled": self.usage_telemetry_enabled}
+                if self.usage_telemetry_enabled is not None
+                else {}
+            ),
         )
         # todo: only store the model in one place
         # the model may be updated to a newer name during initialization

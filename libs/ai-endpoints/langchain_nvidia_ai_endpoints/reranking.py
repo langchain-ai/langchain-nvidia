@@ -72,6 +72,15 @@ class NVIDIARerank(BaseDocumentCompressor):
         description="Default headers merged into all requests.",
     )
 
+    usage_telemetry_enabled: Optional[bool] = Field(
+        default=None,
+        exclude=True,
+        repr=False,
+        description=(
+            "Enable content-free aggregate usage telemetry. Disabled by default."
+        ),
+    )
+
     extra_headers: dict = Field(
         default_factory=dict,
         description="Deprecated: Use 'default_headers' instead. "
@@ -96,6 +105,8 @@ class NVIDIARerank(BaseDocumentCompressor):
         Args:
             nvidia_api_key: The API key to use for connecting to the hosted NIM.
             api_key: Alternative to `nvidia_api_key`.
+            usage_telemetry_enabled: Enable content-free hourly usage aggregates for
+                NVIDIA-hosted NIMs. Disabled by default.
             **kwargs: Additional parameters passed to the underlying client.
 
         The recommended way to provide the API key is through the `NVIDIA_API_KEY`
@@ -218,6 +229,11 @@ class NVIDIARerank(BaseDocumentCompressor):
             infer_path="{base_url}/ranking",
             cls=self.__class__.__name__,
             verify_ssl=verify_ssl,
+            **(
+                {"usage_telemetry_enabled": self.usage_telemetry_enabled}
+                if self.usage_telemetry_enabled is not None
+                else {}
+            ),
         )
 
         # todo: only store the model in one place
