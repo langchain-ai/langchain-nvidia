@@ -405,29 +405,23 @@ ranker = NVIDIARerank(base_url="http://localhost:2016/v1")
 
 ## Telemetry & Privacy
 
-`langchain-nvidia-ai-endpoints` includes an optional function to share
-content-free, aggregate telemetry with NVIDIA for product improvement. Telemetry
-is enabled by default for supported NVIDIA-hosted NIM endpoint usage and can be
-disabled as described below. Data collected by the connector is limited to
-operational usage and reliability metrics, such as connector and LangChain
-version, operation type, approved public NVIDIA NIM ID or `unknown`, model
-family, request and retry counts, success and failure counts, token counts,
-missing-token counts, latency buckets, and coarse error categories. These totals
+`langchain-nvidia-ai-endpoints` includes content-free, aggregate telemetry to
+help NVIDIA understand adoption and reliability of supported NVIDIA NIM
+integrations. Telemetry is enabled by default for supported NVIDIA-hosted NIM
+endpoint usage and can be disabled at any time.
+
+Telemetry is limited to aggregate operational metrics such as connector and
+framework version, operation type, recognized model family, request and outcome
+counts, token counts, latency buckets, and coarse error categories. These totals
 are best-effort and are not billing-grade.
 
-The connector telemetry payload does not collect prompts, responses, embeddings,
-tool inputs or outputs, credentials, endpoint URLs, hostnames, exception text,
-account IDs, organization IDs, or persistent user, device, installation, or
-session identifiers. This data is used to understand aggregate adoption and
-reliability of supported NVIDIA NIM integrations. It is not used to track
-individual user behavior, for billing, or for precise capacity accounting.
+The telemetry is aggregate-only and does not include request or response content,
+credentials, endpoint URLs, or persistent user, device, or session identifiers.
+It is not used to track individual users, for billing, or for precise capacity
+accounting.
 
-Aggregates remain in memory only, are never written to disk, and apply only to
-NVIDIA-hosted NIM endpoints. Self-hosted endpoints do not emit this telemetry.
-
-NVIDIA telemetry infrastructure may add standard transport or routing metadata
-during ingestion and indexing. Any platform-added metadata used or retained for
-this project must be reviewed and approved before production launch.
+Telemetry is aggregated in memory and emitted only for supported NVIDIA-hosted
+NIM endpoints. Self-hosted endpoints do not emit this telemetry.
 
 You may opt out of telemetry collection at any time. Opting out applies only to
 telemetry collection by the `langchain-nvidia-ai-endpoints` connector itself.
