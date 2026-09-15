@@ -453,6 +453,3 @@ you exercise within `langchain-nvidia-ai-endpoints` does not extend to data
 collection by your chosen endpoint. NVIDIA Build is intended for evaluation and
 testing purposes only and may not be used in production environments. Do not
 submit confidential information or personal data when using NVIDIA Build.
-
-For authorized UAT only, set `NVIDIA_USAGE_TELEMETRY_ENDPOINT` to the approved
-test ingestion URL. Do not redirect telemetry to an unapproved collector.
