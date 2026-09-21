@@ -77,6 +77,36 @@ def test_registered_model_usable(public_class: type, mock_model: str) -> None:
         assert x.model == mock_model
 
 
+def test_registered_embedding_model_uses_direct_endpoint(
+    requests_mock: Any,
+) -> None:
+    endpoint = "https://custom.example.com/embeddings-deployment"
+    requests_mock.post(
+        endpoint,
+        json={
+            "data": [
+                {
+                    "embedding": [0.1, 0.2, 0.3],
+                    "index": 0,
+                }
+            ]
+        },
+    )
+    register_model(
+        Model(
+            id="test/direct-embedding",
+            model_type="embedding",
+            client="NVIDIAEmbeddings",
+            endpoint=endpoint,
+        )
+    )
+
+    embedder = NVIDIAEmbeddings(model="test/direct-embedding", api_key="BOGUS")
+    assert embedder.embed_query("hello") == [0.1, 0.2, 0.3]
+    assert requests_mock.last_request is not None
+    assert requests_mock.last_request.url == endpoint
+
+
 def test_registered_model_without_client_usable(public_class: type) -> None:
     id = "test/no-client"
     model = Model(id=id, endpoint="BOGUS")

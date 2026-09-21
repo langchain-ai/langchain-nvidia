@@ -144,20 +144,6 @@ def get_token_cost_for_model(
 class UsageCallbackHandler(BaseCallbackHandler):
     """Callback Handler that tracks OpenAI info."""
 
-    ## Per-model statistics
-    _model_usage: defaultdict = defaultdict(
-        lambda: {
-            "total_tokens": 0,
-            "prompt_tokens": 0,
-            "completion_tokens": 0,
-            "successful_requests": 0,
-            "total_cost": 0.0,
-        }
-    )
-
-    llm_output: dict = {}
-    price_map: dict = {k: v for k, v in DEFAULT_MODEL_COST_PER_1K_TOKENS.items()}
-
     ## Aggregate statistics, compatible with OpenAICallbackHandler
     @property
     def total_tokens(self) -> int:
@@ -187,6 +173,19 @@ class UsageCallbackHandler(BaseCallbackHandler):
     def __init__(self) -> None:
         super().__init__()
         self._lock = threading.Lock()
+        self._model_usage: defaultdict = defaultdict(
+            lambda: {
+                "total_tokens": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "successful_requests": 0,
+                "total_cost": 0.0,
+            }
+        )
+        self.llm_output: dict = {}
+        self.price_map: dict = {
+            k: v for k, v in DEFAULT_MODEL_COST_PER_1K_TOKENS.items()
+        }
 
     def __repr__(self) -> str:
         return (
