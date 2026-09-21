@@ -52,7 +52,7 @@ from langchain_core.outputs import (
     ChatResult,
     Generation,
 )
-from langchain_core.runnables import Runnable
+from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.tools import BaseTool
 from langchain_core.utils import get_pydantic_field_names
 from langchain_core.utils.function_calling import convert_to_openai_tool
@@ -82,6 +82,91 @@ _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun
 logger = logging.getLogger(__name__)
 
 _MODEL_PROFILES = cast(ModelProfileRegistry, _PROFILES)
+
+
+class _StructuredOutputFallbackRunnable(Runnable):
+    """Runnable that tries structured-output formats until one parses.
+
+    A parser result of None means the format did not produce a usable
+    structured object. For stream/astream, buffer each fallback attempt until
+    we know it ended with a non-None parsed object, so a failed attempt does not
+    leak a None chunk before a later format succeeds.
+    """
+
+    def __init__(self, chains: Sequence[Runnable]) -> None:
+        self.chains = chains
+
+    def invoke(
+        self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
+    ) -> Any:
+        last_exc: Optional[Exception] = None
+        for chain in self.chains:
+            try:
+                result = chain.invoke(input, config, **kwargs)
+                if result is not None:
+                    return result
+            except Exception as e:
+                last_exc = e
+        if last_exc is not None:
+            raise last_exc
+        return None
+
+    async def ainvoke(
+        self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
+    ) -> Any:
+        last_exc: Optional[Exception] = None
+        for chain in self.chains:
+            try:
+                result = await chain.ainvoke(input, config, **kwargs)
+                if result is not None:
+                    return result
+            except Exception as e:
+                last_exc = e
+        if last_exc is not None:
+            raise last_exc
+        return None
+
+    def stream(
+        self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
+    ) -> Iterator:
+        last_exc: Optional[Exception] = None
+        last_none_chunks: list[Any] = []
+        for chain in self.chains:
+            try:
+                chunks = list(chain.stream(input, config, **kwargs))
+                if chunks and chunks[-1] is not None:
+                    yield from chunks
+                    return
+                if chunks:
+                    last_none_chunks = chunks
+            except Exception as e:
+                last_exc = e
+        if last_exc is not None:
+            raise last_exc
+        yield from last_none_chunks
+
+    async def astream(
+        self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
+    ) -> AsyncIterator:
+        last_exc: Optional[Exception] = None
+        last_none_chunks: list[Any] = []
+        for chain in self.chains:
+            try:
+                chunks = []
+                async for chunk in chain.astream(input, config, **kwargs):
+                    chunks.append(chunk)
+                if chunks and chunks[-1] is not None:
+                    for chunk in chunks:
+                        yield chunk
+                    return
+                if chunks:
+                    last_none_chunks = chunks
+            except Exception as e:
+                last_exc = e
+        if last_exc is not None:
+            raise last_exc
+        for chunk in last_none_chunks:
+            yield chunk
 
 
 def _get_default_model_profile(model_name: str) -> ModelProfile:
@@ -1437,81 +1522,7 @@ class ChatNVIDIA(BaseChatModel):
         # return free-form text with HTTP 200.
         chains = [openai_compat_chain] + guided_chains
 
-        from langchain_core.runnables import Runnable, RunnableConfig
-
-        class _FallbackRunnable(Runnable):
-            """Runnable that tries formats in order until one succeeds.
-
-            A result of None is treated as a failure (the output parser
-            could not construct the schema object), so the next format
-            is tried.
-            """
-
-            def invoke(
-                self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
-            ) -> Any:
-                last_exc: Optional[Exception] = None
-                for chain in chains:
-                    try:
-                        result = chain.invoke(input, config, **kwargs)
-                        if result is not None:
-                            return result
-                    except Exception as e:
-                        last_exc = e
-                if last_exc is not None:
-                    raise last_exc
-                return None
-
-            async def ainvoke(
-                self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
-            ) -> Any:
-                last_exc: Optional[Exception] = None
-                for chain in chains:
-                    try:
-                        result = await chain.ainvoke(input, config, **kwargs)
-                        if result is not None:
-                            return result
-                    except Exception as e:
-                        last_exc = e
-                if last_exc is not None:
-                    raise last_exc
-                return None
-
-            def stream(
-                self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
-            ) -> Iterator:
-                last_exc: Optional[Exception] = None
-                for chain in chains:
-                    try:
-                        last_chunk = None
-                        for chunk in chain.stream(input, config, **kwargs):
-                            last_chunk = chunk
-                            yield chunk
-                        if last_chunk is not None:
-                            return
-                    except Exception as e:
-                        last_exc = e
-                if last_exc is not None:
-                    raise last_exc
-
-            async def astream(
-                self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
-            ) -> AsyncIterator:
-                last_exc: Optional[Exception] = None
-                for chain in chains:
-                    try:
-                        last_chunk = None
-                        async for chunk in chain.astream(input, config, **kwargs):
-                            last_chunk = chunk
-                            yield chunk
-                        if last_chunk is not None:
-                            return
-                    except Exception as e:
-                        last_exc = e
-                if last_exc is not None:
-                    raise last_exc
-
-        return _FallbackRunnable()
+        return _StructuredOutputFallbackRunnable(chains)
 
     def with_thinking_mode(
         self,
