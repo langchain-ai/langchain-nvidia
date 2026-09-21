@@ -35,9 +35,7 @@ class _FakeStructuredOutputChain(Runnable):
     async def ainvoke(self, input: Any, config: Any = None, **kwargs: Any) -> Any:
         return self.invoke(input, config, **kwargs)
 
-    def stream(
-        self, input: Any, config: Any = None, **kwargs: Any
-    ) -> Iterator[Any]:
+    def stream(self, input: Any, config: Any = None, **kwargs: Any) -> Iterator[Any]:
         yield from self.chunks
 
     async def astream(
