@@ -494,6 +494,23 @@ class _NVIDIABaseClient(BaseModel):
             body = f"{body}\nPlease check or regenerate your API key."
         return f"{header}\n{body}"
 
+    def _custom_embeddings_404_guidance(self) -> Optional[str]:
+        """Return guidance for the known custom embeddings endpoint 404 path."""
+        if self.cls != "NVIDIAEmbeddings" or self.is_hosted:
+            return None
+        request_url = (self.last_inputs or {}).get("url")
+        if request_url != self.infer_url:
+            return None
+        return (
+            f"NVIDIAEmbeddings received a 404 from custom URL {request_url}. "
+            "The client builds embeddings requests as `base_url` + "
+            "`/embeddings`; if your deployment URL is already the full "
+            "inference endpoint, register it with "
+            "`register_model(Model(..., endpoint=...))` and initialize "
+            "NVIDIAEmbeddings with that model id instead of passing the "
+            "inference URL as `base_url`."
+        )
+
     def _try_raise(self, response: Response) -> None:
         """Try to raise an error from a response"""
         try:
@@ -522,6 +539,9 @@ class _NVIDIABaseClient(BaseModel):
                     except Exception:
                         rd = {"detail": rd}
             message = self._format_error(rd)
+            if response.status_code == 404:
+                if custom_guidance := self._custom_embeddings_404_guidance():
+                    message = f"{message}\n\n{custom_guidance}"
             # todo: raise as an HTTPError
             raise Exception(message) from None
 
@@ -804,6 +824,9 @@ class _NVIDIAAsyncClient(_NVIDIABaseClient):
                 rd = {"detail": rd_raw}
 
         message = self._format_error(rd)
+        if response.status == 404:
+            if custom_guidance := self._custom_embeddings_404_guidance():
+                message = f"{message}\n\n{custom_guidance}"
         # todo: raise as an HTTPError
         raise Exception(message) from None
 

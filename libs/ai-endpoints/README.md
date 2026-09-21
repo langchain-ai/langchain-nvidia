@@ -403,7 +403,9 @@ ranker = NVIDIARerank(base_url="http://localhost:2016/v1")
 
 If your deployment exposes a direct inference URL instead of a `/v1/models`
 listing plus a standard inference path, register it as a model endpoint rather
-than passing the inference URL as `base_url`.
+than passing the inference URL as `base_url`. A 404 from `base_url` plus
+`/embeddings` usually means the deployment URL is already the full inference
+endpoint.
 
 ```python
 from langchain_nvidia_ai_endpoints import Model, NVIDIAEmbeddings, register_model
