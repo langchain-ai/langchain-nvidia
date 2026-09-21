@@ -1,16 +1,20 @@
 import enum
 import sys
 import warnings
-from typing import Callable, List, Optional, Type
+from typing import Any, AsyncIterator, Callable, Iterator, List, Optional, Type
 
 import pytest
 import requests_mock
+from langchain_core.runnables import Runnable
 from pydantic import BaseModel as pydanticV2BaseModel  # ignore: check_pydantic
 from pydantic import Field
 from pydantic.v1 import BaseModel as pydanticV1BaseModel  # ignore: check_pydantic
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
-from langchain_nvidia_ai_endpoints.chat_models import _is_structured_output
+from langchain_nvidia_ai_endpoints.chat_models import (
+    _is_structured_output,
+    _StructuredOutputFallbackRunnable,
+)
 
 
 class Joke(pydanticV2BaseModel):
@@ -19,6 +23,26 @@ class Joke(pydanticV2BaseModel):
     setup: str = Field(description="The setup of the joke")
     punchline: str = Field(description="The punchline to the joke")
     rating: Optional[int] = Field(description="How funny the joke is, from 1 to 10")
+
+
+class _FakeStructuredOutputChain(Runnable):
+    def __init__(self, chunks: list[Any]) -> None:
+        self.chunks = chunks
+
+    def invoke(self, input: Any, config: Any = None, **kwargs: Any) -> Any:
+        return self.chunks[-1] if self.chunks else None
+
+    async def ainvoke(self, input: Any, config: Any = None, **kwargs: Any) -> Any:
+        return self.invoke(input, config, **kwargs)
+
+    def stream(self, input: Any, config: Any = None, **kwargs: Any) -> Iterator[Any]:
+        yield from self.chunks
+
+    async def astream(
+        self, input: Any, config: Any = None, **kwargs: Any
+    ) -> AsyncIterator[Any]:
+        for chunk in self.chunks:
+            yield chunk
 
 
 def test_method() -> None:
@@ -695,3 +719,49 @@ def test_none_result_triggers_next_chain(
     assert result.setup == "Why did the chicken cross the road?"
     assert result.punchline == "To get to the other side"
     assert result.rating == 5
+
+
+def test_stream_none_result_does_not_leak_when_fallback_succeeds() -> None:
+    runnable = _StructuredOutputFallbackRunnable(
+        [
+            _FakeStructuredOutputChain([None]),
+            _FakeStructuredOutputChain(["parsed"]),
+        ]
+    )
+
+    assert list(runnable.stream("test")) == ["parsed"]
+
+
+@pytest.mark.asyncio
+async def test_astream_none_result_does_not_leak_when_fallback_succeeds() -> None:
+    runnable = _StructuredOutputFallbackRunnable(
+        [
+            _FakeStructuredOutputChain([None]),
+            _FakeStructuredOutputChain(["parsed"]),
+        ]
+    )
+
+    assert [chunk async for chunk in runnable.astream("test")] == ["parsed"]
+
+
+def test_stream_preserves_none_when_all_fallbacks_return_none() -> None:
+    runnable = _StructuredOutputFallbackRunnable(
+        [
+            _FakeStructuredOutputChain([None]),
+            _FakeStructuredOutputChain([None]),
+        ]
+    )
+
+    assert list(runnable.stream("test")) == [None]
+
+
+@pytest.mark.asyncio
+async def test_astream_preserves_none_when_all_fallbacks_return_none() -> None:
+    runnable = _StructuredOutputFallbackRunnable(
+        [
+            _FakeStructuredOutputChain([None]),
+            _FakeStructuredOutputChain([None]),
+        ]
+    )
+
+    assert [chunk async for chunk in runnable.astream("test")] == [None]
