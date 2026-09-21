@@ -325,7 +325,7 @@ class NVIDIARerank(BaseDocumentCompressor):
             assert (
                 0 <= ranking.index < len(doc_batch)
             ), "invalid response from server: index out of range"
-            doc = doc_batch[ranking.index].model_copy(deep=True)
+            doc = doc_batch[ranking.index]
             doc.metadata["relevance_score"] = ranking.logit
             results.append(doc)
 

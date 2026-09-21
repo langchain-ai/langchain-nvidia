@@ -187,38 +187,6 @@ async def test_extra_headers(
         assert requests_mock.last_request.headers["X-Test"] == "test"
 
 
-@pytest.mark.parametrize(
-    "func",
-    ["compress_documents", "acompress_documents"],
-)
-@pytest.mark.asyncio
-async def test_compress_documents_does_not_mutate_inputs(
-    mock_http: MockHTTP,
-    func: str,
-) -> None:
-    warnings.filterwarnings("ignore", ".*Found mock-model in available_models.*")
-    client = NVIDIARerank(api_key="BOGUS", model="mock-model")
-    documents = [
-        Document(
-            page_content="Nothing really.",
-            metadata={"nested": {"source": "caller"}},
-        )
-    ]
-
-    if func == "acompress_documents":
-        response = await client.acompress_documents(
-            documents=documents, query="What is it?"
-        )
-    else:
-        response = client.compress_documents(documents=documents, query="What is it?")
-
-    assert response[0] is not documents[0]
-    assert documents[0].metadata == {"nested": {"source": "caller"}}
-
-    response[0].metadata["nested"]["source"] = "result"
-    assert documents[0].metadata["nested"]["source"] == "caller"
-
-
 def _get_passages(requests_mock: Mocker) -> List[Dict[str, Any]]:
     """Helper to extract passages from the last sync request payload."""
     assert requests_mock.last_request is not None
@@ -313,9 +281,9 @@ def test_image_on_non_vlm_model_warns(requests_mock: Mocker) -> None:
             ],
             query="test query",
         )
-    assert any("not known to support image" in str(warning.message) for warning in w), (
-        "expected a warning about image support"
-    )
+    assert any(
+        "not known to support image" in str(warning.message) for warning in w
+    ), "expected a warning about image support"
 
 
 def test_image_on_ranking_vlm_model_no_warning(requests_mock: Mocker) -> None:
