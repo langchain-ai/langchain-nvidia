@@ -400,3 +400,29 @@ embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")
 # Connect to a reranking NIM running at localhost:2016
 ranker = NVIDIARerank(base_url="http://localhost:2016/v1")
 ```
+
+If your deployment exposes a direct inference URL instead of a `/v1/models`
+listing plus a standard inference path, register it as a model endpoint rather
+than passing the inference URL as `base_url`. A 404 from `base_url` plus
+`/embeddings` usually means the deployment URL is already the full inference
+endpoint.
+
+```python
+import os
+
+from langchain_nvidia_ai_endpoints import Model, NVIDIAEmbeddings, register_model
+
+register_model(
+    Model(
+        id="nvidia/llama-3.2-nv-embedqa-1b-v2",
+        model_type="embedding",
+        client="NVIDIAEmbeddings",
+        endpoint="https://CUSTOM_DEPLOYMENT_LINK_WITHOUT_TRAILING_EMBEDDINGS",
+    )
+)
+
+embedder = NVIDIAEmbeddings(
+    model="nvidia/llama-3.2-nv-embedqa-1b-v2",
+    api_key=os.environ.get("NVIDIA_API_KEY"),
+)
+```
