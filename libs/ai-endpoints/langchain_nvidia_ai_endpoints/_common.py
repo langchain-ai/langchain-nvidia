@@ -502,10 +502,11 @@ class _NVIDIABaseClient(BaseModel):
         if request_url != self.infer_url:
             return None
         return (
-            f"NVIDIAEmbeddings received a 404 from custom URL {request_url}. "
-            "The client builds embeddings requests as `base_url` + "
-            "`/embeddings`; if your deployment URL is already the full "
-            "inference endpoint, register it with "
+            f"NVIDIAEmbeddings received a 404 from custom endpoint URL "
+            f"{request_url}. When initialized with `base_url`, "
+            "NVIDIAEmbeddings sends embedding requests to `base_url` + "
+            "`/embeddings`. If your deployment URL is already the full "
+            "embeddings inference endpoint, register it with "
             "`register_model(Model(..., endpoint=...))` and initialize "
             "NVIDIAEmbeddings with that model id instead of passing the "
             "inference URL as `base_url`."

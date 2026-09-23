@@ -408,16 +408,21 @@ than passing the inference URL as `base_url`. A 404 from `base_url` plus
 endpoint.
 
 ```python
+import os
+
 from langchain_nvidia_ai_endpoints import Model, NVIDIAEmbeddings, register_model
 
 register_model(
     Model(
-        id="my-embedding-model",
+        id="nvidia/llama-3.2-nv-embedqa-1b-v2",
         model_type="embedding",
         client="NVIDIAEmbeddings",
-        endpoint="https://example.com/custom-embedding-deployment",
+        endpoint="https://CUSTOM_DEPLOYMENT_LINK_WITHOUT_TRAILING_EMBEDDINGS",
     )
 )
 
-embedder = NVIDIAEmbeddings(model="my-embedding-model")
+embedder = NVIDIAEmbeddings(
+    model="nvidia/llama-3.2-nv-embedqa-1b-v2",
+    api_key=os.environ.get("NVIDIA_API_KEY"),
+)
 ```
