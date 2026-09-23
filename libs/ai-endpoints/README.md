@@ -400,3 +400,56 @@ embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")
 # Connect to a reranking NIM running at localhost:2016
 ranker = NVIDIARerank(base_url="http://localhost:2016/v1")
 ```
+
+---
+
+## Telemetry & Privacy
+
+`langchain-nvidia-ai-endpoints` includes content-free, aggregate telemetry to
+help NVIDIA understand adoption and reliability of supported NVIDIA NIM
+integrations. Telemetry is enabled by default for supported NVIDIA-hosted NIM
+endpoint usage and can be disabled at any time.
+
+Telemetry is limited to aggregate operational metrics such as connector and
+framework version, operation type, recognized model family, request and outcome
+counts, token counts, latency buckets, and coarse error categories. These totals
+are best-effort and are not billing-grade.
+
+The telemetry is aggregate-only and does not include request or response content,
+credentials, endpoint URLs, or persistent user, device, or session identifiers.
+It is not used to track individual users, for billing, or for precise capacity
+accounting.
+
+Telemetry is aggregated in memory and emitted only for supported NVIDIA-hosted
+NIM endpoints. Self-hosted endpoints do not emit this telemetry.
+
+You may opt out of telemetry collection at any time. Opting out applies only to
+telemetry collection by the `langchain-nvidia-ai-endpoints` connector itself.
+To disable telemetry for the current shell, set
+`NVIDIA_USAGE_TELEMETRY_ENABLED=false` before running your application:
+
+```bash
+export NVIDIA_USAGE_TELEMETRY_ENABLED=false
+```
+
+You can also disable telemetry for a single client instance:
+
+```python
+llm = ChatNVIDIA(
+    model="nvidia/nemotron-3-super-120b-a12b",
+    usage_telemetry_enabled=False,
+)
+```
+
+If telemetry is disabled, the connector does not send telemetry requests and
+telemetry has no effect on connector operation.
+
+**Use of third-party endpoints, including NVIDIA Build:** `langchain-nvidia-ai-endpoints`
+can be configured to use various inference endpoints, including
+[build.nvidia.com](https://build.nvidia.com/) (NVIDIA Build). If you choose to
+use NVIDIA Build or any other third-party endpoint, that endpoint's own terms of
+service and privacy practices apply independently of this library. Any opt-out
+you exercise within `langchain-nvidia-ai-endpoints` does not extend to data
+collection by your chosen endpoint. NVIDIA Build is intended for evaluation and
+testing purposes only and may not be used in production environments. Do not
+submit confidential information or personal data when using NVIDIA Build.
