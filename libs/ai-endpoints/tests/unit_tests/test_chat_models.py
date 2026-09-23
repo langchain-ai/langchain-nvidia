@@ -2,7 +2,9 @@
 
 import asyncio
 import json
+import ssl
 import warnings
+from pathlib import Path
 from typing import Any, Optional, Union
 from unittest.mock import MagicMock
 
@@ -541,6 +543,19 @@ def test_verify_ssl_behavior(
         stop=None,
     )
     assert "verify_ssl" not in payload
+
+
+def test_verify_ssl_ca_directory_async(tmp_path: Path) -> None:
+    """A CA directory (documented + supported by the sync path) must not crash
+    the async client's SSL context (cafile= rejects a directory)."""
+    llm = ChatNVIDIA(
+        model="meta/llama-3.3-70b-instruct",
+        nvidia_api_key="nvapi-...",
+        base_url="https://example.com/v1",
+        verify_ssl=str(tmp_path),
+    )
+    context = llm._async_client._build_ssl_context()
+    assert isinstance(context, ssl.SSLContext)
 
 
 def test_timeout_behavior() -> None:
