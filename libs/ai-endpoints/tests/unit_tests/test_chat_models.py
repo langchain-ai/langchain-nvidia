@@ -156,6 +156,40 @@ def test_optional_parameters_default_values() -> None:
     assert payload["max_tokens"] == 1024
 
 
+def test_available_models_does_not_mutate_global_table(requests_mock: Mocker) -> None:
+    """Listing models must not write base_model onto the shared MODEL_TABLE entry.
+
+    determine_model returns the global table instance; writing base_model on it
+    leaked a local-NIM root into every other client in the process.
+    """
+    model_id = "google/gemma-7b"
+    assert MODEL_TABLE[model_id].base_model is None
+    requests_mock.get(
+        "https://integrate.api.nvidia.com/v1/models",
+        json={
+            "data": [
+                {
+                    "id": model_id,
+                    "object": "model",
+                    "created": 1234567890,
+                    "owned_by": "OWNER",
+                    "root": "some-root",
+                }
+            ]
+        },
+    )
+    warnings.filterwarnings("ignore", ".*is unknown.*")
+    warnings.filterwarnings("ignore", ".*type is unknown.*")
+
+    llm = ChatNVIDIA(model=model_id, nvidia_api_key="nvapi-...")
+    # Force a fresh model listing (the mutating path).
+    llm._client._available_models = None
+    _ = llm._client.available_models
+
+    # The shared table entry must be untouched.
+    assert MODEL_TABLE[model_id].base_model is None
+
+
 @pytest.mark.parametrize(
     "thinking_mode",
     [False, True],
