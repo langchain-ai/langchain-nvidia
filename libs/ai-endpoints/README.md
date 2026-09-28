@@ -58,17 +58,19 @@ Use the following code to invoke the core chat interface.
 
 ```python
 ## Core LC Chat Interface
+import os
+
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
 llm = ChatNVIDIA(
-    model="nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+    model=os.environ["NVIDIA_MODEL_ID"],
     max_completion_tokens=8192,
 )
 result = llm.invoke("Write a ballad about LangChain.")
 print(result.content)
 ```
 
-The example uses the published Nemotron 3.5 Super VL checkpoint identifier. Check [NVIDIA Build](https://build.nvidia.com/) for the API Catalog identifier before running it.
+Set `NVIDIA_MODEL_ID` to the public Nemotron 3.5 Super VL API identifier from [NVIDIA Build](https://build.nvidia.com/) when it becomes available.
 
 
 ## Use Stream, Batch, and Async
@@ -144,13 +146,15 @@ Use this section to learn about a few examples.
 
 [Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. Nemotron 3.5 Super VL is the recommended starting point for text, image, and agent workflows. Find its current API identifier in the [NVIDIA API Catalog](https://build.nvidia.com/).
 
-The identifier below names the published model checkpoint. Replace it with the NVIDIA API Catalog identifier when the model is listed there. The larger completion budget gives reasoning and tool workflows room to return a final answer.
+Set `NVIDIA_MODEL_ID` to the public identifier from [NVIDIA Build](https://build.nvidia.com/) when the model is listed there. The larger completion budget gives reasoning and tool workflows room to return a final answer.
 
 ```python
+import os
+
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
 llm = ChatNVIDIA(
-    model="nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+    model=os.environ["NVIDIA_MODEL_ID"],
     max_completion_tokens=8192,
 )
 result = llm.invoke("Plan a three-step agentic workflow for competitive research.")
