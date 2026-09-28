@@ -868,6 +868,7 @@ CHAT_MODEL_TABLE = {
         model_type="vlm",
         client="ChatNVIDIA",
         supports_tools=True,
+        supports_structured_output=True,
     ),
     "minimaxai/minimax-m2.5": Model(
         id="minimaxai/minimax-m2.5", model_type="chat", client="ChatNVIDIA"
