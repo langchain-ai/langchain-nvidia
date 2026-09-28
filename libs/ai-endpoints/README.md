@@ -60,10 +60,12 @@ Use the following code to invoke the core chat interface.
 ## Core LC Chat Interface
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-llm = ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b")
+llm = ChatNVIDIA(model="nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16")
 result = llm.invoke("Write a ballad about LangChain.")
 print(result.content)
 ```
+
+The example uses the published Nemotron 3.5 Super VL checkpoint identifier. Check [NVIDIA Build](https://build.nvidia.com/) for the API Catalog identifier before running it.
 
 
 ## Use Stream, Batch, and Async
@@ -137,20 +139,40 @@ Use this section to learn about a few examples.
 
 ### Nemotron
 
-[Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. The models deliver strong reasoning and tool-calling performance with high throughput. `nvidia/nemotron-3-super-120b-a12b` is a recommended starting point: a powerful model with 12B active parameters and 120B parameters in total, with a 1M token context window, available on the NVIDIA API Catalog and as a self-hosted NIM.
+[Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. Nemotron 3.5 Super VL is the recommended starting point for text, image, and agent workflows. Find its current API identifier in the [NVIDIA API Catalog](https://build.nvidia.com/).
+
+The identifier below names the published model checkpoint. Replace it with the NVIDIA API Catalog identifier when the model is listed there.
 
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-llm = ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b")
+llm = ChatNVIDIA(model="nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16")
 result = llm.invoke("Plan a three-step agentic workflow for competitive research.")
 print(result.content)
+```
+
+Use a `HumanMessage` with text and an image for visual questions:
+
+```python
+import base64
+from pathlib import Path
+
+from langchain_core.messages import HumanMessage
+
+image = base64.b64encode(Path("photo.png").read_bytes()).decode("ascii")
+response = llm.invoke([
+    HumanMessage(content=[
+        {"type": "text", "text": "Describe this image."},
+        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image}"}},
+    ])
+])
+print(response.content)
 ```
 
 
 ### General Chat
 
-Models such as `nvidia/nemotron-3-super-120b-a12b` and `mistralai/mixtral-8x22b-instruct-v0.1`
+Models such as Nemotron 3.5 Super VL and `mistralai/mixtral-8x22b-instruct-v0.1`
 are good all-around models that you can use for any LangChain chat messages.
 
 The following example generates a simple chat response.

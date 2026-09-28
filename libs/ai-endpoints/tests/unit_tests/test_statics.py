@@ -26,6 +26,14 @@ def test_model_table_integrity_name_id(entry: str) -> None:
     assert model.id == entry
 
 
+def test_nemotron_super_vl_supports_image_and_tool_inputs() -> None:
+    model = determine_model("nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16")
+    assert model is not None
+    assert model.client == "ChatNVIDIA"
+    assert model.model_type == "vlm"
+    assert model.supports_tools is True
+
+
 def test_determine_model_deprecated_alternative_warns(alias: str) -> None:
     with pytest.warns(UserWarning) as record:
         determine_model(alias)
