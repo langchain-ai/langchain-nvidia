@@ -3,12 +3,21 @@ from typing import Any
 
 import pytest
 import requests_mock
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
 
 from .conftest import MockHTTP
+
+
+def test_empty_tool_message_remains_valid_request_content() -> None:
+    """Empty tool results must survive normalization and payload validation."""
+    llm = ChatNVIDIA(api_key="BOGUS")
+    message = convert_message_to_dict(ToolMessage(content=[], tool_call_id="call-1"))
+
+    assert message == {"role": "tool", "content": "", "tool_call_id": "call-1"}
+    assert llm._get_payload(inputs=[message], stop=None)["messages"] == [message]
 
 
 def test_invoke_aimessage_content_none(requests_mock: requests_mock.Mocker) -> None:

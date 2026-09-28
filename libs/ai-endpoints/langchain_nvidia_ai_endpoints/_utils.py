@@ -144,9 +144,13 @@ def convert_message_to_dict(message: BaseMessage) -> dict:
             "name": message.name,
         }
     elif isinstance(message, ToolMessage):
+        # An empty tool result is valid and must remain an empty string. A list
+        # with no text blocks normalizes to None, which ChatNVIDIA rejects for
+        # tool messages when constructing the next request.
+        content = _normalize_content(message.content)
         message_dict = {
             "role": "tool",
-            "content": _normalize_content(message.content),
+            "content": "" if content is None else content,
             "tool_call_id": message.tool_call_id,
         }
     else:
