@@ -376,3 +376,47 @@ def test_build_returns_optimized_graph() -> None:
         mock_build.return_value = mock_opt
         result = ext.build(mock_original, mock_compilation)
         assert result is mock_opt
+
+
+# ---------------------------------------------------------------------------
+# extract() honors its argument
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def other_compiled_graph() -> CompiledStateGraph:
+    """A second, structurally different graph: only node "c"."""
+    graph = StateGraph(SimpleState)
+    graph.add_node("c", _node_a)
+    graph.set_entry_point("c")
+    return graph.compile()
+
+
+def test_extract_uses_the_source_it_is_given(
+    extractor: LangGraphExtractor, other_compiled_graph: CompiledStateGraph
+) -> None:
+    """Passing a different graph must extract that graph, not the first one."""
+    extractor.extract(extractor.source)
+
+    result = extractor.extract(other_compiled_graph)
+
+    assert "c" in result.node_names
+    assert "b" not in result.node_names, "returned the graph from the previous call"
+
+
+def test_extract_updates_source_property(
+    extractor: LangGraphExtractor, other_compiled_graph: CompiledStateGraph
+) -> None:
+    extractor.extract(other_compiled_graph)
+
+    assert extractor.source is other_compiled_graph
+
+
+def test_extract_still_caches_for_the_same_source(
+    extractor: LangGraphExtractor,
+) -> None:
+    """Re-extracting the same graph keeps returning the cached result."""
+    first = extractor.extract(extractor.source)
+    second = extractor.extract(extractor.source)
+
+    assert first is second
