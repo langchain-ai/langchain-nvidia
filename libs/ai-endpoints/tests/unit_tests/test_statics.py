@@ -33,6 +33,13 @@ def test_nemotron_super_vl_capabilities() -> None:
     assert model.model_type == "vlm"
     assert model.supports_tools is True
     assert model.supports_structured_output is True
+    assert model.supports_thinking is True
+    assert model.thinking_param_enable == {
+        "chat_template_kwargs": {"enable_thinking": True}
+    }
+    assert model.thinking_param_disable == {
+        "chat_template_kwargs": {"enable_thinking": False}
+    }
 
 
 def test_determine_model_deprecated_alternative_warns(alias: str) -> None:

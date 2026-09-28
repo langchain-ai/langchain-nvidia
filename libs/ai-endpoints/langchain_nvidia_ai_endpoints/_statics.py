@@ -869,6 +869,9 @@ CHAT_MODEL_TABLE = {
         client="ChatNVIDIA",
         supports_tools=True,
         supports_structured_output=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
     "minimaxai/minimax-m2.5": Model(
         id="minimaxai/minimax-m2.5", model_type="chat", client="ChatNVIDIA"
