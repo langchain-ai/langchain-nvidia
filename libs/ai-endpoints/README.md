@@ -92,8 +92,8 @@ pass is not proof that inference succeeds or that a framework is BCB-compatible.
 
 Optional BCB compatibility evidence is available from NIM OSS Manager's
 **authenticated internal-alpha** API (not a public anonymous service).
-It is never queried by default. If your team has Manager access, set
-`NIM_OSS_MANAGER_TOKEN` in the environment and opt in explicitly:
+It is never queried by default. If your team has approved, scoped read-only
+Manager consumer access, set `NIM_OSS_MANAGER_TOKEN` in the environment and opt in explicitly:
 
 ```bash
 python -m langchain_nvidia_ai_endpoints doctor --model nvidia/nemotron-3-super-120b-a12b --capability chat --manager-url https://your-manager-host

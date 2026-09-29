@@ -15,13 +15,14 @@ origin), `BCB_HOSTED_NIM_ID`, `BCB_DOWNLOADABLE_NIM_ID`,
 `BCB_DOWNLOADABLE_REQUIRED_CAPABILITIES` (distinct comma-separated capability
 identifiers, e.g. `chat_basic,chat_tools`). IDs must identify the Manager NIM
 targets associated with the chosen hosted and downloadable release scope;
-they are **not** connector registry model IDs. The `BCB_MANAGER_TOKEN` is
-**not** currently a scoped read-only credential: Manager's existing
-controller token can mutate state. Do not install that
-privileged token as a GitHub Actions secret. The scheduled pilot stays disabled
-until the platform owner provides an approved read-only consumer identity and
-explicitly sets `BCB_RELEASE_EVIDENCE_ENABLED=true`; target selection and
-credential approval are owner responsibilities, never inferred from the catalog.
+they are **not** connector registry model IDs. Manager supports a scoped,
+read-only public-v1 consumer credential; the platform owner must provision and
+approve a separate `BCB_MANAGER_TOKEN` for this repository before enabling CI.
+The privileged controller token can mutate state: never install it as a GitHub
+Actions secret. The scheduled pilot stays disabled until that approved
+consumer credential is configured and the release owner explicitly sets
+`BCB_RELEASE_EVIDENCE_ENABLED=true`. Target selection and credential approval
+are owner responsibilities, never inferred from the catalog.
 
 Optional repository variable `BCB_BASELINE_VERSION` pins a baseline only when
 the Manager owner confirms that version exists. The current Manager manifest

@@ -16,8 +16,8 @@ permissions:
 
 jobs:
   evidence-report:
-    # The current Manager controller token can mutate state; require explicit
-    # owner enablement only after a scoped consumer identity is approved.
+    # Only use a Manager read-only consumer token separately approved for
+    # this repository; never install its privileged controller token in CI.
     # PR code never sees the credential; this report is never a publish gate.
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.BCB_RELEASE_EVIDENCE_ENABLED == 'true'
     runs-on: ubuntu-latest

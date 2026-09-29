@@ -4,7 +4,7 @@ This connector does not own or assert NIM compatibility. NIM OSS Manager BCB own
 
 ## Internal-alpha review artifact
 
-Authorized maintainers can produce a **draft**, not a published badge or release gate, from Manager's authenticated non-mutating `bcb-public-v1alpha1` GET projections. The script uses `compatible` (scoped to `langchain-nvidia`), `recommend`, `badge` and aggregate `matrix-summary`; it neither calls internal routes nor fetches raw validation artifacts. The Manager API is currently **internal-alpha**, not anonymously public. Its existing controller bearer token also permits mutation; there is no scoped read-only credential yet. Supply `NIM_OSS_MANAGER_TOKEN` from an approved secure store for an authorized local run only, never in source, a query parameter, or a command argument.
+Authorized maintainers can produce a **draft**, not a published badge or release gate, from Manager's authenticated non-mutating `bcb-public-v1alpha1` GET projections. The script uses `compatible` (scoped to `langchain-nvidia`), `recommend`, `badge` and aggregate `matrix-summary`; it neither calls internal routes nor fetches raw validation artifacts. The Manager API is **internal-alpha**, not anonymously public. Request an approved scoped, read-only consumer token; the privileged controller bearer token permits mutation and must not be used for this pilot. Supply `NIM_OSS_MANAGER_TOKEN` from an approved secure store for an authorized local run only, never in source, a query parameter, or a command argument.
 
 Create a locally held, reviewed JSON selection array, for example with an existing registry ID and **an actual Manager target ID**:
 
@@ -24,7 +24,7 @@ python3 scripts/bcb_compatibility_view.py \
   --badges /path/to/bcb-compatibility-badges-review.json
 ```
 
-From `libs/ai-endpoints`, use `NIM_OSS_MANAGER_TOKEN` and `NIM_OSS_MANAGER_URL` from an approved credential store. Do **not** configure the privileged controller token as a GitHub secret. The scheduled/dispatch workflow `bcb-compatibility-docs.yml` stays disabled until the Manager owner provisions and approves a scoped read-only consumer identity and sets `BCB_COMPATIBILITY_REVIEW_ENABLED=true`. On trusted `main`, it may read that approved secret plus `BCB_COMPATIBILITY_SELECTION_JSON` (dispatch may override the selection); absent configuration fails closed. It writes detailed Markdown and badge JSON only to the ephemeral runner, with no GitHub upload, commit, public badge or PR. Authorized operators must review locally and store detailed evidence solely in an approved internal channel.
+From `libs/ai-endpoints`, use a scoped `NIM_OSS_MANAGER_TOKEN` and `NIM_OSS_MANAGER_URL` from an approved credential store. Do **not** configure the privileged controller token as a GitHub secret. The scheduled/dispatch workflow `bcb-compatibility-docs.yml` stays disabled until the Manager owner provisions and approves this repository's read-only consumer credential and sets `BCB_COMPATIBILITY_REVIEW_ENABLED=true`. On trusted `main`, it may read that approved secret plus `BCB_COMPATIBILITY_SELECTION_JSON` (dispatch may override the selection); absent configuration fails closed. It writes detailed Markdown and badge JSON only to the ephemeral runner, with no GitHub upload, commit, public badge or PR. Authorized operators must review locally and store detailed evidence solely in an approved internal channel.
 
 ## Reading the view
 
