@@ -1,6 +1,5 @@
 import os
 import re
-import warnings
 from typing import Any
 
 import pytest
@@ -62,21 +61,10 @@ def test_base_url_priority(public_class: type) -> None:
         )
 
 
-@pytest.mark.parametrize(
-    "base_url",
-    [
-        "bogus",
-        "http:/",
-        "http://",
-        "http:/oops",
-    ],
-)
-def test_expect_warn_base_url(public_class: type, base_url: str) -> None:
-    with pytest.warns(UserWarning) as record:
+@pytest.mark.parametrize("base_url", ["bogus", "http:/", "http://", "http:/oops"])
+def test_reject_invalid_base_url(public_class: type, base_url: str) -> None:
+    with pytest.raises(ValueError, match="deployment root"):
         public_class(model="model1", base_url=base_url)
-    assert len(record) > 0
-    assert "url appears incorrect" in str(record[0].message)
-
 
 @pytest.mark.parametrize(
     "base_url",
@@ -99,7 +87,6 @@ def test_param_base_url_hosted(public_class: type, base_url: str) -> None:
     ],
 )
 def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
-    warnings.filterwarnings("ignore", r".*does not end in /v1.*")
     with no_env_var("NVIDIA_BASE_URL"):
         client = public_class(model="model1", base_url=base_url)
         assert not client._client.is_hosted
@@ -110,82 +97,32 @@ def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
     [
         "http://localhost:8888/embeddings",
         "http://0.0.0.0:8888/rankings",
-        "http://localhost:8888/embeddings/",
-        "http://0.0.0.0:8888/rankings/",
         "http://localhost:8888/chat/completions",
         "http://localhost:8080/v1/embeddings",
-        "http://0.0.0.0:8888/v1/rankings",
+        "http://0.0.0.0:8888/v1/ranking",
+        "https://user:secret@localhost:8888/v1",
+        "http://localhost:8080/v1?token=secret",
     ],
 )
-def test_expect_warn(public_class: type, base_url: str) -> None:
-    with pytest.warns(UserWarning) as record:
+def test_reject_inference_url_and_credentials(public_class: type, base_url: str) -> None:
+    with pytest.raises(ValueError, match="base_url"):
         public_class(model="model1", base_url=base_url)
-    assert len(record) == 1
-    assert "does not end in /v1" in str(record[0].message)
 
 
 @pytest.mark.parametrize(
-    "base_url",
+    "base_url, expected",
     [
-        "http://localhost:8888/embeddings",
-        "http://0.0.0.0:8888/rankings",
-        "http://localhost:8888/embeddings/",
-        "http://0.0.0.0:8888/rankings/",
-        "http://localhost:8888/chat/completions",
-        "http://localhost:8080/v1/embeddings",
-        "http://0.0.0.0:8888/v1/rankings",
+        ("http://localhost:8888", "http://localhost:8888/v1"),
+        ("http://localhost:8888/", "http://localhost:8888/v1"),
+        ("http://proxy/nim", "http://proxy/nim/v1"),
+        ("http://proxy/nim/v1/", "http://proxy/nim/v1"),
     ],
 )
-@pytest.mark.parametrize("false_value", ["false", "False", "0"])
-def test_expect_skip_check(public_class: type, base_url: str, false_value: str) -> None:
-    orig = os.environ.get("NVIDIA_APPEND_API_VERSION", None)
-    warnings.filterwarnings("error")
-
-    try:
-        os.environ["NVIDIA_APPEND_API_VERSION"] = false_value
-        public_class(model="model1", base_url=base_url)
-    finally:
-        warnings.resetwarnings()
-        if orig is None:
-            os.environ.pop("NVIDIA_APPEND_API_VERSION", None)
-        else:
-            os.environ["NVIDIA_APPEND_API_VERSION"] = orig
-
-
-@pytest.mark.parametrize(
-    "base_url",
-    [
-        "http://localhost:8888/embeddings",
-        "http://0.0.0.0:8888/rankings",
-        "http://localhost:8888/embeddings/",
-        "http://0.0.0.0:8888/rankings/",
-        "http://localhost:8888/chat/completions",
-        "http://localhost:8080/v1/embeddings",
-        "http://0.0.0.0:8888/v1/rankings",
-    ],
-)
-@pytest.mark.parametrize(
-    "true_value",
-    ["true", "True", "yes", "1", "anything", "enabled", "on", ""],
-)
-def test_expect_not_skip_check(
-    public_class: type, base_url: str, true_value: str
+def test_deployment_root_normalization(
+    public_class: type, base_url: str, expected: str,
 ) -> None:
-    warnings.filterwarnings("ignore", r".*does not end in /v1.*")
-    orig = os.environ.get("NVIDIA_APPEND_API_VERSION", None)
-
-    try:
-        os.environ["NVIDIA_APPEND_API_VERSION"] = true_value
-        obj = public_class(model="model1", base_url=base_url)
-        assert obj.base_url.rstrip("/").endswith(
-            "/v1"
-        ), f"Expected {obj.base_url} to end with '/v1'"
-    finally:
-        warnings.resetwarnings()
-        if orig is None:
-            os.environ.pop("NVIDIA_APPEND_API_VERSION", None)
-        else:
-            os.environ["NVIDIA_APPEND_API_VERSION"] = orig
+    with no_env_var("NVIDIA_BASE_URL"):
+        assert public_class(model="model1", base_url=base_url).base_url == expected
 
 
 def test_default_hosted(public_class: type) -> None:
