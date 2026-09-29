@@ -117,6 +117,11 @@ migration from generic OpenAI-compatible clients, see the
 [adoption guide](docs/adoption_guide.md) (maintainer-review draft; model
 capabilities and compatibility still require deployment-specific evidence).
 
+For the documented gaps in OCR, page-elements, table-structure, and offline
+ASR support (API shapes, proposed abstractions, and future validation cases),
+see the [non-text NIM modality guidance](docs/non_text_nim_modalities.md).
+This is a maintainer proposal, not implemented modality support.
+
 
 ## Invoke the Core Chat Interface
 
