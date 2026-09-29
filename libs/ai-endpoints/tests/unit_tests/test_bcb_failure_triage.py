@@ -3,6 +3,7 @@
 import importlib.util
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -13,7 +14,7 @@ triage = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(triage)
 
 
-def artifact(*, changed=False):
+def artifact(*, changed: bool = False) -> dict[str, Any]:
     return {
         "contract_version": "bcb-public-v1alpha1",
         "baseline_version": "baseline-1",
@@ -43,7 +44,11 @@ def artifact(*, changed=False):
     }
 
 
-def wrapped(category="behavioral_failure", stage="behavioral", changed=False):
+def wrapped(
+    category: str = "behavioral_failure",
+    stage: str = "behavioral",
+    changed: bool = False,
+) -> dict[str, Any]:
     return {
         "contract_version": "bcb-failure-triage-input-v1",
         "connector_version": "0.9.0",
@@ -66,13 +71,17 @@ def wrapped(category="behavioral_failure", stage="behavioral", changed=False):
     }
 
 
-def decision(data):
+def decision(
+    data: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     clean = triage.sanitize(data)
     assessment = triage.assess(clean)
     return clean, assessment, triage.drafts(clean, assessment)
 
 
-def test_same_nim_fingerprint_prior_pass_and_current_failure_suggest_sdk_review():
+def test_same_nim_fingerprint_prior_pass_and_current_failure_suggest_sdk_review() -> (
+    None
+):
     _, result, drafts = decision(wrapped())
     assert result["classification"] == "sdk_regression"
     assert result["confidence"] == "high"
@@ -81,7 +90,7 @@ def test_same_nim_fingerprint_prior_pass_and_current_failure_suggest_sdk_review(
     assert drafts["publishable"] is False
 
 
-def test_changed_nim_fingerprint_routes_to_manager_instead_of_connector_patch():
+def test_changed_nim_fingerprint_routes_to_manager_instead_of_connector_patch() -> None:
     _, result, drafts = decision(wrapped(changed=True))
     assert result["classification"] == "nim_behavior_delta"
     assert result["owner"] == "Manager/BCB owner"
@@ -101,15 +110,17 @@ def test_changed_nim_fingerprint_routes_to_manager_instead_of_connector_patch():
     ],
 )
 def test_setup_and_evidence_defects_do_not_generate_connector_patch(
-    category, stage, expected
-):
+    category: str, stage: str, expected: str
+) -> None:
     _, result, drafts = decision(wrapped(category, stage, changed=True))
     assert result["classification"] == expected
     assert result["confidence"] == "medium"
     assert "Do not propose a connector patch" in drafts["pr_patch_suggestion"]["body"]
 
 
-def test_missing_or_unrelated_result_falls_back_without_claiming_compatibility():
+def test_missing_or_unrelated_result_falls_back_without_claiming_compatibility() -> (
+    None
+):
     sample = wrapped()
     sample["failure"]["result_id"] = 99
     _, result, drafts = decision(sample)
@@ -122,7 +133,7 @@ def test_missing_or_unrelated_result_falls_back_without_claiming_compatibility()
     )
 
 
-def test_release_projection_alone_cannot_attribute_failure_cause():
+def test_release_projection_alone_cannot_attribute_failure_cause() -> None:
     clean, result, drafts = decision(artifact(changed=True))
     assert result["classification"] == "unknown"
     assert result["confidence"] == "insufficient"
@@ -130,7 +141,7 @@ def test_release_projection_alone_cannot_attribute_failure_cause():
     assert "Do not propose a connector patch" in drafts["pr_patch_suggestion"]["body"]
 
 
-def test_missing_comparison_and_missing_link_prevent_sdk_attribution():
+def test_missing_comparison_and_missing_link_prevent_sdk_attribution() -> None:
     sample = wrapped()
     sample["comparison"][
         "prior_evidence_url"
@@ -151,7 +162,9 @@ def test_missing_comparison_and_missing_link_prevent_sdk_attribution():
     assert decision(sample)[1]["classification"] == "unknown"
 
 
-def test_untrusted_fields_are_discarded_in_json_and_markdown(tmp_path, capsys):
+def test_untrusted_fields_are_discarded_in_json_and_markdown(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     sample = wrapped()
     sample["failure"]["raw_log"] = "Bearer secret-input-123"
     sample["release_report"]["targets"][0][
@@ -187,7 +200,7 @@ def test_untrusted_fields_are_discarded_in_json_and_markdown(tmp_path, capsys):
     assert "Explicit maintainer review required" in combined
 
 
-def test_existing_output_is_not_overwritten_or_exported(tmp_path):
+def test_existing_output_is_not_overwritten_or_exported(tmp_path: Path) -> None:
     source = tmp_path / "input.json"
     source.write_text(json.dumps(wrapped()), encoding="utf-8")
     existing = tmp_path / "triage.json"
