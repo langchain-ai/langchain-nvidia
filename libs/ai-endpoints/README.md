@@ -112,6 +112,11 @@ For a maintainer-reviewed, framework-level compatibility snapshot, see
 review artifact separates verified framework status from unknown individual
 capabilities; it is not a live release approval or a public API.
 
+For hosted-versus-local setup, streaming/tools, embeddings retrieval and
+migration from generic OpenAI-compatible clients, see the
+[adoption guide](docs/adoption_guide.md) (maintainer-review draft; model
+capabilities and compatibility still require deployment-specific evidence).
+
 
 ## Invoke the Core Chat Interface
 
