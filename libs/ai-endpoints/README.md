@@ -188,6 +188,8 @@ are good all-around models that you can use for any LangChain chat messages.
 The following example generates a simple chat response.
 
 ```python
+import os
+
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -200,7 +202,7 @@ prompt = ChatPromptTemplate.from_messages(
 )
 chain = (
     prompt
-    | ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b")
+    | ChatNVIDIA(model=os.environ["NVIDIA_MODEL_ID"], max_completion_tokens=8192)
     | StrOutputParser()
 )
 
