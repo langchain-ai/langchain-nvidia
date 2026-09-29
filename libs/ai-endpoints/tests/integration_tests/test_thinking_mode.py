@@ -48,9 +48,9 @@ def check_reasoning_content(
     if should_have_reasoning:
         assert has_reasoning_block, "No reasoning content found in content_blocks"
     else:
-        assert not has_reasoning_block, (
-            "Found reasoning content when it should not be present"
-        )
+        assert (
+            not has_reasoning_block
+        ), "Found reasoning content when it should not be present"
 
 
 @pytest.mark.parametrize(
