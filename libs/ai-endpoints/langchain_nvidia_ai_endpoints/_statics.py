@@ -128,6 +128,7 @@ class Model(BaseModel):
         return self
 
 
+# fmt: off
 # BEGIN GENERATED MODEL TABLES (scripts/model_registry.py; do not edit)
 CHAT_MODEL_TABLE = {
     'google/gemma-7b': Model(
@@ -1244,6 +1245,7 @@ OPENAI_MODEL_TABLE = {
 }
 
 # END GENERATED MODEL TABLES
+# fmt: on
 
 MODEL_TABLE = {
     **CHAT_MODEL_TABLE,

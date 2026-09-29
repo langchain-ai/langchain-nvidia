@@ -45,8 +45,11 @@ HARNESS_UPSTREAM_NEEDED = re.compile(
     r"to langchain-nvidia _statics\.py"
 )
 
-BEGIN = "# BEGIN GENERATED MODEL TABLES (scripts/model_registry.py; do not edit)\n"
-END = "# END GENERATED MODEL TABLES\n"
+BEGIN = (
+    "# fmt: off\n"
+    "# BEGIN GENERATED MODEL TABLES (scripts/model_registry.py; do not edit)\n"
+)
+END = "# END GENERATED MODEL TABLES\n# fmt: on\n"
 
 
 def deployment_type(sources: set[str]) -> str:

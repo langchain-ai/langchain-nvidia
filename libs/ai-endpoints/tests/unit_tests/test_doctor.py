@@ -24,6 +24,7 @@ def test_hosted_success_checks_model_and_capability_without_inference(
     assert "preflight passed" in text
     assert "private-value" not in text
     assert len(requests_mock.request_history) == 1
+    assert requests_mock.last_request is not None
     assert requests_mock.last_request.method == "GET"
     assert requests_mock.last_request.headers["Authorization"] == "Bearer private-value"
 
@@ -150,6 +151,7 @@ def test_evidence_is_opt_in_and_requires_fresh_verified_contract(
     text = capsys.readouterr().out
     assert "EVIDENCE compatible" in text
     assert "manager-secret" not in text
+    assert requests_mock.last_request is not None
     assert requests_mock.last_request.qs == {
         "framework": ["langchain-nvidia"],
         "model": ["m"],
