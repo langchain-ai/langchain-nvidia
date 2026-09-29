@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 from aiohttp import web as aiohttp_web
+from langchain_core.messages import HumanMessage
 from requests_mock import Mocker
 
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, register_model
@@ -16,6 +17,56 @@ from langchain_nvidia_ai_endpoints._version import __version__
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
 from .conftest import MockHTTP
+
+
+def test_nemotron_super_vl_preserves_image_input(requests_mock: Mocker) -> None:
+    """Send multimodal content through the registered Super VL chat model."""
+    model_id = "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16"
+    requests_mock.get(
+        "https://integrate.api.nvidia.com/v1/models",
+        json={"data": [{"id": model_id}]},
+    )
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        json={"choices": [{"message": {"role": "assistant", "content": "Red"}}]},
+    )
+    image_url = "data:image/png;base64,iVBORw0KGgo="
+    model = ChatNVIDIA(model=model_id, api_key="BOGUS")
+    response = model.invoke(
+        [HumanMessage(content=[
+            {"type": "text", "text": "What color is this?"},
+            {"type": "image_url", "image_url": {"url": image_url}},
+        ])]
+    )
+
+    sent = requests_mock.last_request.json()
+    assert sent["model"] == model_id
+    assert sent["messages"][0]["content"][1]["image_url"]["url"] == image_url
+    assert response.content == "Red"
+
+
+def test_super_vl_converts_standard_base64_image(requests_mock: Mocker) -> None:
+    """LangChain image blocks must reach the API as image_url blocks."""
+    model_id = "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16"
+    requests_mock.get(
+        "https://integrate.api.nvidia.com/v1/models",
+        json={"data": [{"id": model_id}]},
+    )
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        json={"choices": [{"message": {"role": "assistant", "content": "Red"}}]},
+    )
+    model = ChatNVIDIA(model=model_id, api_key="BOGUS")
+    model.invoke([HumanMessage(content=[
+        {"type": "text", "text": "What color is this?"},
+        {"type": "image", "base64": "Ynl0ZXM=", "mime_type": "image/png"},
+    ])])
+
+    sent = requests_mock.last_request.json()
+    assert sent["messages"][0]["content"][1] == {
+        "type": "image_url",
+        "image_url": {"url": "data:image/png;base64,Ynl0ZXM="},
+    }
 
 
 @pytest.fixture(autouse=True)

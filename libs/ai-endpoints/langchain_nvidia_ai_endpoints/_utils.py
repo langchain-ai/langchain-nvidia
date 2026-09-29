@@ -46,6 +46,25 @@ def _url_to_b64_string(image_source: str) -> str:
         raise ValueError(f"Unable to process the provided image source: {e}")
 
 
+def _standard_image_to_openai(block: dict[str, Any]) -> dict[str, Any]:
+    """Convert a LangChain image content block to chat-completions format."""
+    if "base64" in block:
+        base64_data = block["base64"]
+        mime_type = block.get("mime_type")
+        if not isinstance(base64_data, str) or not base64_data:
+            raise ValueError("Image base64 content must be a nonempty string")
+        if not isinstance(mime_type, str) or not mime_type.startswith("image/"):
+            raise ValueError("Image base64 content requires an image MIME type")
+        url = f"data:{mime_type};base64,{base64_data}"
+    elif "url" in block:
+        url = block["url"]
+        if not isinstance(url, str) or not url:
+            raise ValueError("Image URL must be a nonempty string")
+    else:
+        raise ValueError("ChatNVIDIA image content requires a URL or base64 data")
+    return {"type": "image_url", "image_url": {"url": url}}
+
+
 def _normalize_content(content: Any) -> Any:
     """Normalize message content to handle LangChain 1.0 content blocks.
 
@@ -57,7 +76,8 @@ def _normalize_content(content: Any) -> Any:
 
     This function converts list content to string or `None` as needed.
 
-    For multimodal content (images), returns the list as-is.
+    For multimodal content, converts standard image blocks to `image_url`
+    blocks and preserves the other blocks.
     """
     if content is None or isinstance(content, str):
         return content
@@ -76,7 +96,14 @@ def _normalize_content(content: Any) -> Any:
 
             # Preserve multimodal content (images and videos) as-is for VLM models
             if block_type in ("image_url", "image", "video_url", "video"):
-                return content
+                return [
+                    _standard_image_to_openai(part)
+                    if isinstance(part, dict)
+                    and part.get("type") == "image"
+                    and ("base64" in part or "url" in part)
+                    else part
+                    for part in content
+                ]
 
             # Extract text from text blocks
             if block_type == "text" and "text" in block:
@@ -144,9 +171,13 @@ def convert_message_to_dict(message: BaseMessage) -> dict:
             "name": message.name,
         }
     elif isinstance(message, ToolMessage):
+        # An empty tool result is valid and must remain an empty string. A list
+        # with no text blocks normalizes to None, which ChatNVIDIA rejects for
+        # tool messages when constructing the next request.
+        content = _normalize_content(message.content)
         message_dict = {
             "role": "tool",
-            "content": _normalize_content(message.content),
+            "content": "" if content is None else content,
             "tool_call_id": message.tool_call_id,
         }
     else:

@@ -26,6 +26,22 @@ def test_model_table_integrity_name_id(entry: str) -> None:
     assert model.id == entry
 
 
+def test_nemotron_super_vl_capabilities() -> None:
+    model = determine_model("nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16")
+    assert model is not None
+    assert model.client == "ChatNVIDIA"
+    assert model.model_type == "vlm"
+    assert model.supports_tools is True
+    assert model.supports_structured_output is True
+    assert model.supports_thinking is True
+    assert model.thinking_param_enable == {
+        "chat_template_kwargs": {"enable_thinking": True}
+    }
+    assert model.thinking_param_disable == {
+        "chat_template_kwargs": {"enable_thinking": False}
+    }
+
+
 def test_determine_model_deprecated_alternative_warns(alias: str) -> None:
     with pytest.warns(UserWarning) as record:
         determine_model(alias)

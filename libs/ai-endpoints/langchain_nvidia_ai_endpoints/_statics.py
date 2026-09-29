@@ -861,6 +861,18 @@ CHAT_MODEL_TABLE = {
         thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
         thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
     ),
+    # Public API Catalog ID is pending. The published checkpoint ID provides
+    # initial VL/tool metadata and must be replaced if the API ID differs.
+    "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16": Model(
+        id="nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+        model_type="vlm",
+        client="ChatNVIDIA",
+        supports_tools=True,
+        supports_structured_output=True,
+        supports_thinking=True,
+        thinking_param_enable={"chat_template_kwargs": {"enable_thinking": True}},
+        thinking_param_disable={"chat_template_kwargs": {"enable_thinking": False}},
+    ),
     "minimaxai/minimax-m2.5": Model(
         id="minimaxai/minimax-m2.5", model_type="chat", client="ChatNVIDIA"
     ),
