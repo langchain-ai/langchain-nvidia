@@ -105,7 +105,7 @@
     },
     "events": {
       "nim_client_usage": {
-        "description": "Hourly aggregate for explicitly enabled NIM OSS connector usage. Contains no content, endpoint details, arbitrary strings, or durable user, device, installation, or session identifiers.",
+        "description": "Hourly aggregate for NVIDIA-hosted NIM OSS connector usage (enabled by default, with constructor and environment opt-out). Contains no content, endpoint details, arbitrary strings, or durable user, device, installation, or session identifiers.",
         "type": "object",
         "eventMeta": {
           "service": "telemetry",

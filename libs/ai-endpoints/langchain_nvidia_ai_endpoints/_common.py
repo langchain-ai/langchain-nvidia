@@ -116,7 +116,8 @@ class _NVIDIABaseClient(BaseModel):
         repr=False,
         description=(
             "Enable content-free aggregate usage telemetry for NVIDIA-hosted NIMs. "
-            "Disabled by default."
+            "Enabled by default; set False or NVIDIA_USAGE_TELEMETRY_ENABLED=false "
+            "to opt out."
         ),
     )
 

@@ -450,10 +450,10 @@ class ChatNVIDIA(BaseChatModel):
             seed: A seed for deterministic results.
             stop: A string or list of strings specifying stop sequences.
             default_headers: Default headers merged into all requests.
-            usage_telemetry_enabled: Enable content-free hourly usage aggregates for
-                NVIDIA-hosted NIMs. Disabled by default. The
-                `NVIDIA_USAGE_TELEMETRY_ENABLED` environment variable provides the
-                default when this argument is omitted.
+            usage_telemetry_enabled: Content-free hourly usage aggregates for
+                NVIDIA-hosted NIMs are enabled by default. Set False to opt out.
+                `NVIDIA_USAGE_TELEMETRY_ENABLED=false` changes the process default
+                when this argument is omitted.
             **kwargs: Additional parameters passed to the underlying client.
 
         The recommended way to provide the API key is through the `NVIDIA_API_KEY`

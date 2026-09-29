@@ -77,14 +77,50 @@ def _response(status: int = 200, payload: dict | None = None) -> requests.Respon
     return response
 
 
-def test_usage_telemetry_is_default_off(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_usage_telemetry_is_default_on_with_explicit_opt_out(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("NVIDIA_USAGE_TELEMETRY_ENABLED", raising=False)
-    assert usage_telemetry_enabled() is False
+    assert usage_telemetry_enabled() is True
     assert usage_telemetry_enabled(False) is False
     assert usage_telemetry_enabled(True) is True
 
+    monkeypatch.setenv("NVIDIA_USAGE_TELEMETRY_ENABLED", "false")
+    assert usage_telemetry_enabled() is False
+    assert usage_telemetry_enabled(True) is True
     monkeypatch.setenv("NVIDIA_USAGE_TELEMETRY_ENABLED", "true")
     assert usage_telemetry_enabled() is True
+
+def test_hosted_client_default_emits_aggregate_but_constructor_opt_out_does_not(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from langchain_nvidia_ai_endpoints import _telemetry
+
+    monkeypatch.delenv("NVIDIA_USAGE_TELEMETRY_ENABLED", raising=False)
+    sent: list[dict[str, Any]] = []
+    state = _UsageTelemetry(
+        endpoint="https://events.telemetry.data.nvidia.com/v1.1/events/json",
+        post=lambda _endpoint, envelope: sent.append(envelope),
+        now=lambda: datetime(2026, 9, 29, 12, 15, tzinfo=timezone.utc),
+        start_worker=False,
+    )
+    monkeypatch.setattr(_telemetry, "_STATE", state)
+    response = _response(
+        payload={"usage": {"prompt_tokens": 2, "completion_tokens": 3}}
+    )
+    default_client = ChatNVIDIA(api_key="test")
+    opted_out_client = ChatNVIDIA(api_key="test", usage_telemetry_enabled=False)
+    for client in (default_client, opted_out_client):
+        with (
+            patch.object(client._client, "_post", return_value=(response, Mock())),
+            patch.object(client._client, "_wait", return_value=response),
+        ):
+            client._client.get_req({"messages": [{"content": "never exported"}]})
+    assert state.flush(include_current=True) == 1
+    events = sent[0]["events"]
+    assert len(events) == 1
+    assert events[0]["parameters"]["requestCount"] == 1
+    assert "never exported" not in json.dumps(sent)
 
 
 def test_canonical_model_identity_uses_versioned_static_allowlist() -> None:
@@ -510,6 +546,6 @@ def test_transport_failures_never_escape() -> None:
         ),
     ],
 )
-def test_public_clients_propagate_explicit_opt_in(client: Any, expected: bool) -> None:
+def test_public_clients_propagate_explicit_setting(client: Any, expected: bool) -> None:
     assert client._client.usage_telemetry_enabled is expected
     assert client._async_client.usage_telemetry_enabled is expected

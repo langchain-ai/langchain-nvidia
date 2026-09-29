@@ -101,11 +101,11 @@ class _TokenUsage:
 
 
 def usage_telemetry_enabled(value: Optional[bool] = None) -> bool:
-    """Return an explicit constructor setting or the default-off environment setting."""
+    """Return an explicit constructor setting or the default-on environment setting."""
 
     if value is not None:
         return value
-    return os.getenv(_ENABLED_ENV, "").strip().casefold() in {
+    return os.getenv(_ENABLED_ENV, "true").strip().casefold() in {
         "1",
         "true",
         "yes",

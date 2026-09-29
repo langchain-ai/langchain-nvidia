@@ -112,8 +112,9 @@ class NVIDIAEmbeddings(BaseModel, Embeddings):
                 an error if an input is too long.
             dimensions: The number of dimensions for the embeddings. This
                 parameter is not supported by all models.
-            usage_telemetry_enabled: Enable content-free hourly usage aggregates for
-                NVIDIA-hosted NIMs. Disabled by default.
+            usage_telemetry_enabled: Content-free hourly usage aggregates for
+                NVIDIA-hosted NIMs are enabled by default. Set False to opt out,
+                or NVIDIA_USAGE_TELEMETRY_ENABLED=false for the process default.
             **kwargs: Additional parameters passed to the underlying client.
 
         The recommended way to provide the API key is through the `NVIDIA_API_KEY`

@@ -52,23 +52,21 @@ To get access to the NVIDIA API Catalog, do the following:
 You can now use your key to access endpoints on the NVIDIA API Catalog.
 
 
-### Optional NVIDIA NIM usage telemetry
+### NVIDIA NIM usage telemetry
 
-Usage telemetry is disabled by default. To opt in for a client instance, set
-`usage_telemetry_enabled=True`:
+For NVIDIA-hosted NIM endpoints, usage telemetry is enabled by default. To opt
+out for a client instance, set `usage_telemetry_enabled=False`:
 
 ```python
 llm = ChatNVIDIA(
     model="nvidia/nemotron-3-super-120b-a12b",
-    usage_telemetry_enabled=True,
+    usage_telemetry_enabled=False,
 )
 ```
 
-Alternatively, set `NVIDIA_USAGE_TELEMETRY_ENABLED=true` to provide the default
-for supported clients in the current process. An explicit constructor value
-overrides the environment setting.
-
-If explicitly enabled, the connector sends hourly aggregated, content-free usage
+Set `NVIDIA_USAGE_TELEMETRY_ENABLED=false` to opt out for supported clients in
+the current process. An explicit constructor value overrides that setting.
+When enabled, the connector sends hourly aggregated, content-free usage
 metrics to NVIDIA. The aggregate includes connector and LangChain version
 buckets, a coarse operation and outcome category, an allowlisted public NIM ID
 or `unknown`, request and attempt counts, and aggregate token counts when the
