@@ -127,9 +127,7 @@ async def test_repeated_reranking_preserves_input_and_previous_scores(
     first = await rank_once([{"index": 0, "logit": 0.9}, {"index": 1, "logit": 0.1}])
     second = await rank_once([{"index": 1, "logit": 0.8}, {"index": 0, "logit": 0.2}])
 
-    assert [doc.metadata for doc in documents] == [
-        {"source": "a"}, {"source": "b"}
-    ]
+    assert [doc.metadata for doc in documents] == [{"source": "a"}, {"source": "b"}]
     assert [doc.metadata["relevance_score"] for doc in first] == [0.9, 0.1]
     assert [doc.metadata["relevance_score"] for doc in second] == [0.8, 0.2]
     assert first[0] is not documents[0]
