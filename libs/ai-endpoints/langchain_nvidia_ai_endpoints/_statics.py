@@ -1283,10 +1283,8 @@ def register_model(model: Model) -> None:
 
     Be sure that the `id` matches the model parameter the endpoint expects.
 
-    Supported model types are chat models, which must accept and produce chat completion
-    payloads.
-
-    Supported model clients are `ChatNVIDIA`, for chat models.
+    Supported model clients are `ChatNVIDIA`, `NVIDIAEmbeddings`, `NVIDIARerank`,
+    and `NVIDIA`. The endpoint must accept the payload shape for the selected client.
 
     Endpoint is required.
 
