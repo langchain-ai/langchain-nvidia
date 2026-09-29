@@ -189,8 +189,17 @@ class _NVIDIABaseClient(BaseModel):
                 "without credentials, query, or fragment"
             )
         path = parsed.path.rstrip("/")
-        if path.endswith(("/models", "/chat/completions", "/embeddings",
-                          "/completions", "/ranking", "/rankings", "/reranking")):
+        if path.endswith(
+            (
+                "/models",
+                "/chat/completions",
+                "/embeddings",
+                "/completions",
+                "/ranking",
+                "/rankings",
+                "/reranking",
+            )
+        ):
             raise ValueError(
                 "base_url must point to the deployment root or /v1, "
                 "not a /models or inference endpoint"

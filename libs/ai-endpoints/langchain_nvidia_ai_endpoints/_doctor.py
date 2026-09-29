@@ -1,3 +1,5 @@
+# The preflight CLI reports its checks to stdout by design.
+# ruff: noqa: T201
 """Read-only endpoint preflight. Never instantiate an inference client here."""
 
 from __future__ import annotations
@@ -195,15 +197,21 @@ def _evidence(manager_url: str, model: str, timeout: float) -> str:
     if data.get("compatible") is False:
         return (
             "EVIDENCE not confirmed: Manager has no accepted passing BCB result "
-            "for this framework/model; review linked checks before calling it incompatible."
+            "for this framework/model; review linked checks before calling "
+            "it incompatible."
         )
-    return "EVIDENCE unknown: Manager has no definitive framework/model compatibility result."
+    return (
+        "EVIDENCE unknown: Manager has no definitive framework/model "
+        "compatibility result."
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m langchain_nvidia_ai_endpoints doctor",
-        description="Check NVIDIA endpoint configuration without making inference calls.",
+        description=(
+            "Check NVIDIA endpoint configuration without making inference calls."
+        ),
     )
     parser.add_argument(
         "--base-url",
@@ -217,7 +225,9 @@ def main(argv: list[str] | None = None) -> int:
         help="Check available model type metadata; never invokes inference.",
     )
     parser.add_argument(
-        "--timeout", type=float, default=5.0,
+        "--timeout",
+        type=float,
+        default=5.0,
         help="Per-request timeout in seconds (default: 5).",
     )
     parser.add_argument(
@@ -245,7 +255,8 @@ def main(argv: list[str] | None = None) -> int:
     hosted = urlparse(base_url).hostname in _HOSTED
     print(
         "MODE hosted NVIDIA API Catalog"
-        if hosted else "MODE self-hosted/custom endpoint"
+        if hosted
+        else "MODE self-hosted/custom endpoint"
     )
     key = os.getenv("NVIDIA_API_KEY")
     if hosted and not key:
@@ -256,7 +267,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if not hosted and not key:
         print(
-            "INFO No NVIDIA_API_KEY set; self-hosted NIM may not require authentication."
+            "INFO No NVIDIA_API_KEY set; self-hosted NIM may not require "
+            "authentication."
         )
     success, messages = _models_check(
         base_url, key, args.model, args.capability, args.timeout
@@ -267,7 +279,8 @@ def main(argv: list[str] | None = None) -> int:
         print(_evidence(args.manager_url, args.model, args.timeout))
     print(
         "RESULT preflight passed (no inference executed)."
-        if success else "RESULT preflight failed."
+        if success
+        else "RESULT preflight failed."
     )
     return 0 if success else 1
 

@@ -66,6 +66,7 @@ def test_reject_invalid_base_url(public_class: type, base_url: str) -> None:
     with pytest.raises(ValueError, match="deployment root"):
         public_class(model="model1", base_url=base_url)
 
+
 @pytest.mark.parametrize(
     "base_url",
     ["https://integrate.api.nvidia.com/v1", "https://ai.api.nvidia.com/v1"],
@@ -104,7 +105,9 @@ def test_param_base_url_not_hosted(public_class: type, base_url: str) -> None:
         "http://localhost:8080/v1?token=secret",
     ],
 )
-def test_reject_inference_url_and_credentials(public_class: type, base_url: str) -> None:
+def test_reject_inference_url_and_credentials(
+    public_class: type, base_url: str
+) -> None:
     with pytest.raises(ValueError, match="base_url"):
         public_class(model="model1", base_url=base_url)
 
@@ -119,7 +122,9 @@ def test_reject_inference_url_and_credentials(public_class: type, base_url: str)
     ],
 )
 def test_deployment_root_normalization(
-    public_class: type, base_url: str, expected: str,
+    public_class: type,
+    base_url: str,
+    expected: str,
 ) -> None:
     with no_env_var("NVIDIA_BASE_URL"):
         assert public_class(model="model1", base_url=base_url).base_url == expected

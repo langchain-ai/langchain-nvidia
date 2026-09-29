@@ -21,17 +21,23 @@ def fixture_model(identifier: str, *, current: bool = False) -> dict[str, Any]:
     return {
         "table": "CHAT_MODEL_TABLE",
         "id": identifier,
-        "model": {"id": identifier, "model_type": "chat", "client": "ChatNVIDIA",
-                  "aliases": ["old-alias"]},
+        "model": {
+            "id": identifier,
+            "model_type": "chat",
+            "client": "ChatNVIDIA",
+            "aliases": ["old-alias"],
+        },
         "served_names": [identifier],
         "deployment_type": "hosted" if current else "unknown",
         "capabilities": {field: "unknown" for field in registry.CAPABILITIES},
         "capability_provenance": {
-            field: {"source": "unknown", "url": None}
-            for field in registry.CAPABILITIES
+            field: {"source": "unknown", "url": None} for field in registry.CAPABILITIES
         },
         "provenance": {
-            "hosted": {"state": "current" if current else "unknown", "url": "https://example.com/old"},
+            "hosted": {
+                "state": "current" if current else "unknown",
+                "url": "https://example.com/old",
+            },
             "downloadable": {"state": "unknown", "url": None},
         },
         "stale": False,
@@ -50,34 +56,57 @@ def test_drift_proposes_addition_rename_and_source_specific_staleness() -> None:
     old = fixture_model("nvidia/old", current=True)
     changes = registry.compare(
         [old],
-        {"nvidia/new": {"id": "nvidia/new", "replaces": "nvidia/old", "url": "https://example.com/new"},
-         "nvidia/added": {"id": "nvidia/added", "url": "https://example.com/add"}},
+        {
+            "nvidia/new": {
+                "id": "nvidia/new",
+                "replaces": "nvidia/old",
+                "url": "https://example.com/new",
+            },
+            "nvidia/added": {"id": "nvidia/added", "url": "https://example.com/add"},
+        },
         None,
     )
     assert {(change["kind"], change["id"]) for change in changes} == {
-        ("rename", "nvidia/new"), ("addition", "nvidia/added"), ("removal/stale", "nvidia/old")
+        ("rename", "nvidia/new"),
+        ("addition", "nvidia/added"),
+        ("removal/stale", "nvidia/old"),
     }
-    assert all(c["suggested_deployment_type"] == "hosted"
-               for c in changes if c["kind"] in ("addition", "rename"))
-    assert next(c for c in changes if c["kind"] == "removal/stale")["after"] == "unknown"
+    assert all(
+        c["suggested_deployment_type"] == "hosted"
+        for c in changes
+        if c["kind"] in ("addition", "rename")
+    )
+    assert (
+        next(c for c in changes if c["kind"] == "removal/stale")["after"] == "unknown"
+    )
     assert not any(change["source"] == "downloadable" for change in changes)
 
 
 def test_drift_detects_alias_deprecation_served_name_and_capability_changes() -> None:
     row = fixture_model("nvidia/old")
-    observed = {"nvidia/old": {"id": "nvidia/old", "aliases": ["new-alias"],
-                               "served_names": ["nvidia/old", "served-alias"],
-                               "deprecated": True,
-                               "capabilities": {"supports_tools": "supported"},
-                               "url": "https://example.com/details"}}
+    observed = {
+        "nvidia/old": {
+            "id": "nvidia/old",
+            "aliases": ["new-alias"],
+            "served_names": ["nvidia/old", "served-alias"],
+            "deprecated": True,
+            "capabilities": {"supports_tools": "supported"},
+            "url": "https://example.com/details",
+        }
+    }
     changes = registry.compare([row], None, observed)
     assert {change["kind"] for change in changes} == {
-        "deployment_type", "aliases", "served_names", "deprecation", "capability"
+        "deployment_type",
+        "aliases",
+        "served_names",
+        "deprecation",
+        "capability",
     }
     capability = next(c for c in changes if c["kind"] == "capability")
     assert capability["before"] == "unknown"
     assert capability["provenance_after"] == {
-        "source": "ngc_catalog", "url": "https://example.com/details"
+        "source": "ngc_catalog",
+        "url": "https://example.com/details",
     }
     assert capability["claim_only"] is True
     deployment = next(c for c in changes if c["kind"] == "deployment_type")
@@ -89,22 +118,41 @@ def test_missing_or_empty_source_does_not_propose_removals(tmp_path: Path) -> No
     missing, reason = registry.snapshot(tmp_path / "missing.json", "hosted")
     assert missing is None and "missing.json" in reason
     empty = tmp_path / "empty.json"
-    empty.write_text(json.dumps({"source_url": "https://example.com/models", "data": []}))
+    empty.write_text(
+        json.dumps({"source_url": "https://example.com/models", "data": []})
+    )
     unavailable, reason = registry.snapshot(empty, "hosted")
     assert unavailable is None and "empty catalog" in reason
-    assert registry.compare([fixture_model("nvidia/old", current=True)], unavailable, None) == []
+    assert (
+        registry.compare([fixture_model("nvidia/old", current=True)], unavailable, None)
+        == []
+    )
     assert "Unavailable" in registry.report([], {}, [reason])
 
 
 def test_snapshot_uses_item_evidence_and_rejects_duplicate_ids(tmp_path: Path) -> None:
     snapshot = tmp_path / "ngc.json"
-    snapshot.write_text(json.dumps({"source_url": "https://catalog.ngc.nvidia.com/models",
-                                    "models": [{"id": "nvidia/old", "url": "https://catalog.ngc.nvidia.com/old"}]}))
+    snapshot.write_text(
+        json.dumps(
+            {
+                "source_url": "https://catalog.ngc.nvidia.com/models",
+                "models": [
+                    {"id": "nvidia/old", "url": "https://catalog.ngc.nvidia.com/old"}
+                ],
+            }
+        )
+    )
     rows, _ = registry.snapshot(snapshot, "downloadable")
     assert rows is not None
     assert rows["nvidia/old"]["url"] == "https://catalog.ngc.nvidia.com/old"
-    snapshot.write_text(json.dumps({"source_url": "https://catalog.ngc.nvidia.com/models",
-                                    "models": [{"id": "same"}, {"id": "same"}]}))
+    snapshot.write_text(
+        json.dumps(
+            {
+                "source_url": "https://catalog.ngc.nvidia.com/models",
+                "models": [{"id": "same"}, {"id": "same"}],
+            }
+        )
+    )
     rows, reason = registry.snapshot(snapshot, "downloadable")
     assert rows is None and "duplicate id" in reason
 
@@ -123,14 +171,20 @@ def test_capability_claim_preserves_legacy_origin_until_reviewed() -> None:
     row["model"]["supports_tools"] = True
     row["capabilities"]["supports_tools"] = "supported"
     row["capability_provenance"]["supports_tools"] = {
-        "source": "legacy_static", "url": None
+        "source": "legacy_static",
+        "url": None,
     }
-    changes = registry.compare([row], {
-        "nvidia/old": {
-            "id": "nvidia/old", "url": "https://example.com/catalog",
-            "capabilities": {"supports_tools": "supported"},
-        }
-    }, None)
+    changes = registry.compare(
+        [row],
+        {
+            "nvidia/old": {
+                "id": "nvidia/old",
+                "url": "https://example.com/catalog",
+                "capabilities": {"supports_tools": "supported"},
+            }
+        },
+        None,
+    )
     change = next(c for c in changes if c["kind"] == "capability provenance")
     assert change["before"] == change["after"] == "supported"
     assert change["provenance_before"]["source"] == "legacy_static"
@@ -143,15 +197,18 @@ def test_deployment_type_tracks_both_sources_and_source_specific_removal(
 ) -> None:
     row = fixture_model("nvidia/old", current=True)
     row["provenance"]["downloadable"] = {
-        "state": "current", "url": "https://example.com/ngc"
+        "state": "current",
+        "url": "https://example.com/ngc",
     }
     row["deployment_type"] = "both"
     path = tmp_path / "registry.json"
     path.write_text(json.dumps({"schema_version": 1, "models": [row]}))
     assert registry.load_registry(path)[0]["deployment_type"] == "both"
-    changes = registry.compare([row], {}, {"nvidia/old": {
-        "id": "nvidia/old", "url": "https://example.com/ngc"
-    }})
+    changes = registry.compare(
+        [row],
+        {},
+        {"nvidia/old": {"id": "nvidia/old", "url": "https://example.com/ngc"}},
+    )
     assert len(changes) == 1
     assert changes[0]["source"] == "hosted"
     assert changes[0]["after"] == "downloadable"
@@ -169,9 +226,7 @@ def test_registry_rejects_unsubstantiated_type_and_capability_provenance(
     row["deployment_type"] = "unknown"
     row["model"]["supports_tools"] = True
     row["capabilities"]["supports_tools"] = "supported"
-    row["capability_provenance"]["supports_tools"] = {
-        "source": "bcb", "url": None
-    }
+    row["capability_provenance"]["supports_tools"] = {"source": "bcb", "url": None}
     path.write_text(json.dumps({"schema_version": 1, "models": [row]}))
     with pytest.raises(ValueError, match="Invalid capability provenance"):
         registry.load_registry(path)

@@ -1,3 +1,5 @@
+# The review CLI deliberately reports status on stdout/stderr.
+# ruff: noqa: T201
 """Review-only model registry renderer and hosted/NGC drift reporter.
 
 This script uses only the standard library and never changes reviewed registry data
@@ -31,7 +33,11 @@ TABLES = (
 CAPABILITIES = ("supports_tools", "supports_structured_output", "supports_thinking")
 STATES = {"unknown", "current", "stale", "unavailable"}
 CAPABILITY_SOURCES = {
-    "unknown", "legacy_static", "hosted_catalog", "ngc_catalog", "bcb"
+    "unknown",
+    "legacy_static",
+    "hosted_catalog",
+    "ngc_catalog",
+    "bcb",
 }
 
 HARNESS_UPSTREAM_NEEDED = re.compile(
@@ -80,7 +86,9 @@ def load_registry(path: Path = REGISTRY) -> list[dict[str, Any]]:
             if state not in ("supported", "unsupported", "unknown"):
                 raise ValueError(f"Invalid capability: {identifier} {field}")
             if state != "unknown" and model.get(field) is not (state == "supported"):
-                raise ValueError(f"Capability disagrees with runtime model: {identifier} {field}")
+                raise ValueError(
+                    f"Capability disagrees with runtime model: {identifier} {field}"
+                )
         if set(row["capability_provenance"]) != set(CAPABILITIES):
             raise ValueError(f"Incomplete capability provenance: {identifier}")
         for field in CAPABILITIES:
@@ -91,11 +99,14 @@ def load_registry(path: Path = REGISTRY) -> list[dict[str, Any]]:
             if (
                 evidence_source not in CAPABILITY_SOURCES
                 or (evidence_source == "unknown") != (state == "unknown")
-                or (evidence_source == "legacy_static" and (
-                    field not in model or model[field] is None or url is not None
-                ))
-                or (evidence_source in {"hosted_catalog", "ngc_catalog", "bcb"}
-                    and (not isinstance(url, str) or not url.startswith("https://")))
+                or (
+                    evidence_source == "legacy_static"
+                    and (field not in model or model[field] is None or url is not None)
+                )
+                or (
+                    evidence_source in {"hosted_catalog", "ngc_catalog", "bcb"}
+                    and (not isinstance(url, str) or not url.startswith("https://"))
+                )
                 or (evidence_source == "unknown" and url is not None)
             ):
                 raise ValueError(f"Invalid capability provenance: {identifier} {field}")
@@ -106,13 +117,18 @@ def load_registry(path: Path = REGISTRY) -> list[dict[str, Any]]:
             if (
                 info["state"] not in STATES
                 or (info["state"] != "unknown" and not info["url"])
-                or (info["url"] is not None and (
-                    not isinstance(info["url"], str) or not info["url"].startswith("https://")
-                ))
+                or (
+                    info["url"] is not None
+                    and (
+                        not isinstance(info["url"], str)
+                        or not info["url"].startswith("https://")
+                    )
+                )
             ):
                 raise ValueError(f"Invalid provenance: {identifier} {source}")
         current_sources = {
-            source for source in ("hosted", "downloadable")
+            source
+            for source in ("hosted", "downloadable")
             if row["provenance"][source]["state"] == "current"
         }
         if row["deployment_type"] != deployment_type(current_sources):
@@ -150,20 +166,28 @@ def replace_generated(source: str, generated: str) -> str:
 
 
 def generate(write: bool) -> int:
-    expected = replace_generated(STATICS.read_text(encoding="utf-8"), render(load_registry()))
+    expected = replace_generated(
+        STATICS.read_text(encoding="utf-8"), render(load_registry())
+    )
     current = STATICS.read_text(encoding="utf-8")
     if current == expected:
         print("Generated model tables are current")
         return 0
     if not write:
-        print("Generated model tables differ; run scripts/model_registry.py generate --write", file=sys.stderr)
+        print(
+            "Generated model tables differ; run "
+            "scripts/model_registry.py generate --write",
+            file=sys.stderr,
+        )
         return 1
     STATICS.write_text(expected, encoding="utf-8")
     print("Updated generated model tables (review the diff before merging)")
     return 0
 
 
-def snapshot(path: Path | None, source: str) -> tuple[dict[str, dict[str, Any]] | None, str]:
+def snapshot(
+    path: Path | None, source: str
+) -> tuple[dict[str, dict[str, Any]] | None, str]:
     if path is None and source == "hosted":
         try:
             headers = {"Accept": "application/json"}
@@ -192,14 +216,23 @@ def snapshot(path: Path | None, source: str) -> tuple[dict[str, dict[str, Any]] 
         return None, f"{source}: empty catalog; refusing to infer removals"
     entries: dict[str, dict[str, Any]] = {}
     for item in payload[key]:
-        if not isinstance(item, dict) or not isinstance(item.get("id"), str) or not item["id"]:
+        if (
+            not isinstance(item, dict)
+            or not isinstance(item.get("id"), str)
+            or not item["id"]
+        ):
             return None, f"{source}: record missing id"
         if item["id"] in entries:
             return None, f"{source}: duplicate id {item['id']}"
-        if "url" in item and (not isinstance(item["url"], str) or not item["url"].startswith("https://")):
+        if "url" in item and (
+            not isinstance(item["url"], str) or not item["url"].startswith("https://")
+        ):
             return None, f"{source}: invalid HTTPS evidence URL for {item['id']}"
         for field in ("aliases", "served_names"):
-            if field in item and (not isinstance(item[field], list) or not all(isinstance(n, str) for n in item[field])):
+            if field in item and (
+                not isinstance(item[field], list)
+                or not all(isinstance(n, str) for n in item[field])
+            ):
                 return None, f"{source}: invalid {field} for {item['id']}"
         if "replaces" in item and not isinstance(item["replaces"], str):
             return None, f"{source}: invalid replaces for {item['id']}"
@@ -211,8 +244,11 @@ def snapshot(path: Path | None, source: str) -> tuple[dict[str, dict[str, Any]] 
     return entries, source_url
 
 
-def compare(models: list[dict[str, Any]], hosted: dict[str, dict[str, Any]] | None,
-            ngc: dict[str, dict[str, Any]] | None) -> list[dict[str, Any]]:
+def compare(
+    models: list[dict[str, Any]],
+    hosted: dict[str, dict[str, Any]] | None,
+    ngc: dict[str, dict[str, Any]] | None,
+) -> list[dict[str, Any]]:
     changes: list[dict[str, Any]] = []
     known = {row["id"]: row for row in models if row["table"] != "OPENAI_MODEL_TABLE"}
     for source, observed in (("hosted", hosted), ("downloadable", ngc)):
@@ -222,49 +258,89 @@ def compare(models: list[dict[str, Any]], hosted: dict[str, dict[str, Any]] | No
             url = item["url"]
             old = known.get(identifier)
             replaces = item.get("replaces")
-            # A verified upstream replacement is a rename proposal, not an automatic alias.
+            # Upstream replacements are rename proposals, not automatic aliases.
             # Each catalog is evidence for its own deployment type only.
             if old is None:
                 kind = "rename" if replaces in known else "addition"
-                changes.append({
-                    "source": source, "kind": kind, "id": identifier,
-                    "replaces": replaces if kind == "rename" else None,
-                    "suggested_deployment_type": source, "evidence": url,
-                })
+                changes.append(
+                    {
+                        "source": source,
+                        "kind": kind,
+                        "id": identifier,
+                        "replaces": replaces if kind == "rename" else None,
+                        "suggested_deployment_type": source,
+                        "evidence": url,
+                    }
+                )
                 continue
             prior = old["provenance"][source]["state"]
             if prior in {"stale", "unavailable"}:
-                changes.append({
-                    "source": source, "kind": "availability", "id": identifier,
-                    "before": prior, "after": "current", "evidence": url,
-                })
+                changes.append(
+                    {
+                        "source": source,
+                        "kind": "availability",
+                        "id": identifier,
+                        "before": prior,
+                        "after": "current",
+                        "evidence": url,
+                    }
+                )
             if prior != "current":
                 available = {
-                    name for name in ("hosted", "downloadable")
+                    name
+                    for name in ("hosted", "downloadable")
                     if old["provenance"][name]["state"] == "current"
                 }
-                changes.append({
-                    "source": source, "kind": "deployment_type", "id": identifier,
-                    "before": old["deployment_type"],
-                    "after": deployment_type(available | {source}),
-                    "provenance_before": prior, "provenance_after": "current",
-                    "evidence": url,
-                })
+                changes.append(
+                    {
+                        "source": source,
+                        "kind": "deployment_type",
+                        "id": identifier,
+                        "before": old["deployment_type"],
+                        "after": deployment_type(available | {source}),
+                        "provenance_before": prior,
+                        "provenance_after": "current",
+                        "evidence": url,
+                    }
+                )
             for field in ("aliases", "served_names"):
                 if field in item:
-                    before = old["model"].get("aliases", []) if field == "aliases" else old[field]
+                    before = (
+                        old["model"].get("aliases", [])
+                        if field == "aliases"
+                        else old[field]
+                    )
                     after = item[field]
                     if set(before or []) != set(after):
-                        changes.append({"source": source, "kind": field, "id": identifier,
-                                        "before": before, "after": after, "evidence": url})
-            if "deprecated" in item and item["deprecated"] != old["model"].get("deprecated", False):
-                changes.append({"source": source, "kind": "deprecation", "id": identifier,
-                                "before": old["model"].get("deprecated", False),
-                                "after": item["deprecated"], "evidence": url})
+                        changes.append(
+                            {
+                                "source": source,
+                                "kind": field,
+                                "id": identifier,
+                                "before": before,
+                                "after": after,
+                                "evidence": url,
+                            }
+                        )
+            if "deprecated" in item and item["deprecated"] != old["model"].get(
+                "deprecated", False
+            ):
+                changes.append(
+                    {
+                        "source": source,
+                        "kind": "deprecation",
+                        "id": identifier,
+                        "before": old["model"].get("deprecated", False),
+                        "after": item["deprecated"],
+                        "evidence": url,
+                    }
+                )
             for field in CAPABILITIES:
                 reported = item.get("capabilities", {}).get(field, "unknown")
                 if reported not in ("supported", "unsupported", "unknown"):
-                    raise ValueError(f"Invalid upstream capability {field} for {identifier}")
+                    raise ValueError(
+                        f"Invalid upstream capability {field} for {identifier}"
+                    )
                 if reported == "unknown":
                     continue
                 previous = old["capability_provenance"][field]
@@ -273,35 +349,52 @@ def compare(models: list[dict[str, Any]], hosted: dict[str, dict[str, Any]] | No
                     "url": url,
                 }
                 if old["capabilities"][field] != reported or previous["source"] in (
-                    "unknown", "legacy_static"
+                    "unknown",
+                    "legacy_static",
                 ):
-                    changes.append({
-                        "source": source,
-                        "kind": "capability" if old["capabilities"][field] != reported
-                        else "capability provenance",
-                        "id": identifier, "field": field,
-                        "before": old["capabilities"][field], "after": reported,
-                        "provenance_before": previous,
-                        "provenance_after": new_evidence,
-                        "claim_only": True, "evidence": url,
-                    })
+                    changes.append(
+                        {
+                            "source": source,
+                            "kind": "capability"
+                            if old["capabilities"][field] != reported
+                            else "capability provenance",
+                            "id": identifier,
+                            "field": field,
+                            "before": old["capabilities"][field],
+                            "after": reported,
+                            "provenance_before": previous,
+                            "provenance_after": new_evidence,
+                            "claim_only": True,
+                            "evidence": url,
+                        }
+                    )
         for identifier, old in sorted(known.items()):
             # Absence alone is not proof a model was ever in that catalog.
-            if identifier not in observed and old["provenance"][source]["state"] == "current":
+            if (
+                identifier not in observed
+                and old["provenance"][source]["state"] == "current"
+            ):
                 remaining = {
-                    name for name in ("hosted", "downloadable")
+                    name
+                    for name in ("hosted", "downloadable")
                     if name != source and old["provenance"][name]["state"] == "current"
                 }
-                changes.append({
-                    "source": source, "kind": "removal/stale", "id": identifier,
-                    "before": old["deployment_type"],
-                    "after": deployment_type(remaining),
-                    "evidence": old["provenance"][source]["url"],
-                })
+                changes.append(
+                    {
+                        "source": source,
+                        "kind": "removal/stale",
+                        "id": identifier,
+                        "before": old["deployment_type"],
+                        "after": deployment_type(remaining),
+                        "evidence": old["provenance"][source]["url"],
+                    }
+                )
     return changes
 
 
-def harness_candidates(path: Path, evidence_url: str, known_ids: set[str]) -> list[dict[str, Any]]:
+def harness_candidates(
+    path: Path, evidence_url: str, known_ids: set[str]
+) -> list[dict[str, Any]]:
     """Read the downloadable harness's explicit UPSTREAM NEEDED lines only."""
     text = path.read_text(encoding="utf-8")
     return [
@@ -311,36 +404,62 @@ def harness_candidates(path: Path, evidence_url: str, known_ids: set[str]) -> li
             "id": identifier,
             "suggested_deployment_type": "downloadable",
             "evidence": evidence_url,
-            "review_note": "Harness candidate only; verify NGC resource and actual served name.",
+            "review_note": (
+                "Harness candidate only; verify NGC resource and actual served name."
+            ),
         }
         for identifier in sorted(set(HARNESS_UPSTREAM_NEEDED.findall(text)) - known_ids)
     ]
 
 
-def report(changes: list[dict[str, Any]], sources: dict[str, str], missing: list[str]) -> str:
-    lines = ["# Model registry drift — maintainer review required", "",
-             "This is a proposal, **not** a published model update. Validate each linked source,",
-             "probe any claimed capability with the compatibility harness, and review registry",
-             "and generated Python changes in a pull request before merging.", "",
-             "## Source evidence", ""]
+def report(
+    changes: list[dict[str, Any]], sources: dict[str, str], missing: list[str]
+) -> str:
+    lines = [
+        "# Model registry drift — maintainer review required",
+        "",
+        "This is a proposal, **not** a published model update. "
+        "Validate each linked source,",
+        "probe any claimed capability with the compatibility harness, "
+        "and review registry",
+        "and generated Python changes in a pull request before merging.",
+        "",
+        "## Source evidence",
+        "",
+    ]
     lines += [f"- {name}: {url}" for name, url in sources.items()]
     lines += [f"- **Unavailable**: {problem}" for problem in missing]
     lines += ["", "## Changes to review", ""]
     if not changes:
-        lines.append("No differences detected in the available sources (not a compatibility claim).")
+        lines.append(
+            "No differences detected in the available sources "
+            "(not a compatibility claim)."
+        )
     for change in changes:
-        lines.append(f"- **{change['source']} / {change['kind']}** `{change['id']}` "
-                     f"— {change['evidence']}")
-        details = {k: v for k, v in change.items() if k not in ("source", "kind", "id", "evidence") and v is not None}
+        lines.append(
+            f"- **{change['source']} / {change['kind']}** `{change['id']}` "
+            f"— {change['evidence']}"
+        )
+        details = {
+            k: v
+            for k, v in change.items()
+            if k not in ("source", "kind", "id", "evidence") and v is not None
+        }
         if details:
             lines.append(f"  - Review: `{json.dumps(details, sort_keys=True)}`")
     lines += [
-        "", "## Review checklist", "",
-        "- [ ] Confirm source completeness and links; unavailable source never means removal.",
+        "",
+        "## Review checklist",
+        "",
+        "- [ ] Confirm source completeness and links; "
+        "unavailable source never means removal.",
         "- [ ] Review each deployment type against its own hosted or NGC evidence.",
-        "- [ ] Verify served IDs, rename/replacement and aliases with actual endpoint behavior.",
-        "- [ ] Verify capability claims with behavioral evidence; catalog claims are not BCB proof.",
-        "- [ ] Update reviewed JSON, regenerate Python, inspect diff, run unit tests and obtain maintainer approval.",
+        "- [ ] Verify served IDs, rename/replacement and aliases "
+        "with actual endpoint behavior.",
+        "- [ ] Verify capability claims with behavioral evidence; "
+        "catalog claims are not BCB proof.",
+        "- [ ] Update reviewed JSON, regenerate Python, inspect diff, "
+        "run unit tests and obtain maintainer approval.",
         "",
     ]
     return "\n".join(lines)
@@ -349,14 +468,28 @@ def report(changes: list[dict[str, Any]], sources: dict[str, str], missing: list
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    generate_cmd = commands.add_parser("generate", help="Check or render reviewed registry into _statics.py")
-    generate_cmd.add_argument("--write", action="store_true", help="Write generated Python")
+    generate_cmd = commands.add_parser(
+        "generate", help="Check or render reviewed registry into _statics.py"
+    )
+    generate_cmd.add_argument(
+        "--write", action="store_true", help="Write generated Python"
+    )
     drift_cmd = commands.add_parser("drift", help="Produce a review-only drift report")
-    drift_cmd.add_argument("--hosted-file", type=Path, help="Saved /v1/models response with source_url")
-    drift_cmd.add_argument("--ngc-file", type=Path, help="Normalized NGC export with source_url")
-    drift_cmd.add_argument("--harness-log", type=Path, help="Saved downloadable harness log")
-    drift_cmd.add_argument("--harness-url", help="HTTPS pipeline/job URL for the harness log")
-    drift_cmd.add_argument("--output", type=Path, required=True, help="PR-ready Markdown review artifact")
+    drift_cmd.add_argument(
+        "--hosted-file", type=Path, help="Saved /v1/models response with source_url"
+    )
+    drift_cmd.add_argument(
+        "--ngc-file", type=Path, help="Normalized NGC export with source_url"
+    )
+    drift_cmd.add_argument(
+        "--harness-log", type=Path, help="Saved downloadable harness log"
+    )
+    drift_cmd.add_argument(
+        "--harness-url", help="HTTPS pipeline/job URL for the harness log"
+    )
+    drift_cmd.add_argument(
+        "--output", type=Path, required=True, help="PR-ready Markdown review artifact"
+    )
     args = parser.parse_args()
     if args.command == "generate":
         return generate(args.write)
@@ -367,20 +500,35 @@ def main() -> int:
     models = load_registry()
     hosted, hosted_source = snapshot(args.hosted_file, "hosted")
     ngc, ngc_source = snapshot(args.ngc_file, "downloadable")
-    missing = [text for records, text in ((hosted, hosted_source), (ngc, ngc_source)) if records is None]
-    sources = {name: source for name, records, source in (("hosted", hosted, hosted_source),
-               ("NGC", ngc, ngc_source)) if records is not None}
+    missing = [
+        text
+        for records, text in ((hosted, hosted_source), (ngc, ngc_source))
+        if records is None
+    ]
+    sources = {
+        name: source
+        for name, records, source in (
+            ("hosted", hosted, hosted_source),
+            ("NGC", ngc, ngc_source),
+        )
+        if records is not None
+    }
     changes = compare(models, hosted, ngc)
     if args.harness_log:
         try:
-            changes.extend(harness_candidates(
-                args.harness_log, args.harness_url, {row["id"] for row in models}
-            ))
+            changes.extend(
+                harness_candidates(
+                    args.harness_log, args.harness_url, {row["id"] for row in models}
+                )
+            )
             sources["downloadable harness"] = args.harness_url
         except OSError:
             missing.append("Downloadable harness log could not be read")
     args.output.write_text(report(changes, sources, missing), encoding="utf-8")
-    print(f"Wrote {args.output} ({len(changes)} changes, {len(missing)} unavailable sources)")
+    print(
+        f"Wrote {args.output} ({len(changes)} changes, "
+        f"{len(missing)} unavailable sources)"
+    )
     return 2 if missing else 0
 
 
