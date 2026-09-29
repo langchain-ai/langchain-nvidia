@@ -343,8 +343,12 @@ class NVIDIARerank(BaseDocumentCompressor):
                 0 <= ranking.index < len(doc_batch)
             ), "invalid response from server: index out of range"
             doc = doc_batch[ranking.index]
-            doc.metadata["relevance_score"] = ranking.logit
-            results.append(doc)
+            # Copy rather than write the score onto the caller's Document: doing
+            # it in place let a later call corrupt an earlier call's results (#41).
+            result_doc = doc.model_copy(
+                update={"metadata": {**doc.metadata, "relevance_score": ranking.logit}}
+            )
+            results.append(result_doc)
 
     @staticmethod
     def _sort_by_relevance(results: List[Document]) -> None:
