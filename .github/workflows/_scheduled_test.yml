@@ -48,12 +48,19 @@ jobs:
         run: make tests
         working-directory: ${{ matrix.working-directory }}
 
-      - name: Run integration tests
+      - name: Run integration smoke tests
         env:
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
-        run: make integration_tests
+        run: make integration_tests PYTEST_ARGS='-m "not accuracy"'
         working-directory: ${{ matrix.working-directory }}
 
+      - name: Run model accuracy tests
+        if: matrix.working-directory == 'libs/ai-endpoints'
+        continue-on-error: true
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+        run: make integration_tests PYTEST_ARGS="-m accuracy"
+        working-directory: ${{ matrix.working-directory }}
 
       - name: Ensure the tests did not create any additional files
         working-directory: ${{ matrix.working-directory }}

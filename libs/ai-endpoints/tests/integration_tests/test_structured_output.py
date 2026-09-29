@@ -37,6 +37,7 @@ def is_async_func(func: Callable) -> bool:
     return inspect.iscoroutinefunction(func)
 
 
+@pytest.mark.accuracy
 @pytest.mark.xfail(reason="Accuracy is not guaranteed")
 def test_accuracy(structured_model: str, mode: dict) -> None:
     class Person(BaseModel):
