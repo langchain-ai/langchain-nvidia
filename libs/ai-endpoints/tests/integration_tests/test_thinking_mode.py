@@ -48,9 +48,9 @@ def check_reasoning_content(
     if should_have_reasoning:
         assert has_reasoning_block, "No reasoning content found in content_blocks"
     else:
-        assert (
-            not has_reasoning_block
-        ), "Found reasoning content when it should not be present"
+        assert not has_reasoning_block, (
+            "Found reasoning content when it should not be present"
+        )
 
 
 @pytest.mark.parametrize(
@@ -113,9 +113,7 @@ async def test_thinking_mode_default(
     """Test that model works without explicitly setting thinking mode."""
 
     llm = ChatNVIDIA(model=thinking_model, **mode)
-    prompt = (
-        "John is taller than Mike. Mike is taller than Sara. " "Who is the tallest?"
-    )
+    prompt = "John is taller than Mike. Mike is taller than Sara. Who is the tallest?"
 
     if is_async_func(func):
         response = await func(llm, prompt)
@@ -135,19 +133,27 @@ async def test_thinking_mode_unsupported_model(
     thinking_model: str, mode: dict, func: Callable
 ) -> None:
     """Test that thinking mode is handled gracefully for unsupported models."""
-    unsupported_model = "meta/llama-3.1-8b-instruct"
+    unsupported_model = "meta/llama-3.3-70b-instruct"
     base_llm = ChatNVIDIA(model=unsupported_model, **mode)
     if not base_llm._client.is_hosted:
         pytest.xfail(
             "Downloadable/local NIM may not host the hardcoded unsupported model "
-            "`meta/llama-3.1-8b-instruct` and can return 404."
+            f"`{unsupported_model}` and can return 404."
         )
     llm = base_llm.with_thinking_mode(enabled=True)
 
-    if is_async_func(func):
-        response = await func(llm, "What is 2+2?")
-    else:
-        response = func(llm, "What is 2+2?")
+    try:
+        if is_async_func(func):
+            response = await func(llm, "What is 2+2?")
+        else:
+            response = func(llm, "What is 2+2?")
+    except Exception as exc:
+        if "[404]" in str(exc) and "not found" in str(exc).lower():
+            pytest.xfail(
+                f"Hosted unsupported-model smoke target `{unsupported_model}` "
+                "is not available."
+            )
+        raise
 
     assert len(response.content) > 0
     check_reasoning_content(response, should_have_reasoning=False)
