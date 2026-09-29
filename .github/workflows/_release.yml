@@ -70,35 +70,9 @@ jobs:
           echo pkg-name="$(poetry version | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
           echo version="$(poetry version --short)" >> $GITHUB_OUTPUT
 
-  test-pypi-publish:
-    needs:
-      - build
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: ${{ inputs.working-directory }}/dist/
-
-      - name: Publish to test PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: ${{ inputs.working-directory }}/dist/
-          verbose: true
-          print-hash: true
-          repository-url: https://test.pypi.org/legacy/
-          skip-existing: true
-          attestations: false
-
   pre-release-checks:
     needs:
       - build
-      - test-pypi-publish
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -123,31 +97,20 @@ jobs:
           poetry-version: ${{ env.POETRY_VERSION }}
           working-directory: ${{ inputs.working-directory }}
 
-      - name: Import published package
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: ${{ inputs.working-directory }}/dist/
+
+      - name: Import dist package
         shell: bash
         working-directory: ${{ inputs.working-directory }}
         env:
           PKG_NAME: ${{ needs.build.outputs.pkg-name }}
           VERSION: ${{ needs.build.outputs.version }}
-        # Here we use:
-        # - The default regular PyPI index as the *primary* index, meaning 
-        #   that it takes priority (https://pypi.org/simple)
-        # - The test PyPI index as an extra index, so that any dependencies that
-        #   are not found on test PyPI can be resolved and installed anyway.
-        #   (https://test.pypi.org/simple). This will include the PKG_NAME==VERSION
-        #   package because VERSION will not have been uploaded to regular PyPI yet.
-        # - attempt install again after 5 seconds if it fails because there is
-        #   sometimes a delay in availability on test pypi
+        # Install directly from the locally-built wheel (no index resolution needed).
         run: |
-          poetry run pip install \
-            --extra-index-url https://test.pypi.org/simple/ \
-            "$PKG_NAME==$VERSION" || \
-          ( \
-            sleep 5 && \
-            poetry run pip install \
-              --extra-index-url https://test.pypi.org/simple/ \
-              "$PKG_NAME==$VERSION" \
-          )
+          poetry run pip install dist/*.whl
 
           # Replace all dashes in the package name with underscores,
           # since that's how Python imports packages with dashes in the name.
@@ -156,10 +119,10 @@ jobs:
           poetry run python -c "import $IMPORT_NAME; print(dir($IMPORT_NAME))"
 
       - name: Import test dependencies
-        run: poetry install --with test,test_integration
+        run: poetry install --with test,test_integration --no-root
         working-directory: ${{ inputs.working-directory }}
 
-      # Overwrite the local version of the package with the test PyPI version.
+      # Overwrite the local version of the package with the built version
       - name: Import published package (again)
         working-directory: ${{ inputs.working-directory }}
         shell: bash
@@ -167,9 +130,7 @@ jobs:
           PKG_NAME: ${{ needs.build.outputs.pkg-name }}
           VERSION: ${{ needs.build.outputs.version }}
         run: |
-          poetry run pip install \
-            --extra-index-url https://test.pypi.org/simple/ \
-            "$PKG_NAME==$VERSION"
+          poetry run pip install dist/*.whl
 
       - name: Run unit tests
         run: make tests
@@ -198,6 +159,32 @@ jobs:
           poetry run pip install $MIN_VERSIONS
           make tests
         working-directory: ${{ inputs.working-directory }}
+
+  test-pypi-publish:
+    needs:
+      - build
+      - pre-release-checks
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: ${{ inputs.working-directory }}/dist/
+
+      - name: Publish to test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ inputs.working-directory }}/dist/
+          verbose: true
+          print-hash: true
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+          attestations: false
 
   publish:
     needs:
