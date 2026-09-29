@@ -45,6 +45,30 @@ def test_nemotron_super_vl_preserves_image_input(requests_mock: Mocker) -> None:
     assert response.content == "Red"
 
 
+def test_super_vl_converts_standard_base64_image(requests_mock: Mocker) -> None:
+    """LangChain image blocks must reach the API as image_url blocks."""
+    model_id = "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16"
+    requests_mock.get(
+        "https://integrate.api.nvidia.com/v1/models",
+        json={"data": [{"id": model_id}]},
+    )
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        json={"choices": [{"message": {"role": "assistant", "content": "Red"}}]},
+    )
+    model = ChatNVIDIA(model=model_id, api_key="BOGUS")
+    model.invoke([HumanMessage(content=[
+        {"type": "text", "text": "What color is this?"},
+        {"type": "image", "base64": "Ynl0ZXM=", "mime_type": "image/png"},
+    ])])
+
+    sent = requests_mock.last_request.json()
+    assert sent["messages"][0]["content"][1] == {
+        "type": "image_url",
+        "image_url": {"url": "data:image/png;base64,Ynl0ZXM="},
+    }
+
+
 @pytest.fixture(autouse=True)
 def mock_v1_models(requests_mock: Mocker) -> None:
     requests_mock.get(
