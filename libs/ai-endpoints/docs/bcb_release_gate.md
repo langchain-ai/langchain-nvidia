@@ -6,8 +6,8 @@ explicit `--baseline-version` override) and
 `/api/bcb/public/v1/recommend?nim_id=…` for selected hosted and downloadable NIMs.
 It writes a sanitized JSON report and a Markdown summary. It does not call
 inference, change Manager state, publish a package, or replace the release
-owner's approval. Manager's existing bearer token is required; these are not
-anonymous public APIs. No token or Manager URL is checked into this repository.
+owner's approval. An approved scoped read-only Manager consumer token is required;
+these are not anonymous public APIs. No token or Manager URL is checked in.
 
 The release owner configures repository variables `BCB_MANAGER_URL` (HTTPS
 origin), `BCB_HOSTED_NIM_ID`, `BCB_DOWNLOADABLE_NIM_ID`,

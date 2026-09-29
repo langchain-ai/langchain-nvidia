@@ -122,6 +122,10 @@ ASR support (API shapes, proposed abstractions, and future validation cases),
 see the [non-text NIM modality guidance](docs/non_text_nim_modalities.md).
 This is a maintainer proposal, not implemented modality support.
 
+Connector maintainers: the [reliability queue](docs/reliability_backlog.md)
+groups open issues by root cause, evidence, owner role, and next release or
+backlog decision; pending fixes are not claimed as released.
+
 
 ## Invoke the Core Chat Interface
 
@@ -410,6 +414,10 @@ response = client.compress_documents(
 
 print(f"Most relevant: {response[0].page_content}\nLeast relevant: {response[-1].page_content}")
 ```
+
+Reranked results are separate `Document` objects with `metadata["relevance_score"]`.
+The input documents and earlier result scores remain unchanged across subsequent
+sync or async calls, so callers can safely reuse the same source documents.
 
 ### Ranking with a Vision-Language Rerank Model
 

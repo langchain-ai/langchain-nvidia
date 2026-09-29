@@ -35,3 +35,4 @@ From `libs/ai-endpoints`, use a scoped `NIM_OSS_MANAGER_TOKEN` and `NIM_OSS_MANA
 - The matrix summary is aggregate across all returned pairs, **not** a selected model's verdict. Badges derive only from the same classified JSON rows as the table and require the same maintainer review. Re-run before use; stale screenshots and snapshots are not live evidence.
 
 The emitted Markdown escapes display values and strips arbitrary Manager text/links, but still contains internal target IDs, digests and fingerprints. Review exact target mapping, package-version applicability, timestamps, status and data classification before selectively publishing a static excerpt; never upload the private draft to a public artifact store. This pilot is nonblocking and cannot replace Manager's separately reviewed release gate or production deployment checks.
+

@@ -329,35 +329,27 @@ class NVIDIARerank(BaseDocumentCompressor):
         self,
         doc_batch: List[Document],
         rankings: List[Ranking],
-        results: List[Document],
+        results: List[tuple[Document, float]],
     ) -> None:
-        """Process rankings for a batch of documents.
-
-        Args:
-            doc_batch: Batch of documents
-            rankings: Rankings for the batch
-            results: List to append processed documents to
-        """
+        """Pair each ranked document with its score without changing the input."""
         for ranking in rankings:
             assert (
                 0 <= ranking.index < len(doc_batch)
             ), "invalid response from server: index out of range"
-            doc = doc_batch[ranking.index]
-            # Copy rather than write the score onto the caller's Document: doing
-            # it in place let a later call corrupt an earlier call's results (#41).
-            result_doc = doc.model_copy(
-                update={"metadata": {**doc.metadata, "relevance_score": ranking.logit}}
-            )
-            results.append(result_doc)
+            results.append((doc_batch[ranking.index], ranking.logit))
 
     @staticmethod
-    def _sort_by_relevance(results: List[Document]) -> None:
-        """Sort results by relevance score in descending order.
-
-        Args:
-            results: List of documents to sort in-place
-        """
-        results.sort(key=lambda x: x.metadata["relevance_score"], reverse=True)
+    def _materialize_rankings(
+        results: List[tuple[Document, float]], top_n: int, *, batched: bool
+    ) -> List[Document]:
+        if batched:
+            results.sort(key=lambda entry: entry[1], reverse=True)
+        return [
+            doc.model_copy(
+                update={"metadata": {**doc.metadata, "relevance_score": score}}
+            )
+            for doc, score in results[:top_n]
+        ]
 
     # todo: batching when len(documents) > endpoint's max batch size
     def _rank(self, documents: List[Document], query: str) -> List[Ranking]:
@@ -391,16 +383,14 @@ class NVIDIARerank(BaseDocumentCompressor):
             return []
 
         doc_list = list(documents)
-        results: List[Document] = []
+        results: List[tuple[Document, float]] = []
         for doc_batch in self._batch(doc_list, self.max_batch_size):
             rankings = self._rank(query=query, documents=doc_batch)
             self._process_batch_rankings(doc_batch, rankings, results)
 
-        # if we batched, we need to sort the results
-        if len(doc_list) > self.max_batch_size:
-            results.sort(key=lambda x: x.metadata["relevance_score"], reverse=True)
-
-        return results[: self.top_n]
+        return self._materialize_rankings(
+            results, self.top_n, batched=len(doc_list) > self.max_batch_size
+        )
 
     async def _arank(self, documents: List[Document], query: str) -> List[Ranking]:
         """Async version of _rank."""
@@ -422,13 +412,11 @@ class NVIDIARerank(BaseDocumentCompressor):
             return []
 
         doc_list = list(documents)
-        results: List[Document] = []
+        results: List[tuple[Document, float]] = []
         for doc_batch in self._batch(doc_list, self.max_batch_size):
             rankings = await self._arank(query=query, documents=doc_batch)
             self._process_batch_rankings(doc_batch, rankings, results)
 
-        # if we batched, we need to sort the results
-        if len(doc_list) > self.max_batch_size:
-            results.sort(key=lambda x: x.metadata["relevance_score"], reverse=True)
-
-        return results[: self.top_n]
+        return self._materialize_rankings(
+            results, self.top_n, batched=len(doc_list) > self.max_batch_size
+        )
