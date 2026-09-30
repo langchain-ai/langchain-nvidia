@@ -188,7 +188,8 @@ class _NVIDIABaseClient(BaseModel):
                 expected_format = "Expected format is: http://host:port"
                 warnings.warn(
                     "The provided url appears incorrect. "
-                    f"Expected: {expected_format} Got: {v}"
+                    f"Expected: {expected_format} Got: {v}",
+                    stacklevel=2,
                 )
 
             normalized_path = parsed.path.rstrip("/")
@@ -201,6 +202,7 @@ class _NVIDIABaseClient(BaseModel):
                     "you may have inference and listing issues. "
                     "This check will be deprecated in the next release. "
                     "Please ensure /v1 is appended to the provided URL",
+                    stacklevel=2,
                 )
                 normalized_path += "/v1"
 
