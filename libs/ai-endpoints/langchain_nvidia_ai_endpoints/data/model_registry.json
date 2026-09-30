@@ -1,0 +1,7487 @@
+{
+  "schema_version": 1,
+  "models": [
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "google/gemma-7b",
+      "model": {
+        "id": "google/gemma-7b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-gemma-7b",
+          "playground_gemma_7b",
+          "gemma_7b"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "google/gemma-7b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mistralai/mistral-7b-instruct-v0.2",
+      "model": {
+        "id": "mistralai/mistral-7b-instruct-v0.2",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-mistral-7b-instruct-v2",
+          "playground_mistral_7b",
+          "mistral_7b"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "mistralai/mistral-7b-instruct-v0.2"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mistralai/mixtral-8x7b-instruct-v0.1",
+      "model": {
+        "id": "mistralai/mixtral-8x7b-instruct-v0.1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-mixtral-8x7b-instruct",
+          "playground_mixtral_8x7b",
+          "mixtral_8x7b"
+        ]
+      },
+      "served_names": [
+        "mistralai/mixtral-8x7b-instruct-v0.1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "google/codegemma-7b",
+      "model": {
+        "id": "google/codegemma-7b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-codegemma-7b"
+        ]
+      },
+      "served_names": [
+        "google/codegemma-7b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "gotocompany/gemma-2-9b-cpt-sahabatai-instruct",
+      "model": {
+        "id": "gotocompany/gemma-2-9b-cpt-sahabatai-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "gotocompany/gemma-2-9b-cpt-sahabatai-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mistralai/mixtral-8x22b-instruct-v0.1",
+      "model": {
+        "id": "mistralai/mixtral-8x22b-instruct-v0.1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-mixtral-8x22b-instruct"
+        ]
+      },
+      "served_names": [
+        "mistralai/mixtral-8x22b-instruct-v0.1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mistralai/mixtral-8x22b-v0.1",
+      "model": {
+        "id": "mistralai/mixtral-8x22b-v0.1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "mistralai/mixtral-8x22b-v0.1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "meta/llama3-8b-instruct",
+      "model": {
+        "id": "meta/llama3-8b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-llama3-8b"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "meta/llama3-8b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "meta/llama3-70b-instruct",
+      "model": {
+        "id": "meta/llama3-70b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-llama3-70b"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "meta/llama3-70b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "microsoft/phi-3-mini-128k-instruct",
+      "model": {
+        "id": "microsoft/phi-3-mini-128k-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-phi-3-mini"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "microsoft/phi-3-mini-128k-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "microsoft/phi-3-mini-4k-instruct",
+      "model": {
+        "id": "microsoft/phi-3-mini-4k-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-phi-3-mini-4k",
+          "playground_phi2",
+          "phi2"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "microsoft/phi-3-mini-4k-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "aisingapore/sea-lion-7b-instruct",
+      "model": {
+        "id": "aisingapore/sea-lion-7b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-sea-lion-7b-instruct"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "aisingapore/sea-lion-7b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "microsoft/phi-3-small-8k-instruct",
+      "model": {
+        "id": "microsoft/phi-3-small-8k-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-phi-3-small-8k-instruct"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "microsoft/phi-3-small-8k-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "microsoft/phi-3-small-128k-instruct",
+      "model": {
+        "id": "microsoft/phi-3-small-128k-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-phi-3-small-128k-instruct"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "microsoft/phi-3-small-128k-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "microsoft/phi-3-medium-4k-instruct",
+      "model": {
+        "id": "microsoft/phi-3-medium-4k-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-phi-3-medium-4k-instruct"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "microsoft/phi-3-medium-4k-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "ibm/granite-3.3-8b-instruct",
+      "model": {
+        "id": "ibm/granite-3.3-8b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "supports_tools": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        },
+        "deprecated": true
+      },
+      "served_names": [
+        "ibm/granite-3.3-8b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "ibm/granite-guardian-3.0-8b",
+      "model": {
+        "id": "ibm/granite-guardian-3.0-8b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "ibm/granite-guardian-3.0-8b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mediatek/breeze-7b-instruct",
+      "model": {
+        "id": "mediatek/breeze-7b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-breeze-7b-instruct"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "mediatek/breeze-7b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "upstage/solar-10.7b-instruct",
+      "model": {
+        "id": "upstage/solar-10.7b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-solar-10_7b-instruct"
+        ]
+      },
+      "served_names": [
+        "upstage/solar-10.7b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mistralai/mistral-7b-instruct-v0.3",
+      "model": {
+        "id": "mistralai/mistral-7b-instruct-v0.3",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-mistral-7b-instruct-v03"
+        ]
+      },
+      "served_names": [
+        "mistralai/mistral-7b-instruct-v0.3"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "01-ai/yi-large",
+      "model": {
+        "id": "01-ai/yi-large",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-yi-large"
+        ]
+      },
+      "served_names": [
+        "01-ai/yi-large"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mistralai/codestral-22b-instruct-v0.1",
+      "model": {
+        "id": "mistralai/codestral-22b-instruct-v0.1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-codestral-22b-instruct-v01"
+        ],
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "mistralai/codestral-22b-instruct-v0.1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "google/gemma-2-9b-it",
+      "model": {
+        "id": "google/gemma-2-9b-it",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-gemma-2-9b-it"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "google/gemma-2-9b-it"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "google/gemma-2-27b-it",
+      "model": {
+        "id": "google/gemma-2-27b-it",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-gemma-2-27b-it"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "google/gemma-2-27b-it"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "google/gemma-3-12b-it",
+      "model": {
+        "id": "google/gemma-3-12b-it",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "google/gemma-3-12b-it"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "google/gemma-3-1b-it",
+      "model": {
+        "id": "google/gemma-3-1b-it",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "google/gemma-3-1b-it"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "google/gemma-3-27b-it",
+      "model": {
+        "id": "google/gemma-3-27b-it",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "google/gemma-3-27b-it"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "google/gemma-3-4b-it",
+      "model": {
+        "id": "google/gemma-3-4b-it",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "google/gemma-3-4b-it"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "google/gemma-3n-e2b-it",
+      "model": {
+        "id": "google/gemma-3n-e2b-it",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "google/gemma-3n-e2b-it"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "google/gemma-3n-e4b-it",
+      "model": {
+        "id": "google/gemma-3n-e4b-it",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "google/gemma-3n-e4b-it"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "google/shieldgemma-9b",
+      "model": {
+        "id": "google/shieldgemma-9b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "google/shieldgemma-9b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "microsoft/phi-3-medium-128k-instruct",
+      "model": {
+        "id": "microsoft/phi-3-medium-128k-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-phi-3-medium-128k-instruct"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "microsoft/phi-3-medium-128k-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nv-mistralai/mistral-nemo-12b-instruct",
+      "model": {
+        "id": "nv-mistralai/mistral-nemo-12b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true,
+        "deprecated": true
+      },
+      "served_names": [
+        "nv-mistralai/mistral-nemo-12b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "meta/llama-3.1-8b-instruct",
+      "model": {
+        "id": "meta/llama-3.1-8b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "meta/llama-3.1-8b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "meta/llama-3.1-70b-instruct",
+      "model": {
+        "id": "meta/llama-3.1-70b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "meta/llama-3.1-70b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "meta/llama-3.1-405b-instruct",
+      "model": {
+        "id": "meta/llama-3.1-405b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true,
+        "deprecated": true
+      },
+      "served_names": [
+        "meta/llama-3.1-405b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "meta/llama-guard-4-12b",
+      "model": {
+        "id": "meta/llama-guard-4-12b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "meta/llama-guard-4-12b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mistralai/mamba-codestral-7b-v0.1",
+      "model": {
+        "id": "mistralai/mamba-codestral-7b-v0.1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "mistralai/mamba-codestral-7b-v0.1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "google/gemma-2-2b-it",
+      "model": {
+        "id": "google/gemma-2-2b-it",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "google/gemma-2-2b-it"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mistralai/magistral-small-2506",
+      "model": {
+        "id": "mistralai/magistral-small-2506",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "mistralai/magistral-small-2506"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mistralai/mistral-medium-3-instruct",
+      "model": {
+        "id": "mistralai/mistral-medium-3-instruct",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "mistralai/mistral-medium-3-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mistralai/mistral-nemotron",
+      "model": {
+        "id": "mistralai/mistral-nemotron",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true
+      },
+      "served_names": [
+        "mistralai/mistral-nemotron"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mistralai/mistral-small-24b-instruct",
+      "model": {
+        "id": "mistralai/mistral-small-24b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "mistralai/mistral-small-24b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mistralai/mistral-small-3.1-24b-instruct-2503",
+      "model": {
+        "id": "mistralai/mistral-small-3.1-24b-instruct-2503",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "deprecated": true
+      },
+      "served_names": [
+        "mistralai/mistral-small-3.1-24b-instruct-2503"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "mistralai/mathstral-7b-v0.1",
+      "model": {
+        "id": "mistralai/mathstral-7b-v0.1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "mistralai/mathstral-7b-v0.1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "rakuten/rakutenai-7b-instruct",
+      "model": {
+        "id": "rakuten/rakutenai-7b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "rakuten/rakutenai-7b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "rakuten/rakutenai-7b-chat",
+      "model": {
+        "id": "rakuten/rakutenai-7b-chat",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "rakuten/rakutenai-7b-chat"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "baichuan-inc/baichuan2-13b-chat",
+      "model": {
+        "id": "baichuan-inc/baichuan2-13b-chat",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "baichuan-inc/baichuan2-13b-chat"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "thudm/chatglm3-6b",
+      "model": {
+        "id": "thudm/chatglm3-6b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "thudm/chatglm3-6b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "tiiuae/falcon3-7b-instruct",
+      "model": {
+        "id": "tiiuae/falcon3-7b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "tiiuae/falcon3-7b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "microsoft/phi-3.5-mini-instruct",
+      "model": {
+        "id": "microsoft/phi-3.5-mini-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "microsoft/phi-3.5-mini-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "microsoft/phi-4-mini-flash-reasoning",
+      "model": {
+        "id": "microsoft/phi-4-mini-flash-reasoning",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "microsoft/phi-4-mini-flash-reasoning"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "microsoft/phi-4-mini-instruct",
+      "model": {
+        "id": "microsoft/phi-4-mini-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true
+      },
+      "served_names": [
+        "microsoft/phi-4-mini-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "microsoft/phi-4-multimodal-instruct",
+      "model": {
+        "id": "microsoft/phi-4-multimodal-instruct",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "microsoft/phi-4-multimodal-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "utter-project/eurollm-9b-instruct",
+      "model": {
+        "id": "utter-project/eurollm-9b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "utter-project/eurollm-9b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/nemotron-mini-4b-instruct",
+      "model": {
+        "id": "nvidia/nemotron-mini-4b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "nvidia/nemotron-mini-4b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "yentinglin/llama-3-taiwan-70b-instruct",
+      "model": {
+        "id": "yentinglin/llama-3-taiwan-70b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "yentinglin/llama-3-taiwan-70b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "tokyotech-llm/llama-3-swallow-70b-instruct-v0.1",
+      "model": {
+        "id": "tokyotech-llm/llama-3-swallow-70b-instruct-v0.1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "tokyotech-llm/llama-3-swallow-70b-instruct-v0.1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "abacusai/dracarys-llama-3.1-70b-instruct",
+      "model": {
+        "id": "abacusai/dracarys-llama-3.1-70b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "abacusai/dracarys-llama-3.1-70b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "qwen/qwen2-7b-instruct",
+      "model": {
+        "id": "qwen/qwen2-7b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "qwen/qwen2-7b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "meta/llama-3.2-1b-instruct",
+      "model": {
+        "id": "meta/llama-3.2-1b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "meta/llama-3.2-1b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "meta/llama-3.2-3b-instruct",
+      "model": {
+        "id": "meta/llama-3.2-3b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "meta/llama-3.2-3b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "institute-of-science-tokyo/llama-3.1-swallow-8b-instruct-v0.1",
+      "model": {
+        "id": "institute-of-science-tokyo/llama-3.1-swallow-8b-instruct-v0.1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_structured_output": true,
+        "deprecated": true
+      },
+      "served_names": [
+        "institute-of-science-tokyo/llama-3.1-swallow-8b-instruct-v0.1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "institute-of-science-tokyo/llama-3.1-swallow-70b-instruct-v0.1",
+      "model": {
+        "id": "institute-of-science-tokyo/llama-3.1-swallow-70b-instruct-v0.1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_structured_output": true,
+        "deprecated": true
+      },
+      "served_names": [
+        "institute-of-science-tokyo/llama-3.1-swallow-70b-instruct-v0.1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "igenius/colosseum_355b_instruct_16k",
+      "model": {
+        "id": "igenius/colosseum_355b_instruct_16k",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "igenius/colosseum_355b_instruct_16k"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "igenius/italia_10b_instruct_16k",
+      "model": {
+        "id": "igenius/italia_10b_instruct_16k",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "igenius/italia_10b_instruct_16k"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "zyphra/zamba2-7b-instruct",
+      "model": {
+        "id": "zyphra/zamba2-7b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "zyphra/zamba2-7b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/nemotron-4-mini-hindi-4b-instruct",
+      "model": {
+        "id": "nvidia/nemotron-4-mini-hindi-4b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_structured_output": true,
+        "deprecated": true
+      },
+      "served_names": [
+        "nvidia/nemotron-4-mini-hindi-4b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/llama-3.1-nemoguard-8b-content-safety",
+      "model": {
+        "id": "nvidia/llama-3.1-nemoguard-8b-content-safety",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "nvidia/llama-3.1-nemoguard-8b-content-safety"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/llama-3.1-nemoguard-8b-topic-control",
+      "model": {
+        "id": "nvidia/llama-3.1-nemoguard-8b-topic-control",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "nvidia/llama-3.1-nemoguard-8b-topic-control"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/usdcode-llama-3.1-70b-instruct",
+      "model": {
+        "id": "nvidia/usdcode-llama-3.1-70b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "nvidia/usdcode-llama-3.1-70b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "meta/llama-3.3-70b-instruct",
+      "model": {
+        "id": "meta/llama-3.3-70b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "meta/llama-3.3-70b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "qwen/qwen2.5-coder-32b-instruct",
+      "model": {
+        "id": "qwen/qwen2.5-coder-32b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "qwen/qwen2.5-coder-32b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "qwen/qwen2.5-coder-7b-instruct",
+      "model": {
+        "id": "qwen/qwen2.5-coder-7b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "qwen/qwen2.5-coder-7b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "qwen/qwen2.5-7b-instruct",
+      "model": {
+        "id": "qwen/qwen2.5-7b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "qwen/qwen2.5-7b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "qwen/qwen3-235b-a22b",
+      "model": {
+        "id": "qwen/qwen3-235b-a22b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "supports_tools": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        },
+        "deprecated": true
+      },
+      "served_names": [
+        "qwen/qwen3-235b-a22b"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "qwen/qwq-32b",
+      "model": {
+        "id": "qwen/qwq-32b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "deprecated": true
+      },
+      "served_names": [
+        "qwen/qwq-32b"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/llama-3.1-nemotron-70b-reward",
+      "model": {
+        "id": "nvidia/llama-3.1-nemotron-70b-reward",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "nvidia/llama-3.1-nemotron-70b-reward"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "deepseek-ai/deepseek-r1",
+      "model": {
+        "id": "deepseek-ai/deepseek-r1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "deepseek-ai/deepseek-r1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "deepseek-ai/deepseek-r1-0528",
+      "model": {
+        "id": "deepseek-ai/deepseek-r1-0528",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "deprecated": true
+      },
+      "served_names": [
+        "deepseek-ai/deepseek-r1-0528"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "deepseek-ai/deepseek-r1-distill-llama-8b",
+      "model": {
+        "id": "deepseek-ai/deepseek-r1-distill-llama-8b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "deepseek-ai/deepseek-r1-distill-llama-8b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "deepseek-ai/deepseek-r1-distill-qwen-14b",
+      "model": {
+        "id": "deepseek-ai/deepseek-r1-distill-qwen-14b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "deepseek-ai/deepseek-r1-distill-qwen-14b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "deepseek-ai/deepseek-r1-distill-qwen-32b",
+      "model": {
+        "id": "deepseek-ai/deepseek-r1-distill-qwen-32b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "deepseek-ai/deepseek-r1-distill-qwen-32b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "deepseek-ai/deepseek-r1-distill-qwen-7b",
+      "model": {
+        "id": "deepseek-ai/deepseek-r1-distill-qwen-7b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "deepseek-ai/deepseek-r1-distill-qwen-7b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/llama-3.1-nemotron-nano-8b-v1",
+      "model": {
+        "id": "nvidia/llama-3.1-nemotron-nano-8b-v1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "thinking_prefix": "detailed thinking on",
+        "no_thinking_prefix": "detailed thinking off"
+      },
+      "served_names": [
+        "nvidia/llama-3.1-nemotron-nano-8b-v1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/llama-3.1-nemotron-nano-4b-v1.1",
+      "model": {
+        "id": "nvidia/llama-3.1-nemotron-nano-4b-v1.1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "thinking_prefix": "detailed thinking on",
+        "no_thinking_prefix": "detailed thinking off",
+        "supports_tools": true,
+        "deprecated": true
+      },
+      "served_names": [
+        "nvidia/llama-3.1-nemotron-nano-4b-v1.1"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+      "model": {
+        "id": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "thinking_prefix": "detailed thinking on",
+        "no_thinking_prefix": "detailed thinking off",
+        "supports_tools": true,
+        "deprecated": true
+      },
+      "served_names": [
+        "nvidia/llama-3.1-nemotron-ultra-253b-v1"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/llama-3.3-nemotron-super-49b-v1",
+      "model": {
+        "id": "nvidia/llama-3.3-nemotron-super-49b-v1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "thinking_prefix": "detailed thinking on",
+        "no_thinking_prefix": "detailed thinking off",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "nvidia/llama-3.3-nemotron-super-49b-v1"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+      "model": {
+        "id": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "thinking_prefix": "/think",
+        "no_thinking_prefix": "/no_think",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "nvidia/llama-3.3-nemotron-super-49b-v1.5"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "moonshotai/kimi-k2-instruct",
+      "model": {
+        "id": "moonshotai/kimi-k2-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "moonshotai/kimi-k2-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "openai/gpt-oss-20b",
+      "model": {
+        "id": "openai/gpt-oss-20b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "openai/gpt-oss-20b"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "openai/gpt-oss-120b",
+      "model": {
+        "id": "openai/gpt-oss-120b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "openai/gpt-oss-120b"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "marin/marin-8b-instruct",
+      "model": {
+        "id": "marin/marin-8b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "marin/marin-8b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "speakleash/bielik-11b-v2.3-instruct",
+      "model": {
+        "id": "speakleash/bielik-11b-v2.3-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "speakleash/bielik-11b-v2.3-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/nvidia-nemotron-nano-9b-v2",
+      "model": {
+        "id": "nvidia/nvidia-nemotron-nano-9b-v2",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true,
+        "supports_thinking": true,
+        "thinking_prefix": "/think",
+        "no_thinking_prefix": "/no_think"
+      },
+      "served_names": [
+        "nvidia/nvidia-nemotron-nano-9b-v2"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "deepseek-ai/deepseek-v3.1",
+      "model": {
+        "id": "deepseek-ai/deepseek-v3.1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        },
+        "deprecated": true
+      },
+      "served_names": [
+        "deepseek-ai/deepseek-v3.1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "bytedance/seed-oss-36b-instruct",
+      "model": {
+        "id": "bytedance/seed-oss-36b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "bytedance/seed-oss-36b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "moonshotai/kimi-k2-instruct-0905",
+      "model": {
+        "id": "moonshotai/kimi-k2-instruct-0905",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "moonshotai/kimi-k2-instruct-0905"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "qwen/qwen3-next-80b-a3b-instruct",
+      "model": {
+        "id": "qwen/qwen3-next-80b-a3b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "qwen/qwen3-next-80b-a3b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "qwen/qwen3-next-80b-a3b-thinking",
+      "model": {
+        "id": "qwen/qwen3-next-80b-a3b-thinking",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "qwen/qwen3-next-80b-a3b-thinking"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "deepseek-ai/deepseek-v3.1-terminus",
+      "model": {
+        "id": "deepseek-ai/deepseek-v3.1-terminus",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "deepseek-ai/deepseek-v3.1-terminus"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "minimaxai/minimax-m2",
+      "model": {
+        "id": "minimaxai/minimax-m2",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true,
+        "deprecated": true
+      },
+      "served_names": [
+        "minimaxai/minimax-m2"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "moonshotai/kimi-k2-thinking",
+      "model": {
+        "id": "moonshotai/kimi-k2-thinking",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true
+      },
+      "served_names": [
+        "moonshotai/kimi-k2-thinking"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/nemotron-3-nano-30b-a3b",
+      "model": {
+        "id": "nvidia/nemotron-3-nano-30b-a3b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "nvidia/nemotron-3-nano-30b-a3b"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": {
+        "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "nvidia/nemotron-3.5-lightning-30b-a3b"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "meta/muse-glimmer-30b",
+      "model": {
+        "id": "meta/muse-glimmer-30b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true
+      },
+      "served_names": [
+        "meta/muse-glimmer-30b"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "deepseek-ai/deepseek-v3.2",
+      "model": {
+        "id": "deepseek-ai/deepseek-v3.2",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "supports_structured_output": true,
+        "supports_tools": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "deepseek-ai/deepseek-v3.2"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "stepfun-ai/step-3.5-flash",
+      "model": {
+        "id": "stepfun-ai/step-3.5-flash",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_structured_output": true,
+        "supports_tools": true
+      },
+      "served_names": [
+        "stepfun-ai/step-3.5-flash"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/nemotron-3-super-120b-a12b",
+      "model": {
+        "id": "nvidia/nemotron-3-super-120b-a12b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "nvidia/nemotron-3-super-120b-a12b"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "minimaxai/minimax-m2.5",
+      "model": {
+        "id": "minimaxai/minimax-m2.5",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "minimaxai/minimax-m2.5"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "google/gemma-4-31b-it",
+      "model": {
+        "id": "google/gemma-4-31b-it",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "google/gemma-4-31b-it"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "minimaxai/minimax-m2.7",
+      "model": {
+        "id": "minimaxai/minimax-m2.7",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "minimaxai/minimax-m2.7"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "z-ai/glm4.7",
+      "model": {
+        "id": "z-ai/glm4.7",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        },
+        "deprecated": true
+      },
+      "served_names": [
+        "z-ai/glm4.7"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "z-ai/glm5",
+      "model": {
+        "id": "z-ai/glm5",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        },
+        "deprecated": true
+      },
+      "served_names": [
+        "z-ai/glm5"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "z-ai/glm-5.1",
+      "model": {
+        "id": "z-ai/glm-5.1",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "z-ai/glm-5.1"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "deepseek-ai/deepseek-v4-pro",
+      "model": {
+        "id": "deepseek-ai/deepseek-v4-pro",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "deepseek-ai/deepseek-v4-pro"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "deepseek-ai/deepseek-v4-flash",
+      "model": {
+        "id": "deepseek-ai/deepseek-v4-flash",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "deepseek-ai/deepseek-v4-flash"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/nemotron-3-ultra-550b-a55b",
+      "model": {
+        "id": "nvidia/nemotron-3-ultra-550b-a55b",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "nvidia/nemotron-3-ultra-550b-a55b"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "minimaxai/minimax-m3",
+      "model": {
+        "id": "minimaxai/minimax-m3",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "thinking_mode": "enabled"
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "thinking_mode": "disabled"
+          }
+        }
+      },
+      "served_names": [
+        "minimaxai/minimax-m3"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "QA_MODEL_TABLE",
+      "id": "nvidia/llama3-chatqa-1.5-8b",
+      "model": {
+        "id": "nvidia/llama3-chatqa-1.5-8b",
+        "model_type": "qa",
+        "client": "ChatNVIDIA",
+        "aliases": [
+          "ai-chatqa-1.5-8b"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "nvidia/llama3-chatqa-1.5-8b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "google/paligemma",
+      "model": {
+        "id": "google/paligemma",
+        "model_type": "nv-vlm",
+        "client": "ChatNVIDIA",
+        "endpoint": "https://ai.api.nvidia.com/v1/vlm/google/paligemma",
+        "aliases": [
+          "ai-google-paligemma"
+        ]
+      },
+      "served_names": [
+        "google/paligemma"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "microsoft/phi-3-vision-128k-instruct",
+      "model": {
+        "id": "microsoft/phi-3-vision-128k-instruct",
+        "model_type": "nv-vlm",
+        "client": "ChatNVIDIA",
+        "endpoint": "https://ai.api.nvidia.com/v1/vlm/microsoft/phi-3-vision-128k-instruct",
+        "aliases": [
+          "ai-phi-3-vision-128k-instruct"
+        ]
+      },
+      "served_names": [
+        "microsoft/phi-3-vision-128k-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "microsoft/phi-3.5-vision-instruct",
+      "model": {
+        "id": "microsoft/phi-3.5-vision-instruct",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "microsoft/phi-3.5-vision-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "nvidia/nvclip",
+      "model": {
+        "id": "nvidia/nvclip",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "nvidia/nvclip"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "nvidia/nemoretriever-parse",
+      "model": {
+        "id": "nvidia/nemoretriever-parse",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "nvidia/nemoretriever-parse"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "nvidia/riva-translate-4b-instruct",
+      "model": {
+        "id": "nvidia/riva-translate-4b-instruct",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "nvidia/riva-translate-4b-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "meta/llama-3.2-11b-vision-instruct",
+      "model": {
+        "id": "meta/llama-3.2-11b-vision-instruct",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "endpoint": "https://ai.api.nvidia.com/v1/gr/meta/llama-3.2-11b-vision-instruct/chat/completions"
+      },
+      "served_names": [
+        "meta/llama-3.2-11b-vision-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "meta/llama-3.2-90b-vision-instruct",
+      "model": {
+        "id": "meta/llama-3.2-90b-vision-instruct",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "endpoint": "https://ai.api.nvidia.com/v1/gr/meta/llama-3.2-90b-vision-instruct/chat/completions"
+      },
+      "served_names": [
+        "meta/llama-3.2-90b-vision-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "meta/llama-4-maverick-17b-128e-instruct",
+      "model": {
+        "id": "meta/llama-4-maverick-17b-128e-instruct",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "meta/llama-4-maverick-17b-128e-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "meta/llama-4-scout-17b-16e-instruct",
+      "model": {
+        "id": "meta/llama-4-scout-17b-16e-instruct",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "meta/llama-4-scout-17b-16e-instruct"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
+      "model": {
+        "id": "nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "nvidia/llama-3.1-nemotron-nano-vl-8b-v1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "mistralai/ministral-14b-instruct-2512",
+      "model": {
+        "id": "mistralai/ministral-14b-instruct-2512",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "mistralai/ministral-14b-instruct-2512"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "mistralai/ministral-3-14b-instruct-2512",
+      "model": {
+        "id": "mistralai/ministral-3-14b-instruct-2512",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "supports_tools": true
+      },
+      "served_names": [
+        "mistralai/ministral-3-14b-instruct-2512"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "mistralai/mistral-large-3-675b-instruct-2512",
+      "model": {
+        "id": "mistralai/mistral-large-3-675b-instruct-2512",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "mistralai/mistral-large-3-675b-instruct-2512"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "moonshotai/kimi-k2.5",
+      "model": {
+        "id": "moonshotai/kimi-k2.5",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "thinking": false
+          }
+        },
+        "deprecated": true
+      },
+      "served_names": [
+        "moonshotai/kimi-k2.5"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "nvidia/nemotron-nano-12b-v2-vl",
+      "model": {
+        "id": "nvidia/nemotron-nano-12b-v2-vl",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "thinking_prefix": "/think",
+        "no_thinking_prefix": "/no_think"
+      },
+      "served_names": [
+        "nvidia/nemotron-nano-12b-v2-vl"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "qwen/qwen3.5-397b-a17b",
+      "model": {
+        "id": "qwen/qwen3.5-397b-a17b",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "qwen/qwen3.5-397b-a17b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "qwen/qwen3.5-122b-a10b",
+      "model": {
+        "id": "qwen/qwen3.5-122b-a10b",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "qwen/qwen3.5-122b-a10b"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "mistralai/mistral-small-4-119b-2603",
+      "model": {
+        "id": "mistralai/mistral-small-4-119b-2603",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "reasoning_effort": "high"
+        },
+        "thinking_param_disable": {
+          "reasoning_effort": null
+        }
+      },
+      "served_names": [
+        "mistralai/mistral-small-4-119b-2603"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "nvidia/ising-calibration-1-35b-a3b",
+      "model": {
+        "id": "nvidia/ising-calibration-1-35b-a3b",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "nvidia/ising-calibration-1-35b-a3b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "moonshotai/kimi-k2.6",
+      "model": {
+        "id": "moonshotai/kimi-k2.6",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "moonshotai/kimi-k2.6"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "stepfun-ai/step-3.7-flash",
+      "model": {
+        "id": "stepfun-ai/step-3.7-flash",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "supports_tools": true
+      },
+      "served_names": [
+        "stepfun-ai/step-3.7-flash"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "snowflake/arctic-embed-l",
+      "model": {
+        "id": "snowflake/arctic-embed-l",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings",
+        "aliases": [
+          "ai-arctic-embed-l"
+        ],
+        "deprecated": true
+      },
+      "served_names": [
+        "snowflake/arctic-embed-l"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "NV-Embed-QA",
+      "model": {
+        "id": "NV-Embed-QA",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings",
+        "endpoint": "https://ai.api.nvidia.com/v1/retrieval/nvidia/embeddings",
+        "aliases": [
+          "ai-embed-qa-4"
+        ]
+      },
+      "served_names": [
+        "NV-Embed-QA"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "nvidia/nv-embed-v1",
+      "model": {
+        "id": "nvidia/nv-embed-v1",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings",
+        "aliases": [
+          "ai-nv-embed-v1"
+        ]
+      },
+      "served_names": [
+        "nvidia/nv-embed-v1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "nvidia/nv-embedqa-mistral-7b-v2",
+      "model": {
+        "id": "nvidia/nv-embedqa-mistral-7b-v2",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings",
+        "deprecated": true
+      },
+      "served_names": [
+        "nvidia/nv-embedqa-mistral-7b-v2"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "nvidia/nv-embedqa-e5-v5",
+      "model": {
+        "id": "nvidia/nv-embedqa-e5-v5",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings"
+      },
+      "served_names": [
+        "nvidia/nv-embedqa-e5-v5"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "baai/bge-m3",
+      "model": {
+        "id": "baai/bge-m3",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings"
+      },
+      "served_names": [
+        "baai/bge-m3"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "nvidia/llama-3.2-nv-embedqa-1b-v1",
+      "model": {
+        "id": "nvidia/llama-3.2-nv-embedqa-1b-v1",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings"
+      },
+      "served_names": [
+        "nvidia/llama-3.2-nv-embedqa-1b-v1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "nvidia/llama-3.2-nv-embedqa-1b-v2",
+      "model": {
+        "id": "nvidia/llama-3.2-nv-embedqa-1b-v2",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings",
+        "deprecated": true
+      },
+      "served_names": [
+        "nvidia/llama-3.2-nv-embedqa-1b-v2"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
+      "model": {
+        "id": "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings",
+        "deprecated": true
+      },
+      "served_names": [
+        "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "nvidia/nv-embedcode-7b-v1",
+      "model": {
+        "id": "nvidia/nv-embedcode-7b-v1",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings"
+      },
+      "served_names": [
+        "nvidia/nv-embedcode-7b-v1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "nvidia/llama-3.2-nemoretriever-300m-embed-v2",
+      "model": {
+        "id": "nvidia/llama-3.2-nemoretriever-300m-embed-v2",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings"
+      },
+      "served_names": [
+        "nvidia/llama-3.2-nemoretriever-300m-embed-v2"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "nvidia/llama-nemotron-embed-1b-v2",
+      "model": {
+        "id": "nvidia/llama-nemotron-embed-1b-v2",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings"
+      },
+      "served_names": [
+        "nvidia/llama-nemotron-embed-1b-v2"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "RANKING_MODEL_TABLE",
+      "id": "nv-rerank-qa-mistral-4b:1",
+      "model": {
+        "id": "nv-rerank-qa-mistral-4b:1",
+        "model_type": "ranking",
+        "client": "NVIDIARerank",
+        "endpoint": "https://ai.api.nvidia.com/v1/retrieval/nvidia/reranking",
+        "aliases": [
+          "ai-rerank-qa-mistral-4b"
+        ]
+      },
+      "served_names": [
+        "nv-rerank-qa-mistral-4b:1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "RANKING_MODEL_TABLE",
+      "id": "nvidia/llama-3.2-nv-rerankqa-1b-v1",
+      "model": {
+        "id": "nvidia/llama-3.2-nv-rerankqa-1b-v1",
+        "model_type": "ranking",
+        "client": "NVIDIARerank",
+        "endpoint": "https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-3_2-nv-rerankqa-1b-v1/reranking"
+      },
+      "served_names": [
+        "nvidia/llama-3.2-nv-rerankqa-1b-v1"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "RANKING_MODEL_TABLE",
+      "id": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+      "model": {
+        "id": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+        "model_type": "ranking",
+        "client": "NVIDIARerank",
+        "endpoint": "https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-3_2-nv-rerankqa-1b-v2/reranking",
+        "deprecated": true
+      },
+      "served_names": [
+        "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "RANKING_MODEL_TABLE",
+      "id": "nvidia/llama-nemotron-rerank-1b-v2",
+      "model": {
+        "id": "nvidia/llama-nemotron-rerank-1b-v2",
+        "model_type": "ranking",
+        "client": "NVIDIARerank",
+        "endpoint": "https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-nemotron-rerank-1b-v2/reranking"
+      },
+      "served_names": [
+        "nvidia/llama-nemotron-rerank-1b-v2"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "RANKING_VLM_MODEL_TABLE",
+      "id": "nvidia/llama-nemotron-rerank-vl-1b-v2",
+      "model": {
+        "id": "nvidia/llama-nemotron-rerank-vl-1b-v2",
+        "model_type": "ranking-vlm",
+        "client": "NVIDIARerank",
+        "endpoint": "https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-nemotron-rerank-vl-1b-v2/reranking"
+      },
+      "served_names": [
+        "nvidia/llama-nemotron-rerank-vl-1b-v2"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "COMPLETION_MODEL_TABLE",
+      "id": "bigcode/starcoder2-7b",
+      "model": {
+        "id": "bigcode/starcoder2-7b",
+        "model_type": "completions",
+        "client": "NVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "bigcode/starcoder2-7b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "COMPLETION_MODEL_TABLE",
+      "id": "nvidia/mistral-nemo-minitron-8b-base",
+      "model": {
+        "id": "nvidia/mistral-nemo-minitron-8b-base",
+        "model_type": "completions",
+        "client": "NVIDIA",
+        "deprecated": true
+      },
+      "served_names": [
+        "nvidia/mistral-nemo-minitron-8b-base"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "OPENAI_MODEL_TABLE",
+      "id": "gpt-3.5-turbo",
+      "model": {
+        "id": "gpt-3.5-turbo",
+        "model_type": "chat",
+        "client": "ChatNVIDIA",
+        "endpoint": "https://api.openai.com/v1/chat/completions",
+        "supports_tools": true
+      },
+      "served_names": [
+        "gpt-3.5-turbo"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    }
+  ]
+}

@@ -51,6 +51,81 @@ To get access to the NVIDIA API Catalog, do the following:
 
 You can now use your key to access endpoints on the NVIDIA API Catalog.
 
+### Choose a deployment and check it before inference
+
+Hosted NVIDIA API Catalog calls default to `https://integrate.api.nvidia.com/v1`
+and **require** `NVIDIA_API_KEY`. Set it in your environment (do not put it in
+source code or a URL). A self-hosted NIM can use its deployment root
+(`http://localhost:8000`) or its OpenAI-compatible API base
+(`http://localhost:8000/v1`); both resolve to `/v1`. Set `NVIDIA_BASE_URL`
+or pass `base_url=` to `ChatNVIDIA`, `NVIDIAEmbeddings`, `NVIDIA` (completions),
+or `NVIDIARerank`. An explicit constructor `base_url` takes precedence over
+`NVIDIA_BASE_URL`. Custom reverse-proxy prefixes are retained (for example,
+`https://proxy.example/nim` becomes `https://proxy.example/nim/v1`).
+Do **not** pass `/models`, `/chat/completions`, `/embeddings`, `/completions`,
+`/ranking`, `/rankings`, or `/reranking` as the base URL: those are endpoint
+paths, not deployment roots. The connector uses `GET <base>/models` for
+discovery and appends `/chat/completions`, `/embeddings`, `/completions`, or
+`/ranking` for the corresponding client. Self-hosted deployments may accept
+anonymous access, but set `NVIDIA_API_KEY` if yours requires bearer auth.
+Hosted catalog models with dedicated endpoints may not appear in `/models`;
+their connector routing depends on the known hosted-model registry.
+
+Run the read-only Doctor preflight before sending prompts:
+
+```bash
+python -m langchain_nvidia_ai_endpoints doctor --model nvidia/nemotron-3-super-120b-a12b --capability chat
+# Self-hosted NIM; no API key unless your deployment requires one
+python -m langchain_nvidia_ai_endpoints doctor --base-url http://localhost:8000/v1 --model my-model --capability embeddings
+```
+
+Doctor uses `NVIDIA_BASE_URL` (or the hosted default), `NVIDIA_API_KEY`, and
+`GET /v1/models`; it sends **no inference request or usage telemetry**.
+`--capability` accepts `chat`, `embeddings`, `completions`, or `ranking`.
+It checks `/models` model type metadata where available; unknown type is
+reported as **UNKNOWN**, not verified by a generated response. It exits 0
+when connectivity/auth/model listing checks pass and nonzero for missing
+hosted auth, rejected keys, bad URLs, unavailable `/models`, missing models,
+incompatible declared model types, network failures, or timeouts. Check
+`--help` for options; use `--timeout 10` for a slow deployment. A preflight
+pass is not proof that inference succeeds or that a framework is BCB-compatible.
+
+Optional BCB compatibility evidence is available from NIM OSS Manager's
+**authenticated internal-alpha** API (not a public anonymous service).
+It is never queried by default. If your team has approved, scoped read-only
+Manager consumer access, set `NIM_OSS_MANAGER_TOKEN` in the environment and opt in explicitly:
+
+```bash
+python -m langchain_nvidia_ai_endpoints doctor --model nvidia/nemotron-3-super-120b-a12b --capability chat --manager-url https://your-manager-host
+```
+
+Doctor requests the Manager's read-only `bcb-public-v1alpha1` compatibility
+summary for `langchain-nvidia` and that model. It does not transmit your
+NVIDIA API key to Manager. Missing access, unknown responses, and stale
+evidence are labeled **unavailable**, **unknown**, or **stale**, never
+invented as compatible. An unavailable optional Manager lookup does not
+turn a working endpoint into a failed connectivity check. Do not put
+Manager tokens in command-line arguments or URLs.
+
+For a maintainer-reviewed, framework-level compatibility snapshot, see
+[NIM compatibility evidence](docs/compatibility.md). The optional BCB
+review artifact separates verified framework status from unknown individual
+capabilities; it is not a live release approval or a public API.
+
+For hosted-versus-local setup, streaming/tools, embeddings retrieval and
+migration from generic OpenAI-compatible clients, see the
+[adoption guide](docs/adoption_guide.md) (maintainer-review draft; model
+capabilities and compatibility still require deployment-specific evidence).
+
+For the documented gaps in OCR, page-elements, table-structure, and offline
+ASR support (API shapes, proposed abstractions, and future validation cases),
+see the [non-text NIM modality guidance](docs/non_text_nim_modalities.md).
+This is a maintainer proposal, not implemented modality support.
+
+Connector maintainers: the [reliability queue](docs/reliability_backlog.md)
+groups open issues by root cause, evidence, owner role, and next release or
+backlog decision; pending fixes are not claimed as released.
+
 
 ## Invoke the Core Chat Interface
 
@@ -339,6 +414,10 @@ response = client.compress_documents(
 
 print(f"Most relevant: {response[0].page_content}\nLeast relevant: {response[-1].page_content}")
 ```
+
+Reranked results are separate `Document` objects with `metadata["relevance_score"]`.
+The input documents and earlier result scores remain unchanged across subsequent
+sync or async calls, so callers can safely reuse the same source documents.
 
 ### Ranking with a Vision-Language Rerank Model
 

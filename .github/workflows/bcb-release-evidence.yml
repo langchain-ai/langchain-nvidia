@@ -1,0 +1,43 @@
+name: BCB release evidence pilot
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "25 9 * * 1"
+  pull_request:
+    paths:
+      - "libs/ai-endpoints/scripts/bcb_release_gate.py"
+      - "libs/ai-endpoints/tests/unit_tests/test_bcb_release_gate.py"
+      - "libs/ai-endpoints/docs/bcb_release_gate.md"
+      - ".github/workflows/bcb-release-evidence.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  evidence-report:
+    # Only use a Manager read-only consumer token separately approved for
+    # this repository; never install its privileged controller token in CI.
+    # PR code never sees the credential; this report is never a publish gate.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.BCB_RELEASE_EVIDENCE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Assess Manager evidence privately (if configured)
+        env:
+          BCB_MANAGER_URL: ${{ vars.BCB_MANAGER_URL }}
+          BCB_BASELINE_VERSION: ${{ vars.BCB_BASELINE_VERSION }}
+          BCB_MANAGER_TOKEN: ${{ secrets.BCB_MANAGER_TOKEN }}
+          BCB_HOSTED_NIM_ID: ${{ vars.BCB_HOSTED_NIM_ID }}
+          BCB_HOSTED_REQUIRED_CAPABILITIES: ${{ vars.BCB_HOSTED_REQUIRED_CAPABILITIES }}
+          BCB_DOWNLOADABLE_NIM_ID: ${{ vars.BCB_DOWNLOADABLE_NIM_ID }}
+          BCB_DOWNLOADABLE_REQUIRED_CAPABILITIES: ${{ vars.BCB_DOWNLOADABLE_REQUIRED_CAPABILITIES }}
+        run: |
+          python3 libs/ai-endpoints/scripts/bcb_release_gate.py \
+            --json-output "$RUNNER_TEMP/bcb-release-evidence/report.json" \
+            --markdown-output "$RUNNER_TEMP/bcb-release-evidence/report.md"
+          # Do not upload internal model identifiers, digests or GitLab links to
+          # this potentially public GitHub repository's Actions artifacts.

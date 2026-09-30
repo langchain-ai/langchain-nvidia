@@ -1,0 +1,66 @@
+name: NIM model registry review
+
+on:
+  workflow_dispatch:
+    inputs:
+      ngc_file:
+        description: "Optional path to a reviewed NGC metadata export in this checkout"
+        required: false
+        type: string
+  schedule:
+    - cron: "0 9 * * 1"
+  pull_request:
+    paths:
+      - "libs/ai-endpoints/langchain_nvidia_ai_endpoints/data/model_registry.json"
+      - "libs/ai-endpoints/langchain_nvidia_ai_endpoints/_statics.py"
+      - "libs/ai-endpoints/scripts/model_registry.py"
+
+permissions:
+  contents: read
+
+jobs:
+  generated-tables:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check reviewed source against generated Python
+        run: python3 libs/ai-endpoints/scripts/model_registry.py generate
+
+  drift-report:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compare catalogs without updating the reviewed registry
+        env:
+          NGC_FILE: ${{ inputs.ngc_file }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+        shell: bash
+        run: |
+          args=()
+          if [[ -n "$NGC_FILE" ]]; then
+            if [[ ! -f "$NGC_FILE" ]]; then
+              echo "NGC snapshot file not found: $NGC_FILE" >&2
+              exit 1
+            fi
+            args+=(--ngc-file "$NGC_FILE")
+          fi
+          if python3 libs/ai-endpoints/scripts/model_registry.py drift "${args[@]}" --output model-registry-review.md; then
+            status=0
+          else
+            status=$?
+          fi
+          if [[ "$status" -ne 0 && "$status" -ne 2 ]]; then exit "$status"; fi
+          cat model-registry-review.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: model-registry-review
+          path: model-registry-review.md
+          if-no-files-found: ignore
