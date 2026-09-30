@@ -156,6 +156,26 @@ def test_optional_parameters_default_values() -> None:
     assert payload["max_tokens"] == 1024
 
 
+def test_stream_options_per_call_does_not_double_pass() -> None:
+    """A per-call/bound stream_options must override the default, not collide.
+
+    Previously `_prepare_inputs_and_payload` passed `stream_options` both
+    explicitly and via **kwargs, raising `got multiple values for keyword
+    argument 'stream_options'` on `.stream(stream_options=...)` /
+    `.bind(stream_options=...)`.
+    """
+    from langchain_core.messages import HumanMessage
+
+    llm = ChatNVIDIA(model="meta/llama-3.3-70b-instruct", nvidia_api_key="nvapi-...")
+    _, payload, _ = llm._prepare_inputs_and_payload(
+        [HumanMessage(content="hi")],
+        stop=None,
+        stream=True,
+        stream_options={"include_usage": False},
+    )
+    assert payload["stream_options"] == {"include_usage": False}
+
+
 @pytest.mark.parametrize(
     "thinking_mode",
     [False, True],
