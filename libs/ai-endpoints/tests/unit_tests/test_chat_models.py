@@ -156,6 +156,30 @@ def test_optional_parameters_default_values() -> None:
     assert payload["max_tokens"] == 1024
 
 
+@pytest.mark.parametrize("model_type", ["nv-vlm", "vlm"])
+def test_nv_vlm_adjust_input_does_not_mutate_message(model_type: str) -> None:
+    """Adjusting a VLM message must not mutate the caller's HumanMessage content.
+
+    The content blocks are aliased into the message, so an in-place write left a
+    reused message corrupted (its image_url replaced) after the first call.
+    """
+    from langchain_core.messages import HumanMessage
+
+    from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
+    from langchain_nvidia_ai_endpoints.chat_models import _nv_vlm_adjust_input
+
+    original_url = "data:image/png;base64,iVBORw0KGgo="
+    msg = HumanMessage(
+        content=[{"type": "image_url", "image_url": {"url": original_url}}]
+    )
+    message_dict = convert_message_to_dict(msg)
+
+    _nv_vlm_adjust_input(message_dict, model_type)
+
+    # The caller's message is untouched.
+    assert msg.content[0] == {"type": "image_url", "image_url": {"url": original_url}}
+
+
 @pytest.mark.parametrize(
     "thinking_mode",
     [False, True],
