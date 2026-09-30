@@ -83,6 +83,13 @@ class LangGraphExtractor(AbstractFrameworkAdapter):
         Returns:
             A nat_app Graph with nodes, edges, and conditional edges.
         """
+        if source is not None and source is not self._source:
+            # Extracting a different graph invalidates everything derived from
+            # the previous one; without this the cached result below would be
+            # returned for the wrong source.
+            self._source = source
+            self._graph = None
+
         if self._graph is not None:
             return self._graph
 
