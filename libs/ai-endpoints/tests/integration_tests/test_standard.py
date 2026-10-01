@@ -8,6 +8,7 @@ from langchain_core.tools import BaseTool
 from langchain_tests.integration_tests import ChatModelIntegrationTests
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from tests.integration_tests.smoke_models import SMOKE_CHAT_MODEL
 
 
 class TestNVIDIAStandard(ChatModelIntegrationTests):
@@ -18,7 +19,7 @@ class TestNVIDIAStandard(ChatModelIntegrationTests):
     @property
     def chat_model_params(self) -> dict:
         return {
-            "model": "nvidia/nemotron-3-nano-30b-a3b",
+            "model": SMOKE_CHAT_MODEL,
             "temperature": 0,
             "model_kwargs": {"chat_template_kwargs": {"enable_thinking": False}},
         }

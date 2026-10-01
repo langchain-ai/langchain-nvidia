@@ -195,6 +195,7 @@ def check_response_structure(response: AIMessage) -> None:
     [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
     ids=["invoke", "stream", "ainvoke", "astream"],
 )
+@pytest.mark.accuracy
 @pytest.mark.xfail(reason="Accuracy test")
 @pytest.mark.asyncio
 async def test_accuracy_extra(tool_model: str, mode: dict, func: Callable) -> None:
@@ -448,6 +449,7 @@ async def test_tool_choice_negative_no_args(
     [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
     ids=["invoke", "stream", "ainvoke", "astream"],
 )
+@pytest.mark.accuracy
 @pytest.mark.xfail(reason="Accuracy test")
 @pytest.mark.asyncio
 async def test_accuracy_tool_choice_negative_no_args(
@@ -555,6 +557,7 @@ async def test_tool_choice(
     [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
     ids=["invoke", "stream", "ainvoke", "astream"],
 )
+@pytest.mark.accuracy
 @pytest.mark.xfail(reason="Accuracy test")
 @pytest.mark.asyncio
 async def test_accuracy_tool_choice(
@@ -760,6 +763,7 @@ async def test_bind_tool_tool_choice(
     [eval_invoke, eval_ainvoke],
     ids=["invoke", "ainvoke"],
 )
+@pytest.mark.accuracy
 @pytest.mark.xfail(reason="Accuracy test")
 @pytest.mark.asyncio
 async def test_accuracy_bind_tool_tool_choice(
@@ -821,6 +825,7 @@ def test_unknown_warns(mode: dict) -> None:
     [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
     ids=["invoke", "stream", "ainvoke", "astream"],
 )
+@pytest.mark.accuracy
 @pytest.mark.xfail(reason="Accuracy test")
 @pytest.mark.asyncio
 async def test_accuracy_parallel_tool_calls_hard(
@@ -870,6 +875,7 @@ async def test_accuracy_parallel_tool_calls_hard(
     [eval_invoke, eval_stream, eval_ainvoke, eval_astream],
     ids=["invoke", "stream", "ainvoke", "astream"],
 )
+@pytest.mark.accuracy
 @pytest.mark.xfail(reason="Accuracy test")
 @pytest.mark.asyncio
 async def test_accuracy_parallel_tool_calls_easy(
