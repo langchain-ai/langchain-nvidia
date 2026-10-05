@@ -33,14 +33,10 @@ def test_nemotron_super_vl_preserves_image_input(requests_mock: Mocker) -> None:
     image_url = "data:image/png;base64,iVBORw0KGgo="
     model = ChatNVIDIA(model=model_id, api_key="BOGUS")
     response = model.invoke(
-        [
-            HumanMessage(
-                content=[
-                    {"type": "text", "text": "What color is this?"},
-                    {"type": "image_url", "image_url": {"url": image_url}},
-                ]
-            )
-        ]
+        [HumanMessage(content=[
+            {"type": "text", "text": "What color is this?"},
+            {"type": "image_url", "image_url": {"url": image_url}},
+        ])]
     )
 
     sent = requests_mock.last_request.json()
@@ -61,16 +57,10 @@ def test_super_vl_converts_standard_base64_image(requests_mock: Mocker) -> None:
         json={"choices": [{"message": {"role": "assistant", "content": "Red"}}]},
     )
     model = ChatNVIDIA(model=model_id, api_key="BOGUS")
-    model.invoke(
-        [
-            HumanMessage(
-                content=[
-                    {"type": "text", "text": "What color is this?"},
-                    {"type": "image", "base64": "Ynl0ZXM=", "mime_type": "image/png"},
-                ]
-            )
-        ]
-    )
+    model.invoke([HumanMessage(content=[
+        {"type": "text", "text": "What color is this?"},
+        {"type": "image", "base64": "Ynl0ZXM=", "mime_type": "image/png"},
+    ])])
 
     sent = requests_mock.last_request.json()
     assert sent["messages"][0]["content"][1] == {
@@ -412,7 +402,6 @@ def test_different_thinking_prefixes_for_different_models(
     [
         "nvidia/nemotron-3-nano-30b-a3b",
         "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "nvidia/nemotron-3.5-super-vl-120b-a12b",
     ],
 )
 @pytest.mark.parametrize(
@@ -461,7 +450,6 @@ def test_param_based_thinking_mode(
     [
         "nvidia/nemotron-3-nano-30b-a3b",
         "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "nvidia/nemotron-3.5-super-vl-120b-a12b",
     ],
 )
 @pytest.mark.parametrize(

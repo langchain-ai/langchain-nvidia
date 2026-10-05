@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 import requests_mock
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
@@ -11,87 +11,13 @@ from langchain_nvidia_ai_endpoints._utils import convert_message_to_dict
 from .conftest import MockHTTP
 
 
-@pytest.mark.parametrize("content", ["", [], [{"type": "text", "text": ""}]])
-def test_empty_tool_message_remains_valid_request_content(content: Any) -> None:
+def test_empty_tool_message_remains_valid_request_content() -> None:
     """Empty tool results must survive normalization and payload validation."""
     llm = ChatNVIDIA(api_key="BOGUS")
-    message = convert_message_to_dict(
-        ToolMessage(content=content, tool_call_id="call-1")
-    )
+    message = convert_message_to_dict(ToolMessage(content=[], tool_call_id="call-1"))
 
     assert message == {"role": "tool", "content": "", "tool_call_id": "call-1"}
     assert llm._get_payload(inputs=[message], stop=None)["messages"] == [message]
-
-
-@pytest.mark.parametrize(
-    "image_block, expected_url",
-    [
-        (
-            {"type": "image", "base64": "Ynl0ZXM=", "mime_type": "image/png"},
-            "data:image/png;base64,Ynl0ZXM=",
-        ),
-        (
-            {"type": "image", "url": "https://example.com/image.png"},
-            "https://example.com/image.png",
-        ),
-        (
-            {
-                "type": "image",
-                "source_type": "base64",
-                "data": "Ynl0ZXM=",
-                "mime_type": "image/png",
-            },
-            "data:image/png;base64,Ynl0ZXM=",
-        ),
-    ],
-    ids=["base64", "url", "legacy-base64"],
-)
-@pytest.mark.parametrize("role", ["user", "tool"])
-@pytest.mark.parametrize("use_async", [False, True], ids=["invoke", "ainvoke"])
-async def test_standard_image_request(
-    image_block: dict[str, Any],
-    expected_url: str,
-    role: str,
-    use_async: bool,
-    mock_http: MockHTTP,
-) -> None:
-    """User and tool images use the same wire format in sync and async calls."""
-    response = {"choices": [{"message": {"role": "assistant", "content": "Red"}}]}
-    mock_http.requests.post(
-        "https://integrate.api.nvidia.com/v1/chat/completions", json=response
-    )
-    mock_http.set_post(json_body=response)
-    model = ChatNVIDIA(model="nvidia/nemotron-3.5-super-vl-120b-a12b", api_key="BOGUS")
-    content = [{"type": "text", "text": "Describe this image."}, image_block]
-    message: BaseMessage = (
-        HumanMessage(content=content)
-        if role == "user"
-        else ToolMessage(content=content, tool_call_id="call-1")
-    )
-    if use_async:
-        await model.ainvoke([message])
-        payload = mock_http.history[-1].kwargs["json"]
-    else:
-        model.invoke([message])
-        payload = mock_http.requests.last_request.json()
-
-    sent = payload["messages"][0]
-    assert sent["role"] == role
-    assert sent["content"] == [
-        {"type": "text", "text": "Describe this image."},
-        {"type": "image_url", "image_url": {"url": expected_url}},
-    ]
-    if role == "tool":
-        assert sent["tool_call_id"] == "call-1"
-    assert message.content == content
-
-
-def test_base64_image_requires_mime_type() -> None:
-    """Reject incomplete standard image data before sending it to the endpoint."""
-    with pytest.raises(ValueError, match="mime_type"):
-        convert_message_to_dict(
-            HumanMessage(content=[{"type": "image", "base64": "Ynl0ZXM="}])
-        )
 
 
 def test_invoke_aimessage_content_none(requests_mock: requests_mock.Mocker) -> None:

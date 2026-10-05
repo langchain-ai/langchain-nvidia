@@ -16,10 +16,6 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
-from langchain_core.messages.utils import (
-    convert_to_openai_data_block,
-    is_data_content_block,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +44,25 @@ def _url_to_b64_string(image_source: str) -> str:
             )
     except Exception as e:
         raise ValueError(f"Unable to process the provided image source: {e}")
+
+
+def _standard_image_to_openai(block: dict[str, Any]) -> dict[str, Any]:
+    """Convert a LangChain image content block to chat-completions format."""
+    if "base64" in block:
+        base64_data = block["base64"]
+        mime_type = block.get("mime_type")
+        if not isinstance(base64_data, str) or not base64_data:
+            raise ValueError("Image base64 content must be a nonempty string")
+        if not isinstance(mime_type, str) or not mime_type.startswith("image/"):
+            raise ValueError("Image base64 content requires an image MIME type")
+        url = f"data:{mime_type};base64,{base64_data}"
+    elif "url" in block:
+        url = block["url"]
+        if not isinstance(url, str) or not url:
+            raise ValueError("Image URL must be a nonempty string")
+    else:
+        raise ValueError("ChatNVIDIA image content requires a URL or base64 data")
+    return {"type": "image_url", "image_url": {"url": url}}
 
 
 def _normalize_content(content: Any) -> Any:
@@ -79,14 +94,13 @@ def _normalize_content(content: Any) -> Any:
         elif isinstance(block, dict):
             block_type = block.get("type")
 
-            # Normalize LangChain image blocks, including the legacy source_type
-            # format, while preserving provider-native image and video blocks.
+            # Preserve multimodal content (images and videos) as-is for VLM models
             if block_type in ("image_url", "image", "video_url", "video"):
                 return [
-                    convert_to_openai_data_block(part)
+                    _standard_image_to_openai(part)
                     if isinstance(part, dict)
                     and part.get("type") == "image"
-                    and is_data_content_block(part)
+                    and ("base64" in part or "url" in part)
                     else part
                     for part in content
                 ]
