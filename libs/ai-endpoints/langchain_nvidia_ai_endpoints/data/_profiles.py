@@ -1135,6 +1135,15 @@ _PROFILES: dict[str, dict[str, Any]] = {
         "attachment": False,
         "temperature": True,
     },
+    "nvidia/nemotron-3.5-super-vl-120b-a12b": {
+        "name": "Nemotron 3.5 Super VL",
+        "text_inputs": True,
+        "image_inputs": True,
+        "text_outputs": True,
+        "reasoning_output": True,
+        "tool_calling": True,
+        "structured_output": True,
+    },
     "nvidia/nemotron-content-safety-reasoning-4b": {
         "name": "nemotron-content-safety-reasoning-4b",
         "release_date": "2026-01-22",

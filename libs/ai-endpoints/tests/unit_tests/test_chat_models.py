@@ -19,6 +19,19 @@ from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 from .conftest import MockHTTP
 
 
+def test_nemotron_super_vl_discovery_profile() -> None:
+    model = ChatNVIDIA(
+        model="nvidia/nemotron-3.5-super-vl-120b-a12b", api_key="BOGUS"
+    )
+
+    assert model.profile is not None
+    assert model.profile["text_inputs"] is True
+    assert model.profile["text_outputs"] is True
+    assert model.profile["image_inputs"] is True
+    assert model.profile["tool_calling"] is True
+    assert model.profile["structured_output"] is True
+
+
 def test_nemotron_super_vl_preserves_image_input(requests_mock: Mocker) -> None:
     """Send multimodal content through the registered Super VL chat model."""
     model_id = "nvidia/nemotron-3.5-super-vl-120b-a12b"
