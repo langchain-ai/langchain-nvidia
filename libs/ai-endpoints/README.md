@@ -58,19 +58,17 @@ Use the following code to invoke the core chat interface.
 
 ```python
 ## Core LC Chat Interface
-import os
-
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
 llm = ChatNVIDIA(
-    model=os.environ["NVIDIA_MODEL_ID"],
+    model="nvidia/nemotron-3.5-super-vl-120b-a12b",
     max_completion_tokens=8192,
 )
 result = llm.invoke("Write a ballad about LangChain.")
 print(result.content)
 ```
 
-Set `NVIDIA_MODEL_ID` to the public Nemotron 3.5 Super VL API identifier from [NVIDIA Build](https://build.nvidia.com/) when it becomes available.
+The model ID above is the Nemotron 3.5 Super VL API Catalog identifier. Check [NVIDIA Build](https://build.nvidia.com/) for endpoint availability.
 
 
 ## Use Stream, Batch, and Async
@@ -144,17 +142,15 @@ Use this section to learn about a few examples.
 
 ### Nemotron
 
-[Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. Nemotron 3.5 Super VL is the recommended starting point for text, image, and agent workflows. Find its current API identifier in the [NVIDIA API Catalog](https://build.nvidia.com/).
+[Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. Nemotron 3.5 Super VL is the recommended starting point for text, image, and agent workflows.
 
-Set `NVIDIA_MODEL_ID` to the public identifier from [NVIDIA Build](https://build.nvidia.com/) when the model is listed there. The larger completion budget gives reasoning and tool workflows room to return a final answer.
+The larger completion budget gives reasoning and tool workflows room to return a final answer. Check [NVIDIA Build](https://build.nvidia.com/) for endpoint availability.
 
 ```python
-import os
-
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
 llm = ChatNVIDIA(
-    model=os.environ["NVIDIA_MODEL_ID"],
+    model="nvidia/nemotron-3.5-super-vl-120b-a12b",
     max_completion_tokens=8192,
 )
 result = llm.invoke("Plan a three-step agentic workflow for competitive research.")
@@ -202,7 +198,7 @@ prompt = ChatPromptTemplate.from_messages(
 )
 chain = (
     prompt
-    | ChatNVIDIA(model=os.environ["NVIDIA_MODEL_ID"], max_completion_tokens=8192)
+    | ChatNVIDIA(model="nvidia/nemotron-3.5-super-vl-120b-a12b", max_completion_tokens=8192)
     | StrOutputParser()
 )
 

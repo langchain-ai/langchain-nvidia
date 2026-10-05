@@ -21,7 +21,7 @@ from .conftest import MockHTTP
 
 def test_nemotron_super_vl_preserves_image_input(requests_mock: Mocker) -> None:
     """Send multimodal content through the registered Super VL chat model."""
-    model_id = "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16"
+    model_id = "nvidia/nemotron-3.5-super-vl-120b-a12b"
     requests_mock.get(
         "https://integrate.api.nvidia.com/v1/models",
         json={"data": [{"id": model_id}]},
@@ -47,7 +47,7 @@ def test_nemotron_super_vl_preserves_image_input(requests_mock: Mocker) -> None:
 
 def test_super_vl_converts_standard_base64_image(requests_mock: Mocker) -> None:
     """LangChain image blocks must reach the API as image_url blocks."""
-    model_id = "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16"
+    model_id = "nvidia/nemotron-3.5-super-vl-120b-a12b"
     requests_mock.get(
         "https://integrate.api.nvidia.com/v1/models",
         json={"data": [{"id": model_id}]},

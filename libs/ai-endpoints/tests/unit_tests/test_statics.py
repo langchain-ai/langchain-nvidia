@@ -27,7 +27,7 @@ def test_model_table_integrity_name_id(entry: str) -> None:
 
 
 def test_nemotron_super_vl_capabilities() -> None:
-    model = determine_model("nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16")
+    model = determine_model("nvidia/nemotron-3.5-super-vl-120b-a12b")
     assert model is not None
     assert model.client == "ChatNVIDIA"
     assert model.model_type == "vlm"
