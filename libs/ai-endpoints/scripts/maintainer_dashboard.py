@@ -546,20 +546,27 @@ def main(argv: list[str] | None = None) -> int:
         sources: dict[str, str] = {}
         missing: list[str] = []
         snapshots = []
+        complete_sources: set[str] = set()
         for name, path in (
             ("hosted", args.hosted_file),
             ("downloadable", args.ngc_file),
         ):
             if path is None:
-                records, source = None, "snapshot not supplied"
+                records, source, complete = None, "snapshot not supplied", False
             else:
-                records, source = model_registry.snapshot(path, name)
+                records, source, complete = model_registry.snapshot(path, name)
+            if complete:
+                complete_sources.add(name)
             snapshots.append(records)
             if records is None:
                 missing.append(f"{name} snapshot unavailable")
             else:
-                sources[name] = source
-        changes = model_registry.compare(model_registry.load_registry(), *snapshots)
+                sources[name if complete else f"{name} (partial; no removals)"] = source
+        changes = model_registry.compare(
+            model_registry.load_registry(),
+            *snapshots,
+            complete_sources=frozenset(complete_sources),
+        )
         sys.stdout.write(
             render(
                 review,
