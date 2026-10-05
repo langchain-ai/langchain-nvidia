@@ -60,15 +60,10 @@ Use the following code to invoke the core chat interface.
 ## Core LC Chat Interface
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-llm = ChatNVIDIA(
-    model="nvidia/nemotron-3.5-super-vl-120b-a12b",
-    max_completion_tokens=8192,
-)
+llm = ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b")
 result = llm.invoke("Write a ballad about LangChain.")
 print(result.content)
 ```
-
-The model ID above is the Nemotron 3.5 Super VL API Catalog identifier. Check [NVIDIA Build](https://build.nvidia.com/) for endpoint availability.
 
 
 ## Use Stream, Batch, and Async
@@ -142,22 +137,44 @@ Use this section to learn about a few examples.
 
 ### Nemotron
 
-[Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. Nemotron 3.5 Super VL is the recommended starting point for text, image, and agent workflows.
-
-The larger completion budget gives reasoning and tool workflows room to return a final answer. Check [NVIDIA Build](https://build.nvidia.com/) for endpoint availability.
+[Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. The models deliver strong reasoning and tool-calling performance with high throughput. `nvidia/nemotron-3-super-120b-a12b` is a recommended starting point: a powerful model with 12B active parameters and 120B parameters in total, with a 1M token context window, available on the NVIDIA API Catalog and as a self-hosted NIM.
 
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-llm = ChatNVIDIA(
-    model="nvidia/nemotron-3.5-super-vl-120b-a12b",
-    max_completion_tokens=8192,
-)
+llm = ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b")
 result = llm.invoke("Plan a three-step agentic workflow for competitive research.")
 print(result.content)
 ```
 
-Use a `HumanMessage` with text and an image for visual questions:
+
+### Nemotron 3.5 Super VL
+
+Nemotron 3.5 Super VL accepts text and images through `ChatNVIDIA`.
+
+> [!NOTE]
+> Super 3.5 is in early access. This example requires the connector changes in
+> [PR #370](https://github.com/langchain-ai/langchain-nvidia/pull/370) and access
+> to the model on your NVIDIA endpoint. Confirm that your endpoint serves the
+> model ID below. Early-access instructions can specify a different model ID
+> and credentials.
+
+Set an explicit completion limit and thinking preference:
+
+```python
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
+
+super_model = ChatNVIDIA(
+    model="nvidia/nemotron-3.5-super-vl-120b-a12b",
+    max_completion_tokens=8192,
+    chat_template_kwargs={"enable_thinking": True},
+)
+result = super_model.invoke("Plan a three-step agentic workflow for competitive research.")
+print(result.content_blocks)
+```
+
+To describe an image, replace `photo.png` with a local PNG and pass a standard
+image content block:
 
 ```python
 import base64
@@ -166,26 +183,23 @@ from pathlib import Path
 from langchain_core.messages import HumanMessage
 
 image = base64.b64encode(Path("photo.png").read_bytes()).decode("ascii")
-response = llm.invoke([
+response = super_model.invoke([
     HumanMessage(content=[
         {"type": "text", "text": "Describe this image."},
-        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image}"}},
+        {"type": "image", "base64": image, "mime_type": "image/png"},
     ])
 ])
-print(response.content)
+print(response.content_blocks)
 ```
-
 
 ### General Chat
 
-Models such as Nemotron 3.5 Super VL and `mistralai/mixtral-8x22b-instruct-v0.1`
+Models such as `nvidia/nemotron-3-super-120b-a12b` and `mistralai/mixtral-8x22b-instruct-v0.1`
 are good all-around models that you can use for any LangChain chat messages.
 
 The following example generates a simple chat response.
 
 ```python
-import os
-
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -198,7 +212,7 @@ prompt = ChatPromptTemplate.from_messages(
 )
 chain = (
     prompt
-    | ChatNVIDIA(model="nvidia/nemotron-3.5-super-vl-120b-a12b", max_completion_tokens=8192)
+    | ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b")
     | StrOutputParser()
 )
 
