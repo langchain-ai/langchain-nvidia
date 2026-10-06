@@ -166,7 +166,7 @@ def test_partial_inventory_never_proposes_false_removals(tmp_path: Path) -> None
         "url": "https://example.com/ngc/old",
     }
     snapshot = tmp_path / "ngc.json"
-    payload = {
+    payload: dict[str, Any] = {
         "source_url": "https://example.com/ngc",
         "models": [{"id": "nvidia/new", "url": "https://example.com/ngc/new"}],
     }
