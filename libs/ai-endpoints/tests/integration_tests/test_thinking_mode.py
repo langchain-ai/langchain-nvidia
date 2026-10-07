@@ -58,6 +58,11 @@ def check_reasoning_content(
     [do_invoke, do_ainvoke],
     ids=["invoke", "ainvoke"],
 )
+@pytest.mark.accuracy
+@pytest.mark.xfail(
+    reason="Thinking-mode reasoning output is model-behavior accuracy coverage",
+    strict=False,
+)
 async def test_thinking_mode_enabled(
     thinking_model: str,
     mode: dict,

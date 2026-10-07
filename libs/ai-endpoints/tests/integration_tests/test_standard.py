@@ -25,6 +25,10 @@ class TestNVIDIAStandard(ChatModelIntegrationTests):
         }
 
     @pytest.mark.accuracy
+    @pytest.mark.xfail(
+        reason="Agent-loop correctness is model-behavior accuracy coverage",
+        strict=False,
+    )
     def test_agent_loop(self, model: BaseChatModel) -> None:
         return super().test_agent_loop(model)
 
