@@ -8,7 +8,7 @@ from langchain_core.tools import BaseTool
 from langchain_tests.integration_tests import ChatModelIntegrationTests
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
-from tests.integration_tests.smoke_models import SMOKE_CHAT_MODEL
+from tests.integration_tests.smoke_models import SMOKE_CHAT_MODEL, SMOKE_TIMEOUT_SECONDS
 
 
 class TestNVIDIAStandard(ChatModelIntegrationTests):
@@ -21,6 +21,7 @@ class TestNVIDIAStandard(ChatModelIntegrationTests):
         return {
             "model": SMOKE_CHAT_MODEL,
             "temperature": 0,
+            "timeout": SMOKE_TIMEOUT_SECONDS,
             "model_kwargs": {"chat_template_kwargs": {"enable_thinking": False}},
         }
 

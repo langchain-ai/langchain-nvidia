@@ -15,6 +15,7 @@ from langchain_core.messages import (
 )
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
+from tests.integration_tests.smoke_models import SMOKE_TIMEOUT_SECONDS
 
 #
 # we setup an --all-models flag in conftest.py, when passed it configures chat_model
@@ -423,7 +424,7 @@ async def test_ai_endpoints_invoke_seed_default(
 async def test_ai_endpoints_invoke_seed_range(
     chat_model: str, mode: dict, seed: int, func: str
 ) -> None:
-    llm = ChatNVIDIA(model=chat_model, seed=seed, **mode)
+    llm = ChatNVIDIA(model=chat_model, seed=seed, timeout=SMOKE_TIMEOUT_SECONDS, **mode)
     if func == "invoke":
         llm.invoke("What's in a seed?")
     else:
