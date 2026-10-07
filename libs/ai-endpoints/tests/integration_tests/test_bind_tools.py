@@ -698,7 +698,8 @@ async def test_bind_tool_tool_choice_none(
     else:
         response = func(llm, "What is 11 xxyyzz 3?")
     assert isinstance(response, AIMessage)
-    assert "tool_calls" not in response.additional_kwargs
+    assert not response.tool_calls
+    assert not response.additional_kwargs.get("tool_calls")
 
 
 @pytest.mark.parametrize(
