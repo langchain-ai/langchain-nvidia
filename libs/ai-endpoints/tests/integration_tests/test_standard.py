@@ -24,6 +24,10 @@ class TestNVIDIAStandard(ChatModelIntegrationTests):
             "model_kwargs": {"chat_template_kwargs": {"enable_thinking": False}},
         }
 
+    @pytest.mark.accuracy
+    def test_agent_loop(self, model: BaseChatModel) -> None:
+        return super().test_agent_loop(model)
+
     @pytest.mark.parametrize("model", [{}, {"output_version": "v1"}], indirect=True)
     @pytest.mark.xfail(
         reason="Backend returns tool arguments as strings for some models, "

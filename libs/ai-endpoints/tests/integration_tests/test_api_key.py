@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 from langchain_core.messages import HumanMessage
 
-from langchain_nvidia_ai_endpoints import NVIDIA, ChatNVIDIA
+from langchain_nvidia_ai_endpoints import NVIDIA, ChatNVIDIA, NVIDIARerank
 
 from ..unit_tests.test_api_key import no_env_var
 
@@ -61,7 +61,17 @@ def test_api_key(
     api_key = os.environ.get("NVIDIA_API_KEY")
     with no_env_var("NVIDIA_API_KEY"):
         client = public_class(**{param: api_key}, **smoke_model_kwargs)
-        contact_service(client)
+        try:
+            contact_service(client)
+        except Exception as exc:
+            if (
+                public_class is NVIDIARerank
+                and "base_url" not in mode
+                and "[404]" in str(exc)
+                and "not found" in str(exc).lower()
+            ):
+                pytest.xfail("Hosted reranking smoke model is unavailable")
+            raise
 
 
 def test_api_key_leakage(chat_model: str, mode: dict) -> None:

@@ -1,4 +1,4 @@
-from typing import Any, Generator, List, cast
+from typing import Any, Generator, List, Sequence, cast
 
 import pytest
 from langchain_core.documents import Document
@@ -37,10 +37,17 @@ def get_mode(config: pytest.Config) -> dict:
     return {}
 
 
-def _filter_hosted_eol_models(config: pytest.Config, models: List[str]) -> List[str]:
+def _model_id(model: str | Model) -> str:
+    return model.id if isinstance(model, Model) else model
+
+
+def _filter_hosted_eol_models(
+    config: pytest.Config, models: Sequence[str | Model]
+) -> List[str]:
+    model_ids = [_model_id(model) for model in models]
     if config.getoption("--nim-endpoint"):
-        return models
-    return [model for model in models if model not in HOSTED_EOL_MODEL_IDS]
+        return model_ids
+    return [model for model in model_ids if model not in HOSTED_EOL_MODEL_IDS]
 
 
 def _is_hosted_eol_error(config: pytest.Config, exc: BaseException) -> bool:
@@ -52,6 +59,15 @@ def _is_hosted_eol_error(config: pytest.Config, exc: BaseException) -> bool:
         and "gone" in message
         and ("end of life" in message or "no longer available" in message)
     )
+
+
+def _is_hosted_unavailable_rerank_error(item: pytest.Item, exc: BaseException) -> bool:
+    if item.config.getoption("--nim-endpoint") or "rerank_model" not in getattr(
+        item, "fixturenames", ()
+    ):
+        return False
+    message = str(exc).lower()
+    return "[404]" in message and "not found" in message
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -68,6 +84,13 @@ def pytest_runtest_makereport(
             str(item.path),
             item.location[1],
             "Skipped: hosted model endpoint is retired or no longer available",
+        )
+    if _is_hosted_unavailable_rerank_error(item, call.excinfo.value):
+        report.outcome = "skipped"
+        report.longrepr = (
+            str(item.path),
+            item.location[1],
+            "Skipped: hosted reranking model endpoint is unavailable",
         )
 
 

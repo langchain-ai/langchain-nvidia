@@ -156,6 +156,7 @@ async def test_dict(structured_model: str, mode: dict, func: Callable) -> None:
     [do_invoke, do_stream, do_ainvoke, do_astream],
     ids=["invoke", "stream", "ainvoke", "astream"],
 )
+@pytest.mark.accuracy
 async def test_enum(structured_model: str, mode: dict, func: Callable) -> None:
     class Choices(enum.Enum):
         A = "A is an option"
@@ -195,6 +196,7 @@ async def test_enum(structured_model: str, mode: dict, func: Callable) -> None:
     [do_invoke, do_stream, do_ainvoke, do_astream],
     ids=["invoke", "stream", "ainvoke", "astream"],
 )
+@pytest.mark.accuracy
 async def test_enum_incomplete(
     structured_model: str, mode: dict, func: Callable
 ) -> None:
@@ -267,6 +269,7 @@ async def test_multiple_schema(
     [do_invoke, do_stream, do_ainvoke, do_astream],
     ids=["invoke", "stream", "ainvoke", "astream"],
 )
+@pytest.mark.accuracy
 async def test_pydantic_incomplete(
     structured_model: str, mode: dict, func: Callable
 ) -> None:
