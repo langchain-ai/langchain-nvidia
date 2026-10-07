@@ -16,6 +16,7 @@ from langchain_core.tools import tool
 from pydantic import Field
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from tests.integration_tests.smoke_models import SMOKE_TIMEOUT_SECONDS
 
 #
 # ways to specify tools:
@@ -690,9 +691,9 @@ async def test_bind_tool_tool_choice_with_no_tool_server(
 async def test_bind_tool_tool_choice_none(
     tool_model: str, mode: dict, tool_choice: Any, func: Callable
 ) -> None:
-    llm = ChatNVIDIA(model=tool_model, **mode).bind_tools(
-        tools=[xxyyzz], tool_choice=tool_choice
-    )
+    llm = ChatNVIDIA(
+        model=tool_model, timeout=SMOKE_TIMEOUT_SECONDS, **mode
+    ).bind_tools(tools=[xxyyzz], tool_choice=tool_choice)
     if is_async_func(func):
         response = await func(llm, "What is 11 xxyyzz 3?")
     else:

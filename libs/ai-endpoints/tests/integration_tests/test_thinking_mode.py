@@ -5,6 +5,7 @@ import pytest
 from langchain_core.messages import AIMessage
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from tests.integration_tests.smoke_models import SMOKE_TIMEOUT_SECONDS
 
 
 def is_async_func(func: Callable) -> bool:
@@ -96,7 +97,9 @@ async def test_thinking_mode_disabled(
 ) -> None:
     """Test that thinking mode can be disabled."""
 
-    llm = ChatNVIDIA(model=thinking_model, **mode).with_thinking_mode(enabled=False)
+    llm = ChatNVIDIA(
+        model=thinking_model, timeout=SMOKE_TIMEOUT_SECONDS, **mode
+    ).with_thinking_mode(enabled=False)
 
     if is_async_func(func):
         response = await func(llm, "What is the capital of France?")
