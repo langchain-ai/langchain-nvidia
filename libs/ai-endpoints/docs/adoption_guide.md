@@ -1,6 +1,6 @@
-# Adopt `langchain-nvidia-ai-endpoints` (maintainer-review draft)
+# Adopt `langchain-nvidia-ai-endpoints`
 
-**Human review is required before publication or upstream merge.** This guide describes connector behavior, not a certification of any model or deployment. Start with the endpoint you actually control; hosted catalog access and a self-hosted NIM are different paths. Install `langchain-nvidia-ai-endpoints` into your Python 3.10+ environment (`python -m pip install langchain-nvidia-ai-endpoints`). For development against this checkout, run `python -m pip install -e .` from `libs/ai-endpoints` instead. Keep credentials in an approved secret store/environment, never in a URL, notebook, repository, pasted diagnostic, or command argument.
+This guide describes connector behavior, not a certification of any model or deployment. Start with the endpoint you actually control; hosted catalog access and a self-hosted NIM are different paths. Install `langchain-nvidia-ai-endpoints` into your Python 3.10+ environment (`python -m pip install langchain-nvidia-ai-endpoints`). For development against this checkout, run `python -m pip install -e .` from `libs/ai-endpoints` instead. Keep credentials in an approved secret store/environment, never in a URL, notebook, repository, pasted diagnostic, or command argument.
 
 ## Choose a deployment
 
@@ -28,7 +28,43 @@ python -m langchain_nvidia_ai_endpoints doctor --base-url "$NVIDIA_CHAT_BASE_URL
 python -m langchain_nvidia_ai_endpoints doctor --base-url "$NVIDIA_EMBED_BASE_URL" --model "$NVIDIA_EMBED_MODEL" --capability embeddings
 ```
 
-Doctor's `GET /v1/models` checks reachability/auth and (when provided) model/type metadata; it makes **no inference call**. A known hosted model routed to a dedicated endpoint may not be in the shared `/models` response, so a missing entry is not a model-compatibility verdict; investigate its documented route and actual endpoint. An `UNKNOWN` capability means no usable model-type metadata, not unsupported. Run `python -m langchain_nvidia_ai_endpoints doctor --help` for options. Do not put your API key in command arguments. Doctor is included on the PR372 branch; it may not be available in an older published package.
+Doctor's `GET /v1/models` checks reachability/auth and (when provided) model/type metadata; it makes **no inference call**. A known hosted model routed to a dedicated endpoint may not be in the shared `/models` response, so a missing entry is not a model-compatibility verdict; investigate its documented route and actual endpoint. An `UNKNOWN` capability means no usable model-type metadata, not unsupported. Run `python -m langchain_nvidia_ai_endpoints doctor --help` for options. Do not put your API key in command arguments. Doctor is merged on `main` in [PR #372](https://github.com/langchain-ai/langchain-nvidia/pull/372); older published packages may not include it. Use the checkout installation above if your installed package has no `doctor` command.
+
+Catalog presence alone does not guarantee an inference endpoint is available
+to your account. If a listed model returns `404` on inference, check the model's
+current API documentation and account access; do not invent a route suffix or
+treat a successful Doctor check as inference validation.
+
+## Hosted recipe smoke (2026-10-01)
+
+The recipes below were exercised against the hosted API using connector source
+at [`748a4973`](https://github.com/langchain-ai/langchain-nvidia/commit/748a4973a9326cb4212f1261ee6e4c09fb48ed73),
+Python 3.12.9 and `langchain-core` 1.6.6. That source reports package version
+1.4.3; this is **not** a claim that the published 1.4.3 wheel includes these
+changes. Install from the checkout to reproduce that source configuration.
+
+With an authorized `NVIDIA_API_KEY` already loaded and the hosted base-URL
+overrides unset, the selected inference IDs were:
+
+```sh
+export NVIDIA_CHAT_MODEL=nvidia/nemotron-3-super-120b-a12b
+export NVIDIA_EMBED_MODEL=nvidia/nemotron-3-embed-1b
+```
+
+- Streaming produced response text with the optional tool segment disabled.
+- With `NVIDIA_ENABLE_TOOLS=1`, the model requested
+  `lookup_policy(name="retention")`; the recipe supplied the local policy as a
+  tool result and the final response reported that policy.
+- Retrieval produced three passage vectors and a query vector with 2,048
+  dimensions, selected the weekday-opening passage and answered `09:00`.
+- The embedding model was available at runtime but absent from the reviewed
+  static registry. Its **unknown-type warning was not suppressed**; the
+  successful recipe does not add a registry capability claim.
+
+These are small, hosted-only recipe checks—not a BCB compatibility certificate,
+a quality benchmark, or self-hosted/GPU/runtime evidence. Model availability
+and behavior can change. Validate your own selected deployment before relying
+on either recipe.
 
 ## Recipe: stream chat, then handle an optional tool call
 
@@ -56,16 +92,16 @@ if os.getenv("NVIDIA_ENABLE_TOOLS") != "1":
 
 
 # Proceed only if the selected deployment is documented/tested to support tools.
+policy = {"retention": "Keep only approved data for the approved retention period."}
 lookup = {
     "name": "lookup_policy",
     "description": "Read a policy statement by name from this example's local table.",
     "parameters": {
         "type": "object",
-        "properties": {"name": {"type": "string"}},
+        "properties": {"name": {"type": "string", "enum": list(policy)}},
         "required": ["name"],
     },
 }
-policy = {"retention": "Keep only approved data for the approved retention period."}
 question = "What is the retention policy? Use lookup_policy if available."
 assistant = chat.bind_tools([lookup]).invoke(question)
 if assistant.tool_calls:
