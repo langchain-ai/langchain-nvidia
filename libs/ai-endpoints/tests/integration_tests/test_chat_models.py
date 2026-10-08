@@ -99,7 +99,7 @@ def _is_known_message_shape_error(messages: List[BaseMessage], exc: Exception) -
 
 @pytest.mark.parametrize(
     "func",
-    ["invoke", "ainvoke"],
+    [pytest.param("invoke", marks=pytest.mark.smoke), "ainvoke"],
 )
 async def test_chat_ai_endpoints(chat_model: str, mode: dict, func: str) -> None:
     """Test ChatNVIDIA wrapper."""
