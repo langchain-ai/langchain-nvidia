@@ -53,9 +53,7 @@ jobs:
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
         run: |
           if [ "${{ matrix.working-directory }}" = "libs/ai-endpoints" ]; then
-            make integration_tests PYTEST_ARGS='-m "not accuracy"' || \
-            make integration_tests PYTEST_ARGS='-m "not accuracy" --last-failed --last-failed-no-failures=none' || \
-            make integration_tests PYTEST_ARGS='-m "not accuracy" --last-failed --last-failed-no-failures=none'
+            make integration_tests PYTEST_ARGS='-m "not accuracy" --reruns 2 --reruns-delay 5 --only-rerun "ReadTimeout|SocketTimeoutError|ConnectionResetError|ChunkedEncodingError|Bad Gateway|502|503|504"'
           else
             make integration_tests PYTEST_ARGS='-m "not accuracy"'
           fi
