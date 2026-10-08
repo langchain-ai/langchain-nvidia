@@ -15,6 +15,7 @@ from langchain_core.messages import (
 )
 
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
+from tests.integration_tests.smoke_models import SMOKE_TIMEOUT_SECONDS
 
 #
 # we setup an --all-models flag in conftest.py, when passed it configures chat_model
@@ -139,7 +140,9 @@ async def test_chat_ai_endpoints_system_message(
     if chat_model == "mamba_chat":
         pytest.skip(f"{chat_model} does not support system messages")
 
-    chat = ChatNVIDIA(model=chat_model, max_tokens=36, **mode)
+    chat = ChatNVIDIA(
+        model=chat_model, max_tokens=36, timeout=SMOKE_TIMEOUT_SECONDS, **mode
+    )
     system_message = SystemMessage(content="You are to chat with the user.")
     human_message = HumanMessage(content="Hello")
 
@@ -269,7 +272,9 @@ async def test_ai_endpoints_astream(chat_model: str, mode: dict) -> None:
 
 async def test_ai_endpoints_abatch(chat_model: str, mode: dict) -> None:
     """Test streaming tokens."""
-    llm = ChatNVIDIA(model=chat_model, max_tokens=36, **mode)
+    llm = ChatNVIDIA(
+        model=chat_model, max_tokens=36, timeout=SMOKE_TIMEOUT_SECONDS, **mode
+    )
 
     result = await llm.abatch(["I'm Pickle Rick", "I'm not Pickle Rick"])
     for token in result:
@@ -278,7 +283,9 @@ async def test_ai_endpoints_abatch(chat_model: str, mode: dict) -> None:
 
 async def test_ai_endpoints_abatch_tags(chat_model: str, mode: dict) -> None:
     """Test batch tokens."""
-    llm = ChatNVIDIA(model=chat_model, max_tokens=55, **mode)
+    llm = ChatNVIDIA(
+        model=chat_model, max_tokens=55, timeout=SMOKE_TIMEOUT_SECONDS, **mode
+    )
 
     result = await llm.abatch(
         ["I'm Pickle Rick", "I'm not Pickle Rick"], config={"tags": ["foo"]}
@@ -289,7 +296,9 @@ async def test_ai_endpoints_abatch_tags(chat_model: str, mode: dict) -> None:
 
 def test_ai_endpoints_batch(chat_model: str, mode: dict) -> None:
     """Test batch tokens."""
-    llm = ChatNVIDIA(model=chat_model, max_tokens=60, **mode)
+    llm = ChatNVIDIA(
+        model=chat_model, max_tokens=60, timeout=SMOKE_TIMEOUT_SECONDS, **mode
+    )
 
     result = llm.batch(["I'm Pickle Rick", "I'm not Pickle Rick"])
     for token in result:
@@ -423,7 +432,7 @@ async def test_ai_endpoints_invoke_seed_default(
 async def test_ai_endpoints_invoke_seed_range(
     chat_model: str, mode: dict, seed: int, func: str
 ) -> None:
-    llm = ChatNVIDIA(model=chat_model, seed=seed, **mode)
+    llm = ChatNVIDIA(model=chat_model, seed=seed, timeout=SMOKE_TIMEOUT_SECONDS, **mode)
     if func == "invoke":
         llm.invoke("What's in a seed?")
     else:

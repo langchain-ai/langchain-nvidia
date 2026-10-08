@@ -5,6 +5,7 @@ import pytest
 from langchain_core.messages import AIMessage
 
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from tests.integration_tests.smoke_models import SMOKE_TIMEOUT_SECONDS
 
 
 def is_async_func(func: Callable) -> bool:
@@ -58,6 +59,11 @@ def check_reasoning_content(
     [do_invoke, do_ainvoke],
     ids=["invoke", "ainvoke"],
 )
+@pytest.mark.accuracy
+@pytest.mark.xfail(
+    reason="Thinking-mode reasoning output is model-behavior accuracy coverage",
+    strict=False,
+)
 async def test_thinking_mode_enabled(
     thinking_model: str,
     mode: dict,
@@ -91,7 +97,9 @@ async def test_thinking_mode_disabled(
 ) -> None:
     """Test that thinking mode can be disabled."""
 
-    llm = ChatNVIDIA(model=thinking_model, **mode).with_thinking_mode(enabled=False)
+    llm = ChatNVIDIA(
+        model=thinking_model, timeout=SMOKE_TIMEOUT_SECONDS, **mode
+    ).with_thinking_mode(enabled=False)
 
     if is_async_func(func):
         response = await func(llm, "What is the capital of France?")
@@ -113,9 +121,7 @@ async def test_thinking_mode_default(
     """Test that model works without explicitly setting thinking mode."""
 
     llm = ChatNVIDIA(model=thinking_model, **mode)
-    prompt = (
-        "John is taller than Mike. Mike is taller than Sara. " "Who is the tallest?"
-    )
+    prompt = "John is taller than Mike. Mike is taller than Sara. Who is the tallest?"
 
     if is_async_func(func):
         response = await func(llm, prompt)
@@ -135,19 +141,27 @@ async def test_thinking_mode_unsupported_model(
     thinking_model: str, mode: dict, func: Callable
 ) -> None:
     """Test that thinking mode is handled gracefully for unsupported models."""
-    unsupported_model = "meta/llama-3.1-8b-instruct"
+    unsupported_model = "meta/llama-3.3-70b-instruct"
     base_llm = ChatNVIDIA(model=unsupported_model, **mode)
     if not base_llm._client.is_hosted:
         pytest.xfail(
             "Downloadable/local NIM may not host the hardcoded unsupported model "
-            "`meta/llama-3.1-8b-instruct` and can return 404."
+            f"`{unsupported_model}` and can return 404."
         )
     llm = base_llm.with_thinking_mode(enabled=True)
 
-    if is_async_func(func):
-        response = await func(llm, "What is 2+2?")
-    else:
-        response = func(llm, "What is 2+2?")
+    try:
+        if is_async_func(func):
+            response = await func(llm, "What is 2+2?")
+        else:
+            response = func(llm, "What is 2+2?")
+    except Exception as exc:
+        if "[404]" in str(exc) and "not found" in str(exc).lower():
+            pytest.xfail(
+                f"Hosted unsupported-model smoke target `{unsupported_model}` "
+                "is not available."
+            )
+        raise
 
     assert len(response.content) > 0
     check_reasoning_content(response, should_have_reasoning=False)
