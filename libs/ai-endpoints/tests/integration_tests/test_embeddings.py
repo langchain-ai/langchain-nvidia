@@ -11,7 +11,7 @@ from langchain_nvidia_ai_endpoints.embeddings import _DEFAULT_BATCH_SIZE
 
 @pytest.mark.parametrize(
     "func",
-    [pytest.param("embed_query", marks=pytest.mark.smoke), "aembed_query"],
+    ["embed_query", "aembed_query"],
 )
 @pytest.mark.asyncio
 async def test_embed_query(embedding_model: str, mode: dict, func: str) -> None:

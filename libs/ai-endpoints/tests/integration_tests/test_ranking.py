@@ -45,10 +45,7 @@ def documents(text: str, splitter: CharacterTextSplitter) -> List[Document]:
 
 @pytest.mark.parametrize(
     "func",
-    [
-        pytest.param("compress", marks=pytest.mark.smoke),
-        "acompress",
-    ],
+    ["compress", "acompress"],
     ids=["compress", "acompress"],
 )
 @pytest.mark.asyncio

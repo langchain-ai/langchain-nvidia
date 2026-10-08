@@ -6,7 +6,6 @@ import requests_mock
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE
 
 
-@pytest.mark.smoke
 def test_available_models(public_class: type, mode: dict) -> None:
     models = public_class(**mode).available_models
     assert models
@@ -17,7 +16,6 @@ def test_available_models(public_class: type, mode: dict) -> None:
     assert all(model.client == public_class.__name__ for model in models)
 
 
-@pytest.mark.smoke
 def test_get_available_models(public_class: Any, mode: dict) -> None:
     models = public_class.get_available_models(**mode)
     assert isinstance(models, list)

@@ -98,7 +98,6 @@ markers = [
   "requires: mark tests as requiring a specific library",
   "asyncio: mark tests as requiring asyncio",
   "compile: mark placeholder test used to compile integration tests without running them",
-  "smoke: mark live integration tests that should block scheduled CI",
   "accuracy: mark live model-behavior tests that may drift independently from connector correctness",
 ]
 asyncio_mode = "auto"
