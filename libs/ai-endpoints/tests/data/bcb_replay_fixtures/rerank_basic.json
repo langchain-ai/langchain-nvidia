@@ -1,0 +1,15 @@
+{
+  "http_status": 200,
+  "body": {
+    "rankings": [
+      {
+        "index": 1,
+        "logit": 8.75
+      },
+      {
+        "index": 0,
+        "logit": 1.25
+      }
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "approved_real_bcb_capture": true,
+  "body": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "message": {
+          "content": "{\"status\":\"ok\",\"detail\":\"ready\"}",
+          "role": "assistant"
+        }
+      }
+    ],
+    "model": "bcb/sanitized-model",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 99,
+      "prompt_tokens": 24,
+      "total_tokens": 123
+    }
+  },
+  "category": "structured_output",
+  "http_status": 200,
+  "id": "structured_output_structured_output",
+  "metadata": {
+    "bcb_failure_category": "",
+    "bcb_fingerprint_hash": "fc0e6514b5f58326fe8feaaa811fa00f1a9804a11df85570527d5069899595d1",
+    "bcb_status": "passed",
+    "generated_text_policy": "normalized",
+    "profile": "structured_output",
+    "source_artifact_dir": "langchain-nvidia-structured-bcb",
+    "source_artifact_file": "bcb-result.json",
+    "source_result_status": "passed",
+    "wire_profile": "structured_output"
+  },
+  "review_status": "approved",
+  "schema_version": 1,
+  "source": "sanitized_bcb_wire_contract"
+}
