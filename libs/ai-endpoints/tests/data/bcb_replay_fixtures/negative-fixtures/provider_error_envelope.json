@@ -1,0 +1,8 @@
+{
+  "http_status": 400,
+  "body": {
+    "status": 400,
+    "title": "Bad Request",
+    "detail": "The structured-output schema was rejected by the endpoint."
+  }
+}
