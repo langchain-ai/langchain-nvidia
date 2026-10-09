@@ -1,0 +1,49 @@
+{
+  "approved_real_bcb_capture": true,
+  "body": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "message": {
+          "content": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"status\":\"ok\"}",
+                "name": "record_compatibility_status"
+              },
+              "id": "call_0",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "model": "bcb/sanitized-model",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 76,
+      "prompt_tokens": 315,
+      "total_tokens": 391
+    }
+  },
+  "category": "tool_call",
+  "http_status": 200,
+  "id": "chat_tools_tool_call",
+  "metadata": {
+    "bcb_failure_category": "",
+    "bcb_fingerprint_hash": "336019985599cfd214a2cc7e706fce3f28a903d8c6e0a9cee31c0bcc1e8f8331",
+    "bcb_status": "passed",
+    "generated_text_policy": "normalized",
+    "profile": "chat_tools",
+    "source_artifact_dir": "langchain-nvidia-chat-bcb",
+    "source_artifact_file": "bcb-result.json",
+    "source_result_status": "failed",
+    "wire_profile": "chat_tools"
+  },
+  "review_status": "approved",
+  "schema_version": 1,
+  "source": "sanitized_bcb_wire_contract"
+}

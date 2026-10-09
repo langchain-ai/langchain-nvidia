@@ -44,6 +44,18 @@ def lookup_policy(name: str) -> str:
     return f"policy:{name}"
 
 
+@tool
+def record_compatibility_status(status: str, surface: str = "") -> str:
+    """Record a compatibility status."""
+    return f"{status}:{surface}"
+
+
+@tool
+def record_compatibility_surface(surface: str) -> str:
+    """Record a compatibility surface."""
+    return surface
+
+
 class PolicyAnswer(BaseModel):
     """Small structured-output model for replay parsing."""
 
@@ -51,8 +63,31 @@ class PolicyAnswer(BaseModel):
     confidence: float = Field(description="Confidence score")
 
 
+class CompatibilityStatus(BaseModel):
+    """Structured output model used by promoted BCB captures."""
+
+    status: str
+    detail: str
+
+
 def load_fixture(name: str) -> dict[str, Any]:
     return json.loads((FIXTURE_DIR / name).read_text(encoding="utf-8"))
+
+
+def manifest_entries() -> list[dict[str, Any]]:
+    manifest = load_fixture("manifest.json")
+    entries = manifest.get("fixtures", [])
+    return [entry for entry in entries if isinstance(entry, dict)]
+
+
+def approved_entries(category: str) -> list[dict[str, Any]]:
+    return [
+        entry
+        for entry in manifest_entries()
+        if entry.get("category") == category
+        and entry.get("approved_real_bcb_capture") is True
+        and entry.get("review_status") == "approved"
+    ]
 
 
 def iter_json_items(value: Any) -> Any:
@@ -81,7 +116,10 @@ def sse_text(events: list[dict[str, Any]]) -> str:
 def test_replay_manifest_documents_current_fixture_boundary() -> None:
     manifest = load_fixture("manifest.json")
     assert manifest["schema_version"] == 1
-    assert manifest["status"] == "synthetic_contract_scaffold"
+    assert manifest["status"] in {
+        "synthetic_contract_scaffold",
+        "bcb_replay_fixtures",
+    }
     categories = {fixture["category"] for fixture in manifest["fixtures"]}
     assert {
         "tool_call",
@@ -103,26 +141,154 @@ def test_replay_manifest_documents_current_fixture_boundary() -> None:
     }
     for fixture in manifest["fixtures"]:
         assert required_provenance <= fixture.keys()
-    assert not any(
-        fixture["approved_real_bcb_capture"] for fixture in manifest["fixtures"]
-    )
+        if fixture["approved_real_bcb_capture"]:
+            assert fixture["source"] == "sanitized_bcb_wire_contract"
+            assert fixture["review_status"] == "approved"
+            assert fixture["bcb_status"] == "passed"
     assert_public_safe(manifest)
 
 
 @pytest.mark.parametrize(
     "fixture_name",
-    [
-        "chat_tool_call_completion.json",
-        "chat_streaming_tool_call.json",
-        "chat_structured_reasoning.json",
-        "chat_followup_answer.json",
-        "embedding_basic.json",
-        "rerank_basic.json",
-        "negative-fixtures/provider_error_envelope.json",
-    ],
+    sorted({str(entry["path"]) for entry in manifest_entries() if "path" in entry}),
 )
 def test_replay_fixtures_are_public_safe(fixture_name: str) -> None:
     assert_public_safe(load_fixture(fixture_name))
+
+
+@pytest.mark.parametrize(
+    "entry",
+    approved_entries("tool_call"),
+    ids=lambda entry: str(entry.get("id")),
+)
+def test_replays_approved_bcb_tool_call_fixture(
+    entry: dict[str, Any],
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    fixture = load_fixture(str(entry["path"]))
+    requests_mock.post(CHAT_URL, json=fixture["body"])
+
+    response = (
+        ChatNVIDIA(model="mock-model", api_key="BOGUS")
+        .bind_tools([record_compatibility_status, record_compatibility_surface])
+        .invoke("ignored")
+    )
+
+    assert isinstance(response, AIMessage)
+    assert response.tool_calls
+    assert {tool_call["name"] for tool_call in response.tool_calls} <= {
+        "record_compatibility_status",
+        "record_compatibility_surface",
+    }
+
+
+@pytest.mark.parametrize(
+    "entry",
+    approved_entries("structured_output"),
+    ids=lambda entry: str(entry.get("id")),
+)
+def test_replays_approved_bcb_structured_output_fixture(
+    entry: dict[str, Any],
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    fixture = load_fixture(str(entry["path"]))
+    requests_mock.post(CHAT_URL, json=fixture["body"])
+
+    response = (
+        ChatNVIDIA(model="mock-model", api_key="BOGUS")
+        .with_structured_output(CompatibilityStatus)
+        .invoke("ignored")
+    )
+
+    assert response.status
+    assert response.detail
+
+
+@pytest.mark.parametrize(
+    "entry",
+    approved_entries("streaming"),
+    ids=lambda entry: str(entry.get("id")),
+)
+def test_replays_approved_bcb_streaming_fixture(
+    entry: dict[str, Any],
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    fixture = load_fixture(str(entry["path"]))
+    requests_mock.post(CHAT_URL, text=sse_text(fixture["sse_events"]))
+
+    response = reduce(
+        add,
+        ChatNVIDIA(model="mock-model", api_key="BOGUS").stream("ignored"),
+    )
+
+    assert response.content or response.tool_calls
+
+
+@pytest.mark.parametrize(
+    "entry",
+    approved_entries("embedding"),
+    ids=lambda entry: str(entry.get("id")),
+)
+def test_replays_approved_bcb_embedding_fixture(
+    entry: dict[str, Any],
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    fixture = load_fixture(str(entry["path"]))
+    requests_mock.post(EMBEDDINGS_URL, json=fixture["body"])
+
+    response = NVIDIAEmbeddings(model="mock-model", api_key="BOGUS").embed_query(
+        "ignored"
+    )
+
+    assert response
+    assert all(isinstance(value, float) for value in response)
+
+
+@pytest.mark.parametrize(
+    "entry",
+    approved_entries("rerank"),
+    ids=lambda entry: str(entry.get("id")),
+)
+def test_replays_approved_bcb_rerank_fixture(
+    entry: dict[str, Any],
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    fixture = load_fixture(str(entry["path"]))
+    requests_mock.post(RANKING_URL, json=fixture["body"])
+    documents = [
+        Document(page_content=f"passage {index}", metadata={"id": str(index)})
+        for index in range(4)
+    ]
+
+    response = list(
+        NVIDIARerank(model="mock-model", api_key="BOGUS", top_n=4).compress_documents(
+            documents=documents,
+            query="ignored query",
+        )
+    )
+
+    assert response
+    assert all("relevance_score" in doc.metadata for doc in response)
+
+
+@pytest.mark.parametrize(
+    "entry",
+    approved_entries("error"),
+    ids=lambda entry: str(entry.get("id")),
+)
+def test_replays_approved_bcb_error_fixture(
+    entry: dict[str, Any],
+    requests_mock: requests_mock.Mocker,
+) -> None:
+    fixture = load_fixture(str(entry["path"]))
+    requests_mock.post(
+        CHAT_URL,
+        status_code=int(fixture["http_status"]),
+        json=fixture["body"],
+    )
+
+    with pytest.raises(Exception):
+        ChatNVIDIA(model="mock-model", api_key="BOGUS").invoke("ignored")
 
 
 def test_replays_bind_tools_completion_response(
