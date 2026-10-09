@@ -200,6 +200,7 @@ def test_replays_approved_bcb_structured_output_fixture(
         .invoke("ignored")
     )
 
+    assert isinstance(response, CompatibilityStatus)
     assert response.status
     assert response.detail
 
