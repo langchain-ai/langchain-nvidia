@@ -166,49 +166,47 @@ class _NVIDIABaseClient(BaseModel):
     ################### Validation and Initialization #################################
 
     @field_validator("base_url")
+    @classmethod
     def _validate_base_url(cls, v: str) -> str:
+        """Accept a deployment root or /v1 base, never an inference endpoint.
+
+        A proxy prefix is preserved: https://proxy/nim becomes
+        https://proxy/nim/v1. URL credentials and query strings are forbidden
+        because they could be sent to the model-listing endpoint or logged.
         """
-        Validate the `base_url`.
-
-        If the `base_url` is not a url, raise an error
-
-        If the `base_url` does not end in `/v1`, e.g. `/embeddings`, `/completions`,
-        `/rankings`, or `/reranking`, emit a warning. old documentation told users to
-        pass in the full inference url, which is incorrect and prevents model listing
-        from working.
-
-        Normalize `base_url` to end in `/v1`
-        """
-        ## Making sure /v1 in added to the url
-        if v is not None:
-            parsed = urlparse(v)
-
-            # Ensure scheme and netloc (domain name) are present
-            if not (parsed.scheme and parsed.netloc):
-                expected_format = "Expected format is: http://host:port"
-                warnings.warn(
-                    "The provided url appears incorrect. "
-                    f"Expected: {expected_format} Got: {v}"
-                )
-
-            normalized_path = parsed.path.rstrip("/")
-            skip_api_version_check = os.environ.get(
-                "NVIDIA_APPEND_API_VERSION", ""
-            ) in ["false", "False", "0"]
-            if not skip_api_version_check and not normalized_path.endswith("/v1"):
-                warnings.warn(
-                    f"{v} does not end in /v1, "
-                    "you may have inference and listing issues. "
-                    "This check will be deprecated in the next release. "
-                    "Please ensure /v1 is appended to the provided URL",
-                )
-                normalized_path += "/v1"
-
-            v = urlunparse(
-                (parsed.scheme, parsed.netloc, normalized_path, None, None, None)
+        parsed = urlparse(v)
+        if (
+            parsed.scheme not in ("http", "https")
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.query
+            or parsed.fragment
+            or parsed.params
+        ):
+            raise ValueError(
+                "base_url must be an http(s) deployment root or /v1 URL "
+                "without credentials, query, or fragment"
             )
-
-        return v
+        path = parsed.path.rstrip("/")
+        if path.endswith(
+            (
+                "/models",
+                "/chat/completions",
+                "/embeddings",
+                "/completions",
+                "/ranking",
+                "/rankings",
+                "/reranking",
+            )
+        ):
+            raise ValueError(
+                "base_url must point to the deployment root or /v1, "
+                "not a /models or inference endpoint"
+            )
+        if not path.endswith("/v1"):
+            path += "/v1"
+        return urlunparse((parsed.scheme, parsed.netloc, path, "", "", ""))
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
@@ -223,10 +221,10 @@ class _NVIDIABaseClient(BaseModel):
     # Any new attribute set here that is NOT a model field must be propagated
     # explicitly in `_build_clients`, or the async client will be missing it.
     def _finalize(self) -> None:
-        self.is_hosted = urlparse(self.base_url).netloc in [
+        self.is_hosted = urlparse(self.base_url).hostname in (
             "integrate.api.nvidia.com",
             "ai.api.nvidia.com",
-        ]
+        )
 
         if self.is_hosted:
             if not self.api_key:
@@ -567,6 +565,24 @@ class _NVIDIABaseClient(BaseModel):
             body = f"{body}\nPlease check or regenerate your API key."
         return f"{header}\n{body}"
 
+    def _custom_embeddings_404_guidance(self) -> Optional[str]:
+        """Return guidance for the known custom embeddings endpoint 404 path."""
+        if self.cls != "NVIDIAEmbeddings" or self.is_hosted:
+            return None
+        request_url = (self.last_inputs or {}).get("url")
+        if request_url != self.infer_url:
+            return None
+        return (
+            f"NVIDIAEmbeddings received a 404 from custom endpoint URL "
+            f"{request_url}. When initialized with `base_url`, "
+            "NVIDIAEmbeddings sends embedding requests to `base_url` + "
+            "`/embeddings`. If your deployment URL is already the full "
+            "embeddings inference endpoint, register it with "
+            "`register_model(Model(..., endpoint=...))` and initialize "
+            "NVIDIAEmbeddings with that model id instead of passing the "
+            "inference URL as `base_url`."
+        )
+
     def _try_raise(self, response: Response) -> None:
         """Try to raise an error from a response"""
         try:
@@ -595,6 +611,9 @@ class _NVIDIABaseClient(BaseModel):
                     except Exception:
                         rd = {"detail": rd}
             message = self._format_error(rd)
+            if response.status_code == 404:
+                if custom_guidance := self._custom_embeddings_404_guidance():
+                    message = f"{message}\n\n{custom_guidance}"
             # todo: raise as an HTTPError
             raise Exception(message) from None
 
@@ -927,6 +946,9 @@ class _NVIDIAAsyncClient(_NVIDIABaseClient):
                 rd = {"detail": rd_raw}
 
         message = self._format_error(rd)
+        if response.status == 404:
+            if custom_guidance := self._custom_embeddings_404_guidance():
+                message = f"{message}\n\n{custom_guidance}"
         # todo: raise as an HTTPError
         raise Exception(message) from None
 

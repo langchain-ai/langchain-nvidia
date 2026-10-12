@@ -44,7 +44,9 @@ def documents(text: str, splitter: CharacterTextSplitter) -> List[Document]:
 
 
 @pytest.mark.parametrize(
-    "func", ["compress", "acompress"], ids=["compress", "acompress"]
+    "func",
+    ["compress", "acompress"],
+    ids=["compress", "acompress"],
 )
 @pytest.mark.asyncio
 async def test_langchain_reranker_direct(

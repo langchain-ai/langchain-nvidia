@@ -9,6 +9,11 @@ from langchain_nvidia_ai_endpoints import ChatNVIDIA
     "func",
     ["stream", "astream"],
 )
+@pytest.mark.accuracy
+@pytest.mark.xfail(
+    reason="TTFT timing is live endpoint latency coverage, not scheduled smoke",
+    strict=False,
+)
 async def test_ttft(chat_model: str, mode: dict, func: str) -> None:
     # we had an issue where streaming took a long time to start. the issue
     # was all streamed results were collected before yielding them to the

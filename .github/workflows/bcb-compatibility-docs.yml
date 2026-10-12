@@ -1,0 +1,42 @@
+name: BCB compatibility documentation review
+
+on:
+  workflow_dispatch:
+    inputs:
+      selection_json:
+        description: 'Optional JSON array of reviewed {model,nim_target_id,deployment_type}; defaults to repository variable'
+        required: false
+        type: string
+  schedule:
+    - cron: '30 9 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  review-artifact:
+    # Manager currently has no scoped read-only consumer token. An owner must
+    # approve one and explicitly enable this trusted-main-only review job.
+    if: github.ref == 'refs/heads/main' && vars.BCB_COMPATIBILITY_REVIEW_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Generate unreviewed evidence summary (never publish)
+        env:
+          NIM_OSS_MANAGER_TOKEN: ${{ secrets.NIM_OSS_MANAGER_TOKEN }}
+          NIM_OSS_MANAGER_URL: ${{ vars.NIM_OSS_MANAGER_URL }}
+          BCB_COMPATIBILITY_SELECTION_JSON: ${{ inputs.selection_json || vars.BCB_COMPATIBILITY_SELECTION_JSON }}
+        run: |
+          if [[ -z "$NIM_OSS_MANAGER_URL" || -z "$NIM_OSS_MANAGER_TOKEN" || -z "$BCB_COMPATIBILITY_SELECTION_JSON" ]]; then
+            echo 'Manager URL, token secret and reviewed selection variable are required.' >&2
+            exit 1
+          fi
+          python3 libs/ai-endpoints/scripts/bcb_compatibility_view.py \
+            --manager-url "$NIM_OSS_MANAGER_URL" \
+            --output "$RUNNER_TEMP/bcb-compatibility-review.md" \
+            --badges "$RUNNER_TEMP/bcb-compatibility-badges-review.json"
+          # The detailed review contains internal target IDs/digests; never
+          # upload it as an artifact of this potentially public GitHub repo.

@@ -4,13 +4,13 @@ from typing import Any
 import pytest
 from langchain_core.messages import HumanMessage
 
-from langchain_nvidia_ai_endpoints import NVIDIA, ChatNVIDIA
+from langchain_nvidia_ai_endpoints import NVIDIA, ChatNVIDIA, NVIDIARerank
 
 from ..unit_tests.test_api_key import no_env_var
 
 
 def test_missing_api_key_error(
-    public_class: type, contact_service: Any, mode: dict
+    public_class: type, smoke_model_kwargs: dict, contact_service: Any, mode: dict
 ) -> None:
     if public_class is NVIDIA and public_class(**mode)._client.is_hosted:
         pytest.skip(
@@ -18,7 +18,7 @@ def test_missing_api_key_error(
         )
     with no_env_var("NVIDIA_API_KEY"):
         with pytest.warns(UserWarning) as record:
-            client = public_class()
+            client = public_class(**smoke_model_kwargs)
         assert len(record) == 1
         assert "API key is required for the hosted" in str(record[0].message)
         with pytest.raises(Exception) as exc_info:
@@ -30,14 +30,14 @@ def test_missing_api_key_error(
 
 
 def test_bogus_api_key_error(
-    public_class: type, contact_service: Any, mode: dict
+    public_class: type, smoke_model_kwargs: dict, contact_service: Any, mode: dict
 ) -> None:
     if public_class is NVIDIA and public_class(**mode)._client.is_hosted:
         pytest.skip(
             "NVIDIA completions models are all deprecated on the hosted endpoint"
         )
     with no_env_var("NVIDIA_API_KEY"):
-        client = public_class(nvidia_api_key="BOGUS")
+        client = public_class(nvidia_api_key="BOGUS", **smoke_model_kwargs)
         with pytest.raises(Exception) as exc_info:
             contact_service(client)
         message = str(exc_info.value)
@@ -48,7 +48,11 @@ def test_bogus_api_key_error(
 
 @pytest.mark.parametrize("param", ["nvidia_api_key", "api_key"])
 def test_api_key(
-    public_class: type, param: str, contact_service: Any, mode: dict
+    public_class: type,
+    param: str,
+    smoke_model_kwargs: dict,
+    contact_service: Any,
+    mode: dict,
 ) -> None:
     if public_class is NVIDIA and public_class(**mode)._client.is_hosted:
         pytest.skip(
@@ -56,8 +60,18 @@ def test_api_key(
         )
     api_key = os.environ.get("NVIDIA_API_KEY")
     with no_env_var("NVIDIA_API_KEY"):
-        client = public_class(**{param: api_key})
-        contact_service(client)
+        client = public_class(**{param: api_key}, **smoke_model_kwargs)
+        try:
+            contact_service(client)
+        except Exception as exc:
+            if (
+                public_class is NVIDIARerank
+                and "base_url" not in mode
+                and "[404]" in str(exc)
+                and "not found" in str(exc).lower()
+            ):
+                pytest.xfail("Hosted reranking smoke model is unavailable")
+            raise
 
 
 def test_api_key_leakage(chat_model: str, mode: dict) -> None:

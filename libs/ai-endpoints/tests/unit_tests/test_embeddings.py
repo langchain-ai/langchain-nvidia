@@ -240,4 +240,45 @@ async def test_default_headers(
         assert requests_mock.last_request.headers["X-Test"] == "test"
 
 
+def test_custom_embeddings_404_mentions_register_model(requests_mock: Mocker) -> None:
+    requests_mock.post(
+        "https://custom.example.com/v1/embeddings",
+        status_code=404,
+        json={"detail": "not found"},
+    )
+    embedder = NVIDIAEmbeddings(
+        model="mock-model",
+        api_key="a-bogus-key",
+        base_url="https://custom.example.com/v1",
+    )
+
+    with pytest.raises(Exception) as exc_info:
+        embedder.embed_query("hello")
+
+    message = str(exc_info.value)
+    assert "register_model" in message
+    assert "endpoint" in message
+    assert "/embeddings" in message
+
+
+@pytest.mark.asyncio
+async def test_custom_embeddings_404_mentions_register_model_async(
+    mock_http: MockHTTP,
+) -> None:
+    mock_http.set_post(status=404, json_body={"detail": "not found"})
+    embedder = NVIDIAEmbeddings(
+        model="mock-model",
+        api_key="a-bogus-key",
+        base_url="https://custom.example.com/v1",
+    )
+
+    with pytest.raises(Exception) as exc_info:
+        await embedder.aembed_query("hello")
+
+    message = str(exc_info.value)
+    assert "register_model" in message
+    assert "endpoint" in message
+    assert "/embeddings" in message
+
+
 # todo: test max_batch_size (-50, 0, 1, 50)

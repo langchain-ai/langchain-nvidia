@@ -25,6 +25,10 @@ track token information similar to `get_openai_callback`. Additionally, you can 
 custom price mappings as necessary (`price_map` argument), or provide a custom callback
 manager for advanced use-cases (`callback` argument).
 
+Each new context owns its token totals and price map; closing a nested context
+restores the outer handler, including on exceptions. `reset()` clears only the
+same handler when explicitly reusing it for another tracking window.
+
 !!! note
 
     This feature is currently not supported in streaming modes, but works fine
@@ -47,8 +51,6 @@ embedding = NVIDIAEmbeddings(model="nvolveqa_40k")
 models = [llm_large, llm_small, embedding]
 
 with get_usage_callback(price_map=price_map) as cb:
-    ## Reset either at beginning or end. Statistics will run until cleared
-    cb.reset()
 
     llm_large.invoke("Tell me a joke")
     print(cb, end="\n\n")
@@ -145,18 +147,9 @@ class UsageCallbackHandler(BaseCallbackHandler):
     """Callback Handler that tracks OpenAI info."""
 
     ## Per-model statistics
-    _model_usage: defaultdict = defaultdict(
-        lambda: {
-            "total_tokens": 0,
-            "prompt_tokens": 0,
-            "completion_tokens": 0,
-            "successful_requests": 0,
-            "total_cost": 0.0,
-        }
-    )
-
-    llm_output: dict = {}
-    price_map: dict = {k: v for k, v in DEFAULT_MODEL_COST_PER_1K_TOKENS.items()}
+    _model_usage: defaultdict
+    llm_output: dict
+    price_map: dict
 
     ## Aggregate statistics, compatible with OpenAICallbackHandler
     @property
@@ -187,6 +180,17 @@ class UsageCallbackHandler(BaseCallbackHandler):
     def __init__(self) -> None:
         super().__init__()
         self._lock = threading.Lock()
+        self._model_usage = defaultdict(
+            lambda: {
+                "total_tokens": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "successful_requests": 0,
+                "total_cost": 0.0,
+            }
+        )
+        self.llm_output = {}
+        self.price_map = dict(DEFAULT_MODEL_COST_PER_1K_TOKENS)
 
     def __repr__(self) -> str:
         return (
@@ -252,7 +256,7 @@ class UsageCallbackHandler(BaseCallbackHandler):
             completion_cost = 0
             prompt_cost = 0
 
-        # update shared state behind lock
+        # update this handler's state behind its own lock
         with self._lock:
             for base in (self._model_usage["total"], self._model_usage[model_name]):
                 base["total_tokens"] += token_usage.get("total_tokens", 0)
@@ -283,7 +287,7 @@ register_configure_hook(usage_callback_var, True)
 
 @contextmanager
 def get_usage_callback(
-    price_map: dict = {},
+    price_map: Optional[dict] = None,
     callback: Optional[UsageCallbackHandler] = None,
 ) -> Generator[UsageCallbackHandler, None, None]:
     """Get the OpenAI callback handler in a context manager.
@@ -304,9 +308,11 @@ def get_usage_callback(
     if hasattr(callback, "price_map"):
         if hasattr(callback, "_lock"):
             with callback._lock:
-                callback.price_map.update(price_map)
+                callback.price_map.update(price_map or {})
         else:
-            callback.price_map.update(price_map)
-    usage_callback_var.set(callback)
-    yield callback
-    usage_callback_var.set(None)
+            callback.price_map.update(price_map or {})
+    token = usage_callback_var.set(callback)
+    try:
+        yield callback
+    finally:
+        usage_callback_var.reset(token)

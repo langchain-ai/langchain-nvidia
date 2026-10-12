@@ -103,10 +103,78 @@ async def test_truncate(
         assert request_payload["truncate"] == truncate
 
 
+@pytest.mark.parametrize("method", ["compress_documents", "acompress_documents"])
+@pytest.mark.asyncio
+async def test_repeated_reranking_preserves_input_and_previous_scores(
+    requests_mock: Mocker, mock_http: MockHTTP, method: str
+) -> None:
+    warnings.filterwarnings("ignore", ".*Found mock-model in available_models.*")
+    client = NVIDIARerank(api_key="BOGUS", model="mock-model", top_n=2)
+    documents = [
+        Document(page_content="first", metadata={"source": "a"}),
+        Document(page_content="second", metadata={"source": "b"}),
+    ]
+    endpoint = "https://integrate.api.nvidia.com/v1/ranking"
+
+    async def rank_once(rankings: list[dict[str, float]]) -> list[Document]:
+        payload = {"rankings": rankings}
+        if method == "acompress_documents":
+            mock_http.set_post(json_body=payload)
+            return list(await client.acompress_documents(documents, query="query"))
+        requests_mock.post(endpoint, json=payload)
+        return list(client.compress_documents(documents, query="query"))
+
+    first = await rank_once([{"index": 0, "logit": 0.9}, {"index": 1, "logit": 0.1}])
+    second = await rank_once([{"index": 1, "logit": 0.8}, {"index": 0, "logit": 0.2}])
+
+    assert [doc.metadata for doc in documents] == [{"source": "a"}, {"source": "b"}]
+    assert [doc.metadata["relevance_score"] for doc in first] == [0.9, 0.1]
+    assert [doc.metadata["relevance_score"] for doc in second] == [0.8, 0.2]
+    assert first[0] is not documents[0]
+
+
 @pytest.mark.parametrize("truncate", [True, False, 1, 0, 1.0, "START", "BOGUS"])
 def test_truncate_invalid(truncate: Any) -> None:
     with pytest.raises(ValueError):
         NVIDIARerank(truncate=truncate)
+
+
+@pytest.mark.parametrize(
+    "func",
+    ["compress_documents", "acompress_documents"],
+)
+@pytest.mark.asyncio
+async def test_compress_documents_does_not_mutate_input(
+    requests_mock: Mocker,
+    mock_http: MockHTTP,
+    func: str,
+) -> None:
+    """Reranking must not mutate the caller's Document objects (#41).
+
+    The score was previously written onto the input documents in place, so a
+    second call with the same list corrupted the first call's results.
+    """
+    warnings.filterwarnings("ignore", ".*Found mock-model in available_models.*")
+    client = NVIDIARerank(api_key="BOGUS", model="mock-model")
+    docs = [
+        Document(page_content="first", metadata={"id": 1}),
+        Document(page_content="second", metadata={"id": 2}),
+    ]
+
+    if func == "acompress_documents":
+        result = await client.acompress_documents(documents=docs, query="q")
+    else:
+        result = client.compress_documents(documents=docs, query="q")
+
+    # The caller's documents are left untouched.
+    assert docs[0].metadata == {"id": 1}
+    assert docs[1].metadata == {"id": 2}
+
+    # Returned documents carry the score and are copies, not the input objects.
+    assert len(result) >= 1
+    for doc in result:
+        assert "relevance_score" in doc.metadata
+        assert all(doc is not original for original in docs)
 
 
 @pytest.mark.parametrize(
