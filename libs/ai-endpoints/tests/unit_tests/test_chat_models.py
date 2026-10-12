@@ -32,6 +32,24 @@ def test_nemotron_super_vl_discovery_profile() -> None:
     assert model.profile["structured_output"] is True
 
 
+def test_nemotron_super_vl_completion_default_and_override() -> None:
+    model_id = "nvidia/nemotron-3.5-super-vl-120b-a12b"
+    default = ChatNVIDIA(model=model_id, api_key="BOGUS")
+    assert default.max_tokens == 8192
+    payload = default._get_payload(
+        inputs=[{"role": "user", "content": "test"}], stop=None
+    )
+    assert payload["max_tokens"] == 8192
+
+    explicit = ChatNVIDIA(
+        model=model_id, api_key="BOGUS", max_completion_tokens=2048
+    )
+    assert explicit.max_tokens == 2048
+
+    other = ChatNVIDIA(model="meta/llama-3.3-70b-instruct", api_key="BOGUS")
+    assert other.max_tokens == 1024
+
+
 def test_nemotron_super_vl_preserves_image_input(requests_mock: Mocker) -> None:
     """Send multimodal content through the registered Super VL chat model."""
     model_id = "nvidia/nemotron-3.5-super-vl-120b-a12b"

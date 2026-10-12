@@ -234,14 +234,14 @@ Nemotron 3.5 Super VL accepts text and images through `ChatNVIDIA`.
 > model ID below. Early-access instructions can specify a different model ID
 > and credentials.
 
-Set an explicit completion limit and thinking preference:
+The connector defaults this model to 8,192 completion tokens. Set a thinking
+preference as needed; pass `max_completion_tokens` to override the default:
 
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
 super_model = ChatNVIDIA(
     model="nvidia/nemotron-3.5-super-vl-120b-a12b",
-    max_completion_tokens=8192,
     chat_template_kwargs={"enable_thinking": True},
 )
 result = super_model.invoke("Plan a three-step agentic workflow for competitive research.")
