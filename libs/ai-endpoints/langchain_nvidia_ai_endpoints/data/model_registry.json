@@ -4991,6 +4991,62 @@
     },
     {
       "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "model": {
+        "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA",
+        "supports_tools": true,
+        "supports_structured_output": true,
+        "supports_thinking": true,
+        "thinking_param_enable": {
+          "chat_template_kwargs": {
+            "enable_thinking": true
+          }
+        },
+        "thinking_param_disable": {
+          "chat_template_kwargs": {
+            "enable_thinking": false
+          }
+        }
+      },
+      "served_names": [
+        "nvidia/nemotron-3.5-super-vl-120b-a12b"
+      ],
+      "capabilities": {
+        "supports_tools": "supported",
+        "supports_structured_output": "supported",
+        "supports_thinking": "supported"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "unknown",
+          "url": null
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "unknown",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "legacy_static",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "legacy_static",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
       "id": "minimaxai/minimax-m2.5",
       "model": {
         "id": "minimaxai/minimax-m2.5",
