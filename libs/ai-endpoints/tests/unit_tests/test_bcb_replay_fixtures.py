@@ -130,21 +130,20 @@ def test_replay_manifest_documents_current_fixture_boundary() -> None:
         "rerank",
         "error",
     } <= categories
-    required_provenance = {
-        "bcb_profile",
-        "bcb_status",
-        "bcb_fingerprint_hash",
-        "model_family",
-        "source_artifact_folder",
-        "review_status",
+    public_manifest_keys = {
         "approved_real_bcb_capture",
+        "category",
+        "coverage_surface",
+        "id",
+        "path",
+        "review_status",
+        "source",
     }
     for fixture in manifest["fixtures"]:
-        assert required_provenance <= fixture.keys()
+        assert set(fixture) == public_manifest_keys
         if fixture["approved_real_bcb_capture"]:
             assert fixture["source"] == "sanitized_bcb_wire_contract"
             assert fixture["review_status"] == "approved"
-            assert fixture["bcb_status"] == "passed"
     assert_public_safe(manifest)
 
 

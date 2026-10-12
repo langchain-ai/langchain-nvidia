@@ -33,14 +33,8 @@
   "http_status": 200,
   "id": "chat_tools_tool_call",
   "metadata": {
-    "bcb_failure_category": "",
-    "bcb_fingerprint_hash": "336019985599cfd214a2cc7e706fce3f28a903d8c6e0a9cee31c0bcc1e8f8331",
     "bcb_status": "passed",
-    "generated_text_policy": "normalized",
     "profile": "chat_tools",
-    "source_artifact_dir": "langchain-nvidia-chat-bcb",
-    "source_artifact_file": "bcb-result.json",
-    "source_result_status": "failed",
     "wire_profile": "chat_tools"
   },
   "review_status": "approved",
