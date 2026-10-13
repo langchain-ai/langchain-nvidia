@@ -26,8 +26,11 @@ python3 scripts/maintainer_dashboard.py \
 or privileged tokens into a dashboard input. That output contains internal IDs,
 digests, fingerprints and GitLab evidence links and is classified here as
 `internal_restricted` even though its upstream report has no classification
-field. `--hosted-file` and `--ngc-file` are optional **local** complete catalog
-snapshots with the exact shapes described in [model_registry.md](model_registry.md).
+field. `--hosted-file` and `--ngc-file` are optional **local** catalog snapshots
+with the exact shapes described in [model_registry.md](model_registry.md).
+They are partial by default. Source labels retain the deployment identity and
+`partial-no-removals` warning unless the saved snapshot explicitly asserts a
+reviewed complete inventory.
 The dashboard invokes the same reviewed `model_registry.compare` drift logic
 as the registry script; it never performs the registry script's optional network
 fetch. Missing/malformed snapshots show unavailable sources and cannot imply
