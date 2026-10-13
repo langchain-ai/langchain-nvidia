@@ -20,9 +20,7 @@ from .conftest import MockHTTP
 
 
 def test_nemotron_super_vl_discovery_profile() -> None:
-    model = ChatNVIDIA(
-        model="nvidia/nemotron-3.5-super-vl-120b-a12b", api_key="BOGUS"
-    )
+    model = ChatNVIDIA(model="nvidia/nemotron-3.5-super-vl-120b-a12b", api_key="BOGUS")
 
     assert model.profile is not None
     assert model.profile["text_inputs"] is True
@@ -41,9 +39,7 @@ def test_nemotron_super_vl_completion_default_and_override() -> None:
     )
     assert payload["max_tokens"] == 8192
 
-    explicit = ChatNVIDIA(
-        model=model_id, api_key="BOGUS", max_completion_tokens=2048
-    )
+    explicit = ChatNVIDIA(model=model_id, api_key="BOGUS", max_completion_tokens=2048)
     assert explicit.max_tokens == 2048
 
     other = ChatNVIDIA(model="meta/llama-3.3-70b-instruct", api_key="BOGUS")
