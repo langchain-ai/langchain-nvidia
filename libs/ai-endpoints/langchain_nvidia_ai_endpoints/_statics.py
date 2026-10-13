@@ -1179,6 +1179,11 @@ EMBEDDING_MODEL_TABLE = {
         model_type='embedding',
         client='NVIDIAEmbeddings',
     ),
+    'nvidia/nemotron-3-embed-1b': Model(
+        id='nvidia/nemotron-3-embed-1b',
+        model_type='embedding',
+        client='NVIDIAEmbeddings',
+    ),
 }
 
 RANKING_MODEL_TABLE = {

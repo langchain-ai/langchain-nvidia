@@ -4707,16 +4707,16 @@
       },
       "provenance": {
         "hosted": {
-          "state": "unknown",
-          "url": null
+          "state": "unavailable",
+          "url": "https://build.nvidia.com/nvidia/nemotron-3-nano-30b-a3b"
         },
         "downloadable": {
-          "state": "unknown",
-          "url": null
+          "state": "current",
+          "url": "https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/nemotron-3-nano"
         }
       },
       "stale": false,
-      "deployment_type": "unknown",
+      "deployment_type": "downloadable",
       "capability_provenance": {
         "supports_tools": {
           "source": "legacy_static",
@@ -7101,16 +7101,59 @@
       },
       "provenance": {
         "hosted": {
-          "state": "unknown",
-          "url": null
+          "state": "unavailable",
+          "url": "https://build.nvidia.com/nvidia/llama-nemotron-embed-1b-v2"
         },
         "downloadable": {
-          "state": "unknown",
-          "url": null
+          "state": "current",
+          "url": "https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/llama-nemotron-embed-1b-v2"
         }
       },
       "stale": false,
-      "deployment_type": "unknown",
+      "deployment_type": "downloadable",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "nvidia/nemotron-3-embed-1b",
+      "model": {
+        "id": "nvidia/nemotron-3-embed-1b",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings"
+      },
+      "served_names": [
+        "nvidia/nemotron-3-embed-1b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "current",
+          "url": "https://build.nvidia.com/nvidia/nemotron-3-embed-1b"
+        },
+        "downloadable": {
+          "state": "current",
+          "url": "https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/nemotron-3-embed-1b"
+        }
+      },
+      "stale": false,
+      "deployment_type": "both",
       "capability_provenance": {
         "supports_tools": {
           "source": "unknown",
@@ -7281,16 +7324,16 @@
       },
       "provenance": {
         "hosted": {
-          "state": "unknown",
-          "url": null
+          "state": "unavailable",
+          "url": "https://build.nvidia.com/nvidia/llama-nemotron-rerank-1b-v2"
         },
         "downloadable": {
-          "state": "unknown",
-          "url": null
+          "state": "current",
+          "url": "https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/llama-nemotron-rerank-1b-v2"
         }
       },
       "stale": false,
-      "deployment_type": "unknown",
+      "deployment_type": "downloadable",
       "capability_provenance": {
         "supports_tools": {
           "source": "unknown",

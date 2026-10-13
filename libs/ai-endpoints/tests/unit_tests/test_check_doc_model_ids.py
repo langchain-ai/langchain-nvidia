@@ -30,7 +30,7 @@ REGISTRY = {
         row("meta/llama-3.3-70b-instruct"),
         row("meta/llama3-8b-instruct", deprecated=True, aliases=["ai-llama3-8b"]),
         row("NV-Embed-QA", "embedding", aliases=["ai-embed-qa-4"]),
-        row("nvidia/llama-nemotron-embed-1b-v2", "embedding"),
+        row("nvidia/nemotron-3-embed-1b", "embedding"),
     ],
 }
 
@@ -99,7 +99,7 @@ def test_current_ids_and_non_model_slashes_pass(tmp_path: Path) -> None:
     write(
         tmp_path,
         "studio/app.py",
-        'NVIDIAEmbeddings(model="nvidia/llama-nemotron-embed-1b-v2")\n',
+        'NVIDIAEmbeddings(model="nvidia/nemotron-3-embed-1b")\n',
     )
     write(tmp_path, "cookbook/nb.ipynb", notebook(("markdown", CLEAN_DOC)))
 
@@ -153,7 +153,7 @@ def test_missing_legacy_and_alias_ids_fail(tmp_path: Path) -> None:
     assert "README.md:2: acme/unknown-model: not in model_registry.json" in output
     assert "README.md:3: other/model-x: not in model_registry.json" in output
     assert "README.md:4: NV-Embed-QA: legacy model ID" in output
-    assert "nvidia/llama-nemotron-embed-1b-v2" in output
+    assert "nvidia/nemotron-3-embed-1b" in output
     assert (
         "README.md:5: ai-llama3-8b: legacy alias of meta/llama3-8b-instruct" in output
     )

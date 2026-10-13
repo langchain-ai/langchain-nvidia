@@ -20,7 +20,6 @@ print(llm.invoke("Write a haiku about GPUs.").content)
 
 ## Run it on your own GPU (NIM)
 
-Start a NIM container for the model, then point the same code at it. A local NIM usually needs no API key.
 Start a NIM container (Nemotron 3 Nano fits on a single GPU; see the guide for sizing), then point ChatNVIDIA at it. A local NIM usually needs no API key.
 ```python
 llm = ChatNVIDIA(base_url="http://localhost:8000/v1", model="nvidia/nemotron-3-nano-30b-a3b")
@@ -35,10 +34,10 @@ See the [self-hosting guide](https://github.com/langchain-ai/langchain-nvidia/bl
 from langchain_core.documents import Document
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings, NVIDIARerank
 
-embedder = NVIDIAEmbeddings(model="nvidia/llama-nemotron-embed-1b-v2")
+embedder = NVIDIAEmbeddings(model="nvidia/nemotron-3-embed-1b")
 vector = embedder.embed_query("What is NVIDIA NIM?")
 
-ranker = NVIDIARerank(model="nvidia/llama-nemotron-rerank-1b-v2")
+ranker = NVIDIARerank(model="nvidia/llama-nemotron-rerank-vl-1b-v2")
 docs = [Document(page_content="NIM serves models as containers."), Document(page_content="Bananas are yellow.")]
 print(ranker.compress_documents(query="What is NVIDIA NIM?", documents=docs)[0].page_content)
 ```
@@ -290,7 +289,7 @@ The following example connects to an embeddings model.
 ```python
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
 
-embedder = NVIDIAEmbeddings(model="nvidia/llama-nemotron-embed-1b-v2")
+embedder = NVIDIAEmbeddings(model="nvidia/nemotron-3-embed-1b")
 embedder.embed_query("What's the temperature today?")
 embedder.embed_documents([
     "The temperature is 42 degrees.",
@@ -313,7 +312,7 @@ passages = [
     "Accelerated servers with H100 deliver the compute power—along with 3 terabytes per second (TB/s) of memory bandwidth per GPU and scalability with NVLink and NVSwitch™.",
 ]
 
-client = NVIDIARerank(model="nvidia/llama-nemotron-rerank-1b-v2")
+client = NVIDIARerank(model="nvidia/llama-nemotron-rerank-vl-1b-v2")
 
 response = client.compress_documents(
   query=query,

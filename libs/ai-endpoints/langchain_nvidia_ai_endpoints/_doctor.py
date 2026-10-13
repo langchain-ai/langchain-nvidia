@@ -35,6 +35,8 @@ _SELF_HOST_NIMS: dict[str, tuple[str, int]] = {
     "nvidia/nemotron-3-nano-30b-a3b": ("nemotron-3-nano", 8000),
     "nvidia/llama-nemotron-embed-1b-v2": ("llama-nemotron-embed-1b-v2", 8080),
     "nvidia/llama-nemotron-rerank-1b-v2": ("llama-nemotron-rerank-1b-v2", 2016),
+    "nvidia/nemotron-3-embed-1b": ("nemotron-3-embed-1b", 8080),
+    "nvidia/llama-nemotron-rerank-vl-1b-v2": ("llama-nemotron-rerank-vl-1b-v2", 2016),
 }
 
 

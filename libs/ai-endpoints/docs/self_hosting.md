@@ -12,6 +12,15 @@ add `base_url=` (or set `NVIDIA_BASE_URL`) and keep using `ChatNVIDIA`,
 | Chat (multi-GPU) | `nvidia/nemotron-3-super-120b-a12b` | `nvcr.io/nim/nvidia/nemotron-3-super-120b-a12b:2.1.4` | `http://localhost:8000/v1` |
 | Embedding | `nvidia/llama-nemotron-embed-1b-v2` | `nvcr.io/nim/nvidia/llama-nemotron-embed-1b-v2:1.13.0` | `http://localhost:8080/v1` |
 | Rerank | `nvidia/llama-nemotron-rerank-1b-v2` | `nvcr.io/nim/nvidia/llama-nemotron-rerank-1b-v2:1.10.0` | `http://localhost:2016/v1` |
+| Embedding (hosted default ID) | `nvidia/nemotron-3-embed-1b` | `nvcr.io/nim/nvidia/nemotron-3-embed-1b:2.2.2` | `http://localhost:8080/v1` |
+| Rerank (hosted default ID) | `nvidia/llama-nemotron-rerank-vl-1b-v2` | `nvcr.io/nim/nvidia/llama-nemotron-rerank-vl-1b-v2:2.3.0` | `http://localhost:2016/v1` |
+
+The hosted API Catalog retired `nvidia/nemotron-3-nano-30b-a3b`,
+`nvidia/llama-nemotron-embed-1b-v2` and `nvidia/llama-nemotron-rerank-1b-v2`;
+their NIM containers still run locally. To keep the same model IDs as the
+hosted `NVIDIAEmbeddings()` and `NVIDIARerank()` defaults, run the
+"hosted default ID" containers instead (same ports, swap the image in the
+commands below or set `EMBED_IMAGE` / `RERANK_IMAGE` for Compose).
 
 Every NIM listens on port 8000 inside its container. The commands below
 publish them on host ports 8000, 8080, and 2016, the same ports used in the

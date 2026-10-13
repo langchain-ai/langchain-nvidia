@@ -2,8 +2,8 @@
 
 Runnable notebooks that use NVIDIA NIM microservices through
 [`langchain-nvidia-ai-endpoints`](../libs/ai-endpoints). They default to the
-`nvidia/nemotron-3-super-120b-a12b` chat model, `nvidia/llama-nemotron-embed-1b-v2` embeddings, and
-`nvidia/llama-nemotron-rerank-1b-v2` reranking.
+`nvidia/nemotron-3-super-120b-a12b` chat model, `nvidia/nemotron-3-embed-1b` embeddings, and
+`nvidia/llama-nemotron-rerank-vl-1b-v2` reranking.
 
 | Notebook | Description | Colab |
 | --- | --- | --- |

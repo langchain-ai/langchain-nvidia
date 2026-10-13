@@ -61,8 +61,8 @@ LEGACY_IDS = ("NV-Embed-QA", "nv-rerank-qa-mistral-4b:1", "nv-rerank-qa-mistral-
 RECOMMENDED = {
     "chat": "nvidia/nemotron-3-super-120b-a12b",
     "vlm": "nvidia/nemotron-nano-12b-v2-vl",
-    "embedding": "nvidia/llama-nemotron-embed-1b-v2",
-    "ranking": "nvidia/llama-nemotron-rerank-1b-v2",
+    "embedding": "nvidia/nemotron-3-embed-1b",
+    "ranking": "nvidia/llama-nemotron-rerank-vl-1b-v2",
     "ranking-vlm": "nvidia/llama-nemotron-rerank-vl-1b-v2",
 }
 
