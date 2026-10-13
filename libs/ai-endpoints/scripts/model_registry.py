@@ -13,6 +13,7 @@ import pprint
 import re
 import sys
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -504,9 +505,22 @@ def main() -> int:
     drift_cmd.add_argument(
         "--output", type=Path, required=True, help="PR-ready Markdown review artifact"
     )
+    drift_cmd.add_argument(
+        "--json-output",
+        type=Path,
+        help="Exclusive private structured drift artifact for Manager review",
+    )
     args = parser.parse_args()
     if args.command == "generate":
         return generate(args.write)
+    if args.json_output:
+        input_paths = [
+            path.resolve()
+            for path in (args.hosted_file, args.ngc_file, args.harness_log, args.output)
+            if path is not None
+        ]
+        if args.json_output.resolve() in input_paths or args.json_output.exists():
+            parser.error("Structured output must be new and distinct from other paths")
     if bool(args.harness_log) != bool(args.harness_url):
         parser.error("--harness-log and --harness-url must be supplied together")
     if args.harness_url and not args.harness_url.startswith("https://"):
@@ -556,6 +570,36 @@ def main() -> int:
             sources["downloadable harness"] = args.harness_url
         except OSError:
             missing.append("Downloadable harness log could not be read")
+    if args.json_output:
+        structured = {
+            "contract_version": "model-registry-drift-v1",
+            "data_classification": "internal_restricted",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "inventory": {
+                name: {
+                    "status": "available" if records is not None else "unavailable",
+                    "complete_inventory": complete,
+                    "source_url": source if records is not None else None,
+                }
+                for name, records, source, complete in (
+                    ("hosted", hosted, hosted_source, hosted_complete),
+                    ("downloadable", ngc, ngc_source, ngc_complete),
+                )
+            },
+            "sources": sources,
+            "missing": missing,
+            "changes": changes,
+        }
+        try:
+            descriptor = os.open(
+                args.json_output,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+            )
+            with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+                stream.write(json.dumps(structured, indent=2, sort_keys=True) + "\n")
+        except OSError:
+            parser.error("Unable to create private structured drift output")
     args.output.write_text(report(changes, sources, missing), encoding="utf-8")
     print(
         f"Wrote {args.output} ({len(changes)} changes, "

@@ -29,6 +29,25 @@ python3 scripts/model_registry.py drift --hosted-file /path/hosted.json --ngc-fi
 
 Omit `--hosted-file` to fetch the fixed `https://integrate.api.nvidia.com/v1/models` URL (15-second timeout); supply `NVIDIA_API_KEY` through the environment if authentication is required. The scheduled workflow reads the optional repository secret of that name and never prints its value. There is no automatic NGC fetch: supply a reviewed export from the NGC catalog or existing platform metadata harness. No credentials are included in snapshots or reports. A missing, malformed or empty source is called out as **unavailable** and exits with status 2 after writing a report. It never causes deletion proposals. Reports are proposed review artifacts, not registry changes or compatibility approvals.
 
+For the existing Manager NIM Registry drift view, add
+`--json-output /private/review/registry-drift.json` to the same command.
+The new output must not exist and must differ from inputs and Markdown output;
+it is created exclusively with `0600` permissions in an existing private
+directory. The `model-registry-drift-v1` / `internal_restricted` artifact retains
+actual comparator fields, complete-versus-partial source markers and source
+limitations. `generated_at` is generation time, not observed catalog freshness.
+Missing sources still produce explicit limitations and exit 2; partial/missing
+inventory does not authorize removals.
+
+Retain this file only in an approved private Manager review workflow using its
+existing artifact retention/indexing path. Select that workflow and JSON artifact
+on `/compatibility/nims`; no second registry or automatic sync is created.
+Reported `review_owner` and canonical `generated_pr_url` may be attached to the
+indexed artifact metadata by the authorized review flow. Manager carries those
+two fields only while the indexed SHA matches actual retained bytes; they are
+reported context, never evidence of approval. No private artifact is uploaded
+to public GitHub Actions by this option.
+
 For the existing downloadable NIM harness, save the job log outside the
 repository and supply its GitLab job URL as evidence:
 
