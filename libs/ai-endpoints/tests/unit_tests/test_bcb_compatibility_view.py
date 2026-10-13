@@ -161,7 +161,7 @@ def test_latest_identity_freshness_and_failure_precedence(
     assert view.badge_payload([row])["nvidia/example:7"]["color"] != "brightgreen"
 
 
-def test_render_is_public_safe_and_unknown_rows_are_not_verified() -> None:
+def test_private_render_escapes_values_and_does_not_verify_unknown_evidence() -> None:
     row = view.unavailable(ITEM)
     row["digest"] = "<private|value>"
     output = view.render(
@@ -203,3 +203,112 @@ def test_normalized_status_keeps_framework_verdict_not_capability() -> None:
     row = classify(c, r, b)
     assert row["status"] == "verified"
     assert row["capabilities"]["structured output"] == "unknown"
+
+
+@pytest.mark.parametrize("change", ["missing", "empty", "wrong_recommendation"])
+def test_absent_or_inconsistent_fingerprints_cannot_produce_green_badge(
+    change: str,
+) -> None:
+    c, r, b = evidence()
+    if change == "wrong_recommendation":
+        r["fingerprint"]["hash"] = "another"
+    else:
+        for observation in (r["accepted_baseline"], r["latest_observation"]):
+            observation["fingerprint_hash"] = None if change == "missing" else ""
+    row = classify(c, r, b)
+    assert row["status"] == "unknown"
+    assert view.badge_payload([row])["nvidia/example:7"]["color"] != "brightgreen"
+
+
+def test_specific_source_action_survives_but_wrong_target_action_does_not() -> None:
+    c, r, b = evidence()
+    r["compatibility_status"] = "missing"
+    r["recommended_action"] = "run_baseline"
+    assert classify(c, r, b)["recommended_action"] == "run_baseline"
+    b["nim_target"] = {**b["nim_target"], "id": 8}
+    assert classify(c, r, b)["recommended_action"] == "review"
+
+
+@pytest.mark.parametrize(
+    "change,expected",
+    [
+        ("none", "passed"),
+        ("wrong_result", "unknown"),
+        ("wrong_target", "unknown"),
+        ("wrong_hash", "unknown"),
+        ("old_date", "unknown"),
+        ("skipped_case", "unknown"),
+        ("failed_case", "failed"),
+    ],
+)
+def test_native_observations_require_result_target_hash_time_and_case_binding(
+    change: str,
+    expected: str,
+) -> None:
+    c, r, b = evidence()
+    latest = c["evidence"]["latest_result"]
+    latest.update(
+        {
+            "nim_target_id": 7,
+            "fingerprint_hash": "abc",
+            "probe_evidence": {
+                "contract_version": "bcb-native-probe-evidence-v1",
+                "suite_results": [
+                    {
+                        "suite": "tool_calling_conformance",
+                        "status": "passed",
+                        "cases": [{"case_id": "tool_shape", "status": "passed"}],
+                    }
+                ],
+            },
+        }
+    )
+    r["latest_observation"]["result_id"] = 12
+    if change == "wrong_result":
+        r["latest_observation"]["result_id"] = 13
+    elif change == "wrong_target":
+        latest["nim_target_id"] = 8
+    elif change == "wrong_hash":
+        latest["fingerprint_hash"] = "another"
+    elif change == "old_date":
+        latest["completed_at"] = (NOW - timedelta(days=31)).isoformat()
+    elif change in ("skipped_case", "failed_case"):
+        latest["probe_evidence"]["suite_results"][0]["cases"][0]["status"] = (
+            "skipped" if change == "skipped_case" else "failed"
+        )
+    row = classify(c, r, b)
+    assert row["native_probe_states"]["tools"] == expected
+    assert row["capabilities"]["tools"] == "unknown"
+
+
+def test_installed_sdk_inventory_does_not_certify_sdk_execution() -> None:
+    c, r, b = evidence()
+    c["framework_results"][0].update(
+        {
+            "project_target_id": 3,
+            "validation_evidence": {
+                "contract_version": "bcb-validation-evidence-v1",
+                "result_id": 14,
+                "project_target_id": 3,
+                "nim_target_id": ITEM["nim_target_id"],
+                "model_name": ITEM["model"],
+                "target_snapshot": {
+                    "id": ITEM["nim_target_id"],
+                    "model_name": ITEM["model"],
+                },
+                "completed_at": "2026-09-27T12:00:00Z",
+                "executor": "hosted_endpoint",
+                "checks": [
+                    {
+                        "id": "langchain_chatopenai_tool_deserialization",
+                        "status": "passed",
+                        "evidence_class": "project_integration",
+                        "package_versions": {"langchain-nvidia-ai-endpoints": "1.4.3"},
+                    }
+                ],
+            },
+        }
+    )
+    row = classify(c, r, b)
+    assert row["tested_package_version"] == "unknown"
+    assert row["capabilities"]["tools"] == "unknown"

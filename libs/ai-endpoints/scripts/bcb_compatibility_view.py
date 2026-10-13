@@ -33,6 +33,15 @@ CAPABILITIES = (
 CONTRACT = "bcb-public-v1alpha1"
 FRAMEWORK = "langchain-nvidia"
 SAFE_TEXT = re.compile(r"^[\w./:@+ -]{1,160}$", re.ASCII)
+PROBE_SUITES = {
+    "streaming_format": "streaming",
+    "tool_calling_conformance": "tools",
+    "structured_output": "structured output",
+    "reasoning_token_placement": "reasoning",
+    "vlm_image_input_conformance": "VLM",
+    "embedding_vector_stability": "embedding",
+    "rerank_order_stability": "rerank",
+}
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -112,6 +121,171 @@ def _date(value: Any) -> datetime | None:
         return parsed.astimezone(timezone.utc) if parsed.tzinfo else None
     except ValueError:
         return None
+
+
+def _positive_id(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def _evidence_context(
+    item: dict[str, Any],
+    compatible: dict[str, Any],
+    recommend: dict[str, Any],
+    *,
+    now: datetime,
+    max_age_days: int,
+) -> dict[str, Any]:
+    """Retain attributable private evidence without inventing SDK support."""
+    packages: dict[str, set[str]] = {}
+    deployments: set[str] = set()
+    checks = []
+    framework_results = compatible.get("framework_results")
+    if isinstance(framework_results, list):
+        for result in framework_results:
+            if not isinstance(result, dict) or result.get("framework") != FRAMEWORK:
+                continue
+            context = result.get("validation_evidence")
+            if not isinstance(context, dict):
+                continue
+            snapshot = context.get("target_snapshot")
+            completed = _date(context.get("completed_at"))
+            if not (
+                context.get("contract_version") == "bcb-validation-evidence-v1"
+                and _positive_id(context.get("result_id"))
+                and _positive_id(result.get("project_target_id"))
+                and context.get("project_target_id") == result["project_target_id"]
+                and context.get("nim_target_id") == item["nim_target_id"]
+                and context.get("model_name") == item["model"]
+                and isinstance(snapshot, dict)
+                and snapshot.get("id") == item["nim_target_id"]
+                and snapshot.get("model_name") == item["model"]
+                and completed is not None
+                and now - timedelta(days=max_age_days) <= completed <= now
+            ):
+                continue
+            deployment = (
+                {
+                    "hosted_endpoint": "hosted",
+                    "downloadable_container": "downloadable",
+                }.get(context.get("executor"))
+                if isinstance(context.get("executor"), str)
+                else None
+            )
+            if deployment:
+                deployments.add(deployment)
+            captured = context.get("checks")
+            if not isinstance(captured, list) or len(captured) > 64:
+                continue
+            for check in captured:
+                if not isinstance(check, dict):
+                    continue
+                checks.append(
+                    {
+                        "id": text(check.get("id")),
+                        "status": text(check.get("status")),
+                        "evidence_class": text(check.get("evidence_class")),
+                        "result_id": context["result_id"],
+                    }
+                )
+                versions = check.get("package_versions")
+                if check.get(
+                    "evidence_class"
+                ) != "project_integration" or not isinstance(versions, dict):
+                    continue
+                for name, version in versions.items():
+                    if text(name) != "—" and text(version) != "—":
+                        packages.setdefault(name, set()).add(version)
+    evidence = compatible.get("evidence")
+    evidence = evidence if isinstance(evidence, dict) else {}
+    latest = evidence.get("latest_result")
+    latest = latest if isinstance(latest, dict) else {}
+    observation = recommend.get("latest_observation")
+    observation = observation if isinstance(observation, dict) else {}
+    probe = latest.get("probe_evidence")
+    probe = probe if isinstance(probe, dict) else {}
+    probe_at = _date(latest.get("completed_at"))
+    probe_states = {key: "unknown" for key in CAPABILITIES}
+    suites = probe.get("suite_results")
+    if (
+        probe.get("contract_version") == "bcb-native-probe-evidence-v1"
+        and _positive_id(latest.get("result_id"))
+        and latest.get("result_id") == observation.get("result_id")
+        and latest.get("nim_target_id") == item["nim_target_id"]
+        and text(latest.get("fingerprint_hash")) != "—"
+        and latest.get("fingerprint_hash") == observation.get("fingerprint_hash")
+        and probe_at is not None
+        and now - timedelta(days=max_age_days) <= probe_at <= now
+        and isinstance(suites, list)
+        and len(suites) <= 32
+    ):
+        seen: set[str] = set()
+        for suite in suites:
+            if not isinstance(suite, dict) or not isinstance(suite.get("suite"), str):
+                continue
+            capability = PROBE_SUITES.get(suite["suite"])
+            if capability is None:
+                continue
+            if capability in seen:
+                probe_states[capability] = "unknown"
+                continue
+            seen.add(capability)
+            cases = suite.get("cases")
+            if not isinstance(cases, list) or not cases or len(cases) > 128:
+                continue
+            states = [
+                case.get("status") if isinstance(case, dict) else None for case in cases
+            ]
+            if any(state in ("failed", "error") for state in states):
+                probe_states[capability] = "failed"
+            elif suite.get("status") == "passed" and all(
+                state == "passed" for state in states
+            ):
+                probe_states[capability] = "passed"
+    links = []
+    ids = {}
+    for source in ("accepted_result", "latest_result"):
+        result = evidence.get(source)
+        if not isinstance(result, dict):
+            continue
+        if _positive_id(result.get("result_id")):
+            ids[source] = result["result_id"]
+        for key in ("pipeline_url", "job_url", "artifact_url", "detailed_report_url"):
+            value = result.get(key)
+            if not isinstance(value, str):
+                continue
+            try:
+                url = urlsplit(value)
+            except ValueError:
+                continue
+            if (
+                url.scheme == "https"
+                and url.hostname == "gitlab-master.nvidia.com"
+                and not url.username
+                and not url.password
+                and not url.query
+                and not url.fragment
+                and "\\" not in value
+                and not any(char.isspace() for char in value)
+                and not any(char in value for char in "<>")
+            ):
+                link = {"kind": key, "url": value}
+                if link not in links:
+                    links.append(link)
+    return {
+        # Installed-package inventory is not proof that ChatNVIDIA was executed.
+        "tested_package_version": "unknown",
+        "tested_packages": {
+            name: sorted(values) for name, values in sorted(packages.items())
+        },
+        "deployment_evidence": next(iter(deployments))
+        if len(deployments) == 1
+        else "unknown",
+        "framework_checks": checks,
+        "native_probe_states": probe_states,
+        "result_ids": ids,
+        "evidence_links": links,
+        "fingerprint_hash": text(observation.get("fingerprint_hash")),
+    }
 
 
 def classify(
@@ -198,10 +372,13 @@ def classify(
         and badge.get("status") == "compatible"
         and recommend.get("status") == "compatible"
         and isinstance(baseline, dict)
+        and text(baseline.get("fingerprint_hash")) != "—"
         and baseline.get("digest") == digest
         and isinstance(fingerprint, dict)
+        and fingerprint.get("hash") == baseline.get("fingerprint_hash")
         and isinstance(targets[0], dict)
         and fingerprint.get("family") == targets[0].get("family")
+        and recommend.get("recommended_action") == "no_action"
         and latest_agrees
     )
     reported = [str(s) for s in states if isinstance(s, str)]
@@ -217,7 +394,7 @@ def classify(
         status = "verified"
     else:
         status = "unknown"
-    action = recommend.get("recommended_action")
+    manager_action = recommend.get("recommended_action")
     if status == "verified":
         action = "no_action"
     elif status == "stale":
@@ -228,12 +405,28 @@ def classify(
         action = "inspect_failure"
     else:
         action = "review"
-    # Exclude raw evidence URLs, target names, images, and freeform messages.
+    if identity and manager_action in {
+        "run_baseline",
+        "refresh_baseline",
+        "review_delta",
+        "inspect_failure",
+        "review",
+    }:
+        action = manager_action
+    # Keep the private decision view separate from a reviewed public projection.
+    context = _evidence_context(
+        item,
+        compatible if identity else {},
+        recommend if identity else {},
+        now=now,
+        max_age_days=max_age_days,
+    )
     return {
         "model": text(item["model"]),
         "nim_target_id": ident,
         "deployment_type": item["deployment_type"],
         "status": status,
+        **context,
         "digest": text(digest) if identity else "—",
         "fingerprint_family": text(fingerprint.get("family"))
         if identity and isinstance(fingerprint, dict)
@@ -247,8 +440,8 @@ def classify(
         "recommended_action": action,
         "capabilities": {key: "unknown" for key in CAPABILITIES},
         "limitations": (
-            "Capability-level checks and GPU/runtime details unavailable "
-            "in public-alpha projections"
+            "SDK capability execution unavailable; native probes do not certify "
+            "SDK support; missing package/deployment/runtime evidence is unknown"
         ),
         "gpu_runtime": "unavailable/redacted",
         "source_owner": (
@@ -269,6 +462,14 @@ def unavailable(item: dict[str, Any]) -> dict[str, Any]:
         "freshness": "unknown",
         "recommended_action": "review",
         "capabilities": {key: "unknown" for key in CAPABILITIES},
+        "tested_package_version": "unknown",
+        "tested_packages": {},
+        "deployment_evidence": "unknown",
+        "framework_checks": [],
+        "native_probe_states": {key: "unknown" for key in CAPABILITIES},
+        "result_ids": {},
+        "evidence_links": [],
+        "fingerprint_hash": "—",
         "limitations": "Manager evidence unavailable; capability checks not exposed",
         "gpu_runtime": "unavailable/redacted",
         "source_owner": (
@@ -301,7 +502,8 @@ def render(
         "",
         (
             f"Generated: {now.isoformat().replace('+00:00', 'Z')} · "
-            f"Connector package: {version} · Max evidence age: {max_age_days} days."
+            f"Renderer checkout: {version} (not a tested-version claim) · "
+            f"Max evidence age: {max_age_days} days."
         ),
         "",
         (
@@ -344,7 +546,8 @@ def render(
     lines += [
         "",
         (
-            "| Model / target | Deployment (selection) | Package | Framework status | "
+            "| Model / target | Deployment (selection / measured) | "
+            "Tested SDK | Framework status | "
             "Chat | Streaming | Tools | Structured output | Reasoning | VLM | "
             "Embedding | Rerank | Digest | Fingerprint family | Tested (UTC) | "
             "Freshness | GPU / runtime | Limitations | Action | Source ownership |"
@@ -357,8 +560,8 @@ def render(
     for row in rows:
         cells = [
             f"{row['model']} (#{row['nim_target_id']})",
-            row["deployment_type"],
-            version,
+            f"{row['deployment_type']} / {row['deployment_evidence']}",
+            row["tested_package_version"],
             row["status"],
         ]
         cells.extend(row["capabilities"][key] for key in CAPABILITIES)
@@ -382,16 +585,71 @@ def render(
             + " | ".join("—" for _ in range(19))
             + " |"
         )
+    if rows:
+        lines += [
+            "",
+            "## Native probe observations",
+            "",
+            "These are target-bound native checks, not installed SDK support. "
+            "Missing, stale or mismatched observations remain unknown.",
+            "",
+            "| Model / target | " + " | ".join(CAPABILITIES) + " |",
+            "| --- | " + " | ".join("---" for _ in CAPABILITIES) + " |",
+        ]
+        for row in rows:
+            cells = [f"{row['model']} (#{row['nim_target_id']})"]
+            cells.extend(row["native_probe_states"][key] for key in CAPABILITIES)
+            lines.append("| " + " | ".join(markdown(cell) for cell in cells) + " |")
+        lines += ["", "## Attributable evidence", ""]
+        for row in rows:
+            lines += [
+                f"### {markdown(row['model'])} (#{row['nim_target_id']})",
+                "",
+                f"- Fingerprint: {markdown(row['fingerprint_hash'])}.",
+                "- Native result IDs: "
+                + markdown(
+                    ", ".join(
+                        f"{key}={value}" for key, value in row["result_ids"].items()
+                    )
+                    or "unknown"
+                )
+                + ".",
+                "- Measured installed packages: "
+                + markdown(
+                    ", ".join(
+                        f"{name}={','.join(values)}"
+                        for name, values in row["tested_packages"].items()
+                    )
+                    or "unknown"
+                )
+                + ".",
+                "- Captured framework checks: "
+                + markdown(
+                    "; ".join(
+                        f"{check['id']} ({check['status']}; {check['evidence_class']}; "
+                        f"result {check['result_id']})"
+                        for check in row["framework_checks"]
+                    )
+                    or "unknown"
+                )
+                + ".",
+            ]
+            for link in row["evidence_links"]:
+                lines.append(f"- {markdown(link['kind'])}: {markdown(link['url'])}")
+            if not row["evidence_links"]:
+                lines.append("- Evidence artifact links: unknown.")
+            lines.append("")
     lines += [
         "",
         (
             "**Interpretation:** Verified means a recent, agreeing Manager "
             "framework baseline and passing linked check, not proof of individual "
-            "capabilities. All eight capability states remain unknown because "
-            "v1alpha1 does not project capability-specific results. Unknown, "
-            "missing, stale, failed, changed or mismatched evidence never becomes "
-            "verified. Hosted/downloadable is a maintainer selection, not a "
-            "Manager-verified fact. GPU/runtime measurements are not exposed."
+            "capabilities. SDK capability states remain unknown without an "
+            "executed, package-bound SDK check. Native probes and ChatOpenAI/wire "
+            "profiles never substitute for ChatNVIDIA support. Unknown, missing, "
+            "stale, failed, changed or mismatched evidence never becomes verified. "
+            "Deployment selection is separate from measured executor evidence. "
+            "GPU/runtime measurements remain unknown when not projected."
         ),
         "",
         (
@@ -403,8 +661,9 @@ def render(
         (
             "**Provenance:** Authenticated non-mutating "
             "`/api/bcb/public/v1/{compatible,recommend,badge,matrix-summary}` "
-            "GETs; no raw logs, private links or telemetry. Badge JSON, if "
-            "generated, needs review and must not be published automatically."
+            "GETs; no raw logs or telemetry. Allowlisted private artifact links "
+            "and result IDs are for authorized maintainer review only. "
+            "This detailed artifact and badge JSON must not be published automatically."
         ),
         "",
     ]
