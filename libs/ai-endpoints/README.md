@@ -21,9 +21,9 @@ print(llm.invoke("Write a haiku about GPUs.").content)
 ## Run it on your own GPU (NIM)
 
 Start a NIM container for the model, then point the same code at it. A local NIM usually needs no API key.
-
+Start a NIM container (Nemotron 3 Nano fits on a single GPU; see the guide for sizing), then point ChatNVIDIA at it. A local NIM usually needs no API key.
 ```python
-llm = ChatNVIDIA(base_url="http://localhost:8000/v1", model="nvidia/nemotron-3-super-120b-a12b")
+llm = ChatNVIDIA(base_url="http://localhost:8000/v1", model="nvidia/nemotron-3-nano-30b-a3b")
 print(llm.invoke("Write a haiku about GPUs.").content)
 ```
 
