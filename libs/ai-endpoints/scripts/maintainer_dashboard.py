@@ -561,7 +561,7 @@ def main(argv: list[str] | None = None) -> int:
             if records is None:
                 missing.append(f"{name} snapshot unavailable")
             else:
-                sources[name if complete else f"{name} (partial; no removals)"] = source
+                sources[name if complete else f"{name}/partial-no-removals"] = source
         changes = model_registry.compare(
             model_registry.load_registry(),
             *snapshots,
