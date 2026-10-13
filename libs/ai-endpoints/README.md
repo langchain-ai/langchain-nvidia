@@ -227,13 +227,6 @@ print(result.content)
 
 Nemotron 3.5 Super VL accepts text and images through `ChatNVIDIA`.
 
-> [!NOTE]
-> Super 3.5 is in early access. This example requires a version of
-> `langchain-nvidia-ai-endpoints` with Nemotron 3.5 Super VL support and access
-> to the model on your NVIDIA endpoint. Confirm that your endpoint serves the
-> model ID below. Early-access instructions can specify a different model ID
-> and credentials.
-
 The connector defaults this model to 8,192 completion tokens. Set a thinking
 preference as needed; pass `max_completion_tokens` to override the default:
 
