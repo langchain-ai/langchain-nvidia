@@ -1,0 +1,19 @@
+{
+  "http_status": 200,
+  "body": {
+    "data": [
+      {
+        "embedding": [
+          0.125,
+          -0.25,
+          0.5
+        ],
+        "index": 0
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 6,
+      "total_tokens": 6
+    }
+  }
+}

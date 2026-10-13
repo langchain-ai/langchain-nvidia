@@ -28,13 +28,13 @@ jobs:
           python-version: "3.12"
       - name: Assess Manager evidence privately (if configured)
         env:
-          BCB_MANAGER_URL: ${{ vars.BCB_MANAGER_URL }}
-          BCB_BASELINE_VERSION: ${{ vars.BCB_BASELINE_VERSION }}
+          BCB_MANAGER_URL: ${{ secrets.BCB_MANAGER_URL }}
+          BCB_BASELINE_VERSION: ${{ secrets.BCB_BASELINE_VERSION }}
           BCB_MANAGER_TOKEN: ${{ secrets.BCB_MANAGER_TOKEN }}
-          BCB_HOSTED_NIM_ID: ${{ vars.BCB_HOSTED_NIM_ID }}
-          BCB_HOSTED_REQUIRED_CAPABILITIES: ${{ vars.BCB_HOSTED_REQUIRED_CAPABILITIES }}
-          BCB_DOWNLOADABLE_NIM_ID: ${{ vars.BCB_DOWNLOADABLE_NIM_ID }}
-          BCB_DOWNLOADABLE_REQUIRED_CAPABILITIES: ${{ vars.BCB_DOWNLOADABLE_REQUIRED_CAPABILITIES }}
+          BCB_HOSTED_NIM_ID: ${{ secrets.BCB_HOSTED_NIM_ID }}
+          BCB_HOSTED_REQUIRED_CAPABILITIES: ${{ secrets.BCB_HOSTED_REQUIRED_CAPABILITIES }}
+          BCB_DOWNLOADABLE_NIM_ID: ${{ secrets.BCB_DOWNLOADABLE_NIM_ID }}
+          BCB_DOWNLOADABLE_REQUIRED_CAPABILITIES: ${{ secrets.BCB_DOWNLOADABLE_REQUIRED_CAPABILITIES }}
         run: |
           python3 libs/ai-endpoints/scripts/bcb_release_gate.py \
             --json-output "$RUNNER_TEMP/bcb-release-evidence/report.json" \

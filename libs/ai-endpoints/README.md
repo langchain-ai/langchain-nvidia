@@ -114,8 +114,8 @@ capabilities; it is not a live release approval or a public API.
 
 For hosted-versus-local setup, streaming/tools, embeddings retrieval and
 migration from generic OpenAI-compatible clients, see the
-[adoption guide](docs/adoption_guide.md) (maintainer-review draft; model
-capabilities and compatibility still require deployment-specific evidence).
+[adoption guide](docs/adoption_guide.md), including its scoped hosted recipe
+smoke results. Capabilities and compatibility still require deployment-specific evidence.
 
 For the documented gaps in OCR, page-elements, table-structure, and offline
 ASR support (API shapes, proposed abstractions, and future validation cases),

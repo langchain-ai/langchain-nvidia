@@ -9,7 +9,7 @@ inference, change Manager state, publish a package, or replace the release
 owner's approval. An approved scoped read-only Manager consumer token is required;
 these are not anonymous public APIs. No token or Manager URL is checked in.
 
-The release owner configures repository variables `BCB_MANAGER_URL` (HTTPS
+The release owner configures repository Actions secrets `BCB_MANAGER_URL` (HTTPS
 origin), `BCB_HOSTED_NIM_ID`, `BCB_DOWNLOADABLE_NIM_ID`,
 `BCB_HOSTED_REQUIRED_CAPABILITIES`, and
 `BCB_DOWNLOADABLE_REQUIRED_CAPABILITIES` (distinct comma-separated capability
@@ -21,10 +21,10 @@ approve a separate `BCB_MANAGER_TOKEN` for this repository before enabling CI.
 The privileged controller token can mutate state: never install it as a GitHub
 Actions secret. The scheduled pilot stays disabled until that approved
 consumer credential is configured and the release owner explicitly sets
-`BCB_RELEASE_EVIDENCE_ENABLED=true`. Target selection and credential approval
+repository variable `BCB_RELEASE_EVIDENCE_ENABLED=true`. Target selection and credential approval
 are owner responsibilities, never inferred from the catalog.
 
-Optional repository variable `BCB_BASELINE_VERSION` pins a baseline only when
+Optional repository Actions secret `BCB_BASELINE_VERSION` pins a baseline only when
 the Manager owner confirms that version exists. The current Manager manifest
 uses `release-readiness-2026-08-28-v2` as its default; `prod-v1` is **not** a
 configured baseline version in that manifest. An unknown override warns rather
@@ -53,6 +53,10 @@ enablement, and writes its detailed report only into ephemeral runner storage;
 its stdout records the nonblocking assessment, not the private evidence. A
 missing configuration warns locally rather than claiming compatibility. The
 pilot is not a dependency of the release/publish workflow.
+
+Keep all Manager connection and target configuration in Actions secrets, not
+repository variables: GitHub prints step environment values in public job logs.
+Secret-backed values are masked there. Only the enablement switch is a variable.
 
 The private report explicitly lists required capabilities, accepted/observed
 digest where available (hosted endpoints may have no image digest), fingerprint,

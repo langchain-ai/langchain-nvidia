@@ -16,6 +16,7 @@ packages = [
 [tool.poetry.dependencies]
 # OpenShell's SDK requires Python 3.12+; we follow that floor.
 python = ">=3.12,<4.0"
+aiohttp = ">=3.14.3"
 deepagents = ">=0.5.0,<0.6.0"
 langchain-nvidia-ai-endpoints = ">=1.2.1,<2.0.0"
 openshell = ">=0.0.72,<0.1"
