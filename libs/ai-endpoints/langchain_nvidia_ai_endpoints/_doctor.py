@@ -23,6 +23,32 @@ _CAPABILITIES = {
     "completions": {"completions"},
     "ranking": {"ranking", "ranking-vlm"},
 }
+_SELF_HOST_GUIDE = (
+    "https://github.com/langchain-ai/langchain-nvidia/blob/main/"
+    "libs/ai-endpoints/docs/self_hosting.md"
+)
+_NGC_NIM_PAGE = "https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/{}"
+# Hosted model ID -> (NGC NIM container under nvcr.io/nim/nvidia, local port).
+# Ports match docs/self_hosting.md and its docker-compose.yml.
+_SELF_HOST_NIMS: dict[str, tuple[str, int]] = {
+    "nvidia/nemotron-3-super-120b-a12b": ("nemotron-3-super-120b-a12b", 8000),
+    "nvidia/nemotron-3-nano-30b-a3b": ("nemotron-3-nano", 8000),
+    "nvidia/llama-nemotron-embed-1b-v2": ("llama-nemotron-embed-1b-v2", 8080),
+    "nvidia/llama-nemotron-rerank-1b-v2": ("llama-nemotron-rerank-1b-v2", 2016),
+}
+
+
+def _self_host_hint(model: str | None) -> list[str]:
+    nim = _SELF_HOST_NIMS.get(model or "")
+    if nim is None:
+        return [f"HINT Self-host with NVIDIA NIM: {_SELF_HOST_GUIDE}"]
+    container, port = nim
+    return [
+        f"HINT Self-host this model: docker image nvcr.io/nim/nvidia/{container} "
+        f"({_NGC_NIM_PAGE.format(container)})",
+        f'HINT Then set base_url="http://localhost:{port}/v1". '
+        f"Guide: {_SELF_HOST_GUIDE}",
+    ]
 
 
 def _models_check(
@@ -282,6 +308,9 @@ def main(argv: list[str] | None = None) -> int:
         if success
         else "RESULT preflight failed."
     )
+    if success and hosted:
+        for hint in _self_host_hint(args.model):
+            print(hint)
     return 0 if success else 1
 
 
