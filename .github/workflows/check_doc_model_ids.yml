@@ -1,0 +1,29 @@
+name: Doc model IDs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "**/README.md"
+      - "libs/*/docs/**"
+      - "cookbook/**"
+      - "studio/**"
+      - "libs/ai-endpoints/langchain_nvidia_ai_endpoints/data/model_registry.json"
+      - "libs/ai-endpoints/scripts/check_doc_model_ids.py"
+      - "libs/ai-endpoints/scripts/doc_model_ids_*.json"
+      - ".github/workflows/check_doc_model_ids.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check model IDs against the reviewed registry
+        run: python3 libs/ai-endpoints/scripts/check_doc_model_ids.py

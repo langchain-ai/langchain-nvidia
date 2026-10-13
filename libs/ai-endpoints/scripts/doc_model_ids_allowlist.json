@@ -1,0 +1,24 @@
+{
+  "entries": [
+    {
+      "path": "libs/ai-endpoints/docs/model_registry.md",
+      "id": "nvidia/example",
+      "reason": "Placeholder ID in the documented catalog snapshot format."
+    },
+    {
+      "path": "libs/ai-endpoints/docs/adoption_guide.md",
+      "id": "nvidia/nemotron-3-embed-1b",
+      "reason": "Records the embedding ID exercised in the dated hosted recipe smoke; rewriting it would misstate that evidence."
+    },
+    {
+      "path": "libs/switchyard/README.md",
+      "id": "anthropic/claude-sonnet-4.6",
+      "reason": "OpenRouter model ID for the switchyard router, not an NVIDIA registry model."
+    },
+    {
+      "path": "libs/switchyard/README.md",
+      "id": "openai/gpt-5-mini",
+      "reason": "OpenRouter model ID for the switchyard router, not an NVIDIA registry model."
+    }
+  ]
+}
