@@ -185,6 +185,16 @@ def _evidence_context(
                         "status": text(check.get("status")),
                         "evidence_class": text(check.get("evidence_class")),
                         "result_id": context["result_id"],
+                        "completed_at": context.get("completed_at"),
+                        "package_versions": {
+                            name: version
+                            for name, version in (
+                                check.get("package_versions", {}).items()
+                                if isinstance(check.get("package_versions"), dict)
+                                else ()
+                            )
+                            if text(name) != "—" and text(version) != "—"
+                        },
                     }
                 )
                 versions = check.get("package_versions")
@@ -700,6 +710,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--badges", type=Path, help="Optional review-only Shields JSON")
+    parser.add_argument(
+        "--decisions",
+        type=Path,
+        help="New private normalized decision JSON for owner review; never publish raw",
+    )
     parser.add_argument("--max-age-days", type=int, default=30)
     args = parser.parse_args(argv)
     base = args.manager_url.rstrip("/")
@@ -769,6 +784,27 @@ def main(argv: list[str] | None = None) -> int:
         summary = get(base, token, "matrix-summary", {})
     except (HTTPError, URLError, ValueError, OSError):
         summary = None
+    if args.decisions:
+        try:
+            fd = os.open(args.decisions, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as stream:
+                json.dump(
+                    {
+                        "schema_version": 1,
+                        "framework": FRAMEWORK,
+                        "generated_at": now.isoformat().replace("+00:00", "Z"),
+                        "max_age_days": args.max_age_days,
+                        "rows": rows,
+                    },
+                    stream,
+                    indent=2,
+                    sort_keys=True,
+                )
+                stream.write("\n")
+        except OSError:
+            parser.error(
+                "Private decision output unavailable; existing files not overwritten"
+            )
     args.output.write_text(
         render(rows, summary, version.group(1), now, args.max_age_days),
         encoding="utf-8",

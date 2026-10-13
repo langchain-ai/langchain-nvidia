@@ -7,6 +7,10 @@ on:
         description: 'Optional JSON array of reviewed {model,nim_target_id,deployment_type}; defaults to repository variable'
         required: false
         type: string
+      reviewed_public_snapshot_commit:
+        description: 'Full SHA containing the owner/security-reviewed public-only compatibility snapshot'
+        required: false
+        type: string
   schedule:
     - cron: '30 9 * * 1'
 
@@ -15,8 +19,8 @@ permissions:
 
 jobs:
   review-artifact:
-    # Manager currently has no scoped read-only consumer token. An owner must
-    # approve one and explicitly enable this trusted-main-only review job.
+    # The scoped read-only credential must be provisioned and approved before
+    # an owner explicitly enables this trusted-main-only private review job.
     if: github.ref == 'refs/heads/main' && vars.BCB_COMPATIBILITY_REVIEW_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -37,6 +41,69 @@ jobs:
           python3 libs/ai-endpoints/scripts/bcb_compatibility_view.py \
             --manager-url "$NIM_OSS_MANAGER_URL" \
             --output "$RUNNER_TEMP/bcb-compatibility-review.md" \
-            --badges "$RUNNER_TEMP/bcb-compatibility-badges-review.json"
+            --badges "$RUNNER_TEMP/bcb-compatibility-badges-review.json" \
+            --decisions "$RUNNER_TEMP/bcb-compatibility-decisions-private.json"
           # The detailed review contains internal target IDs/digests; never
           # upload it as an artifact of this potentially public GitHub repo.
+
+  reviewed-publication-pr:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      github.repository == 'langchain-ai/langchain-nvidia' &&
+      inputs.reviewed_public_snapshot_commit != '' &&
+      vars.BCB_COMPATIBILITY_PUBLICATION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prepare a draft from reviewed public-only state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEWED_PUBLIC_SNAPSHOT_COMMIT: ${{ inputs.reviewed_public_snapshot_commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$REVIEWED_PUBLIC_SNAPSHOT_COMMIT" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo 'Reviewed public snapshot requires a full commit SHA' >&2
+            exit 1
+          fi
+          snapshot_path=libs/ai-endpoints/docs/data/bcb_compatibility_public.json
+          bundle="$RUNNER_TEMP/reviewed-compatibility"
+          mkdir -m 700 "$bundle"
+          git fetch origin "$REVIEWED_PUBLIC_SNAPSHOT_COMMIT"
+          # Selected commit supplies JSON only; all executable code is trusted main.
+          git show "$REVIEWED_PUBLIC_SNAPSHOT_COMMIT:$snapshot_path" > "$bundle/public.json"
+          python3 libs/ai-endpoints/scripts/bcb_compatibility_publish.py prepare-pr \
+            --reviewed-snapshot "$bundle/public.json" \
+            --patch-output "$bundle/proposal/update.patch" \
+            --pr-body-output "$bundle/proposal/pr.md"
+          if [[ ! -s "$bundle/proposal/update.patch" ]]; then
+            echo 'Public compatibility state has no changes; no PR created'
+            exit 0
+          fi
+          git apply --check "$bundle/proposal/update.patch"
+          git apply --index "$bundle/proposal/update.patch"
+          python3 libs/ai-endpoints/scripts/bcb_compatibility_publish.py prepare-pr \
+            --reviewed-snapshot "$snapshot_path" \
+            --patch-output "$bundle/regeneration/update.patch" \
+            --pr-body-output "$bundle/regeneration/pr.md"
+          if [[ -s "$bundle/regeneration/update.patch" ]]; then
+            echo 'Generated compatibility artifacts did not regenerate exactly' >&2
+            exit 1
+          fi
+          printf '\nReviewed input: https://github.com/%s/blob/%s/%s\n' \
+            "$GITHUB_REPOSITORY" "$REVIEWED_PUBLIC_SNAPSHOT_COMMIT" "$snapshot_path" >> "$bundle/proposal/pr.md"
+          branch="compatibility-reviewed-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          git checkout -b "$branch"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Update reviewed public compatibility guidance'
+          git push origin "$branch"
+          gh pr create --draft --base main --head "$branch" \
+            --title 'Update reviewed public compatibility guidance' --body-file "$bundle/proposal/pr.md"

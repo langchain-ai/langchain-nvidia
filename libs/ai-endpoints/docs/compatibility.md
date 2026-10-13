@@ -38,3 +38,77 @@ From `libs/ai-endpoints`, use a scoped `NIM_OSS_MANAGER_TOKEN` and `NIM_OSS_MANA
 
 The detailed Markdown is private maintainer evidence, **not a public-safe support table**. It contains internal target/result IDs, digests, fingerprints, measured package inventory and allowlisted private links. Review target mapping, package applicability, timestamps, status, source ownership and data classification before publication. Do not upload this artifact or its badge JSON to a public store. Missing owner acceptance or real SDK-bound evidence is not supplied by a passed fixture, local smoke or current baseline; Manager's separately reviewed release gate and production checks remain authoritative.
 
+## Reviewed public projection and draft updates
+
+The detailed report above is never a public support table. To obtain machine-readable
+private decisions, add `--decisions /private/review/decisions.json` to the view command.
+This file is created exclusively with mode `0600`; existing files are not overwritten.
+It retains private result/check/package provenance for authorized local review.
+
+Produce an **unapproved** public-only projection from that private document:
+
+```sh
+python3 scripts/bcb_compatibility_publish.py export-public \
+  --decisions /private/review/decisions.json \
+  --output /private/review/new-export/public.json
+```
+
+The output parent must be a **new invocation-private directory** whose containing
+directory already exists. The publisher creates it exclusively with mode `0700`
+and its files with mode `0600`. All paired outputs share that new directory. It
+rejects existing namespaces, source paths and aliases. Failed writes remove
+created files through the pinned directory descriptor but retain the reserved
+directory; use a fresh namespace for a retry and do not share it with other writers.
+
+The strict `bcb-public-compatibility-v1` snapshot contains only reviewed registry
+model identity, measured deployment, framework baseline/time/freshness, SDK
+version/time/freshness and individual feature states, fixed source-owner role and
+predefined limitations. It excludes private IDs, digests, fingerprints, links,
+raw logs, freeform messages, inventory and runtime details. Unknown fields and
+duplicate JSON keys are rejected. **Allowlisted is not approved**: evidence and
+security owners must review the exact public snapshot, destination and scope.
+
+SDK feature states may be verified, failed, stale or unknown. Verification
+requires an explicitly executed `bcb-sdk-execution-v1` record joined to the
+**framework run** and captured SDK checks, not a coincidentally equal native
+result ID. Package/version, model/target, measured deployment, completion time,
+NIM fingerprint and downloadable digest must agree. Each check must match its
+SDK client/identity/outcome and measured package version in framework evidence.
+Installed inventory, wire/native/replay evidence and a current baseline are not
+substitutes. Current view inputs without an execution record remain unknown;
+no such record or approval is manufactured by this exporter.
+
+Once owners approve the exact public-only snapshot, prepare the complete review
+artifact without applying source or performing network actions:
+
+```sh
+python3 scripts/bcb_compatibility_publish.py prepare-pr \
+  --reviewed-snapshot /private/review/new-export/public.json \
+  --patch-output /private/review/new-proposal/update.patch \
+  --pr-body-output /private/review/new-proposal/pr.md
+```
+
+The paired patch generates `docs/data/bcb_compatibility_public.json`,
+`docs/compatibility_state.md`, real Shields endpoint JSON under
+`docs/compatibility_badges/`, and a managed README aggregate badge/table link.
+Unrelated README content and unowned files are preserved; only obsolete
+previously managed badges are removed. Regenerating unchanged state produces
+an empty patch. The public-only state deltas in the PR body can feed release
+notes after acceptance. A framework-only baseline cannot make badges green;
+untested features remain unknown and partial verification is distinguished.
+Static snapshots/badges are not live status: compare timestamps with the
+documented age limit, including when a badge is cached.
+
+These are **proposed package-local publication paths**, not recorded destination
+approval. Repository owners may opt in to the manual
+`reviewed-publication-pr` job with `BCB_COMPATIBILITY_PUBLICATION_ENABLED=true`
+only after scope, exact data and credential authorization are approved. Supply
+`reviewed_public_snapshot_commit`, a full SHA containing the reviewed JSON at
+`libs/ai-endpoints/docs/data/bcb_compatibility_public.json`. The canonical-main
+job fetches **JSON only**, runs trusted main's publisher, checks/applies the
+paired patch, verifies exact regeneration and opens a **draft** PR. A SHA is
+not source/security approval. It does not execute selected-commit code,
+auto-approve, merge, publish a release or upload private evidence. Actual
+public publication still requires maintainer review/merge and a real accepted
+snapshot; local synthetic smoke does not satisfy those gates.
+
