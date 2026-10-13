@@ -19,6 +19,26 @@
       "path": "libs/switchyard/README.md",
       "id": "openai/gpt-5-mini",
       "reason": "OpenRouter model ID for the switchyard router, not an NVIDIA registry model."
+    },
+    {
+      "path": "cookbook/archive/structured_report_generation.ipynb",
+      "id": "deepseek-ai/deepseek-r1",
+      "reason": "Archived notebook header names the deprecated model it originally used."
+    },
+    {
+      "path": "cookbook/archive/structured_report_generation.ipynb",
+      "id": "meta/llama3-8b-instruct",
+      "reason": "Archived notebook header names the deprecated model it originally used."
+    },
+    {
+      "path": "cookbook/archive/structured_report_generation_elastic/structured_report_generation_elastic.ipynb",
+      "id": "deepseek-ai/deepseek-r1",
+      "reason": "Archived notebook header names the deprecated model it originally used."
+    },
+    {
+      "path": "cookbook/archive/structured_report_generation_elastic/structured_report_generation_elastic.ipynb",
+      "id": "meta/llama3-8b-instruct",
+      "reason": "Archived notebook header names the deprecated model it originally used."
     }
   ]
 }

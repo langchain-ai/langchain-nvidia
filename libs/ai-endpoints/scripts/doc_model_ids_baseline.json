@@ -1,20 +1,3 @@
 {
-  "entries": [
-    {
-      "path": "cookbook/langgraph_rag_agent_llama3_nvidia_nim.ipynb",
-      "id": "NV-Embed-QA"
-    },
-    {
-      "path": "cookbook/structured_report_generation.ipynb",
-      "id": "meta/llama3-8b-instruct"
-    },
-    {
-      "path": "cookbook/structured_report_generation_elastic/structured_report_generation_elastic.ipynb",
-      "id": "deepseek-ai/deepseek-r1"
-    },
-    {
-      "path": "cookbook/structured_report_generation_elastic/structured_report_generation_elastic.ipynb",
-      "id": "meta/llama3-8b-instruct"
-    }
-  ]
+  "entries": []
 }

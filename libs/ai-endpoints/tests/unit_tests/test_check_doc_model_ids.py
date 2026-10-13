@@ -228,7 +228,7 @@ def test_repository_config_is_valid() -> None:
     allowlist = checker.load_entries(checker.ALLOWLIST, need_reason=True)
     assert all(entry["reason"].strip() for entry in allowlist)
     baseline = checker.load_entries(checker.BASELINE, need_reason=False)
-    assert baseline and all(e["path"].startswith("cookbook/") for e in baseline)
+    assert all(e["path"].startswith("cookbook/") for e in baseline)
 
 
 def test_deprecated_id_fails_with_repository_registry_and_config(
