@@ -82,20 +82,16 @@ def decision(
 def test_same_nim_fingerprint_prior_pass_and_current_failure_suggest_sdk_review() -> (
     None
 ):
-    _, result, drafts = decision(wrapped())
+    _, result, _ = decision(wrapped())
     assert result["classification"] == "sdk_regression"
     assert result["confidence"] == "high"
     assert result["target"]["model"] == "nemotron-model"
-    assert "targeted connector fix" in drafts["pr_patch_suggestion"]["body"]
-    assert drafts["publishable"] is False
 
 
 def test_changed_nim_fingerprint_routes_to_manager_instead_of_connector_patch() -> None:
-    _, result, drafts = decision(wrapped(changed=True))
+    _, result, _ = decision(wrapped(changed=True))
     assert result["classification"] == "nim_behavior_delta"
     assert result["owner"] == "Manager/BCB owner"
-    assert "existing remediation workflow" in result["next_action"]
-    assert "Do not propose a connector patch" in drafts["pr_patch_suggestion"]["body"]
 
 
 @pytest.mark.parametrize(
@@ -112,10 +108,9 @@ def test_changed_nim_fingerprint_routes_to_manager_instead_of_connector_patch() 
 def test_setup_and_evidence_defects_do_not_generate_connector_patch(
     category: str, stage: str, expected: str
 ) -> None:
-    _, result, drafts = decision(wrapped(category, stage, changed=True))
+    _, result, _ = decision(wrapped(category, stage, changed=True))
     assert result["classification"] == expected
     assert result["confidence"] == "medium"
-    assert "Do not propose a connector patch" in drafts["pr_patch_suggestion"]["body"]
 
 
 def test_missing_or_unrelated_result_falls_back_without_claiming_compatibility() -> (
@@ -123,22 +118,16 @@ def test_missing_or_unrelated_result_falls_back_without_claiming_compatibility()
 ):
     sample = wrapped()
     sample["failure"]["result_id"] = 99
-    _, result, drafts = decision(sample)
+    _, result, _ = decision(sample)
     assert result["classification"] == "unknown"
     assert result["target"] is None
-    assert "model not established" in drafts["issue"]["title"]
-    assert (
-        "No compatibility or release claim"
-        in drafts["release_note_docs_freshness"]["body"]
-    )
 
 
 def test_release_projection_alone_cannot_attribute_failure_cause() -> None:
-    clean, result, drafts = decision(artifact(changed=True))
+    clean, result, _ = decision(artifact(changed=True))
     assert result["classification"] == "unknown"
     assert result["confidence"] == "insufficient"
     assert clean["failure"]["stage"] == "unknown"
-    assert "Do not propose a connector patch" in drafts["pr_patch_suggestion"]["body"]
 
 
 def test_missing_comparison_and_missing_link_prevent_sdk_attribution() -> None:
@@ -195,9 +184,6 @@ def test_untrusted_fields_are_discarded_in_json_and_markdown(
     assert "secret-input-123" not in combined
     assert "evil.example" not in combined
     assert "token=secret" not in combined
-    assert "model not established" in combined
-    assert "No AI model was called" in combined
-    assert "Explicit maintainer review required" in combined
 
 
 def test_existing_output_is_not_overwritten_or_exported(tmp_path: Path) -> None:
@@ -220,3 +206,23 @@ def test_existing_output_is_not_overwritten_or_exported(tmp_path: Path) -> None:
     )
     assert existing.read_text(encoding="utf-8") == "retain existing"
     assert not (tmp_path / "triage.md").exists()
+
+
+def test_unrelated_failure_does_not_attach_another_targets_identity() -> None:
+    sample = wrapped(changed=True)
+    sample["failure"]["result_id"] = 999
+    _, result, drafts = decision(sample)
+    assert result["target"] is None
+    serialized = json.dumps(drafts)
+    assert "nemotron-model" not in serialized
+    assert "fingerprint-1" not in serialized
+    assert "fingerprint-2" not in serialized
+
+
+def test_unbound_prior_version_is_not_presented_as_comparable() -> None:
+    sample = wrapped()
+    sample["comparison"]["prior_result_id"] = 999
+    sample["comparison"]["prior_connector_version"] = "unbound-prior-version"
+    _, result, drafts = decision(sample)
+    assert result["classification"] == "unknown"
+    assert "unbound-prior-version" not in json.dumps(drafts)

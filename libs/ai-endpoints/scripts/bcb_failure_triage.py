@@ -354,42 +354,75 @@ def drafts(data: dict, triage: dict) -> dict:
         else "No allowlisted evidence link supplied; inspect Manager result privately."
     )
     scope = f"{display_version} / {display_model}"
-    verified = triage["classification"] != "unknown" and bool(
+    review_context = (
+        f"Supplied scope: {scope}. Baseline: "
+        f"{data['baseline_version'] or 'not supplied'}.\n"
+        f"Assessment: {cause} ({triage['confidence']}); {triage['basis']}\n"
+        f"Evidence: {reference}\nOwner: {triage['owner']}.\n"
+        f"Next: {triage['next_action']}\n"
+    )
+    if triage["classification"] != "unknown" and triage["target"]:
+        target = next(
+            item
+            for item in data["targets"]
+            if item["nim_id"] == triage["target"]["nim_id"]
+        )
+        review_context += (
+            f"Target: {target['nim_id']} / {target['deployment']}.\n"
+            f"Accepted result: {target['accepted_result']['result_id'] or 'unknown'}"
+            f" ({target['accepted_result']['status'] or 'unknown'}); fingerprint "
+            f"{target['accepted_fingerprint'] or 'unknown'}; digest "
+            f"{target['accepted_digest'] or 'unknown'}.\n"
+            f"Observed result: {target['latest_result']['result_id'] or 'unknown'}"
+            f" ({target['latest_result']['status'] or 'unknown'}); fingerprint "
+            f"{target['observed_fingerprint'] or 'unknown'}; digest "
+            f"{target['observed_digest'] or 'unknown'}.\n"
+        )
+        if triage["classification"] == "sdk_regression":
+            review_context += (
+                f"Comparable supplied connector versions: "
+                f"{data['prior']['connector_version']} (passing accepted result) -> "
+                f"{version} (failing observed result).\n"
+            )
+    sdk_patch_review = triage["classification"] == "sdk_regression" and bool(
         model and version and evidence
     )
     return {
         "issue": {
             "title": f"[Draft] BCB {cause}: {scope}",
-            "body": (
-                f"Scope: {scope}. Baseline: "
-                f"{data['baseline_version'] or 'not supplied'}.\n"
-                f"Assessment: {cause} ({triage['confidence']}); {triage['basis']}\n"
-                f"Evidence: {reference}\nOwner: {triage['owner']}.\n"
-                f"Next: {triage['next_action']}\n"
+            "body": review_context
+            + (
                 "Review Manager workflow and existing remediation "
                 "before creating an issue."
             ),
         },
         "pr_patch_suggestion": {
             "title": f"[Draft suggestion] {cause}: {scope}",
-            "body": (
+            "body": review_context
+            + (
                 "Review a targeted connector fix against the prior passing and "
-                "current failing results; use Manager's existing remediation workflow "
-                "and require owner approval before any PR."
-                if verified and triage["classification"] == "sdk_regression"
+                "current failing results; use Manager's existing remediation workflow. "
+                "Describe the actual changed code, attach reproduction and regression "
+                "checks for both supplied versions on this same target, and obtain "
+                "owner approval before any PR. No patch has been inferred."
+                if sdk_patch_review
                 else "Do not propose a connector patch until the failure cause "
                 "and affected scope are confirmed."
-            )
-            + f"\nEvidence: {reference}",
+            ),
         },
         "release_note_docs_freshness": {
             "title": f"[Draft review] BCB evidence for {scope}",
-            "body": (
-                f"No compatibility or release claim: {cause}; evidence and "
-                "owner review pending. "
-                "Check whether model docs or release notes need an update after "
-                "a passing, accepted BCB result. "
-                f"Evidence: {reference}"
+            "body": review_context
+            + (
+                "No compatibility or release claim: insufficient attribution. "
+                "Supply a result-bound diagnostic and comparable passing evidence "
+                "before drafting a docs or release-note delta."
+                if triage["classification"] == "unknown"
+                else "No compatibility or release claim; owner review pending. "
+                "Check the affected model's documented capabilities against the "
+                "accepted versus observed identity above. Record a docs/release-note "
+                "delta only after a passing, accepted revalidation and release-owner "
+                "review; these observations are not a compatibility guarantee."
             ),
         },
         "publishable": False,

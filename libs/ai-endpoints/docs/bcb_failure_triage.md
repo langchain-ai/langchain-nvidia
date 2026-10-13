@@ -98,6 +98,29 @@ by supplied evidence, **not** proof of causality or framework compatibility.
 Only maintainers can review the actual BCB workflow and decide whether to issue,
 patch, refresh docs, accept a baseline or request release-owner approval.
 
+Each artifact body is independently reviewable: supplied version/model scope,
+assessment and basis, evidence links, routing owner and next action are included
+in the issue, PR suggestion, and docs/release-note draft. Attributed failures also
+include the bound target/deployment and accepted versus observed result IDs,
+statuses, fingerprints and digests. A comparable prior connector version is
+included only when the SDK-regression rule binds it to the accepted passing
+result; unrelated comparison input is not presented as history. Unknown
+attribution remains a concise summary, without an inferred patch or delta.
+
+The PR suggestion asks for actual code changes and reproduction/regression
+checks on both supplied versions and the same target; it does not invent a fix.
+The docs/release-note draft identifies the observation comparison to review,
+but passing accepted revalidation and release-owner approval are still required
+before stating compatibility or publishing a release note.
+
+Operational acceptance requires one **real, owner-approved** failure export:
+record its Manager/workflow back-references, generate these private artifacts,
+then have a maintainer compare them with manual preparation, note corrections
+and preparation effort, and explicitly accept or reject their usefulness.
+Synthetic fixtures, historical failed-job records, pending approval requests,
+or CI success do not satisfy that acceptance. Do not stitch reused local result
+IDs from separate databases into a passing baseline.
+
 Security boundary: input is limited to 1 MiB; raw messages, logs, metadata and
 unrecognized fields are discarded. Only short identifier labels and HTTPS
 `gitlab-master.nvidia.com` path-only evidence URLs (no query, credentials,
