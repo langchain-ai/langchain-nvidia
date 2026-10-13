@@ -79,6 +79,13 @@ def link(value: object, *, category: str) -> str:
             valid = host == "github.com" and re.fullmatch(
                 REPO + r"/pull/[1-9][0-9]*", parsed.path
             )
+        elif category == "tests":
+            valid = (host == "gitlab-master.nvidia.com" and parsed.path != "/") or (
+                host == "github.com"
+                and re.fullmatch(
+                    REPO + r"/(?:blob/[^/]+/.+|actions/runs/[1-9][0-9]*)", parsed.path
+                )
+            )
         elif category == "evidence":
             valid = host == "gitlab-master.nvidia.com" and parsed.path != "/"
         elif category == "source":
@@ -88,6 +95,8 @@ def link(value: object, *, category: str) -> str:
                     "github.com",
                     "gitlab-master.nvidia.com",
                     "docs.langchain.com",
+                    "python.langchain.com",
+                    "pypistats.org",
                     "pypi.org",
                     "catalog.ngc.nvidia.com",
                     "integrate.api.nvidia.com",
@@ -376,10 +385,10 @@ def issues_view(issues: list[dict]) -> list[str]:
         "## Issue Hygiene",
         "",
         (
-            "| Issue | Priority | Affected version | Repro | Owner | Tests | "
-            "Planned release | Triage / evidence | Action |"
+            "| Issue | Priority | Affected version | Affected model | Repro | Owner | "
+            "Tests | Planned release | Triage / evidence | Action |"
         ),
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for issue in issues:
         fields = [
@@ -387,12 +396,16 @@ def issues_view(issues: list[dict]) -> list[str]:
             for k in (
                 "priority",
                 "affected_version",
+                "affected_model",
                 "repro",
                 "owner",
                 "tests",
                 "planned_release",
             )
         ]
+        tests_url = link(issue.get("tests"), category="tests")
+        if tests_url:
+            fields[5] = tests_url
         url = link(issue.get("issue_url"), category="issue")
         triage = link(issue.get("triage_url"), category="issue")
         evidence = link(issue.get("evidence_url"), category="evidence")
@@ -402,6 +415,7 @@ def issues_view(issues: list[dict]) -> list[str]:
                 (
                     "priority",
                     "affected version",
+                    "affected model",
                     "repro",
                     "owner",
                     "tests",
@@ -415,9 +429,12 @@ def issues_view(issues: list[dict]) -> list[str]:
             gaps.append("issue link")
         if not triage and not evidence:
             gaps.append("triage/evidence")
-        action = (
-            "fill " + ", ".join(gaps) if gaps else "review triage and release scope"
-        )
+        supplied_action = label(issue.get("next_action"))
+        action = supplied_action if supplied_action != "unavailable" else ""
+        if gaps:
+            action += ("; " if action else "") + "fill " + ", ".join(gaps)
+        elif not action:
+            action = "review triage and release scope"
         row = [
             linked(url),
             *fields,
@@ -428,7 +445,7 @@ def issues_view(issues: list[dict]) -> list[str]:
     if not issues:
         lines.append(
             "| No issue artifact supplied | unavailable | unavailable | unavailable | "
-            "unavailable | unavailable | unavailable | unavailable | "
+            "unavailable | unavailable | unavailable | unavailable | unavailable | "
             "supply reviewed issues |"
         )
     lines.append("")
@@ -439,8 +456,9 @@ def adoption_view(adoption: dict, now: datetime, days: int) -> list[str]:
     lines = [
         "## Adoption Signals — observed sources only",
         "",
-        "| Signal | Observation | As of | Source | Action |",
-        "| --- | --- | --- | --- | --- |",
+        "| Signal | Observation | As of | Source | Owner | "
+        "Scope / window | Caveats / action |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for metric in METRICS:
         record = adoption.get(metric)
@@ -454,8 +472,18 @@ def adoption_view(adoption: dict, now: datetime, days: int) -> list[str]:
         url = link(record.get("source_url"), category="source") or link(
             record.get("source_url"), category="evidence"
         )
+        owner = label(record.get("owner"))
+        scope = label(record.get("scope"))
+        window = label(record.get("window"))
+        attributed = all(
+            value.lower() not in ("unavailable", "unknown", "tbd", "n/a", "none")
+            for value in (owner, scope, window)
+        )
         current = (
-            available and bool(url) and fresh(record.get("observed_at"), now, days)
+            available
+            and bool(url)
+            and attributed
+            and fresh(record.get("observed_at"), now, days)
         )
         lines.append(
             "| "
@@ -466,13 +494,20 @@ def adoption_view(adoption: dict, now: datetime, days: int) -> list[str]:
                     str(record["count"])
                     if current
                     else "unavailable"
-                    if not available or not url
+                    if not available or not url or not attributed
                     else "stale/unknown (count withheld)",
-                    label(record.get("observed_at")) if current else "unavailable",
-                    linked(url) if current else "unavailable",
-                    "inspect observed scope"
-                    if current
-                    else "obtain fresh, attributed source",
+                    label(record.get("observed_at")),
+                    linked(url),
+                    owner,
+                    f"{scope} / {window}",
+                    (label(record.get("caveats")) + "; ")
+                    + (
+                        label(record.get("next_action"))
+                        if label(record.get("next_action")) != "unavailable"
+                        else "inspect observed scope; not attributable NIM usage"
+                        if current
+                        else "obtain fresh, owner/scope/window-attributed source"
+                    ),
                 )
             )
             + " |"

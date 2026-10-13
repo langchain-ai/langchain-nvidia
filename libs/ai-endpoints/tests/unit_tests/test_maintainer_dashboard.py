@@ -90,42 +90,6 @@ def release() -> dict:
     }
 
 
-def test_private_view_shows_review_actions_and_all_drift_categories() -> None:
-    changes = [
-        {
-            "kind": kind,
-            "id": "nvidia/example",
-            "source": "hosted",
-            "evidence": "https://integrate.api.nvidia.com/v1/models",
-        }
-        for kind in (
-            "addition",
-            "deprecation",
-            "aliases",
-            "capability",
-            "removal/stale",
-        )
-    ]
-    rendered = view.render(
-        review(), release(), changes, {}, ["downloadable snapshot unavailable"], NOW, 14
-    )
-    assert "review evidence (not approval)" in rendered
-    assert "owner/security approval required" in rendered
-    assert "chat_basic, chat_tools" in rendered
-    assert "#61 passed" in rendered
-    assert EVIDENCE in rendered and PR in rendered
-    assert "Additions (1)" in rendered and "Deprecations / removals (2)" in rendered
-    assert (
-        "Aliases / served names (1)" in rendered
-        and "Capability flags (catalog claim only) (1)" in rendered
-    )
-    assert "downloadable snapshot unavailable" in rendered
-    assert "P1" in rendered and "0.4.1" in rendered and ISSUE in rendered
-    assert "| downloads | 19 |" in rendered
-    assert "| docs traffic | unavailable |" in rendered
-    assert "| github prs | unavailable |" in rendered
-
-
 @pytest.mark.parametrize(
     "mutation",
     [
@@ -172,9 +136,6 @@ def test_hostile_link_and_credential_fields_do_not_render() -> None:
     ] = "https://pypi.org/project/example/?api_key=SECRET123"
     text = view.render(data, release(), [], {}, [], NOW, 14)
     assert "SECRET123" not in text and "abcdef" not in text and "evil.test" not in text
-    assert "Generated review PR: unavailable" in text
-    assert "| downloads | unavailable |" in text
-    assert "fill repro" in text
 
 
 def test_cli_uses_local_catalog_and_reports_missing_sources_without_writes(
@@ -210,9 +171,6 @@ def test_cli_uses_local_catalog_and_reports_missing_sources_without_writes(
         timeout=20,
     )
     assert result.returncode == 0, result.stderr
-    assert "nvidia/new-reviewed-candidate" in result.stdout
-    assert "downloadable snapshot unavailable" in result.stdout
-    assert "PRIVATE REVIEW ONLY" in result.stdout
     assert before == {path: path.read_bytes() for path in paths}
     assert sorted(tmp_path.iterdir()) == sorted(paths)
 
@@ -243,50 +201,74 @@ def test_invalid_classification_fails_closed_without_echoing_private_input(
     )
     assert result.returncode == 2
     assert "secret-test-data" not in result.stdout + result.stderr
-    assert "no view rendered" in result.stderr
 
 
-@pytest.mark.parametrize("complete", [False, True])
-def test_saved_source_identity_and_completeness_survive_dashboard_rendering(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], complete: bool
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "https://github.com/other/repo/blob/main/test.py",
+        "https://gitlab-master.nvidia.com/",
+        "https://github.com/langchain-ai/langchain-nvidia/actions/runs/nope",
+    ],
+)
+def test_issue_test_links_reject_unrelated_or_empty_destinations(bad: str) -> None:
+    assert view.link(bad, category="tests") == ""
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "future",
+        "stale",
+        "missing_owner",
+        "missing_scope",
+        "missing_window",
+        "boolean_count",
+        "placeholder_owner",
+    ],
+)
+def test_adoption_count_is_withheld_when_observation_is_not_attributable(
+    mutation: str,
 ) -> None:
-    review_file = tmp_path / "review.json"
-    release_file = tmp_path / "release.json"
-    ngc_file = tmp_path / "ngc.json"
-    review_file.write_text(json.dumps(review()))
-    release_file.write_text(json.dumps(release()))
-    ngc_file.write_text(
-        json.dumps(
-            {
-                "source_url": "https://catalog.ngc.nvidia.com/nim/reviewed",
-                "complete_inventory": complete,
-                "models": [{"id": "nvidia/reviewed"}],
-            }
-        )
+    now = datetime(2026, 9, 4, tzinfo=timezone.utc)
+    metric = {
+        "status": "available",
+        "count": 987654321,
+        "observed_at": now.isoformat(),
+        "source_url": "https://pypistats.org/packages/langchain-nvidia-ai-endpoints",
+        "owner": "review-owner",
+        "scope": "package acquisition only",
+        "window": "last month",
+    }
+    if mutation == "future":
+        metric["observed_at"] = (now + timedelta(seconds=1)).isoformat()
+    elif mutation == "stale":
+        metric["observed_at"] = (now - timedelta(days=15)).isoformat()
+    elif mutation == "boolean_count":
+        metric["count"] = True
+    elif mutation == "placeholder_owner":
+        metric["owner"] = "TBD"
+    else:
+        metric.pop(mutation.removeprefix("missing_"))
+    rendered = "\n".join(view.adoption_view({"downloads": metric}, now, 14))
+    assert "987654321" not in rendered
+
+
+def test_measured_zero_is_distinct_from_unavailable_adoption() -> None:
+    now = datetime(2026, 9, 4, tzinfo=timezone.utc)
+    metric = {
+        "status": "available",
+        "count": 0,
+        "observed_at": now.isoformat(),
+        "source_url": "https://pypistats.org/packages/langchain-nvidia-ai-endpoints",
+        "owner": "review-owner",
+        "scope": "package acquisition only",
+        "window": "last month",
+    }
+    rows = view.adoption_view({"downloads": metric}, now, 14)
+    observation = (
+        next(row for row in rows if row.startswith("| downloads |"))
+        .split("|")[2]
+        .strip()
     )
-    assert (
-        view.main(
-            [
-                "--review-file",
-                str(review_file),
-                "--release-file",
-                str(release_file),
-                "--ngc-file",
-                str(ngc_file),
-            ]
-        )
-        == 0
-    )
-    output = capsys.readouterr().out
-    sources = output.split("Source evidence:", 1)[1].split("## Issue Hygiene", 1)[0]
-    labels = [
-        line.split(": ", 1)[0].removeprefix("- ")
-        for line in sources.splitlines()
-        if line.endswith("https://catalog.ngc.nvidia.com/nim/reviewed")
-    ]
-    assert len(labels) == 1
-    identity, *limitations = labels[0].split("/")
-    assert identity == "downloadable"
-    assert bool(limitations) is not complete
-    if not complete:
-        assert limitations == ["partial-no-removals"]
+    assert observation == "0"

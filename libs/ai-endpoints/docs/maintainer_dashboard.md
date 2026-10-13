@@ -51,12 +51,14 @@ The `--review-file` is a JSON object with `schema_version: 1` and
       "issue_url": "https://github.com/langchain-ai/langchain-nvidia/issues/956",
       "priority": "P1",
       "affected_version": "0.4.0",
+      "affected_model": "nvidia/example-model",
       "repro": "chat tools fails on retry",
       "owner": "connector-maintainer",
-      "tests": "regression added",
+      "tests": "https://github.com/langchain-ai/langchain-nvidia/blob/main/libs/ai-endpoints/tests/unit_tests/test_chat.py",
       "planned_release": "0.4.1",
       "triage_url": "https://github.com/langchain-ai/langchain-nvidia/issues/956",
-      "evidence_url": "https://gitlab-master.nvidia.com/team/bcb/-/jobs/62"
+      "evidence_url": "https://gitlab-master.nvidia.com/team/bcb/-/jobs/62",
+      "next_action": "review same-target regression before release"
     }
   ],
   "adoption": {
@@ -64,7 +66,12 @@ The `--review-file` is a JSON object with `schema_version: 1` and
       "status": "available",
       "count": 19,
       "observed_at": "2026-09-29T10:00:00Z",
-      "source_url": "https://pypi.org/project/langchain-nvidia-ai-endpoints/"
+      "source_url": "https://pypistats.org/packages/langchain-nvidia-ai-endpoints",
+      "owner": "example-source-owner",
+      "scope": "package acquisition only",
+      "window": "last month",
+      "caveats": "not attributable NIM usage",
+      "next_action": "verify approved source and metric definition"
     },
     "docs_traffic": {"status": "unavailable"},
     "cookbook_runs": {"status": "unavailable"},
@@ -85,9 +92,12 @@ is a short, credential-free summary, **not** a raw log, stack trace or request.
 Do not place raw diagnostics or secrets into artifacts. Metric keys are
 `downloads`, `docs_traffic`, `cookbook_runs`, `github_issues`, `github_prs`,
 and `model_usage_examples`. An available count requires an actual attributable
-HTTPS source, a nonnegative integer `count`, and a recent ISO-8601 UTC
-`observed_at`; otherwise the view withholds that count as unavailable or
-stale/unknown. Zero is permitted only if the real source reports zero. Counts
+HTTPS source, a nonnegative integer `count`, a named reported `owner`, nonempty
+`scope` and measurement `window`, and a recent, nonfuture ISO-8601 UTC
+`observed_at`. Placeholder ownership/scope/window is not attribution. Otherwise
+the view withholds the count as unavailable or stale/unknown. Caveats and supplied
+next actions remain visible; recorded labels do not authenticate approval. Zero
+is permitted only if the real source reports zero. Counts
 have no inferred denominator or implied cross-source comparability. "Model
 usage examples" counts reviewed examples, **not** actual model traffic.
 
@@ -101,6 +111,10 @@ claims (not BCB proof). All proposed changes require source verification,
 behavior checks and maintainer review before registry edits. Issue gaps have
 explicit actions. Adoption sources not supplied are always unavailable; the
 view does not invent download, docs, cookbook, issue, PR or usage counts.
+Canonical selected-repository `tests` URLs remain actionable test links; a short
+test label is context only. Issue views include the affected model and supplied
+next action alongside explicit missing-field actions. Do not infer test execution,
+live upstream state, or owner acceptance from the presence of these fields.
 
 The CLI requires local reports, validates link schemes, hosts and paths,
 displays only limited projected labels, and does not echo malformed JSON,
