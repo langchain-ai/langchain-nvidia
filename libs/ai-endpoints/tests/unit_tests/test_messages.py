@@ -62,7 +62,10 @@ async def test_standard_image_request(
     )
     mock_http.set_post(json_body=response)
     model = ChatNVIDIA(model="nvidia/nemotron-3.5-super-vl-120b-a12b", api_key="BOGUS")
-    content = [{"type": "text", "text": "Describe this image."}, image_block]
+    content: list[str | dict[str, Any]] = [
+        {"type": "text", "text": "Describe this image."},
+        image_block,
+    ]
     message: BaseMessage = (
         HumanMessage(content=content)
         if role == "user"
@@ -73,6 +76,7 @@ async def test_standard_image_request(
         payload = mock_http.history[-1].kwargs["json"]
     else:
         model.invoke([message])
+        assert mock_http.requests.last_request is not None
         payload = mock_http.requests.last_request.json()
 
     sent = payload["messages"][0]

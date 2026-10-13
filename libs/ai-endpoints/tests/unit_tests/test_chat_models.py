@@ -70,6 +70,7 @@ def test_nemotron_super_vl_preserves_image_input(requests_mock: Mocker) -> None:
         ]
     )
 
+    assert requests_mock.last_request is not None
     sent = requests_mock.last_request.json()
     assert sent["model"] == model_id
     assert sent["messages"][0]["content"][1]["image_url"]["url"] == image_url
@@ -99,6 +100,7 @@ def test_super_vl_converts_standard_base64_image(requests_mock: Mocker) -> None:
         ]
     )
 
+    assert requests_mock.last_request is not None
     sent = requests_mock.last_request.json()
     assert sent["messages"][0]["content"][1] == {
         "type": "image_url",
