@@ -1,0 +1,22 @@
+{
+  "http_status": 200,
+  "body": {
+    "object": "chat.completion",
+    "model": "mock-model",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "The follow-up answer used the prior reasoning context."
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 24,
+      "completion_tokens": 10,
+      "total_tokens": 34
+    }
+  }
+}
