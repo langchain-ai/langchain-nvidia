@@ -250,3 +250,60 @@ def test_downloadable_harness_upstream_needed_becomes_linked_review_candidate(
     assert "https://gitlab-master.nvidia.com/example/-/jobs/42" in registry.report(
         candidates, {}, []
     )
+
+
+def test_reviewed_update_rejects_model_field_code_injection(tmp_path: Path) -> None:
+    row = fixture_model("nvidia/reviewed")
+    row["model"]["id=__import__('os').system('false'), injected"] = "untrusted"
+    reviewed = tmp_path / "reviewed.json"
+    reviewed.write_text(json.dumps({"schema_version": 1, "models": [row]}))
+    patch = tmp_path / "update.patch"
+    body = tmp_path / "pr.md"
+    with pytest.raises(ValueError):
+        registry._prepare_pr(reviewed, patch, body)
+    assert not patch.exists()
+    assert not body.exists()
+
+
+def test_reviewed_update_preserves_existing_output_and_input(tmp_path: Path) -> None:
+    row = fixture_model("nvidia/reviewed")
+    reviewed = tmp_path / "reviewed.json"
+    original = json.dumps({"schema_version": 1, "models": [row]})
+    reviewed.write_text(original)
+    patch = tmp_path / "update.patch"
+    patch.write_text("retained-review-artifact")
+    body = tmp_path / "pr.md"
+    with pytest.raises(ValueError):
+        registry._prepare_pr(reviewed, patch, body)
+    assert reviewed.read_text() == original
+    assert patch.read_text() == "retained-review-artifact"
+    assert not body.exists()
+
+
+def test_reordered_model_fields_do_not_propose_an_unregeneratable_update(
+    tmp_path: Path,
+) -> None:
+    reordered = json.loads(registry.REGISTRY.read_text())
+    for row in reordered["models"]:
+        row["model"] = dict(reversed(list(row["model"].items())))
+    reviewed = tmp_path / "reordered.json"
+    reviewed.write_text(json.dumps(reordered))
+    patch = tmp_path / "update.patch"
+    registry._prepare_pr(reviewed, patch, tmp_path / "pr.md")
+    assert patch.read_bytes() == b""
+    assert registry.generate(False) == 0
+
+
+def test_preparation_output_failure_does_not_leave_a_partial_bundle(
+    tmp_path: Path,
+) -> None:
+    reviewed = tmp_path / "reviewed.json"
+    reviewed.write_text(
+        json.dumps({"schema_version": 1, "models": [fixture_model("nvidia/reviewed")]})
+    )
+    patch = tmp_path / "update.patch"
+    body = tmp_path / "missing-directory" / "pr.md"
+    with pytest.raises(OSError):
+        registry._prepare_pr(reviewed, patch, body)
+    assert not patch.exists()
+    assert not body.exists()
