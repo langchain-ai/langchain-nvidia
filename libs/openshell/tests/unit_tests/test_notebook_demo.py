@@ -120,7 +120,7 @@ def test_notebook_uses_current_openshell_pin(notebook: dict) -> None:
 
 def test_notebook_uses_nemotron_default_model(notebook: dict) -> None:
     joined = "\n".join(_cell_sources(notebook))
-    assert 'NVIDIA_DEEP_AGENT_MODEL", "nvidia/nemotron-3-nano-30b-a3b"' in joined
+    assert 'NVIDIA_DEEP_AGENT_MODEL", "nvidia/nemotron-3-super-120b-a12b"' in joined
     assert "openai/gpt-oss-120b" not in joined
 
 

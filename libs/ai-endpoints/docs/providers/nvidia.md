@@ -78,8 +78,8 @@ The following code connects to locally hosted NIM Microservices.
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
 
-# connect to an chat NIM running at localhost:8000, specifyig a specific model
-llm = ChatNVIDIA(base_url="http://localhost:8000/v1", model="meta/llama3-8b-instruct")
+# connect to an chat NIM running at localhost:8000, specifying a specific model
+llm = ChatNVIDIA(base_url="http://localhost:8000/v1", model="nvidia/nemotron-3-super-120b-a12b")
 
 # connect to an embedding NIM running at localhost:8080
 embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")

@@ -174,7 +174,7 @@ point `inference.local` at the model you want:
 openshell provider create --name nvidia-prod --type nvidia --from-existing
 openshell inference set \
   --provider nvidia-prod \
-  --model nvidia/nemotron-3-nano-30b-a3b
+  --model nvidia/nemotron-3-super-120b-a12b
 openshell inference get
 ```
 
@@ -207,7 +207,7 @@ from langchain_nvidia_openshell import OpenShellSandbox
 with openshell.Sandbox() as sb:
     backend = OpenShellSandbox(sandbox=sb)
     agent = create_deep_agent(
-        model=ChatNVIDIA(model="nvidia/nemotron-3-nano-30b-a3b"),
+        model=ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b"),
         system_prompt="You are a careful coding agent.",
         backend=backend,
     )

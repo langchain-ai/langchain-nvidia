@@ -1,4 +1,4 @@
-.PHONY: all format lint test tests integration_tests help
+.PHONY: all format lint test tests integration_tests check_model_ids help
 
 # Default target executed when no arguments are given to make.
 all: help
@@ -17,6 +17,9 @@ check_imports: $(shell find langchain_nvidia_ai_endpoints -name '*.py')
 
 integration_tests:
 	poetry run pytest tests/integration_tests $(PYTEST_ARGS)
+
+check_model_ids:
+	poetry run python scripts/check_doc_model_ids.py
 
 
 ######################
@@ -59,3 +62,4 @@ help:
 	@echo 'test                         - run unit tests'
 	@echo 'tests                        - run unit tests'
 	@echo 'test TEST_FILE=<test_file>   - run all tests in file'
+	@echo 'check_model_ids              - check doc/cookbook/studio model IDs against the registry'
