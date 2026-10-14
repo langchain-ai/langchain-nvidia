@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "langchain-nvidia-openshell"
-version = "0.1.0"
+version = "0.1.1"
 description = "NVIDIA OpenShell sandbox backend for LangChain Deep Agents"
 authors = []
 readme = "README.md"
