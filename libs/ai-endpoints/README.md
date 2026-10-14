@@ -212,7 +212,7 @@ Use this section to learn about a few examples.
 
 ### Nemotron
 
-[Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. `nvidia/nemotron-3.5-super-vl-120b-a12b` is a starting point for text and image tasks when your NVIDIA API key has access to it.
+[Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. `nvidia/nemotron-3.5-super-vl-120b-a12b` supports text and image input, reasoning, and tool calling, with a 1,048,576-token context and an 8,192-token hosted output limit. Use it when your NVIDIA API key has access to the model.
 
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
