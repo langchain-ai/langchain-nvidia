@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 from aiohttp import web as aiohttp_web
+from langchain_core.messages import HumanMessage
 from requests_mock import Mocker
 
 from langchain_nvidia_ai_endpoints._statics import MODEL_TABLE, Model, register_model
@@ -16,6 +17,95 @@ from langchain_nvidia_ai_endpoints._version import __version__
 from langchain_nvidia_ai_endpoints.chat_models import ChatNVIDIA
 
 from .conftest import MockHTTP
+
+
+def test_nemotron_super_vl_discovery_profile() -> None:
+    model = ChatNVIDIA(model="nvidia/nemotron-3.5-super-vl-120b-a12b", api_key="BOGUS")
+
+    assert model.profile is not None
+    assert model.profile["text_inputs"] is True
+    assert model.profile["text_outputs"] is True
+    assert model.profile["image_inputs"] is True
+    assert model.profile["tool_calling"] is True
+    assert model.profile["structured_output"] is True
+
+
+def test_nemotron_super_vl_completion_default_and_override() -> None:
+    model_id = "nvidia/nemotron-3.5-super-vl-120b-a12b"
+    default = ChatNVIDIA(model=model_id, api_key="BOGUS")
+    assert default.max_tokens == 8192
+    payload = default._get_payload(
+        inputs=[{"role": "user", "content": "test"}], stop=None
+    )
+    assert payload["max_tokens"] == 8192
+
+    explicit = ChatNVIDIA(model=model_id, api_key="BOGUS", max_completion_tokens=2048)
+    assert explicit.max_tokens == 2048
+
+    other = ChatNVIDIA(model="meta/llama-3.3-70b-instruct", api_key="BOGUS")
+    assert other.max_tokens == 1024
+
+
+def test_nemotron_super_vl_preserves_image_input(requests_mock: Mocker) -> None:
+    """Send multimodal content through the registered Super VL chat model."""
+    model_id = "nvidia/nemotron-3.5-super-vl-120b-a12b"
+    requests_mock.get(
+        "https://integrate.api.nvidia.com/v1/models",
+        json={"data": [{"id": model_id}]},
+    )
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        json={"choices": [{"message": {"role": "assistant", "content": "Red"}}]},
+    )
+    image_url = "data:image/png;base64,iVBORw0KGgo="
+    model = ChatNVIDIA(model=model_id, api_key="BOGUS")
+    response = model.invoke(
+        [
+            HumanMessage(
+                content=[
+                    {"type": "text", "text": "What color is this?"},
+                    {"type": "image_url", "image_url": {"url": image_url}},
+                ]
+            )
+        ]
+    )
+
+    assert requests_mock.last_request is not None
+    sent = requests_mock.last_request.json()
+    assert sent["model"] == model_id
+    assert sent["messages"][0]["content"][1]["image_url"]["url"] == image_url
+    assert response.content == "Red"
+
+
+def test_super_vl_converts_standard_base64_image(requests_mock: Mocker) -> None:
+    """LangChain image blocks must reach the API as image_url blocks."""
+    model_id = "nvidia/nemotron-3.5-super-vl-120b-a12b"
+    requests_mock.get(
+        "https://integrate.api.nvidia.com/v1/models",
+        json={"data": [{"id": model_id}]},
+    )
+    requests_mock.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        json={"choices": [{"message": {"role": "assistant", "content": "Red"}}]},
+    )
+    model = ChatNVIDIA(model=model_id, api_key="BOGUS")
+    model.invoke(
+        [
+            HumanMessage(
+                content=[
+                    {"type": "text", "text": "What color is this?"},
+                    {"type": "image", "base64": "Ynl0ZXM=", "mime_type": "image/png"},
+                ]
+            )
+        ]
+    )
+
+    assert requests_mock.last_request is not None
+    sent = requests_mock.last_request.json()
+    assert sent["messages"][0]["content"][1] == {
+        "type": "image_url",
+        "image_url": {"url": "data:image/png;base64,Ynl0ZXM="},
+    }
 
 
 @pytest.fixture(autouse=True)
@@ -351,6 +441,7 @@ def test_different_thinking_prefixes_for_different_models(
     [
         "nvidia/nemotron-3-nano-30b-a3b",
         "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "nvidia/nemotron-3.5-super-vl-120b-a12b",
     ],
 )
 @pytest.mark.parametrize(
@@ -399,6 +490,7 @@ def test_param_based_thinking_mode(
     [
         "nvidia/nemotron-3-nano-30b-a3b",
         "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "nvidia/nemotron-3.5-super-vl-120b-a12b",
     ],
 )
 @pytest.mark.parametrize(

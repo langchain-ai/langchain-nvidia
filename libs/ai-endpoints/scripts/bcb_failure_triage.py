@@ -29,6 +29,12 @@ CATEGORIES = {
     "unknown",
 }
 ISSUE_ACTIONS = {
+    "target_unavailable": (
+        "Endpoint/catalog owner",
+        "Verify this target's hosted availability and intended endpoint or "
+        "replacement, then rerun the scoped check. HTTP 410 alone does not "
+        "establish model retirement or an SDK regression.",
+    ),
     "sdk_regression": (
         "Connector maintainers",
         "Compare the failing connector version with the last passing version; "
@@ -96,11 +102,34 @@ def record(value: object) -> dict:
     return value if isinstance(value, dict) else {}
 
 
+def safe_observation(value: object) -> dict:
+    raw = record(value)
+    status = raw.get("http_status")
+    scope = raw.get("execution_scope")
+    observation = {
+        "http_status": status
+        if isinstance(status, int)
+        and not isinstance(status, bool)
+        and 100 <= status <= 599
+        else None,
+        "workflow_id": positive(raw.get("workflow_id")),
+        "execution_scope": scope
+        if isinstance(scope, str) and scope in ("native_probe", "sdk_test")
+        else "unknown",
+    }
+    observation["valid"] = all(
+        raw.get(key) is None or raw[key] == observation[key]
+        for key in ("http_status", "workflow_id", "execution_scope")
+    )
+    return observation
+
+
 def safe_result(value: object) -> dict:
     raw = record(value)
     return {
         "result_id": positive(raw.get("result_id")),
         "status": label(raw.get("status")),
+        **safe_observation(raw),
         "links": [
             url
             for name in (
@@ -168,6 +197,11 @@ def sanitize(data: object) -> dict:
         if diagnostic.get("status") in ("failed", "blocked", "warning")
         else "unknown",
         "evidence_url": link(diagnostic.get("evidence_url")),
+        **safe_observation(diagnostic),
+        "observation_supplied": any(
+            diagnostic.get(key) not in (None, "unknown")
+            for key in ("http_status", "workflow_id", "execution_scope")
+        ),
     }
     prior = {
         "connector_version": label(comparison.get("prior_connector_version")),
@@ -233,13 +267,47 @@ def assess(data: dict) -> dict:
         "No result-bound diagnostic establishes a failure cause.",
     )
     kind, stage = failure["failure_category"], failure["stage"]
+    observation = {}
+    observation_fields = ("http_status", "workflow_id", "execution_scope")
+    observation_supplied = failure["observation_supplied"]
+    if (
+        observation_supplied
+        and failure["valid"]
+        and target
+        and target["latest_result"]["valid"]
+        and failure["result_id"]
+        and failure["result_id"] == target["latest_result"]["result_id"]
+        and failure["evidence_url"] in target["latest_result"]["links"]
+        and all(
+            failure[key] == target["latest_result"][key] for key in observation_fields
+        )
+        and failure["status"] in ("failed", "blocked", "warning")
+        and target["latest_result"]["status"] in ("failed", "blocked", "warning")
+    ):
+        observation = {
+            "result_id": failure["result_id"],
+            **{key: failure[key] for key in observation_fields},
+        }
     if (
         failure["status"] in ("failed", "blocked", "warning")
         and failure["result_id"]
         and target
         and target["latest_result"]["status"] in ("failed", "blocked", "warning")
     ):
-        if stage == "setup" and kind == "authentication_failed":
+        if observation_supplied and not observation:
+            reason = (
+                "Supplied HTTP, workflow or execution-scope evidence does not "
+                "match the linked latest result; inspect the original artifacts."
+            )
+        elif observation.get("http_status") == 410 and target["deployment"] == "hosted":
+            cause, confidence, reason = (
+                "target_unavailable",
+                "medium",
+                "The linked hosted request observed HTTP 410 Gone. This is a "
+                "historical endpoint-unavailable observation; current availability "
+                "and model retirement are not established.",
+            )
+        elif stage == "setup" and kind == "authentication_failed":
             cause, confidence, reason = (
                 "credentials",
                 "medium",
@@ -302,6 +370,8 @@ def assess(data: dict) -> dict:
                 and data["connector_version"]
                 and prior["connector_version"] != data["connector_version"]
                 and target["latest_result"]["links"]
+                and observation.get("execution_scope") != "native_probe"
+                and target["latest_result"]["execution_scope"] != "native_probe"
             ):
                 cause, confidence, reason = (
                     "sdk_regression",
@@ -335,6 +405,7 @@ def assess(data: dict) -> dict:
         if target
         else None,
         "evidence": evidence,
+        "observation": observation,
         "review_required": True,
     }
 
@@ -354,42 +425,98 @@ def drafts(data: dict, triage: dict) -> dict:
         else "No allowlisted evidence link supplied; inspect Manager result privately."
     )
     scope = f"{display_version} / {display_model}"
-    verified = triage["classification"] != "unknown" and bool(
+    review_context = (
+        f"Supplied scope: {scope}. Baseline: "
+        f"{data['baseline_version'] or 'not supplied'}.\n"
+        f"Assessment: {cause} ({triage['confidence']}); {triage['basis']}\n"
+        f"Evidence: {reference}\nOwner: {triage['owner']}.\n"
+        f"Next: {triage['next_action']}\n"
+    )
+    observation = triage.get("observation", {})
+    if observation:
+        scope_description = {
+            "native_probe": "native endpoint probe; SDK execution not established",
+            "sdk_test": "SDK test reported by the reviewed result; not a support claim",
+        }.get(observation["execution_scope"], "not established")
+        review_context += (
+            f"Observed result: {observation['result_id']}; HTTP status: "
+            f"{observation['http_status'] or 'unknown'}"
+            f"{' Gone' if observation['http_status'] == 410 else ''}.\n"
+            f"Manager workflow: {observation['workflow_id'] or 'not supplied'}.\n"
+            f"Execution scope: {scope_description}.\n"
+        )
+    if (
+        triage["classification"] not in ("unknown", "target_unavailable")
+        and triage["target"]
+    ):
+        target = next(
+            item
+            for item in data["targets"]
+            if item["nim_id"] == triage["target"]["nim_id"]
+        )
+        review_context += (
+            f"Target: {target['nim_id']} / {target['deployment']}.\n"
+            f"Accepted result: {target['accepted_result']['result_id'] or 'unknown'}"
+            f" ({target['accepted_result']['status'] or 'unknown'}); fingerprint "
+            f"{target['accepted_fingerprint'] or 'unknown'}; digest "
+            f"{target['accepted_digest'] or 'unknown'}.\n"
+            f"Observed result: {target['latest_result']['result_id'] or 'unknown'}"
+            f" ({target['latest_result']['status'] or 'unknown'}); fingerprint "
+            f"{target['observed_fingerprint'] or 'unknown'}; digest "
+            f"{target['observed_digest'] or 'unknown'}.\n"
+        )
+        if triage["classification"] == "sdk_regression":
+            review_context += (
+                f"Comparable supplied connector versions: "
+                f"{data['prior']['connector_version']} (passing accepted result) -> "
+                f"{version} (failing observed result).\n"
+            )
+    sdk_patch_review = triage["classification"] == "sdk_regression" and bool(
         model and version and evidence
     )
     return {
         "issue": {
             "title": f"[Draft] BCB {cause}: {scope}",
-            "body": (
-                f"Scope: {scope}. Baseline: "
-                f"{data['baseline_version'] or 'not supplied'}.\n"
-                f"Assessment: {cause} ({triage['confidence']}); {triage['basis']}\n"
-                f"Evidence: {reference}\nOwner: {triage['owner']}.\n"
-                f"Next: {triage['next_action']}\n"
+            "body": review_context
+            + (
                 "Review Manager workflow and existing remediation "
                 "before creating an issue."
             ),
         },
         "pr_patch_suggestion": {
             "title": f"[Draft suggestion] {cause}: {scope}",
-            "body": (
+            "body": review_context
+            + (
                 "Review a targeted connector fix against the prior passing and "
-                "current failing results; use Manager's existing remediation workflow "
-                "and require owner approval before any PR."
-                if verified and triage["classification"] == "sdk_regression"
+                "current failing results; use Manager's existing remediation workflow. "
+                "Describe the actual changed code, attach reproduction and regression "
+                "checks for both supplied versions on this same target, and obtain "
+                "owner approval before any PR. No patch has been inferred."
+                if sdk_patch_review
+                else "No connector patch is supported by this endpoint-unavailable "
+                "observation; review the hosted target with its endpoint/catalog owner."
+                if triage["classification"] == "target_unavailable"
                 else "Do not propose a connector patch until the failure cause "
                 "and affected scope are confirmed."
-            )
-            + f"\nEvidence: {reference}",
+            ),
         },
         "release_note_docs_freshness": {
             "title": f"[Draft review] BCB evidence for {scope}",
-            "body": (
-                f"No compatibility or release claim: {cause}; evidence and "
-                "owner review pending. "
-                "Check whether model docs or release notes need an update after "
-                "a passing, accepted BCB result. "
-                f"Evidence: {reference}"
+            "body": review_context
+            + (
+                "Review hosted-target guidance after endpoint/catalog-owner "
+                "confirmation. This observation alone does not establish a "
+                "model-retirement, compatibility or release-note delta."
+                if triage["classification"] == "target_unavailable"
+                else "No compatibility or release claim: insufficient attribution. "
+                "Supply a result-bound diagnostic and comparable passing evidence "
+                "before drafting a docs or release-note delta."
+                if triage["classification"] == "unknown"
+                else "No compatibility or release claim; owner review pending. "
+                "Check the affected model's documented capabilities against the "
+                "accepted versus observed identity above. Record a docs/release-note "
+                "delta only after a passing, accepted revalidation and release-owner "
+                "review; these observations are not a compatibility guarantee."
             ),
         },
         "publishable": False,
