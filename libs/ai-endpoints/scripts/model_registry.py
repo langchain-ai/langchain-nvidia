@@ -7,14 +7,19 @@ from a catalog response. Run from any directory; see docs/model_registry.md.
 """
 
 import argparse
+import ast
+import difflib
 import json
+import keyword
 import os
 import pprint
 import re
 import sys
 import urllib.request
+from contextlib import ExitStack
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = ROOT / "langchain_nvidia_ai_endpoints/data/model_registry.json"
@@ -59,8 +64,15 @@ def deployment_type(sources: set[str]) -> str:
 
 
 def load_registry(path: Path = REGISTRY) -> list[dict[str, Any]]:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if data.get("schema_version") != 1 or not isinstance(data.get("models"), list):
+    return _registry_models(json.loads(path.read_text(encoding="utf-8")))
+
+
+def _registry_models(data: Any) -> list[dict[str, Any]]:
+    if (
+        not isinstance(data, dict)
+        or data.get("schema_version") != 1
+        or not isinstance(data.get("models"), list)
+    ):
         raise ValueError("Expected model registry schema_version 1 with models array")
     models = data["models"]
     ids: set[str] = set()
@@ -185,6 +197,138 @@ def generate(write: bool) -> int:
         return 1
     STATICS.write_text(expected, encoding="utf-8")
     print("Updated generated model tables (review the diff before merging)")
+    return 0
+
+
+def _prepare_pr(reviewed: Path, patch_output: Path, body_output: Path) -> int:
+    """Stage a complete patch from reviewed registry data, without applying it."""
+    paths = [path.resolve() for path in (reviewed, patch_output, body_output)]
+    if len(set(paths)) != 3 or any(
+        path.exists() or path in (REGISTRY.resolve(), STATICS.resolve())
+        for path in paths[1:]
+    ):
+        raise ValueError("Input and new output files must differ from registry sources")
+    reviewed_text = reviewed.read_text(encoding="utf-8")
+    reviewed_data = json.loads(reviewed_text)
+    models = _registry_models(reviewed_data)
+    if any(
+        not key.isidentifier() or keyword.iskeyword(key)
+        for row in models
+        for key in row["model"]
+    ):
+        raise ValueError("Model fields must be Python identifiers")
+    current_text = REGISTRY.read_text(encoding="utf-8")
+    current_data = json.loads(current_text)
+    baseline = _registry_models(current_data)
+    reviewed_text = reviewed_text.rstrip("\n") + "\n"
+    # Generate identical data in the canonical source's field order.
+    if current_data == reviewed_data:
+        reviewed_text = current_text
+        models = baseline
+    source = STATICS.read_text(encoding="utf-8")
+    generated = replace_generated(source, render(models))
+    ast.parse(generated)
+    patch = "".join(
+        "".join(
+            difflib.unified_diff(
+                before.splitlines(keepends=True),
+                after.splitlines(keepends=True),
+                fromfile=f"a/{path.relative_to(ROOT.parent.parent).as_posix()}",
+                tofile=f"b/{path.relative_to(ROOT.parent.parent).as_posix()}",
+            )
+        )
+        for path, before, after in (
+            (REGISTRY, current_text, reviewed_text),
+            (STATICS, source, generated),
+        )
+    )
+    before = {row["id"]: row for row in baseline}
+    after = {row["id"]: row for row in models}
+    changed = {
+        key for key in before.keys() | after.keys() if before.get(key) != after.get(key)
+    }
+    evidence = set()
+    for identifier in changed:
+        for row in (before.get(identifier), after.get(identifier)):
+            if row is None:
+                continue
+            for info in (
+                *row["provenance"].values(),
+                *row["capability_provenance"].values(),
+            ):
+                if url := info["url"]:
+                    parsed = urlsplit(url)
+                    if (
+                        parsed.scheme != "https"
+                        or not parsed.hostname
+                        or parsed.username
+                        or parsed.password
+                        or any(char in url for char in "\r\n<>")
+                    ):
+                        raise ValueError(
+                            "Registry evidence must be credential-free HTTPS"
+                        )
+                    evidence.add(url)
+    body = "\n".join(
+        [
+            "# Draft reviewed NIM registry update",
+            "",
+            "Generated from explicitly supplied reviewed registry data, not from "
+            "automatic catalog classification. Maintainer review is required; "
+            "this is not a capability or release approval.",
+            "",
+            f"- Added: {len(after.keys() - before.keys())}",
+            f"- Removed: {len(before.keys() - after.keys())}",
+            f"- Updated: {len(changed & before.keys() & after.keys())}",
+            "",
+            "## Evidence",
+            "",
+            *(f"- <{url}>" for url in sorted(evidence)),
+            *(
+                [
+                    "- No authoritative evidence links supplied; inspect the reviewed "
+                    "source and establish provenance before accepting model claims."
+                ]
+                if not evidence
+                else []
+            ),
+            "",
+            "## Test and review plan",
+            "",
+            "- [ ] Verify hosted and downloadable served IDs, aliases and source "
+            "completeness against their own evidence.",
+            "- [ ] Verify capability changes with behavioral harness evidence; "
+            "catalog claims are not compatibility proof.",
+            "- [ ] Run `python scripts/model_registry.py generate` from "
+            "`libs/ai-endpoints` and inspect both registry and generated Python.",
+            "- [ ] Run registry, statics and telemetry unit tests; confirm alias "
+            "lookup and telemetry identities remain correct.",
+            "- [ ] Obtain registry/connector owner review before merging.",
+            "",
+        ]
+    )
+    created: list[tuple[Path, int, int]] = []
+    try:
+        with ExitStack() as stack:
+            for path, text in ((patch_output, patch), (body_output, body)):
+                fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                info = os.fstat(fd)
+                created.append((path, info.st_dev, info.st_ino))
+                output = stack.enter_context(os.fdopen(fd, "w", encoding="utf-8"))
+                output.write(text)
+    except BaseException:
+        for path, device, inode in created:
+            try:
+                info = path.lstat()
+            except FileNotFoundError:
+                continue
+            if (info.st_dev, info.st_ino) == (device, inode):
+                path.unlink()
+        raise
+    print(
+        f"Prepared reviewed registry patch ({len(changed)} changed models); "
+        "no source applied"
+    )
     return 0
 
 
@@ -477,6 +621,13 @@ def main() -> int:
     generate_cmd.add_argument(
         "--write", action="store_true", help="Write generated Python"
     )
+    prepare_cmd = commands.add_parser(
+        "prepare-pr",
+        help="Stage a registry and generated-Python patch from reviewed JSON",
+    )
+    prepare_cmd.add_argument("--reviewed-registry", type=Path, required=True)
+    prepare_cmd.add_argument("--patch-output", type=Path, required=True)
+    prepare_cmd.add_argument("--pr-body-output", type=Path, required=True)
     drift_cmd = commands.add_parser("drift", help="Produce a review-only drift report")
     drift_cmd.add_argument(
         "--hosted-file", type=Path, help="Saved /v1/models response with source_url"
@@ -496,6 +647,17 @@ def main() -> int:
     args = parser.parse_args()
     if args.command == "generate":
         return generate(args.write)
+    if args.command == "prepare-pr":
+        try:
+            return _prepare_pr(
+                args.reviewed_registry, args.patch_output, args.pr_body_output
+            )
+        except (ValueError, OSError, KeyError, TypeError, AttributeError, SyntaxError):
+            print(
+                "Reviewed registry input or output unavailable; no source applied",
+                file=sys.stderr,
+            )
+            return 2
     if bool(args.harness_log) != bool(args.harness_url):
         parser.error("--harness-log and --harness-url must be supplied together")
     if args.harness_url and not args.harness_url.startswith("https://"):

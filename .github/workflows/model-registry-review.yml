@@ -7,6 +7,10 @@ on:
         description: "Optional path to a reviewed NGC metadata export in this checkout"
         required: false
         type: string
+      reviewed_registry_commit:
+        description: "Commit containing owner/security-reviewed public registry JSON; never a raw catalog snapshot"
+        required: false
+        type: string
   schedule:
     - cron: "0 9 * * 1"
   pull_request:
@@ -64,3 +68,59 @@ jobs:
           name: model-registry-review
           path: model-registry-review.md
           if-no-files-found: ignore
+
+  reviewed-registry-pr:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      github.repository == 'langchain-ai/langchain-nvidia' &&
+      inputs.reviewed_registry_commit != '' &&
+      vars.MODEL_REGISTRY_PR_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare and open a draft from reviewed registry data
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEWED_REGISTRY_COMMIT: ${{ inputs.reviewed_registry_commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$REVIEWED_REGISTRY_COMMIT" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "Reviewed registry commit must be a full commit SHA" >&2
+            exit 1
+          fi
+          registry_path=libs/ai-endpoints/langchain_nvidia_ai_endpoints/data/model_registry.json
+          bundle="$RUNNER_TEMP/reviewed-registry"
+          mkdir -p "$bundle"
+          git fetch origin "$REVIEWED_REGISTRY_COMMIT"
+          # Read only JSON from the selected commit; never execute its code.
+          git show "$REVIEWED_REGISTRY_COMMIT:$registry_path" > "$bundle/reviewed.json"
+          python3 libs/ai-endpoints/scripts/model_registry.py prepare-pr \
+            --reviewed-registry "$bundle/reviewed.json" \
+            --patch-output "$bundle/update.patch" \
+            --pr-body-output "$bundle/pr.md"
+          if [[ ! -s "$bundle/update.patch" ]]; then
+            echo "Reviewed registry has no changes; no PR created"
+            exit 0
+          fi
+          git apply --check "$bundle/update.patch"
+          git apply "$bundle/update.patch"
+          python3 libs/ai-endpoints/scripts/model_registry.py generate
+          printf '\nReviewed input: https://github.com/%s/blob/%s/%s\n' \
+            "$GITHUB_REPOSITORY" "$REVIEWED_REGISTRY_COMMIT" "$registry_path" >> "$bundle/pr.md"
+          branch="registry-reviewed-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          git checkout -b "$branch"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$registry_path" libs/ai-endpoints/langchain_nvidia_ai_endpoints/_statics.py
+          git commit -m "Update reviewed NIM model registry"
+          git push origin "$branch"
+          gh pr create --draft --base main --head "$branch" \
+            --title "Update reviewed NIM model registry" --body-file "$bundle/pr.md"

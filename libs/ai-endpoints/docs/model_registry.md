@@ -21,6 +21,45 @@ python3 scripts/model_registry.py generate --write  # only after reviewing JSON 
 
 Regeneration is deterministic and offline. Review the JSON diff and the Python diff together; a second `generate` must be diff-free. Preserve original IDs and aliases unless the change is explicitly reviewed against consumers and telemetry behavior. Run focused unit tests before requesting maintainer review.
 
+## Prepare a reviewed update and draft PR
+
+Catalog snapshots are proposals, not inputs to automatic registry publication.
+After source/registry owner review, supply a complete **registry schema version 1**
+JSON file, including reviewed served IDs and per-model provenance:
+
+```sh
+python3 scripts/model_registry.py prepare-pr \
+  --reviewed-registry /private/reviewed-model-registry.json \
+  --patch-output /private/registry-update.patch \
+  --pr-body-output /private/registry-pr.md
+```
+
+This offline command validates the registry and stages a unified patch containing
+both reviewed JSON and its generated Python tables. It does not apply the patch,
+fetch catalogs, infer capabilities, commit, push, or open a PR. It preserves code
+outside the generated tables, refuses existing output files or source/input
+overwrites, and creates outputs with private permissions. Invalid data produces
+no usable update; identical registry data produces an empty patch. Inspect the
+patch, evidence and test plan before applying it with `git apply --check` and
+`git apply`.
+
+The existing `NIM model registry review` workflow also has an **opt-in manual**
+draft-PR job. A repository owner must approve Actions PR creation, enable
+`MODEL_REGISTRY_PR_ENABLED=true`, and dispatch it on canonical `main` with
+`reviewed_registry_commit` set to a full commit SHA containing **public-field
+owner/security-reviewed registry JSON**. The commit must be available in the
+canonical repository. Record that review before dispatch; a SHA or valid schema
+does not establish source completeness, served-ID authority or approval.
+
+The job reads only registry JSON from that commit, uses the trusted main renderer,
+checks and applies the paired patch, confirms generated tables are current, and
+opens a **draft** PR with the reviewed commit link and test plan. It never executes
+code from the selected commit, infers catalog metadata, approves or merges a PR,
+or publishes compatibility/release claims. No changes means no branch or PR.
+Scheduled drift and pull-request checks remain read-only; manual draft creation
+has separately scoped repository-write and pull-request-write permissions.
+
+
 ## Drift report (no automatic publication)
 
 ```sh
@@ -54,4 +93,4 @@ The comparison proposes additions, explicitly linked renames, removals/staleness
 2. Run `pytest tests/unit_tests/test_model_registry.py tests/unit_tests/test_statics.py tests/unit_tests/test_usage_telemetry.py` from this package with its development dependencies installed.
 3. Check additions and aliases against actual served IDs; investigate every rename and removal against **both** source links. An unavailable/filtered source cannot establish removal.
 4. Run appropriate hosted and downloadable inference scenarios and ask the platform BCB harness for compatibility evidence before approving capability changes. Record the per-capability provenance link accurately (`legacy_static`/catalog claims do not become `bcb` by agreement). No catalog field is a substitute for a passing behavior result.
-5. Review the generated diff, historic aliases, telemetry identifier changes and the Markdown drift report in a pull request. A maintainer must explicitly approve the registry change; the bot never merges or publishes.
+5. Review the generated diff, historic aliases, telemetry identifier changes and the Markdown drift report in a pull request. A maintainer must explicitly approve the registry change. Reporting never applies catalog proposals; the separately enabled manual reviewed-data path opens draft PRs only and never approves or merges them.
