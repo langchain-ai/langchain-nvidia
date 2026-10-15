@@ -32,6 +32,24 @@ CAPABILITIES = (
 )
 CONTRACT = "bcb-public-v1alpha1"
 FRAMEWORK = "langchain-nvidia"
+SDK_PROFILE = "langchain_nvidia_chat_streaming"
+SDK_REVISION = "6ae050630424f2f391455cab039623d01709f364"
+SDK_PACKAGES = {
+    "langchain-nvidia-ai-endpoints": "1.5.0",
+    "langchain-core": "1.6.10",
+    "pydantic": "2.14.1",
+    "requests": "2.34.2",
+}
+SDK_ASSERTIONS = (
+    "sdk_class_valid",
+    "sdk_executed",
+    "chat_attempted",
+    "chat_message_valid",
+    "chat_content_present",
+    "streaming_attempted",
+    "stream_chunks_valid",
+    "stream_content_present",
+)
 SAFE_TEXT = re.compile(r"^[\w./:@+ -]{1,160}$", re.ASCII)
 PROBE_SUITES = {
     "streaming_format": "streaming",
@@ -139,6 +157,8 @@ def _evidence_context(
     packages: dict[str, set[str]] = {}
     deployments: set[str] = set()
     checks = []
+    sdk_proofs: list[bool] = []
+    sdk_result_ids = []
     framework_results = compatible.get("framework_results")
     if isinstance(framework_results, list):
         for result in framework_results:
@@ -188,6 +208,45 @@ def _evidence_context(
                     }
                 )
                 versions = check.get("package_versions")
+                if check.get("profile") == SDK_PROFILE:
+                    checked_at = _date(check.get("completed_at"))
+                    assertions = check.get("structural_assertions")
+                    chunk_count = (
+                        assertions.get("chunk_count")
+                        if isinstance(assertions, dict)
+                        else None
+                    )
+                    sdk_valid = bool(
+                        len(captured) == 1
+                        and result.get("active") is True
+                        and result.get("compatible") is True
+                        and result.get("status") == context.get("status") == "passed"
+                        and context.get("evidence_class") == "project_integration"
+                        and context.get("source_owner") == "NIM OSS Manager BCB"
+                        and context.get("project_revision") == SDK_REVISION
+                        and re.fullmatch(
+                            r"[0-9a-f]{64}", str(context.get("fingerprint_hash", ""))
+                        )
+                        and deployment == item["deployment_type"] == "hosted"
+                        and check.get("id") == "langchain_chatnvidia_chat_streaming"
+                        and check.get("profile_version") == 1
+                        and not isinstance(check.get("profile_version"), bool)
+                        and check.get("evidence_class") == "project_integration"
+                        and check.get("status") == "passed"
+                        and checked_at is not None
+                        and now - timedelta(days=max_age_days)
+                        <= checked_at
+                        <= completed
+                        and versions == SDK_PACKAGES
+                        and isinstance(assertions, dict)
+                        and all(assertions.get(flag) is True for flag in SDK_ASSERTIONS)
+                        and isinstance(chunk_count, int)
+                        and not isinstance(chunk_count, bool)
+                        and 1 <= chunk_count <= 4096
+                    )
+                    sdk_proofs.append(sdk_valid)
+                    if sdk_valid:
+                        sdk_result_ids.append(context["result_id"])
                 if check.get(
                     "evidence_class"
                 ) != "project_integration" or not isinstance(versions, dict):
@@ -273,7 +332,18 @@ def _evidence_context(
                     links.append(link)
     return {
         # Installed-package inventory is not proof that ChatNVIDIA was executed.
-        "tested_package_version": "unknown",
+        "tested_package_version": "1.5.0"
+        if sdk_proofs and all(sdk_proofs)
+        else "unknown",
+        "sdk_capabilities": {
+            key: "passed"
+            if sdk_proofs and all(sdk_proofs) and key in {"chat", "streaming"}
+            else "unknown"
+            for key in CAPABILITIES
+        },
+        "sdk_result_ids": sorted(set(sdk_result_ids))
+        if sdk_proofs and all(sdk_proofs)
+        else [],
         "tested_packages": {
             name: sorted(values) for name, values in sorted(packages.items())
         },
@@ -438,10 +508,11 @@ def classify(
         if verified
         else ("stale" if status == "stale" else "unknown"),
         "recommended_action": action,
-        "capabilities": {key: "unknown" for key in CAPABILITIES},
+        "capabilities": context["sdk_capabilities"],
         "limitations": (
-            "SDK capability execution unavailable; native probes do not certify "
-            "SDK support; missing package/deployment/runtime evidence is unknown"
+            "Only attributable, current, version-bound ChatNVIDIA chat/streaming "
+            "checks certify SDK support; native probes and installed packages "
+            "alone do not. Other capabilities and GPU runtime remain unknown."
         ),
         "gpu_runtime": "unavailable/redacted",
         "source_owner": (

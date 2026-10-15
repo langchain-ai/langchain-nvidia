@@ -312,3 +312,108 @@ def test_installed_sdk_inventory_does_not_certify_sdk_execution() -> None:
     row = classify(c, r, b)
     assert row["tested_package_version"] == "unknown"
     assert row["capabilities"]["tools"] == "unknown"
+
+
+def sdk_evidence() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    c, r, b = evidence()
+    c["framework_results"][0].update(
+        project_target_id=3,
+        validation_evidence={
+            "contract_version": "bcb-validation-evidence-v1",
+            "result_id": 14,
+            "project_target_id": 3,
+            "nim_target_id": ITEM["nim_target_id"],
+            "model_name": ITEM["model"],
+            "target_snapshot": {
+                "id": ITEM["nim_target_id"],
+                "model_name": ITEM["model"],
+            },
+            "completed_at": "2026-09-27T12:01:00Z",
+            "executor": "hosted_endpoint",
+            "status": "passed",
+            "evidence_class": "project_integration",
+            "source_owner": "NIM OSS Manager BCB",
+            "project_revision": view.SDK_REVISION,
+            "fingerprint_hash": "a" * 64,
+            "checks": [
+                {
+                    "id": "langchain_chatnvidia_chat_streaming",
+                    "profile": view.SDK_PROFILE,
+                    "profile_version": 1,
+                    "status": "passed",
+                    "evidence_class": "project_integration",
+                    "completed_at": "2026-09-27T12:00:00Z",
+                    "package_versions": dict(view.SDK_PACKAGES),
+                    "structural_assertions": {
+                        **dict.fromkeys(view.SDK_ASSERTIONS, True),
+                        "chunk_count": 3,
+                    },
+                }
+            ],
+        },
+    )
+    return c, r, b
+
+
+def test_version_bound_sdk_checks_certify_only_chat_and_streaming() -> None:
+    row = view.classify(
+        {**ITEM, "deployment_type": "hosted"}, *sdk_evidence(), now=NOW, max_age_days=30
+    )
+    assert row["tested_package_version"] == "1.5.0"
+    assert row["sdk_result_ids"] == [14]
+    assert row["capabilities"]["chat"] == "passed"
+    assert row["capabilities"]["streaming"] == "passed"
+    assert all(
+        row["capabilities"][name] == "unknown"
+        for name in view.CAPABILITIES
+        if name not in {"chat", "streaming"}
+    )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "sdk_flag",
+        "version",
+        "revision",
+        "model",
+        "target",
+        "deployment",
+        "failed",
+        "stale",
+        "future_check",
+        "chunk_count",
+        "owner",
+    ],
+)
+def test_sdk_evidence_must_be_current_complete_and_bound(mutation: str) -> None:
+    c, r, b = sdk_evidence()
+    context = c["framework_results"][0]["validation_evidence"]
+    check = context["checks"][0]
+    if mutation == "sdk_flag":
+        check["structural_assertions"]["sdk_executed"] = False
+    elif mutation == "version":
+        check["package_versions"]["langchain-nvidia-ai-endpoints"] = "0.0.1"
+    elif mutation == "revision":
+        context["project_revision"] = "b" * 40
+    elif mutation == "model":
+        context["model_name"] = "another/model"
+    elif mutation == "target":
+        context["target_snapshot"]["id"] = 999
+    elif mutation == "deployment":
+        context["executor"] = "downloadable_container"
+    elif mutation == "failed":
+        context["status"] = "failed"
+    elif mutation == "stale":
+        context["completed_at"] = "2020-01-01T00:00:00Z"
+    elif mutation == "future_check":
+        check["completed_at"] = "2026-10-01T00:00:00Z"
+    elif mutation == "chunk_count":
+        check["structural_assertions"]["chunk_count"] = True
+    else:
+        context["source_owner"] = "untrusted"
+    row = view.classify(
+        {**ITEM, "deployment_type": "hosted"}, c, r, b, now=NOW, max_age_days=30
+    )
+    assert row["tested_package_version"] == "unknown"
+    assert all(state == "unknown" for state in row["capabilities"].values())
