@@ -13,6 +13,7 @@ import pprint
 import re
 import sys
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -190,7 +191,7 @@ def generate(write: bool) -> int:
 
 def snapshot(
     path: Path | None, source: str
-) -> tuple[dict[str, dict[str, Any]] | None, str]:
+) -> tuple[dict[str, dict[str, Any]] | None, str, bool]:
     if path is None and source == "hosted":
         try:
             headers = {"Accept": "application/json"}
@@ -200,23 +201,29 @@ def snapshot(
             with urllib.request.urlopen(req, timeout=15) as response:
                 payload = json.load(response)
         except (OSError, ValueError) as exc:
-            return None, f"{HOSTED_URL}: {exc}"
+            return None, f"{HOSTED_URL}: {exc}", False
         source_url = HOSTED_URL
     elif path is not None:
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
-            return None, f"{path}: {exc}"
+            return None, f"{path}: {exc}", False
         source_url = payload.get("source_url", "") if isinstance(payload, dict) else ""
     else:
-        return None, "NGC snapshot not supplied (--ngc-file; do not infer removals)"
+        return (
+            None,
+            "NGC snapshot not supplied (--ngc-file; do not infer removals)",
+            False,
+        )
     key = "data" if source == "hosted" else "models"
     if not isinstance(payload, dict) or not isinstance(payload.get(key), list):
-        return None, f"{source}: expected an object containing {key} array"
+        return None, f"{source}: expected an object containing {key} array", False
     if not isinstance(source_url, str) or not source_url.startswith("https://"):
-        return None, f"{source}: missing HTTPS source_url evidence"
+        return None, f"{source}: missing HTTPS source_url evidence", False
+    if not isinstance(payload.get("complete_inventory", False), bool):
+        return None, f"{source}: complete_inventory must be a boolean", False
     if not payload[key]:
-        return None, f"{source}: empty catalog; refusing to infer removals"
+        return None, f"{source}: empty catalog; refusing to infer removals", False
     entries: dict[str, dict[str, Any]] = {}
     for item in payload[key]:
         if (
@@ -224,33 +231,36 @@ def snapshot(
             or not isinstance(item.get("id"), str)
             or not item["id"]
         ):
-            return None, f"{source}: record missing id"
+            return None, f"{source}: record missing id", False
         if item["id"] in entries:
-            return None, f"{source}: duplicate id {item['id']}"
+            return None, f"{source}: duplicate id {item['id']}", False
         if "url" in item and (
             not isinstance(item["url"], str) or not item["url"].startswith("https://")
         ):
-            return None, f"{source}: invalid HTTPS evidence URL for {item['id']}"
+            return None, f"{source}: invalid HTTPS evidence URL for {item['id']}", False
         for field in ("aliases", "served_names"):
             if field in item and (
                 not isinstance(item[field], list)
                 or not all(isinstance(n, str) for n in item[field])
             ):
-                return None, f"{source}: invalid {field} for {item['id']}"
+                return None, f"{source}: invalid {field} for {item['id']}", False
         if "replaces" in item and not isinstance(item["replaces"], str):
-            return None, f"{source}: invalid replaces for {item['id']}"
+            return None, f"{source}: invalid replaces for {item['id']}", False
         if "deprecated" in item and not isinstance(item["deprecated"], bool):
-            return None, f"{source}: invalid deprecation for {item['id']}"
+            return None, f"{source}: invalid deprecation for {item['id']}", False
         if "capabilities" in item and not isinstance(item["capabilities"], dict):
-            return None, f"{source}: invalid capabilities for {item['id']}"
+            return None, f"{source}: invalid capabilities for {item['id']}", False
         entries[item["id"]] = {**item, "url": item.get("url", source_url)}
-    return entries, source_url
+    complete = path is not None and payload.get("complete_inventory", False)
+    return entries, source_url, complete
 
 
 def compare(
     models: list[dict[str, Any]],
     hosted: dict[str, dict[str, Any]] | None,
     ngc: dict[str, dict[str, Any]] | None,
+    *,
+    complete_sources: frozenset[str] = frozenset(),
 ) -> list[dict[str, Any]]:
     changes: list[dict[str, Any]] = []
     known = {row["id"]: row for row in models if row["table"] != "OPENAI_MODEL_TABLE"}
@@ -371,6 +381,8 @@ def compare(
                             "evidence": url,
                         }
                     )
+        if source not in complete_sources:
+            continue
         for identifier, old in sorted(known.items()):
             # Absence alone is not proof a model was ever in that catalog.
             if (
@@ -493,16 +505,29 @@ def main() -> int:
     drift_cmd.add_argument(
         "--output", type=Path, required=True, help="PR-ready Markdown review artifact"
     )
+    drift_cmd.add_argument(
+        "--json-output",
+        type=Path,
+        help="Exclusive private structured drift artifact for Manager review",
+    )
     args = parser.parse_args()
     if args.command == "generate":
         return generate(args.write)
+    if args.json_output:
+        input_paths = [
+            path.resolve()
+            for path in (args.hosted_file, args.ngc_file, args.harness_log, args.output)
+            if path is not None
+        ]
+        if args.json_output.resolve() in input_paths or args.json_output.exists():
+            parser.error("Structured output must be new and distinct from other paths")
     if bool(args.harness_log) != bool(args.harness_url):
         parser.error("--harness-log and --harness-url must be supplied together")
     if args.harness_url and not args.harness_url.startswith("https://"):
         parser.error("--harness-url requires an HTTPS evidence link")
     models = load_registry()
-    hosted, hosted_source = snapshot(args.hosted_file, "hosted")
-    ngc, ngc_source = snapshot(args.ngc_file, "downloadable")
+    hosted, hosted_source, hosted_complete = snapshot(args.hosted_file, "hosted")
+    ngc, ngc_source, ngc_complete = snapshot(args.ngc_file, "downloadable")
     missing = [
         text
         for records, text in ((hosted, hosted_source), (ngc, ngc_source))
@@ -511,12 +536,30 @@ def main() -> int:
     sources = {
         name: source
         for name, records, source in (
-            ("hosted", hosted, hosted_source),
-            ("NGC", ngc, ngc_source),
+            (
+                "hosted"
+                if hosted_complete
+                else "hosted (partial inventory; no removals)",
+                hosted,
+                hosted_source,
+            ),
+            (
+                "NGC" if ngc_complete else "NGC (partial inventory; no removals)",
+                ngc,
+                ngc_source,
+            ),
         )
         if records is not None
     }
-    changes = compare(models, hosted, ngc)
+    complete_sources = frozenset(
+        name
+        for name, complete in (
+            ("hosted", hosted_complete),
+            ("downloadable", ngc_complete),
+        )
+        if complete
+    )
+    changes = compare(models, hosted, ngc, complete_sources=complete_sources)
     if args.harness_log:
         try:
             changes.extend(
@@ -527,6 +570,36 @@ def main() -> int:
             sources["downloadable harness"] = args.harness_url
         except OSError:
             missing.append("Downloadable harness log could not be read")
+    if args.json_output:
+        structured = {
+            "contract_version": "model-registry-drift-v1",
+            "data_classification": "internal_restricted",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "inventory": {
+                name: {
+                    "status": "available" if records is not None else "unavailable",
+                    "complete_inventory": complete,
+                    "source_url": source if records is not None else None,
+                }
+                for name, records, source, complete in (
+                    ("hosted", hosted, hosted_source, hosted_complete),
+                    ("downloadable", ngc, ngc_source, ngc_complete),
+                )
+            },
+            "sources": sources,
+            "missing": missing,
+            "changes": changes,
+        }
+        try:
+            descriptor = os.open(
+                args.json_output,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+            )
+            with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+                stream.write(json.dumps(structured, indent=2, sort_keys=True) + "\n")
+        except OSError:
+            parser.error("Unable to create private structured drift output")
     args.output.write_text(report(changes, sources, missing), encoding="utf-8")
     print(
         f"Wrote {args.output} ({len(changes)} changes, "

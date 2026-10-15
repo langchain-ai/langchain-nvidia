@@ -29,6 +29,25 @@ python3 scripts/model_registry.py drift --hosted-file /path/hosted.json --ngc-fi
 
 Omit `--hosted-file` to fetch the fixed `https://integrate.api.nvidia.com/v1/models` URL (15-second timeout); supply `NVIDIA_API_KEY` through the environment if authentication is required. The scheduled workflow reads the optional repository secret of that name and never prints its value. There is no automatic NGC fetch: supply a reviewed export from the NGC catalog or existing platform metadata harness. No credentials are included in snapshots or reports. A missing, malformed or empty source is called out as **unavailable** and exits with status 2 after writing a report. It never causes deletion proposals. Reports are proposed review artifacts, not registry changes or compatibility approvals.
 
+For the existing Manager NIM Registry drift view, add
+`--json-output /private/review/registry-drift.json` to the same command.
+The new output must not exist and must differ from inputs and Markdown output;
+it is created exclusively with `0600` permissions in an existing private
+directory. The `model-registry-drift-v1` / `internal_restricted` artifact retains
+actual comparator fields, complete-versus-partial source markers and source
+limitations. `generated_at` is generation time, not observed catalog freshness.
+Missing sources still produce explicit limitations and exit 2; partial/missing
+inventory does not authorize removals.
+
+Retain this file only in an approved private Manager review workflow using its
+existing artifact retention/indexing path. Select that workflow and JSON artifact
+on `/compatibility/nims`; no second registry or automatic sync is created.
+Reported `review_owner` and canonical `generated_pr_url` may be attached to the
+indexed artifact metadata by the authorized review flow. Manager carries those
+two fields only while the indexed SHA matches actual retained bytes; they are
+reported context, never evidence of approval. No private artifact is uploaded
+to public GitHub Actions by this option.
+
 For the existing downloadable NIM harness, save the job log outside the
 repository and supply its GitLab job URL as evidence:
 
@@ -44,9 +63,11 @@ are ignored. The log itself is never copied into the report. A harness candidate
 does not establish the served model name, NGC availability, or capabilities;
 review the linked job and NGC metadata before changing reviewed JSON.
 
-Hosted snapshot: `{"source_url":"https://integrate.api.nvidia.com/v1/models","data":[{"id":"nvidia/example"}]}`. NGC snapshot: `{"source_url":"https://catalog.ngc.nvidia.com/...","models":[{"id":"nvidia/example","url":"https://catalog.ngc.nvidia.com/..."}]}`. Optional normalized fields on either item: `served_names` and `aliases` (arrays of strings), `deprecated` (boolean), `replaces` (an existing registry ID, only when explicitly asserted upstream), and `capabilities` (map using the three capability names and the schema states). Attach per-item HTTPS `url` links when available; otherwise the snapshot's HTTPS `source_url` is used. Capture complete snapshots; filtered exports must not be treated as authoritative for removals.
+Hosted snapshot: `{"source_url":"https://integrate.api.nvidia.com/v1/models","data":[{"id":"nvidia/example"}]}`. NGC snapshot: `{"source_url":"https://catalog.ngc.nvidia.com/...","models":[{"id":"nvidia/example","url":"https://catalog.ngc.nvidia.com/..."}]}`. Optional normalized fields on either item: `served_names` and `aliases` (arrays of strings), `deprecated` (boolean), `replaces` (an existing registry ID, only when explicitly asserted upstream), and `capabilities` (map using the three capability names and the schema states). Attach per-item HTTPS `url` links when available; otherwise the snapshot's HTTPS `source_url` is used. NGC resource IDs are not necessarily served IDs.
 
-The comparison proposes additions, explicitly linked renames, removals/staleness only for entries previously marked `current` in that source, source-specific deployment-type changes, alias/served-name changes, deprecations, and capability changes **with claimed provenance**. An absent capability stays unknown; a source outage is not evidence of removal. A catalog claim is never labeled BCB evidence, even when its state agrees with an existing legacy flag. Validate observed model behavior, served names and links, update the JSON deliberately, regenerate, review both diffs and request **maintainer approval** on the pull request. The scheduled GitHub workflow uploads a report for triage; it has read-only repository permission and cannot publish updates or open an unreviewed PR.
+Snapshots are **partial by default**, including the live hosted `/v1/models` response: access restrictions or filtering may hide rows, so absence cannot support a removal proposal. Only set top-level `"complete_inventory": true` on a saved snapshot after reviewing that it covers the full catalog for that deployment source, including pagination and filters. A filtered export or connector-compatible subset must omit this marker. Invalid marker types make the source unavailable. The report labels partial inventories; additions and explicit changes remain review proposals, not approvals.
+
+The comparison proposes additions, explicitly linked renames, removals/staleness only for entries previously marked `current` in a **complete** snapshot of that source, source-specific deployment-type changes, alias/served-name changes, deprecations, and capability changes **with claimed provenance**. An absent capability stays unknown; a source outage is not evidence of removal. A catalog claim is never labeled BCB evidence, even when its state agrees with an existing legacy flag. Validate observed model behavior, served names and links, update the JSON deliberately, regenerate, review both diffs and request **maintainer approval** on the pull request. The scheduled GitHub workflow uploads a report for triage; it has read-only repository permission and cannot publish updates or open pull requests.
 
 ## Test plan for a model update
 
