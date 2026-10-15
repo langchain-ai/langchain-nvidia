@@ -65,6 +65,7 @@ def test_drift_proposes_addition_rename_and_source_specific_staleness() -> None:
             "nvidia/added": {"id": "nvidia/added", "url": "https://example.com/add"},
         },
         None,
+        complete_sources=frozenset({"hosted"}),
     )
     assert {(change["kind"], change["id"]) for change in changes} == {
         ("rename", "nvidia/new"),
@@ -115,14 +116,14 @@ def test_drift_detects_alias_deprecation_served_name_and_capability_changes() ->
 
 
 def test_missing_or_empty_source_does_not_propose_removals(tmp_path: Path) -> None:
-    missing, reason = registry.snapshot(tmp_path / "missing.json", "hosted")
-    assert missing is None and "missing.json" in reason
+    missing, reason, complete = registry.snapshot(tmp_path / "missing.json", "hosted")
+    assert missing is None and "missing.json" in reason and not complete
     empty = tmp_path / "empty.json"
     empty.write_text(
         json.dumps({"source_url": "https://example.com/models", "data": []})
     )
-    unavailable, reason = registry.snapshot(empty, "hosted")
-    assert unavailable is None and "empty catalog" in reason
+    unavailable, reason, complete = registry.snapshot(empty, "hosted")
+    assert unavailable is None and "empty catalog" in reason and not complete
     assert (
         registry.compare([fixture_model("nvidia/old", current=True)], unavailable, None)
         == []
@@ -142,9 +143,10 @@ def test_snapshot_uses_item_evidence_and_rejects_duplicate_ids(tmp_path: Path) -
             }
         )
     )
-    rows, _ = registry.snapshot(snapshot, "downloadable")
+    rows, _, complete = registry.snapshot(snapshot, "downloadable")
     assert rows is not None
     assert rows["nvidia/old"]["url"] == "https://catalog.ngc.nvidia.com/old"
+    assert not complete
     snapshot.write_text(
         json.dumps(
             {
@@ -153,8 +155,42 @@ def test_snapshot_uses_item_evidence_and_rejects_duplicate_ids(tmp_path: Path) -
             }
         )
     )
-    rows, reason = registry.snapshot(snapshot, "downloadable")
-    assert rows is None and "duplicate id" in reason
+    rows, reason, complete = registry.snapshot(snapshot, "downloadable")
+    assert rows is None and "duplicate id" in reason and not complete
+
+
+def test_partial_inventory_never_proposes_false_removals(tmp_path: Path) -> None:
+    row = fixture_model("nvidia/old")
+    row["provenance"]["downloadable"] = {
+        "state": "current",
+        "url": "https://example.com/ngc/old",
+    }
+    snapshot = tmp_path / "ngc.json"
+    payload: dict[str, Any] = {
+        "source_url": "https://example.com/ngc",
+        "models": [{"id": "nvidia/new", "url": "https://example.com/ngc/new"}],
+    }
+    snapshot.write_text(json.dumps(payload))
+    observed, _, complete = registry.snapshot(snapshot, "downloadable")
+    assert not complete
+    assert [(c["kind"], c["id"]) for c in registry.compare([row], None, observed)] == [
+        ("addition", "nvidia/new")
+    ]
+    payload["complete_inventory"] = True
+    snapshot.write_text(json.dumps(payload))
+    observed, _, complete = registry.snapshot(snapshot, "downloadable")
+    assert complete
+    changes = registry.compare(
+        [row], None, observed, complete_sources=frozenset({"downloadable"})
+    )
+    assert {(c["kind"], c["id"]) for c in changes} == {
+        ("addition", "nvidia/new"),
+        ("removal/stale", "nvidia/old"),
+    }
+    payload["complete_inventory"] = "true"
+    snapshot.write_text(json.dumps(payload))
+    invalid, reason, complete = registry.snapshot(snapshot, "downloadable")
+    assert invalid is None and "complete_inventory" in reason and not complete
 
 
 def test_registry_rejects_unreviewed_capability_change(tmp_path: Path) -> None:
@@ -208,6 +244,7 @@ def test_deployment_type_tracks_both_sources_and_source_specific_removal(
         [row],
         {},
         {"nvidia/old": {"id": "nvidia/old", "url": "https://example.com/ngc"}},
+        complete_sources=frozenset({"hosted"}),
     )
     assert len(changes) == 1
     assert changes[0]["source"] == "hosted"
