@@ -29,6 +29,12 @@ CATEGORIES = {
     "unknown",
 }
 ISSUE_ACTIONS = {
+    "target_unavailable": (
+        "Endpoint/catalog owner",
+        "Verify this target's hosted availability and intended endpoint or "
+        "replacement, then rerun the scoped check. HTTP 410 alone does not "
+        "establish model retirement or an SDK regression.",
+    ),
     "sdk_regression": (
         "Connector maintainers",
         "Compare the failing connector version with the last passing version; "
@@ -96,11 +102,34 @@ def record(value: object) -> dict:
     return value if isinstance(value, dict) else {}
 
 
+def safe_observation(value: object) -> dict:
+    raw = record(value)
+    status = raw.get("http_status")
+    scope = raw.get("execution_scope")
+    observation = {
+        "http_status": status
+        if isinstance(status, int)
+        and not isinstance(status, bool)
+        and 100 <= status <= 599
+        else None,
+        "workflow_id": positive(raw.get("workflow_id")),
+        "execution_scope": scope
+        if isinstance(scope, str) and scope in ("native_probe", "sdk_test")
+        else "unknown",
+    }
+    observation["valid"] = all(
+        raw.get(key) is None or raw[key] == observation[key]
+        for key in ("http_status", "workflow_id", "execution_scope")
+    )
+    return observation
+
+
 def safe_result(value: object) -> dict:
     raw = record(value)
     return {
         "result_id": positive(raw.get("result_id")),
         "status": label(raw.get("status")),
+        **safe_observation(raw),
         "links": [
             url
             for name in (
@@ -168,6 +197,11 @@ def sanitize(data: object) -> dict:
         if diagnostic.get("status") in ("failed", "blocked", "warning")
         else "unknown",
         "evidence_url": link(diagnostic.get("evidence_url")),
+        **safe_observation(diagnostic),
+        "observation_supplied": any(
+            diagnostic.get(key) not in (None, "unknown")
+            for key in ("http_status", "workflow_id", "execution_scope")
+        ),
     }
     prior = {
         "connector_version": label(comparison.get("prior_connector_version")),
@@ -233,13 +267,47 @@ def assess(data: dict) -> dict:
         "No result-bound diagnostic establishes a failure cause.",
     )
     kind, stage = failure["failure_category"], failure["stage"]
+    observation = {}
+    observation_fields = ("http_status", "workflow_id", "execution_scope")
+    observation_supplied = failure["observation_supplied"]
+    if (
+        observation_supplied
+        and failure["valid"]
+        and target
+        and target["latest_result"]["valid"]
+        and failure["result_id"]
+        and failure["result_id"] == target["latest_result"]["result_id"]
+        and failure["evidence_url"] in target["latest_result"]["links"]
+        and all(
+            failure[key] == target["latest_result"][key] for key in observation_fields
+        )
+        and failure["status"] in ("failed", "blocked", "warning")
+        and target["latest_result"]["status"] in ("failed", "blocked", "warning")
+    ):
+        observation = {
+            "result_id": failure["result_id"],
+            **{key: failure[key] for key in observation_fields},
+        }
     if (
         failure["status"] in ("failed", "blocked", "warning")
         and failure["result_id"]
         and target
         and target["latest_result"]["status"] in ("failed", "blocked", "warning")
     ):
-        if stage == "setup" and kind == "authentication_failed":
+        if observation_supplied and not observation:
+            reason = (
+                "Supplied HTTP, workflow or execution-scope evidence does not "
+                "match the linked latest result; inspect the original artifacts."
+            )
+        elif observation.get("http_status") == 410 and target["deployment"] == "hosted":
+            cause, confidence, reason = (
+                "target_unavailable",
+                "medium",
+                "The linked hosted request observed HTTP 410 Gone. This is a "
+                "historical endpoint-unavailable observation; current availability "
+                "and model retirement are not established.",
+            )
+        elif stage == "setup" and kind == "authentication_failed":
             cause, confidence, reason = (
                 "credentials",
                 "medium",
@@ -302,6 +370,8 @@ def assess(data: dict) -> dict:
                 and data["connector_version"]
                 and prior["connector_version"] != data["connector_version"]
                 and target["latest_result"]["links"]
+                and observation.get("execution_scope") != "native_probe"
+                and target["latest_result"]["execution_scope"] != "native_probe"
             ):
                 cause, confidence, reason = (
                     "sdk_regression",
@@ -335,6 +405,7 @@ def assess(data: dict) -> dict:
         if target
         else None,
         "evidence": evidence,
+        "observation": observation,
         "review_required": True,
     }
 
@@ -361,7 +432,23 @@ def drafts(data: dict, triage: dict) -> dict:
         f"Evidence: {reference}\nOwner: {triage['owner']}.\n"
         f"Next: {triage['next_action']}\n"
     )
-    if triage["classification"] != "unknown" and triage["target"]:
+    observation = triage.get("observation", {})
+    if observation:
+        scope_description = {
+            "native_probe": "native endpoint probe; SDK execution not established",
+            "sdk_test": "SDK test reported by the reviewed result; not a support claim",
+        }.get(observation["execution_scope"], "not established")
+        review_context += (
+            f"Observed result: {observation['result_id']}; HTTP status: "
+            f"{observation['http_status'] or 'unknown'}"
+            f"{' Gone' if observation['http_status'] == 410 else ''}.\n"
+            f"Manager workflow: {observation['workflow_id'] or 'not supplied'}.\n"
+            f"Execution scope: {scope_description}.\n"
+        )
+    if (
+        triage["classification"] not in ("unknown", "target_unavailable")
+        and triage["target"]
+    ):
         target = next(
             item
             for item in data["targets"]
@@ -406,6 +493,9 @@ def drafts(data: dict, triage: dict) -> dict:
                 "checks for both supplied versions on this same target, and obtain "
                 "owner approval before any PR. No patch has been inferred."
                 if sdk_patch_review
+                else "No connector patch is supported by this endpoint-unavailable "
+                "observation; review the hosted target with its endpoint/catalog owner."
+                if triage["classification"] == "target_unavailable"
                 else "Do not propose a connector patch until the failure cause "
                 "and affected scope are confirmed."
             ),
@@ -414,7 +504,11 @@ def drafts(data: dict, triage: dict) -> dict:
             "title": f"[Draft review] BCB evidence for {scope}",
             "body": review_context
             + (
-                "No compatibility or release claim: insufficient attribution. "
+                "Review hosted-target guidance after endpoint/catalog-owner "
+                "confirmation. This observation alone does not establish a "
+                "model-retirement, compatibility or release-note delta."
+                if triage["classification"] == "target_unavailable"
+                else "No compatibility or release claim: insufficient attribution. "
                 "Supply a result-bound diagnostic and comparable passing evidence "
                 "before drafting a docs or release-note delta."
                 if triage["classification"] == "unknown"

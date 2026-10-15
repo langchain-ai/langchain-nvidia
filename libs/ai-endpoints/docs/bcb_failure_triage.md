@@ -82,6 +82,10 @@ Classification rules are intentionally conservative:
   `infrastructure`: setup `runner_unavailable` or `job_timeout`.
 - `test_quality`: result-bound `artifact_schema_invalid`,
   `result_contract_missing`, or `test_fixture_defect` (not an SDK/model claim).
+- `target_unavailable`: a hosted HTTP 410 observation bound to the same failing
+  result and allowlisted job/pipeline evidence. Route it to the endpoint/catalog
+  owner to verify availability and the intended endpoint before rerunning. A 410
+  is not proof of global model retirement, current availability or an SDK bug.
 - `nim_behavior_delta`: behavioral failure, changed accepted versus latest
   fingerprint/digest, with allowlisted links to both results.
 - `sdk_regression`: behavioral failure with a failing latest result and a linked
@@ -89,6 +93,32 @@ Classification rules are intentionally conservative:
   prior result ID and evidence link must match the accepted result on that target.
 - Anything unbound, ambiguous, stale, or missing evidence is `unknown`. Drift in
   a release report alone is not an attributed root cause.
+
+Optional `http_status` (integer 100-599), `workflow_id` (positive integer) and
+`execution_scope` (`native_probe`, `sdk_test`, or `unknown`) may be supplied on
+both `failure` and that target's `latest_result`. The normalized values must
+agree and the diagnostic evidence URL must match one of the result's allowlisted
+links. A missing or mismatched counterpart withholds the observation and leaves
+classification unknown. Existing inputs without these optional fields retain
+their existing classification behavior. A bound native probe cannot establish a
+connector-version regression. Generic `runner_failure` alone establishes neither
+endpoint unavailability nor a particular infrastructure cause.
+
+For example, when the reviewed native probe actually recorded HTTP 410, include
+the same observation in `failure` and its matching `latest_result`:
+
+```json
+{
+  "http_status": 410,
+  "workflow_id": 42,
+  "execution_scope": "native_probe"
+}
+```
+
+The workflow ID above is illustrative. Use the actual retained Manager workflow
+ID; do not invent a passing baseline or connector version. All three drafts
+retain the bound HTTP observation, workflow reference, execution scope, evidence
+and routing action, while native probes explicitly leave SDK execution unproven.
 
 The output includes owner/next action, constrained result IDs and GitLab links,
 issue draft, conditional PR/patch **suggestion**, and release-note/docs-freshness
@@ -120,6 +150,24 @@ and preparation effort, and explicitly accept or reject their usefulness.
 Synthetic fixtures, historical failed-job records, pending approval requests,
 or CI success do not satisfy that acceptance. Do not stitch reused local result
 IDs from separate databases into a passing baseline.
+
+## How maintainers receive the drafts
+
+The current entry point is the CLI above: an operator or internal runner supplies
+the reviewed input and receives private `triage.md` and `triage.json` files.
+The CLI is invoked explicitly; this PR does not automatically run it on a failed
+Manager job or GitHub Actions failure, add a dashboard button, or send a notice.
+The Markdown contains independently reviewable issue, PR-suggestion and
+docs/release-note sections. Share it through the existing private review path.
+
+For Manager delivery, the internal execution path must invoke the generator
+after retaining the reviewed result and place its outputs in that workflow's
+existing retained artifact directory. Manager's authenticated workflow Artifacts
+view can then list the files and provide authorized access. Merely enabling this
+CLI does not connect that invocation, retention or notification path. Such wiring
+belongs in Manager; keep these private reports out of public GitHub job logs,
+Actions artifacts, issue comments and automatic PR bodies. External publication
+continues to require the existing human review path.
 
 Security boundary: input is limited to 1 MiB; raw messages, logs, metadata and
 unrecognized fields are discarded. Only short identifier labels and HTTPS

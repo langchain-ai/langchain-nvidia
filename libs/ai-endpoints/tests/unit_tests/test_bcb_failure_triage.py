@@ -226,3 +226,173 @@ def test_unbound_prior_version_is_not_presented_as_comparable() -> None:
     _, result, drafts = decision(sample)
     assert result["classification"] == "unknown"
     assert "unbound-prior-version" not in json.dumps(drafts)
+
+
+def observed_failure(
+    http_status: object = 410, execution_scope: str = "native_probe"
+) -> dict[str, Any]:
+    sample = wrapped()
+    observation = {
+        "http_status": http_status,
+        "workflow_id": 42,
+        "execution_scope": execution_scope,
+    }
+    sample["failure"].update(observation)
+    sample["release_report"]["targets"][0]["latest_result"].update(observation)
+    return sample
+
+
+@pytest.mark.parametrize("scope", ["native_probe", "sdk_test", "unknown"])
+def test_hosted_410_drafts_expose_the_bound_observation_without_a_baseline(
+    scope: str,
+) -> None:
+    sample = observed_failure(execution_scope=scope)
+    sample["connector_version"] = ""
+    sample["comparison"] = {}
+    sample["release_report"]["targets"][0]["accepted_result"] = {}
+    sample["release_report"]["targets"][0]["accepted_fingerprint"] = ""
+    _, result, drafts = decision(sample)
+    assert result["classification"] == "target_unavailable"
+    assert result["owner"] == "Endpoint/catalog owner"
+    assert result["observation"] == {
+        "result_id": 31,
+        "http_status": 410,
+        "workflow_id": 42,
+        "execution_scope": scope,
+    }
+    for key in ("issue", "pr_patch_suggestion", "release_note_docs_freshness"):
+        body = drafts[key]["body"]
+        assert "410 Gone" in body
+        assert "42" in body
+        assert "nemotron-model" in body
+        assert result["owner"] in body
+        assert result["next_action"] in body
+        assert "https://gitlab-master.nvidia.com/team/-/pipelines/31" in body
+        if scope == "native_probe":
+            assert "SDK execution not established" in body
+    assert drafts["publishable"] is False
+    assert drafts["owner_review_required"] is True
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("nim_id", 99),
+        ("result_id", 99),
+        ("workflow_id", 99),
+        ("http_status", 404),
+        ("execution_scope", "sdk_test"),
+        ("evidence_url", "https://gitlab-master.nvidia.com/team/-/pipelines/99"),
+    ],
+)
+def test_observation_mismatches_cannot_classify_or_attach_http_context(
+    field: str, value: object
+) -> None:
+    sample = observed_failure()
+    sample["failure"][field] = value
+    _, result, drafts = decision(sample)
+    assert result["classification"] == "unknown"
+    assert result["observation"] == {}
+    assert "HTTP status: 410" not in json.dumps(drafts)
+    assert "Manager workflow: 42" not in json.dumps(drafts)
+
+
+@pytest.mark.parametrize("status", [401, 404, 500, None, True, "410", 999])
+def test_only_an_integer_hosted_410_establishes_endpoint_unavailability(
+    status: object,
+) -> None:
+    _, result, _ = decision(observed_failure(status))
+    assert result["classification"] == "unknown"
+
+
+def test_downloadable_410_does_not_get_hosted_endpoint_routing() -> None:
+    sample = observed_failure()
+    sample["release_report"]["targets"][0]["deployment"] = "downloadable"
+    _, result, _ = decision(sample)
+    assert result["classification"] == "unknown"
+
+
+@pytest.mark.parametrize(
+    "scope,expected", [("native_probe", "unknown"), ("sdk_test", "sdk_regression")]
+)
+def test_native_probe_cannot_establish_a_connector_version_regression(
+    scope: str, expected: str
+) -> None:
+    _, result, _ = decision(observed_failure(200, scope))
+    assert result["classification"] == expected
+
+
+def test_passing_latest_result_cannot_support_a_failed_http_diagnostic() -> None:
+    sample = observed_failure()
+    sample["release_report"]["targets"][0]["latest_result"]["status"] = "passed"
+    _, result, _ = decision(sample)
+    assert result["classification"] == "unknown"
+    assert result["observation"] == {}
+
+
+def test_generic_runner_failure_does_not_establish_endpoint_unavailability() -> None:
+    _, result, _ = decision(wrapped(category="runner_failure", stage="setup"))
+    assert result["classification"] == "unknown"
+
+
+def test_http_context_is_private_and_does_not_copy_raw_diagnostics(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    sample = observed_failure()
+    sample["failure"]["raw_log"] = "Bearer secret-context-123"
+    sample["failure"]["workflow_url"] = "https://evil.example/?token=secret"
+    source = tmp_path / "input.json"
+    source.write_text(json.dumps(sample), encoding="utf-8")
+    output = tmp_path / "private"
+    assert (
+        triage.main(
+            [
+                "--evidence",
+                str(source),
+                "--json-output",
+                str(output / "triage.json"),
+                "--markdown-output",
+                str(output / "triage.md"),
+            ]
+        )
+        == 0
+    )
+    report = json.loads((output / "triage.json").read_text())
+    assert report["triage"]["observation"]["http_status"] == 410
+    combined = (output / "triage.json").read_text() + (output / "triage.md").read_text()
+    assert "secret-context-123" not in combined
+    assert "evil.example" not in combined
+    assert "token=secret" not in combined
+    assert "secret-context-123" not in capsys.readouterr().out
+    for path in (output / "triage.json", output / "triage.md"):
+        assert path.stat().st_mode & 0o777 == 0o600
+
+
+def test_malformed_observation_fields_do_not_reach_the_drafts() -> None:
+    sample = observed_failure("Bearer private-status", "private-scope")
+    sample["failure"]["workflow_id"] = "private-workflow"
+    sample["release_report"]["targets"][0]["latest_result"]["workflow_id"] = True
+    _, result, drafts = decision(sample)
+    assert result["classification"] == "unknown"
+    assert result["observation"] == {}
+    assert "private-status" not in json.dumps(drafts)
+    assert "private-workflow" not in json.dumps(drafts)
+    assert "private-scope" not in json.dumps(drafts)
+
+
+def test_missing_diagnostic_scope_does_not_promote_a_native_result_to_sdk() -> None:
+    sample = observed_failure(200)
+    for key in ("http_status", "workflow_id", "execution_scope"):
+        del sample["failure"][key]
+    _, result, _ = decision(sample)
+    assert result["classification"] == "unknown"
+
+
+@pytest.mark.parametrize("field", ["http_status", "workflow_id", "execution_scope"])
+def test_malformed_source_observation_cannot_support_routing(field: str) -> None:
+    sample = observed_failure()
+    sample["release_report"]["targets"][0]["latest_result"][field] = "private-invalid"
+    _, result, drafts = decision(sample)
+    assert result["classification"] == "unknown"
+    assert result["observation"] == {}
+    assert "private-invalid" not in json.dumps(drafts)
