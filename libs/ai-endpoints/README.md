@@ -74,7 +74,7 @@ their connector routing depends on the known hosted-model registry.
 Run the read-only Doctor preflight before sending prompts:
 
 ```bash
-python -m langchain_nvidia_ai_endpoints doctor --model nvidia/nemotron-3-super-120b-a12b --capability chat
+python -m langchain_nvidia_ai_endpoints doctor --model nvidia/nemotron-3.5-super-vl-120b-a12b --capability chat
 # Self-hosted NIM; no API key unless your deployment requires one
 python -m langchain_nvidia_ai_endpoints doctor --base-url http://localhost:8000/v1 --model my-model --capability embeddings
 ```
@@ -96,7 +96,7 @@ It is never queried by default. If your team has approved, scoped read-only
 Manager consumer access, set `NIM_OSS_MANAGER_TOKEN` in the environment and opt in explicitly:
 
 ```bash
-python -m langchain_nvidia_ai_endpoints doctor --model nvidia/nemotron-3-super-120b-a12b --capability chat --manager-url https://your-manager-host
+python -m langchain_nvidia_ai_endpoints doctor --model nvidia/nemotron-3.5-super-vl-120b-a12b --capability chat --manager-url https://your-manager-host
 ```
 
 Doctor requests the Manager's read-only `bcb-public-v1alpha1` compatibility
@@ -135,7 +135,7 @@ Use the following code to invoke the core chat interface.
 ## Core LC Chat Interface
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-llm = ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b")
+llm = ChatNVIDIA(model="nvidia/nemotron-3.5-super-vl-120b-a12b")
 result = llm.invoke("Write a ballad about LangChain.")
 print(result.content)
 ```
@@ -212,12 +212,12 @@ Use this section to learn about a few examples.
 
 ### Nemotron
 
-[Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. The models deliver strong reasoning and tool-calling performance with high throughput. `nvidia/nemotron-3-super-120b-a12b` is a recommended starting point: a powerful model with 12B active parameters and 120B parameters in total, with a 1M token context window, available on the NVIDIA API Catalog and as a self-hosted NIM.
+[Nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) is NVIDIA's open model family optimized for agentic AI. `nvidia/nemotron-3.5-super-vl-120b-a12b` supports text, image, and video input, reasoning, and tool calling, with a 1,048,576-token context and an 8,192-token hosted output limit. Use it when your NVIDIA API key has access to the model.
 
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-llm = ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b")
+llm = ChatNVIDIA(model="nvidia/nemotron-3.5-super-vl-120b-a12b")
 result = llm.invoke("Plan a three-step agentic workflow for competitive research.")
 print(result.content)
 ```
@@ -262,7 +262,7 @@ print(response.content_blocks)
 
 ### General Chat
 
-Models such as `nvidia/nemotron-3-super-120b-a12b` and `mistralai/mixtral-8x22b-instruct-v0.1`
+Models such as `nvidia/nemotron-3.5-super-vl-120b-a12b` and `mistralai/mixtral-8x22b-instruct-v0.1`
 are good all-around models that you can use for any LangChain chat messages.
 
 The following example generates a simple chat response.
@@ -280,7 +280,7 @@ prompt = ChatPromptTemplate.from_messages(
 )
 chain = (
     prompt
-    | ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b")
+    | ChatNVIDIA(model="nvidia/nemotron-3.5-super-vl-120b-a12b")
     | StrOutputParser()
 )
 
@@ -402,12 +402,12 @@ for chunk in completions_llm.stream(prompt):
 
 ### Dynamo KV Cache Optimization
 
-`ChatNVIDIADynamo` is a drop-in replacement for `ChatNVIDIA` that injects NVIDIA Dynamo KV cache routing hints into requests. Use it with Dynamo-enabled deployments to improve inference scheduling.
+`ChatNVIDIADynamo` is a drop-in replacement for `ChatNVIDIA` that injects NVIDIA Dynamo KV cache routing hints into requests. Use it with Dynamo-enabled deployments to improve inference scheduling. Replace `<served-model-id>` with a model served by your deployment.
 
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIADynamo
 
-llm = ChatNVIDIADynamo(model="nvidia/nemotron-3-super-120b-a12b", osl=1024, iat=100)
+llm = ChatNVIDIADynamo(model="<served-model-id>", osl=1024, iat=100)
 result = llm.invoke("Write a short poem.")
 ```
 
@@ -507,8 +507,8 @@ The following code connects to locally hosted NIM Microservices.
 ```python
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
 
-# Connect to an chat NIM running at localhost:8000, and specify a model
-llm = ChatNVIDIA(base_url="http://localhost:8000/v1", model="nvidia/nemotron-3-super-120b-a12b")
+# Connect to a chat NIM running at localhost:8000, and specify its served model ID
+llm = ChatNVIDIA(base_url="http://localhost:8000/v1", model="<served-model-id>")
 
 # Connect to an embedding NIM running at localhost:8080
 embedder = NVIDIAEmbeddings(base_url="http://localhost:8080/v1")
@@ -578,7 +578,7 @@ You can also disable telemetry for a single client instance:
 
 ```python
 llm = ChatNVIDIA(
-    model="nvidia/nemotron-3-super-120b-a12b",
+    model="nvidia/nemotron-3.5-super-vl-120b-a12b",
     usage_telemetry_enabled=False,
 )
 ```
