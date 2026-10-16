@@ -244,3 +244,49 @@ def test_invalid_classification_fails_closed_without_echoing_private_input(
     assert result.returncode == 2
     assert "secret-test-data" not in result.stdout + result.stderr
     assert "no view rendered" in result.stderr
+
+
+@pytest.mark.parametrize("complete", [False, True])
+def test_saved_source_identity_and_completeness_survive_dashboard_rendering(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], complete: bool
+) -> None:
+    review_file = tmp_path / "review.json"
+    release_file = tmp_path / "release.json"
+    ngc_file = tmp_path / "ngc.json"
+    review_file.write_text(json.dumps(review()))
+    release_file.write_text(json.dumps(release()))
+    ngc_file.write_text(
+        json.dumps(
+            {
+                "source_url": "https://catalog.ngc.nvidia.com/nim/reviewed",
+                "complete_inventory": complete,
+                "models": [{"id": "nvidia/reviewed"}],
+            }
+        )
+    )
+    assert (
+        view.main(
+            [
+                "--review-file",
+                str(review_file),
+                "--release-file",
+                str(release_file),
+                "--ngc-file",
+                str(ngc_file),
+            ]
+        )
+        == 0
+    )
+    output = capsys.readouterr().out
+    sources = output.split("Source evidence:", 1)[1].split("## Issue Hygiene", 1)[0]
+    labels = [
+        line.split(": ", 1)[0].removeprefix("- ")
+        for line in sources.splitlines()
+        if line.endswith("https://catalog.ngc.nvidia.com/nim/reviewed")
+    ]
+    assert len(labels) == 1
+    identity, *limitations = labels[0].split("/")
+    assert identity == "downloadable"
+    assert bool(limitations) is not complete
+    if not complete:
+        assert limitations == ["partial-no-removals"]
