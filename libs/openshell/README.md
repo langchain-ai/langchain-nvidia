@@ -311,6 +311,13 @@ integration, file transfer, and policy-enforced behavior demos.
 | `grpcio` | `>=1.78,<2`; OpenShell's wheel metadata currently declares `>=1.60`, but generated gRPC stubs require `>=1.78.0` at import time |
 | LangChain Deep Agents `BaseSandbox` | follows `deepagents` |
 
+## Release notes
+
+### 0.1.1 (unreleased)
+
+Packages the dependency updates from [#396](https://github.com/langchain-ai/langchain-nvidia/pull/396)
+and the patched `aiohttp` requirement from [#385](https://github.com/langchain-ai/langchain-nvidia/pull/385).
+
 ## License
 
 MIT.
