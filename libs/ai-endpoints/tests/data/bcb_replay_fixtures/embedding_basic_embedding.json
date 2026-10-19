@@ -1,0 +1,33 @@
+{
+  "approved_real_bcb_capture": true,
+  "body": {
+    "data": [
+      {
+        "embedding": [
+          0.1,
+          0.2,
+          0.3
+        ],
+        "index": 0,
+        "object": "embedding"
+      }
+    ],
+    "model": "bcb/sanitized-model",
+    "object": "list",
+    "usage": {
+      "prompt_tokens": 7,
+      "total_tokens": 7
+    }
+  },
+  "category": "embedding",
+  "http_status": 200,
+  "id": "embedding_basic_embedding",
+  "metadata": {
+    "bcb_status": "passed",
+    "profile": "embedding_basic",
+    "wire_profile": "embedding_basic"
+  },
+  "review_status": "approved",
+  "schema_version": 1,
+  "source": "sanitized_bcb_wire_contract"
+}
