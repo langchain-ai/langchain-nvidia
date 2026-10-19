@@ -81,6 +81,24 @@
       "path": "structured_output_structured_output.json",
       "review_status": "approved",
       "source": "sanitized_bcb_wire_contract"
+    },
+    {
+      "approved_real_bcb_capture": true,
+      "category": "embedding",
+      "coverage_surface": "tests/integration_tests/test_embeddings.py",
+      "id": "embedding_basic_embedding",
+      "path": "embedding_basic_embedding.json",
+      "review_status": "approved",
+      "source": "sanitized_bcb_wire_contract"
+    },
+    {
+      "approved_real_bcb_capture": true,
+      "category": "rerank",
+      "coverage_surface": "tests/integration_tests/test_ranking.py",
+      "id": "rerank_basic_rerank",
+      "path": "rerank_basic_rerank.json",
+      "review_status": "approved",
+      "source": "sanitized_bcb_wire_contract"
     }
   ],
   "sanitization_policy": {
