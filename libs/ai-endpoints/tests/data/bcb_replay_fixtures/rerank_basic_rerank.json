@@ -1,0 +1,26 @@
+{
+  "approved_real_bcb_capture": true,
+  "body": {
+    "rankings": [
+      {
+        "index": 0,
+        "logit": 1.0
+      },
+      {
+        "index": 1,
+        "logit": 0.9
+      }
+    ]
+  },
+  "category": "rerank",
+  "http_status": 200,
+  "id": "rerank_basic_rerank",
+  "metadata": {
+    "bcb_status": "passed",
+    "profile": "rerank_basic",
+    "wire_profile": "rerank_basic"
+  },
+  "review_status": "approved",
+  "schema_version": 1,
+  "source": "sanitized_bcb_wire_contract"
+}

@@ -77,14 +77,16 @@ Then choose how the sandbox lifecycle should work.
 
 Use this when each Python process should create its own short-lived sandbox.
 `openshell.Sandbox(...)` uses the active OpenShell gateway configuration and
-the OpenShell SDK defaults unless you pass explicit SDK options. The adapter
-does not choose an image, policy, driver, or provider profile.
+the OpenShell SDK defaults unless you pass explicit SDK options. OpenShell
+`0.1` scopes sandboxes to a workspace, so every SDK call takes `workspace=`;
+the examples use the gateway's `default` workspace. The adapter does not
+choose a workspace, image, policy, driver, or provider profile.
 
 ```python
 import openshell
 from langchain_nvidia_openshell import OpenShellSandbox
 
-with openshell.Sandbox(delete_on_exit=True) as sb:
+with openshell.Sandbox(workspace="default", delete_on_exit=True) as sb:
     backend = OpenShellSandbox(sandbox=sb)
 
     print(backend.execute("uname -a").output)
@@ -113,7 +115,7 @@ from langchain_nvidia_openshell import OpenShellSandbox
 
 client = openshell.SandboxClient.from_active_cluster()
 try:
-    backend = OpenShellSandbox(sandbox=client.get_session("langchain-demo"))
+    backend = OpenShellSandbox(sandbox=client.get_session("langchain-demo", workspace="default"))
     print(backend.execute("pwd").output)
 finally:
     client.close()
@@ -204,7 +206,7 @@ from deepagents import create_deep_agent
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_nvidia_openshell import OpenShellSandbox
 
-with openshell.Sandbox() as sb:
+with openshell.Sandbox(workspace="default") as sb:
     backend = OpenShellSandbox(sandbox=sb)
     agent = create_deep_agent(
         model=ChatNVIDIA(model="nvidia/nemotron-3-nano-30b-a3b"),
@@ -279,7 +281,7 @@ class OpenShellSandbox(BaseSandbox):
 
 `OpenShellSandbox` does **not** own the lifecycle of the underlying OpenShell
 sandbox. It accepts either an SDK-created sandbox/session or a session returned
-from `SandboxClient.get_session("<name>")`.
+from `SandboxClient.get_session("<name>", workspace="<workspace>")`.
 
 Use a Python context manager when you want per-run isolation and automatic
 cleanup. Use a named CLI-created sandbox when you need to set a specific image
@@ -304,10 +306,17 @@ integration, file transfer, and policy-enforced behavior demos.
 | Layer | Version |
 |---|---|
 | Python | 3.12 – 3.14 (the OpenShell SDK requires 3.12+) |
-| `deepagents` | `>=0.5.0,<0.6.0` |
-| `openshell` (NVIDIA SDK + CLI) | `>=0.0.68,<0.1` — both ship from the same `openshell` package; verify with `openshell --version` |
+| `deepagents` | `>=0.7.25,<0.8.0` |
+| `openshell` (NVIDIA SDK + CLI) | `>=0.1.4,<0.2` — both ship from the same `openshell` package; verify with `openshell --version` |
 | `grpcio` | `>=1.78,<2`; OpenShell's wheel metadata currently declares `>=1.60`, but generated gRPC stubs require `>=1.78.0` at import time |
 | LangChain Deep Agents `BaseSandbox` | follows `deepagents` |
+
+## Release notes
+
+### 0.1.1 (unreleased)
+
+Packages the dependency updates from [#396](https://github.com/langchain-ai/langchain-nvidia/pull/396)
+and the patched `aiohttp` requirement from [#385](https://github.com/langchain-ai/langchain-nvidia/pull/385).
 
 ## License
 
