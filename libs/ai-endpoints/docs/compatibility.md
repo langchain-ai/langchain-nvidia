@@ -20,3 +20,17 @@ They protect against parser regressions, not current endpoint availability.
 Reviewed model identities and their source metadata are documented in the
 [model registry](model_registry.md). Catalog metadata alone does not establish
 runtime compatibility.
+
+## Reviewed observations
+
+The [public observation table](compatibility_state.md) is paired with a
+[machine-readable snapshot](data/compatibility_public.json). It contains only
+reviewed public output, not private test reports. An empty snapshot means no
+observations have been approved for this publication; it is not evidence that
+models are unsupported.
+
+Each observation is limited to its exact SDK version, source revision,
+deployment and test time. A past passing result is not a guarantee of current
+endpoint availability, support for untested capabilities, or release readiness.
+The [publication contract](compatibility_publication.md) defines the allowed
+fields and review boundary.
