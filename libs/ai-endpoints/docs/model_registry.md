@@ -32,3 +32,33 @@ For a reviewed model change, regenerate the Python tables, inspect both diffs,
 and run the registry, statics and telemetry unit tests. Preserve request IDs,
 legacy aliases and unknown capability states unless verified evidence supports
 a deliberate update. Changes still go through normal pull-request review.
+
+## Public API identity review (2026-10-21)
+
+The identity review in `tests/data/public_model_catalog_20261021.json` records
+19 additions with their exact public NVIDIA request-ID and endpoint references.
+The comparison used the official [LLM](https://docs.api.nvidia.com/nim/reference/llm-apis),
+[retrieval](https://docs.api.nvidia.com/nim/reference/retrieval-apis), and
+[visual](https://docs.api.nvidia.com/nim/reference/visual-models-apis) API indexes,
+individual request specifications, model cards, and read-only hosted discovery.
+Discovery observations alone were not promoted into the registry. Some index
+labels differ from the documented request ID; existing canonical IDs and aliases
+remain unchanged. Specialized APIs and candidates lacking verified compatible
+request shapes were excluded.
+
+The new entries add identity recognition, not certification of live inference,
+tool calling, structured output, thinking, or all multimodal input paths.
+Those capability states remain unknown. Hosted/downloadable availability also
+remains unknown unless explicit evidence supports a different state. Public
+free-endpoint deprecation is recorded separately from identity recognition;
+deprecated public IDs may still be useful when classifying historical telemetry.
+The tests exercise client requests and emitted identities with mocked responses.
+
+Model ID recognition and family recognition are separate. For example,
+`openai/gpt-oss-120b` and `nvidia/nv-embed-v1` are recognized IDs whose current
+telemetry family is `unknown`. `embedding` is an operation/model type, not an
+approved family value. Adding family enums requires a separate event-contract
+change; this registry update preserves existing telemetry family behavior.
+Neither a missing family nor a provider `4xx` establishes test traffic, EOL,
+or the exact error cause. Adoption reporting should retain attempts, successes,
+failures, and identity coverage as separate measures.
