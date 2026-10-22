@@ -1,3 +1,5 @@
+import inspect
+import warnings
 from typing import Any, Generator
 
 import pytest
@@ -187,6 +189,25 @@ async def test_embed_documents_negative_input_list_mixed(
 def test_embed_query_truncate_invalid(truncate: Any) -> None:
     with pytest.raises(ValueError):
         NVIDIAEmbeddings(truncate=truncate)
+
+
+def test_truncate_constructor_param_is_correctly_spelled() -> None:
+    """The public constructor arg is `truncate`, not the old typo `trucate`."""
+    params = inspect.signature(NVIDIAEmbeddings.__init__).parameters
+    assert "truncate" in params
+    assert "trucate" not in params
+
+
+@pytest.mark.parametrize("kwarg_name", ["truncate", "trucate"])
+def test_truncate_kwarg_sets_field(kwarg_name: str) -> None:
+    """Both the correct spelling and the legacy ``trucate`` typo set ``truncate``."""
+    warnings.filterwarnings("ignore", ".*type is unknown and inference may fail.*")
+    embedder = NVIDIAEmbeddings(
+        model="mock-model",
+        nvidia_api_key="a-bogus-key",
+        **{kwarg_name: "END"},
+    )
+    assert embedder.truncate == "END"
 
 
 @pytest.mark.parametrize(
