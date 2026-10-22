@@ -16,10 +16,10 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
 nemo-switchyard = ">=0.2.0"
-langchain = ">=1.3.14"
-deepagents = { version = ">=0.7.4", optional = true }
-langchain-openrouter = { version = ">=0.2.7", optional = true }
-python-dotenv = { version = ">=1", optional = true }
+langchain = ">=1.3.14,<2"
+deepagents = { version = ">=0.7.4,<0.8", optional = true }
+langchain-openrouter = { version = ">=0.2.7,<0.3", optional = true }
+python-dotenv = { version = ">=1,<2", optional = true }
 
 [tool.poetry.extras]
 deepagents = ["deepagents"]
