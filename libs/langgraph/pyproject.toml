@@ -15,9 +15,9 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.14"
-langchain-core = ">=1.2.5,<2.0.0"
-langgraph = ">=1.0.0,<2.0.0"
-nvidia-nat-app = { version = "^1.5.0", allow-prereleases = true }
+langchain-core = ">=1.2.5"
+langgraph = ">=1.0.0"
+nvidia-nat-app = { version = ">=1.5.0", allow-prereleases = true }
 
 [tool.poetry.group.test]
 optional = true

@@ -2495,4 +2495,4 @@ openrouter = ["deepagents", "langchain-openrouter", "python-dotenv"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "a02f8547e9427feb046a013ceefec839bec19985b6a1b5ded3e7ae56dffc1a9e"
+content-hash = "5472d67ddd0f9ae7aeac56638d775f386080aae0307647546700890cec65b847"
