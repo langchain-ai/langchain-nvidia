@@ -19,7 +19,7 @@ python = ">=3.12,<4.0"
 aiohttp = ">=3.14.3"
 deepagents = ">=0.7.25,<0.8.0"
 langchain-nvidia-ai-endpoints = ">=1.4.3,<2.0.0"
-openshell = ">=0.1.4"
+openshell = ">=0.1.4,<0.2"
 python-dotenv = ">=1.0"
 # OpenShell's generated gRPC stubs require grpcio>=1.78 at import time,
 # even though the upstream wheel metadata currently declares >=1.60.
