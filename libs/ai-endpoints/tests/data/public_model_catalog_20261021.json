@@ -1,0 +1,177 @@
+{
+  "checked_on": "2026-10-21",
+  "scope": "Verified request identifiers and documented endpoint shapes; no live inference or capability certification.",
+  "models": [
+    {
+      "id": "meta/llama2-70b",
+      "client": "ChatNVIDIA",
+      "model_type": "chat",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/meta-llama2-70b-infer",
+      "observed_in_public_discovery": true,
+      "public_free_endpoint_deprecated": true
+    },
+    {
+      "id": "moonshotai/kimi-k3",
+      "client": "ChatNVIDIA",
+      "model_type": "chat",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/moonshotai-kimi-k3-infer",
+      "observed_in_public_discovery": false,
+      "public_free_endpoint_deprecated": true
+    },
+    {
+      "id": "nvidia/gliner-pii",
+      "client": "ChatNVIDIA",
+      "model_type": "chat",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/nvidia-gliner-pii-infer",
+      "observed_in_public_discovery": false,
+      "public_free_endpoint_deprecated": true
+    },
+    {
+      "id": "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+      "client": "ChatNVIDIA",
+      "model_type": "chat",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/nvidia-llama-3_1-nemotron-safety-guard-8b-v3-infer",
+      "observed_in_public_discovery": true,
+      "public_free_endpoint_deprecated": false
+    },
+    {
+      "id": "nvidia/nemotron-content-safety-reasoning-4b",
+      "client": "ChatNVIDIA",
+      "model_type": "chat",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-content-safety-reasoning-4b-infer",
+      "observed_in_public_discovery": false,
+      "public_free_endpoint_deprecated": true
+    },
+    {
+      "id": "nvidia/riva-translate-4b-instruct-v2",
+      "client": "ChatNVIDIA",
+      "model_type": "chat",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/nvidia-riva-translate-4b-instruct-v2-infer",
+      "observed_in_public_discovery": true,
+      "public_free_endpoint_deprecated": false
+    },
+    {
+      "id": "sarvamai/sarvam-m",
+      "client": "ChatNVIDIA",
+      "model_type": "chat",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/sarvamai-sarvam-m-infer",
+      "observed_in_public_discovery": false,
+      "public_free_endpoint_deprecated": true
+    },
+    {
+      "id": "stockmark/stockmark-2-100b-instruct",
+      "client": "ChatNVIDIA",
+      "model_type": "chat",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/stockmark-stockmark-2-100b-instruct-infer",
+      "observed_in_public_discovery": false,
+      "public_free_endpoint_deprecated": true
+    },
+    {
+      "id": "thinkingmachines/inkling",
+      "client": "ChatNVIDIA",
+      "model_type": "chat",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/thinkingmachines-inkling-infer",
+      "observed_in_public_discovery": false,
+      "public_free_endpoint_deprecated": false
+    },
+    {
+      "id": "z-ai/glm-5.3",
+      "client": "ChatNVIDIA",
+      "model_type": "chat",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/z-ai-glm-5-3-infer",
+      "observed_in_public_discovery": true,
+      "public_free_endpoint_deprecated": false
+    },
+    {
+      "id": "z-ai/glm-5.3-flash",
+      "client": "ChatNVIDIA",
+      "model_type": "chat",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/z-ai-glm-5-3-flash-infer",
+      "observed_in_public_discovery": true,
+      "public_free_endpoint_deprecated": false
+    },
+    {
+      "id": "google/diffusiongemma-26b-a4b-it",
+      "client": "ChatNVIDIA",
+      "model_type": "vlm",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/diffusiongemma-26b-a4b-it-infer",
+      "observed_in_public_discovery": true,
+      "public_free_endpoint_deprecated": false
+    },
+    {
+      "id": "nvidia/ising-calibration-1.5-31b",
+      "client": "ChatNVIDIA",
+      "model_type": "vlm",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/nvidia-ising-calibration-1-5-31b-infer",
+      "observed_in_public_discovery": true,
+      "public_free_endpoint_deprecated": false
+    },
+    {
+      "id": "stepfun-ai/step-5-preview",
+      "client": "ChatNVIDIA",
+      "model_type": "vlm",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/stepfun-ai-step-5-preview-infer",
+      "observed_in_public_discovery": true,
+      "public_free_endpoint_deprecated": false
+    },
+    {
+      "id": "nvidia/llama-nemotron-embed-vl-1b-v2",
+      "client": "NVIDIAEmbeddings",
+      "model_type": "embedding",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/nvidia-llama-nemotron-embed-vl-1b-v2-infer",
+      "observed_in_public_discovery": true,
+      "public_free_endpoint_deprecated": false
+    },
+    {
+      "id": "nvidia/nemotron-3-embed-1b",
+      "client": "NVIDIAEmbeddings",
+      "model_type": "embedding",
+      "endpoint": null,
+      "source_url": "https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-embed-1b-infer",
+      "observed_in_public_discovery": true,
+      "public_free_endpoint_deprecated": false
+    },
+    {
+      "id": "nvidia/llama-3.2-nemoretriever-500m-rerank-v2",
+      "client": "NVIDIARerank",
+      "model_type": "ranking",
+      "endpoint": "https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-3_2-nemoretriever-500m-rerank-v2/reranking",
+      "source_url": "https://docs.api.nvidia.com/nim/reference/nvidia-llama-3_2-nemoretriever-500m-rerank-v2-infer",
+      "observed_in_public_discovery": false,
+      "public_free_endpoint_deprecated": false
+    },
+    {
+      "id": "poolside/laguna-xs-2.1",
+      "client": "ChatNVIDIA",
+      "model_type": "chat",
+      "endpoint": null,
+      "source_url": "https://build.nvidia.com/poolside/laguna-xs-2.1",
+      "observed_in_public_discovery": true,
+      "public_free_endpoint_deprecated": false
+    },
+    {
+      "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+      "client": "ChatNVIDIA",
+      "model_type": "vlm",
+      "endpoint": null,
+      "source_url": "https://build.nvidia.com/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+      "observed_in_public_discovery": true,
+      "public_free_endpoint_deprecated": false
+    }
+  ]
+}
