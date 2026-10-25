@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import urllib.parse
 from typing import (
@@ -142,6 +143,19 @@ def convert_message_to_dict(message: BaseMessage) -> dict:
                 message_dict["content"] = None
         if "tool_calls" in message.additional_kwargs:
             message_dict["tool_calls"] = message.additional_kwargs["tool_calls"]
+        elif message.tool_calls:
+            message_dict["tool_calls"] = [
+                {
+                    "id": tool_call["id"],
+                    "type": "function",
+                    "function": {
+                        "name": tool_call["name"],
+                        "arguments": json.dumps(tool_call["args"]),
+                    },
+                }
+                for tool_call in message.tool_calls
+            ]
+        if "tool_calls" in message_dict:
             # If tool calls only, content is None not empty string
             if message_dict["content"] == "":
                 message_dict["content"] = None
