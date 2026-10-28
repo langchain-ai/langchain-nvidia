@@ -1,11 +1,6 @@
 {
   "entries": [
     {
-      "path": "libs/ai-endpoints/docs/model_registry.md",
-      "id": "nvidia/example",
-      "reason": "Placeholder ID in the documented catalog snapshot format."
-    },
-    {
       "path": "libs/switchyard/README.md",
       "id": "anthropic/claude-sonnet-4.6",
       "reason": "OpenRouter model ID for the switchyard router, not an NVIDIA registry model."
@@ -34,6 +29,36 @@
       "path": "cookbook/archive/structured_report_generation_elastic/structured_report_generation_elastic.ipynb",
       "id": "meta/llama3-8b-instruct",
       "reason": "Archived notebook header names the deprecated model it originally used."
+    },
+    {
+      "path": "libs/ai-endpoints/README.md",
+      "id": "nvidia/nemotron-3-nano-30b-a3b",
+      "context": "self-hosted",
+      "reason": "Downloadable-only NIM in a self-hosted example; retired from hosted endpoints."
+    },
+    {
+      "path": "libs/ai-endpoints/docs/advanced_configuration.md",
+      "id": "nvidia/llama-nemotron-embed-1b-v2",
+      "context": "self-hosted",
+      "reason": "Downloadable-only NIM in a self-hosted example; retired from hosted endpoints."
+    },
+    {
+      "path": "libs/ai-endpoints/docs/self_hosting.md",
+      "id": "nvidia/nemotron-3-nano-30b-a3b",
+      "context": "self-hosted",
+      "reason": "Downloadable-only NIM in a self-hosted example; retired from hosted endpoints."
+    },
+    {
+      "path": "libs/ai-endpoints/docs/self_hosting.md",
+      "id": "nvidia/llama-nemotron-embed-1b-v2",
+      "context": "self-hosted",
+      "reason": "Downloadable-only NIM in a self-hosted example; retired from hosted endpoints."
+    },
+    {
+      "path": "libs/ai-endpoints/docs/self_hosting.md",
+      "id": "nvidia/llama-nemotron-rerank-1b-v2",
+      "context": "self-hosted",
+      "reason": "Downloadable-only NIM in a self-hosted example; retired from hosted endpoints."
     }
   ]
 }

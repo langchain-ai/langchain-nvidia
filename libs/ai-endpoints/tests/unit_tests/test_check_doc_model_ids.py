@@ -15,11 +15,21 @@ checker = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(checker)
 
 
-def row(identifier: str, model_type: str = "chat", **model: Any) -> dict[str, Any]:
+def row(
+    identifier: str,
+    model_type: str = "chat",
+    hosted: str = "unknown",
+    dl: str = "unknown",
+    **model: Any,
+) -> dict[str, Any]:
     return {
         "id": identifier,
         "served_names": [identifier],
         "model": {"id": identifier, "model_type": model_type, **model},
+        "provenance": {
+            "hosted": {"state": hosted, "url": None},
+            "downloadable": {"state": dl, "url": None},
+        },
     }
 
 
@@ -30,7 +40,9 @@ REGISTRY = {
         row("meta/llama-3.3-70b-instruct"),
         row("meta/llama3-8b-instruct", deprecated=True, aliases=["ai-llama3-8b"]),
         row("NV-Embed-QA", "embedding", aliases=["ai-embed-qa-4"]),
-        row("nvidia/nemotron-3-embed-1b", "embedding"),
+        row("nvidia/nemotron-3-embed-1b", "embedding", hosted="current"),
+        row("nvidia/old-embed", "embedding", hosted="unavailable", dl="current"),
+        row("nvidia/gone-embed", "embedding", hosted="unavailable"),
     ],
 }
 
@@ -221,14 +233,150 @@ def test_allowlist_entry_requires_reason(tmp_path: Path) -> None:
     assert status == 2
 
 
+SELF_HOSTED_ALLOW = {
+    "path": "*",
+    "id": "nvidia/old-embed",
+    "context": "self-hosted",
+    "reason": "Downloadable-only NIM",
+}
+
+
+def test_hosted_retired_id_fails_in_hosted_example(tmp_path: Path) -> None:
+    write(
+        tmp_path,
+        "README.md",
+        'Hosted:\n```python\nNVIDIAEmbeddings(model="nvidia/old-embed")\n```\n',
+    )
+
+    status, output = run(tmp_path, allowlist=[SELF_HOSTED_ALLOW])
+
+    assert status == 1
+    assert "README.md:3: nvidia/old-embed: retired from hosted endpoints" in output
+    assert "hosted-current registry ID such as nvidia/nemotron-3-embed-1b" in output
+
+
+@pytest.mark.parametrize(
+    "block",
+    [
+        'NVIDIAEmbeddings(\n    base_url="http://localhost:8080/v1",\n'
+        '    model="nvidia/old-embed",\n)',
+        "python -m langchain_nvidia_ai_endpoints doctor --base-url "
+        "http://nim:8080/v1 --model nvidia/old-embed",
+        'os.environ["NVIDIA_BASE_URL"] = "http://10.0.0.5:8080"\n'
+        'NVIDIAEmbeddings(model="nvidia/old-embed")',
+        "docker run nvcr.io/nim/nvidia/old-embed:1.0  # serves nvidia/old-embed",
+    ],
+)
+def test_self_hosted_block_needs_self_hosted_allowlist(
+    tmp_path: Path, block: str
+) -> None:
+    write(tmp_path, "libs/pkg/docs/guide.md", f"```\n{block}\n```\n")
+
+    status, output = run(tmp_path)
+    assert status == 1
+    assert "nvidia/old-embed: downloadable-only ID in a self-hosted example" in output
+
+    hosted_only = {**SELF_HOSTED_ALLOW, "context": "hosted"}
+    assert run(tmp_path, allowlist=[hosted_only])[0] == 1
+    status, output = run(tmp_path, allowlist=[SELF_HOSTED_ALLOW])
+    assert status == 0, output
+
+
+def test_hosted_base_url_stays_hosted(tmp_path: Path) -> None:
+    write(
+        tmp_path,
+        "studio/app.py",
+        'NVIDIAEmbeddings(base_url="https://integrate.api.nvidia.com/v1",\n'
+        '                 model="nvidia/old-embed")\n',
+    )
+
+    status, output = run(tmp_path, allowlist=[SELF_HOSTED_ALLOW])
+
+    assert status == 1
+    assert "studio/app.py:2: nvidia/old-embed: retired from hosted" in output
+
+
+def test_contexts_split_hosted_and_self_hosted_blocks(tmp_path: Path) -> None:
+    write(
+        tmp_path,
+        "cookbook/nb.ipynb",
+        notebook(
+            ("code", 'NVIDIAEmbeddings(model="nvidia/old-embed")\n'),
+            (
+                "code",
+                'NVIDIAEmbeddings(base_url="http://localhost:8080/v1",\n'
+                '                 model="nvidia/old-embed")\n',
+            ),
+            ("markdown", "Prose names `nvidia/old-embed`.\n"),
+        ),
+    )
+
+    status, output = run(tmp_path, allowlist=[SELF_HOSTED_ALLOW])
+
+    assert status == 1
+    assert "cookbook/nb.ipynb:cell 0 line 1: nvidia/old-embed: retired" in output
+    assert "cookbook/nb.ipynb:cell 2 line 1: nvidia/old-embed: retired" in output
+    assert "cell 1" not in output
+
+
+def test_self_hosted_docs_prose_is_self_hosted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(checker, "SELF_HOSTED_DOCS", ("libs/pkg/docs/self.md",))
+    text = (
+        "The guide runs `nvidia/old-embed`.\n"
+        '```python\nNVIDIAEmbeddings(model="nvidia/old-embed")\n```\n'
+    )
+    write(tmp_path, "libs/pkg/docs/self.md", text)
+
+    status, output = run(tmp_path, allowlist=[SELF_HOSTED_ALLOW])
+
+    assert status == 1
+    assert "libs/pkg/docs/self.md:1" not in output
+    assert "libs/pkg/docs/self.md:3: nvidia/old-embed: retired" in output
+
+
+def test_not_downloadable_retired_id_fails_everywhere(tmp_path: Path) -> None:
+    write(
+        tmp_path,
+        "README.md",
+        'NVIDIAEmbeddings(base_url="http://localhost:8080/v1", '
+        'model="nvidia/gone-embed")\n',
+    )
+
+    status, output = run(tmp_path)
+
+    assert status == 1
+    assert "nvidia/gone-embed: neither hosted nor a current downloadable" in output
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        {**SELF_HOSTED_ALLOW, "id": "nvidia/gone-embed"},
+        {**SELF_HOSTED_ALLOW, "context": "local"},
+    ],
+)
+def test_invalid_context_allowlist_entries_are_config_errors(
+    tmp_path: Path, entry: dict[str, str]
+) -> None:
+    write(tmp_path, "README.md", "ok\n")
+
+    assert run(tmp_path, allowlist=[entry])[0] == 2
+
+
 def test_repository_config_is_valid() -> None:
     registry = checker.load_registry()
     for model_id in checker.RECOMMENDED.values():
         assert registry.is_current(model_id), model_id
+        assert registry.state(model_id, "hosted") != "unavailable", model_id
     allowlist = checker.load_entries(checker.ALLOWLIST, need_reason=True)
     assert all(entry["reason"].strip() for entry in allowlist)
     baseline = checker.load_entries(checker.BASELINE, need_reason=False)
-    assert all(e["path"].startswith("cookbook/") for e in baseline)
+    assert all(e["path"].startswith(("cookbook/", "libs/")) for e in baseline)
+    for entry in allowlist:
+        if entry.get("context") == checker.SELF_HOSTED:
+            assert registry.state(entry["id"], "downloadable") == "current", entry
 
 
 def test_deprecated_id_fails_with_repository_registry_and_config(

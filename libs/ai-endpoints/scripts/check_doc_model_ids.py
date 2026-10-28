@@ -19,11 +19,27 @@ repository slugs such as ``langchain-ai/langchain-nvidia`` and package names do
 not match. A finding is any ID that is deprecated, missing from the registry, or
 legacy.
 
+Checks are context-aware. Each mention is either *hosted* or *self-hosted*:
+
+* a fenced Markdown code block, notebook code cell or ``studio/*.py`` file is
+  self-hosted when it sets a non-hosted ``base_url``/``endpoint``/
+  ``NVIDIA_BASE_URL``/``--base-url`` (for example ``http://localhost:8000/v1``)
+  or names a ``nvcr.io/nim/`` container, and hosted otherwise;
+* other lines are self-hosted when they contain one of those signals or the
+  file is listed in ``SELF_HOSTED_DOCS``, and hosted otherwise.
+
+Hosted mentions must use IDs that the hosted API Catalog still serves: an ID
+whose registry ``provenance.hosted.state`` is ``unavailable`` is a finding.
+Self-hosted mentions may use such downloadable-only IDs only when they are
+explicitly allowlisted with ``"context": "self-hosted"``, and only when their
+``provenance.downloadable.state`` is ``current``.
+
 Intentional mentions (for example a migration table naming old IDs) go in
 ``doc_model_ids_allowlist.json`` with a reason. Known hits that another change
 will remove go in ``doc_model_ids_baseline.json``. Both files hold
 ``{"entries": [{"path": <glob relative to the repo root>, "id": <model id>}]}``;
-allowlist entries also need a non-empty ``"reason"``.
+allowlist entries also need a non-empty ``"reason"``. An optional ``"context"``
+(``"hosted"`` or ``"self-hosted"``) limits an entry to mentions in that context.
 
 Exit status: 0 when clean, 1 when there are findings, 2 on configuration errors.
 Run from any directory: ``python3 libs/ai-endpoints/scripts/check_doc_model_ids.py``.
@@ -37,6 +53,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Iterator
+from urllib.parse import urlparse
 
 SCRIPTS = Path(__file__).resolve().parent
 PACKAGE_ROOT = SCRIPTS.parent
@@ -52,6 +69,14 @@ SCAN_GLOBS = (
     "studio/*.py",
 )
 SKIP_DIRS = {".git", ".venv", "venv", "node_modules", ".mypy_cache", ".tox"}
+
+HOSTED = "hosted"
+SELF_HOSTED = "self-hosted"
+CONTEXTS = (HOSTED, SELF_HOSTED)
+# Docs whose prose and tables describe self-hosted NIMs. Their code blocks still
+# get their context from their own content.
+SELF_HOSTED_DOCS = ("libs/ai-endpoints/docs/self_hosting.md",)
+HOSTED_HOSTS = {"integrate.api.nvidia.com", "ai.api.nvidia.com"}
 
 # Bare IDs that predate the ``org/model`` naming; still resolvable but not to be
 # shown in examples.
@@ -74,6 +99,12 @@ _STRIP = re.compile(
 _SLASH_ID = re.compile(
     r"(?<![\w./@:-])([A-Za-z0-9][\w-]*)/([A-Za-z0-9](?:[\w.:-]*\w)?)(?![\w/])"
 )
+_BASE_URL = re.compile(
+    r"""(?:\b(?:base_url|endpoint)|NVIDIA_BASE_URL["']?\]?|--base-url)"""
+    r"""\s*[=: ]\s*["']?(https?://[^\s"'<>(),]+)"""
+)
+_NIM_IMAGE = re.compile(r"\bnvcr\.io/nim/")
+_FENCE = re.compile(r"^\s*(```|~~~)")
 _MODEL_ARG = re.compile(
     r"""(?:\b(?:model|model_name|model_id|id)\s*[=:]\s*|["']model["']\s*:\s*)"""
     r"""["']([^"'\s]+/[^"'\s]+)["']|--model[ =]["']?([^\s"']+/[^\s"']+)"""
@@ -86,6 +117,7 @@ class Finding:
     location: str
     model_id: str
     problem: str
+    context: str = HOSTED
 
     def __str__(self) -> str:
         return f"{self.path}:{self.location}: {self.model_id}: {self.problem}"
@@ -95,6 +127,7 @@ class Finding:
 class Registry:
     models: dict[str, dict[str, Any]]
     aliases: dict[str, str]
+    provenance: dict[str, dict[str, Any]]
 
     @property
     def orgs(self) -> set[str]:
@@ -104,24 +137,35 @@ class Registry:
         model = self.models.get(model_id)
         return model is not None and not model.get("deprecated", False)
 
-    def suggestion(self, model_type: str | None) -> str:
+    def state(self, model_id: str, source: str) -> str:
+        info = self.provenance.get(model_id, {}).get(source) or {}
+        return str(info.get("state", "unknown"))
+
+    def is_hosted_current(self, model_id: str) -> bool:
+        return self.is_current(model_id) and self.state(model_id, "hosted") == "current"
+
+    def suggestion(self, model_type: str | None, *, hosted: bool = False) -> str:
         candidate = RECOMMENDED.get(model_type or "")
-        if candidate and self.is_current(candidate):
-            return f"; use a current registry ID such as {candidate}"
-        return "; use a current registry ID of the same model type"
+        current = self.is_hosted_current if hosted else self.is_current
+        kind = "hosted-current" if hosted else "current"
+        if candidate and current(candidate):
+            return f"; use a {kind} registry ID such as {candidate}"
+        return f"; use a {kind} registry ID of the same model type"
 
 
 def load_registry(path: Path = REGISTRY) -> Registry:
     data = json.loads(path.read_text(encoding="utf-8"))
     models: dict[str, dict[str, Any]] = {}
     aliases: dict[str, str] = {}
+    provenance: dict[str, dict[str, Any]] = {}
     for row in data["models"]:
         model = row["model"]
         for name in [row["id"], *row.get("served_names", [])]:
             models[name] = model
+            provenance[name] = row.get("provenance") or {}
         for alias in model.get("aliases") or []:
             aliases[alias] = row["id"]
-    return Registry(models, aliases)
+    return Registry(models, aliases, provenance)
 
 
 def load_entries(path: Path, *, need_reason: bool) -> list[dict[str, str]]:
@@ -137,6 +181,8 @@ def load_entries(path: Path, *, need_reason: bool) -> list[dict[str, str]]:
             raise ValueError(f"{path}: every entry needs 'path' and 'id': {entry}")
         if need_reason and not str(entry.get("reason", "")).strip():
             raise ValueError(f"{path}: allowlist entry needs a reason: {entry}")
+        if entry.get("context", HOSTED) not in CONTEXTS:
+            raise ValueError(f"{path}: context must be one of {CONTEXTS}: {entry}")
     return entries
 
 
@@ -151,25 +197,69 @@ def iter_files(root: Path) -> Iterator[Path]:
             yield path
 
 
-def iter_lines(path: Path) -> Iterator[tuple[str, str]]:
-    """Yield ``(location, text)`` pairs; notebooks use ``cell N line M``."""
+def is_self_hosted(text: str) -> bool:
+    """Whether text points at a non-hosted endpoint or a NIM container."""
+    for match in _BASE_URL.finditer(text):
+        if urlparse(match.group(1)).hostname not in HOSTED_HOSTS:
+            return True
+    return bool(_NIM_IMAGE.search(text))
+
+
+def _block_context(lines: list[str]) -> str:
+    return SELF_HOSTED if is_self_hosted("\n".join(lines)) else HOSTED
+
+
+def _markdown_contexts(lines: list[str], prose_default: str) -> list[str]:
+    """Context per line: fenced blocks as a whole, other lines one by one."""
+    contexts: list[str] = []
+    index = 0
+    while index < len(lines):
+        if _FENCE.match(lines[index]):
+            end = index + 1
+            while end < len(lines) and not _FENCE.match(lines[end]):
+                end += 1
+            block = lines[index : end + 1]
+            contexts.extend([_block_context(block)] * len(block))
+            index = end + 1
+            continue
+        line = lines[index]
+        contexts.append(SELF_HOSTED if is_self_hosted(line) else prose_default)
+        index += 1
+    return contexts
+
+
+def iter_lines(path: Path, rel: str = "") -> Iterator[tuple[str, str, str]]:
+    """Yield ``(location, text, context)``; notebooks use ``cell N line M``."""
     text = path.read_text(encoding="utf-8")
+    prose_default = SELF_HOSTED if rel in SELF_HOSTED_DOCS else HOSTED
     if path.suffix != ".ipynb":
-        for number, line in enumerate(text.splitlines(), 1):
-            yield str(number), line
+        lines = text.splitlines()
+        if path.suffix == ".py":
+            contexts = [_block_context(lines)] * len(lines)
+        else:
+            contexts = _markdown_contexts(lines, prose_default)
+        for number, (line, context) in enumerate(zip(lines, contexts), 1):
+            yield str(number), line, context
         return
     for index, cell in enumerate(json.loads(text).get("cells", [])):
-        if cell.get("cell_type") not in ("code", "markdown"):
+        kind = cell.get("cell_type")
+        if kind not in ("code", "markdown"):
             continue
         source = cell.get("source", "")
         lines = "".join(source).splitlines() if isinstance(source, list) else []
         if isinstance(source, str):
             lines = source.splitlines()
-        for number, line in enumerate(lines, 1):
-            yield f"cell {index} line {number}", line
+        if kind == "code":
+            contexts = [_block_context(lines)] * len(lines)
+        else:
+            contexts = _markdown_contexts(lines, prose_default)
+        for number, (line, context) in enumerate(zip(lines, contexts), 1):
+            yield f"cell {index} line {number}", line, context
 
 
-def scan_line(line: str, registry: Registry) -> Iterator[tuple[str, str]]:
+def scan_line(
+    line: str, registry: Registry, context: str = HOSTED
+) -> Iterator[tuple[str, str]]:
     """Yield ``(model_id, problem)`` for every stale model ID in a line."""
     line = _STRIP.sub(" ", line)
     candidates = {
@@ -188,6 +278,28 @@ def scan_line(line: str, registry: Registry) -> Iterator[tuple[str, str]]:
                 "deprecated in model_registry.json"
                 + registry.suggestion(model.get("model_type")),
             )
+        elif registry.state(model_id, "hosted") == "unavailable":
+            model_type = model.get("model_type")
+            if context == HOSTED:
+                yield (
+                    model_id,
+                    "retired from hosted endpoints (provenance.hosted.state is "
+                    "unavailable) in a hosted example"
+                    + registry.suggestion(model_type, hosted=True)
+                    + ", or point the example at a self-hosted NIM base_url",
+                )
+            elif registry.state(model_id, "downloadable") == "current":
+                yield (
+                    model_id,
+                    "downloadable-only ID in a self-hosted example; allowlist it "
+                    'with "context": "self-hosted"',
+                )
+            else:
+                yield (
+                    model_id,
+                    "neither hosted nor a current downloadable NIM"
+                    + registry.suggestion(model_type),
+                )
     for legacy in LEGACY_IDS:
         if re.search(rf"(?<![\w/:-]){re.escape(legacy)}(?![\w:-])", line):
             model_type = (registry.models.get(legacy) or {}).get("model_type")
@@ -205,16 +317,32 @@ def scan(root: Path, registry: Registry) -> list[Finding]:
     findings = []
     for path in iter_files(root):
         rel = path.relative_to(root).as_posix()
-        for location, line in iter_lines(path):
-            for model_id, problem in scan_line(line, registry):
-                findings.append(Finding(rel, location, model_id, problem))
+        for location, line, context in iter_lines(path, rel):
+            for model_id, problem in scan_line(line, registry, context):
+                findings.append(Finding(rel, location, model_id, problem, context))
     return findings
 
 
 def _matches(finding: Finding, entry: dict[str, str]) -> bool:
-    return entry["id"] == finding.model_id and fnmatch.fnmatchcase(
-        finding.path, entry["path"]
+    return (
+        entry["id"] == finding.model_id
+        and entry.get("context", finding.context) == finding.context
+        and fnmatch.fnmatchcase(finding.path, entry["path"])
     )
+
+
+def check_self_hosted_entries(
+    registry: Registry, allowlist: list[dict[str, str]]
+) -> None:
+    """Self-hosted allowlist entries must name current downloadable NIMs."""
+    for entry in allowlist:
+        if entry.get("context") != SELF_HOSTED:
+            continue
+        if registry.state(entry["id"], "downloadable") != "current":
+            raise ValueError(
+                "self-hosted allowlist entry needs provenance.downloadable.state "
+                f"current in model_registry.json: {entry}"
+            )
 
 
 def check(
@@ -229,6 +357,7 @@ def check(
         registry = load_registry(registry_path)
         allowlist = load_entries(allowlist_path, need_reason=True)
         baseline = load_entries(baseline_path, need_reason=False)
+        check_self_hosted_entries(registry, allowlist)
     except (OSError, ValueError, KeyError) as exc:
         print(f"configuration error: {exc}", file=sys.stderr)
         return 2
