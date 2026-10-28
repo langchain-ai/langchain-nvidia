@@ -4964,16 +4964,16 @@
       },
       "provenance": {
         "hosted": {
-          "state": "unknown",
-          "url": null
+          "state": "current",
+          "url": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b"
         },
         "downloadable": {
-          "state": "unknown",
-          "url": null
+          "state": "current",
+          "url": "https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/nemotron-3-super-120b-a12b"
         }
       },
       "stale": false,
-      "deployment_type": "unknown",
+      "deployment_type": "both",
       "capability_provenance": {
         "supports_tools": {
           "source": "legacy_static",
@@ -7424,16 +7424,16 @@
       },
       "provenance": {
         "hosted": {
-          "state": "unknown",
-          "url": null
+          "state": "current",
+          "url": "https://build.nvidia.com/nvidia/llama-nemotron-rerank-vl-1b-v2"
         },
         "downloadable": {
-          "state": "unknown",
-          "url": null
+          "state": "current",
+          "url": "https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/llama-nemotron-rerank-vl-1b-v2"
         }
       },
       "stale": false,
-      "deployment_type": "unknown",
+      "deployment_type": "both",
       "capability_provenance": {
         "supports_tools": {
           "source": "unknown",
