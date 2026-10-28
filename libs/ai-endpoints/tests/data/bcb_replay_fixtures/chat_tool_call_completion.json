@@ -1,0 +1,33 @@
+{
+  "http_status": 200,
+  "body": {
+    "object": "chat.completion",
+    "model": "mock-model",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "call_lookup_policy",
+              "type": "function",
+              "function": {
+                "name": "lookup_policy",
+                "arguments": "{\"name\":\"retention\"}"
+              }
+            }
+          ]
+        },
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 12,
+      "completion_tokens": 8,
+      "total_tokens": 20
+    }
+  }
+}
+

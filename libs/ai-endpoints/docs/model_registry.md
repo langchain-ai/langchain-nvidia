@@ -21,37 +21,14 @@ python3 scripts/model_registry.py generate --write  # only after reviewing JSON 
 
 Regeneration is deterministic and offline. Review the JSON diff and the Python diff together; a second `generate` must be diff-free. Preserve original IDs and aliases unless the change is explicitly reviewed against consumers and telemetry behavior. Run focused unit tests before requesting maintainer review.
 
-## Drift report (no automatic publication)
+## Registry updates
 
-```sh
-python3 scripts/model_registry.py drift --hosted-file /path/hosted.json --ngc-file /path/ngc.json --output /path/model-registry-review.md
-```
+Registry validation and generation are offline. Catalog monitoring and internal
+release/triage reporting are owned by the internal orchestration system, not
+this public package or its GitHub workflows. A catalog listing alone is not
+proof that an SDK capability works.
 
-Omit `--hosted-file` to fetch the fixed `https://integrate.api.nvidia.com/v1/models` URL (15-second timeout); supply `NVIDIA_API_KEY` through the environment if authentication is required. The scheduled workflow reads the optional repository secret of that name and never prints its value. There is no automatic NGC fetch: supply a reviewed export from the NGC catalog or existing platform metadata harness. No credentials are included in snapshots or reports. A missing, malformed or empty source is called out as **unavailable** and exits with status 2 after writing a report. It never causes deletion proposals. Reports are proposed review artifacts, not registry changes or compatibility approvals.
-
-For the existing downloadable NIM harness, save the job log outside the
-repository and supply its GitLab job URL as evidence:
-
-```sh
-python3 scripts/model_registry.py drift --hosted-file /path/hosted.json --ngc-file /path/ngc.json \
-  --harness-log /path/downloadable-job.log --harness-url https://gitlab-master.nvidia.com/group/project/-/jobs/42 \
-  --output /path/model-registry-review.md
-```
-
-Only exact `UPSTREAM NEEDED: add '<model>' to langchain-nvidia _statics.py`
-lines become linked **candidate additions**; duplicate or already-reviewed IDs
-are ignored. The log itself is never copied into the report. A harness candidate
-does not establish the served model name, NGC availability, or capabilities;
-review the linked job and NGC metadata before changing reviewed JSON.
-
-Hosted snapshot: `{"source_url":"https://integrate.api.nvidia.com/v1/models","data":[{"id":"nvidia/example"}]}`. NGC snapshot: `{"source_url":"https://catalog.ngc.nvidia.com/...","models":[{"id":"nvidia/example","url":"https://catalog.ngc.nvidia.com/..."}]}`. Optional normalized fields on either item: `served_names` and `aliases` (arrays of strings), `deprecated` (boolean), `replaces` (an existing registry ID, only when explicitly asserted upstream), and `capabilities` (map using the three capability names and the schema states). Attach per-item HTTPS `url` links when available; otherwise the snapshot's HTTPS `source_url` is used. Capture complete snapshots; filtered exports must not be treated as authoritative for removals.
-
-The comparison proposes additions, explicitly linked renames, removals/staleness only for entries previously marked `current` in that source, source-specific deployment-type changes, alias/served-name changes, deprecations, and capability changes **with claimed provenance**. An absent capability stays unknown; a source outage is not evidence of removal. A catalog claim is never labeled BCB evidence, even when its state agrees with an existing legacy flag. Validate observed model behavior, served names and links, update the JSON deliberately, regenerate, review both diffs and request **maintainer approval** on the pull request. The scheduled GitHub workflow uploads a report for triage; it has read-only repository permission and cannot publish updates or open an unreviewed PR.
-
-## Test plan for a model update
-
-1. Run `python3 scripts/model_registry.py generate` to detect stale generated tables, then `generate --write` after editing reviewed JSON; repeat the check to prove stable regeneration.
-2. Run `pytest tests/unit_tests/test_model_registry.py tests/unit_tests/test_statics.py tests/unit_tests/test_usage_telemetry.py` from this package with its development dependencies installed.
-3. Check additions and aliases against actual served IDs; investigate every rename and removal against **both** source links. An unavailable/filtered source cannot establish removal.
-4. Run appropriate hosted and downloadable inference scenarios and ask the platform BCB harness for compatibility evidence before approving capability changes. Record the per-capability provenance link accurately (`legacy_static`/catalog claims do not become `bcb` by agreement). No catalog field is a substitute for a passing behavior result.
-5. Review the generated diff, historic aliases, telemetry identifier changes and the Markdown drift report in a pull request. A maintainer must explicitly approve the registry change; the bot never merges or publishes.
+For a reviewed model change, regenerate the Python tables, inspect both diffs,
+and run the registry, statics and telemetry unit tests. Preserve request IDs,
+legacy aliases and unknown capability states unless verified evidence supports
+a deliberate update. Changes still go through normal pull-request review.

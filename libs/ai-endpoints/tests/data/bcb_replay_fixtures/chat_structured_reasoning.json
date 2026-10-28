@@ -1,0 +1,25 @@
+{
+  "http_status": 200,
+  "body": {
+    "object": "chat.completion",
+    "model": "mock-model",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"answer\":\"retention\",\"confidence\":0.98}",
+          "reasoning_content": "Checked the approved policy options and selected the matching key.",
+          "reasoning": "Checked the approved policy options and selected the matching key."
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 18,
+      "completion_tokens": 16,
+      "total_tokens": 34
+    }
+  }
+}
+

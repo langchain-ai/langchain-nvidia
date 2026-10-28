@@ -20,6 +20,9 @@ Run locally with::
     pip install langchain-tests openshell
     openshell sandbox create --keep --no-tty -- bash   # one-time per host
     poetry run pytest tests/integration_tests
+
+Sandboxes are created in the ``default`` workspace; set ``OPENSHELL_WORKSPACE``
+to use another.
 """
 
 from __future__ import annotations
@@ -42,6 +45,8 @@ else:
     _OPENSHELL_IMPORT_ERROR = None
 
 _OPENSHELL_GATEWAY_ERROR: str | None = None
+# OpenShell 0.1 scopes every sandbox call to a workspace.
+_WORKSPACE = os.environ.get("OPENSHELL_WORKSPACE", "default")
 
 from langchain_nvidia_openshell import OpenShellSandbox  # noqa: E402
 
@@ -75,9 +80,13 @@ def _gateway_configured() -> bool:
     try:
         client = openshell.SandboxClient.from_active_cluster(timeout=2.0)
         try:
-            client.list(limit=1)
+            client.list(workspace=_WORKSPACE, page_size=1)
         finally:
             client.close()
+    except TypeError:
+        # SDK signature drift is a test bug, not a missing gateway; surface it
+        # instead of silently skipping every runtime test.
+        raise
     except Exception as exc:  # noqa: BLE001 - SDK/grpc readiness failures vary
         _OPENSHELL_GATEWAY_ERROR = _brief_error(exc)
         return False
@@ -130,7 +139,7 @@ def _require_openshell_gateway() -> None:
 def real_backend() -> "Iterator[OpenShellSandbox]":
     _require_openshell_gateway()
     assert openshell is not None
-    sandbox = openshell.Sandbox()
+    sandbox = openshell.Sandbox(workspace=_WORKSPACE)
     sandbox.__enter__()
     try:
         yield OpenShellSandbox(sandbox=sandbox)
@@ -267,7 +276,7 @@ if SandboxIntegrationTests is not None:
         def sandbox(self) -> "Iterator[SandboxBackendProtocol]":
             _require_openshell_gateway()
             assert openshell is not None
-            sandbox = openshell.Sandbox()
+            sandbox = openshell.Sandbox(workspace=_WORKSPACE)
             sandbox.__enter__()
             try:
                 yield OpenShellSandbox(sandbox=sandbox)

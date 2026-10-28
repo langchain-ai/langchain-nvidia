@@ -16,6 +16,10 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
+from langchain_core.messages.utils import (
+    convert_to_openai_data_block,
+    is_data_content_block,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +61,8 @@ def _normalize_content(content: Any) -> Any:
 
     This function converts list content to string or `None` as needed.
 
-    For multimodal content (images), returns the list as-is.
+    For multimodal content, converts standard image blocks to `image_url`
+    blocks and preserves the other blocks.
     """
     if content is None or isinstance(content, str):
         return content
@@ -74,9 +79,17 @@ def _normalize_content(content: Any) -> Any:
         elif isinstance(block, dict):
             block_type = block.get("type")
 
-            # Preserve multimodal content (images and videos) as-is for VLM models
+            # Normalize LangChain image blocks, including the legacy source_type
+            # format, while preserving provider-native image and video blocks.
             if block_type in ("image_url", "image", "video_url", "video"):
-                return content
+                return [
+                    convert_to_openai_data_block(part)
+                    if isinstance(part, dict)
+                    and part.get("type") == "image"
+                    and is_data_content_block(part)
+                    else part
+                    for part in content
+                ]
 
             # Extract text from text blocks
             if block_type == "text" and "text" in block:
@@ -144,9 +157,13 @@ def convert_message_to_dict(message: BaseMessage) -> dict:
             "name": message.name,
         }
     elif isinstance(message, ToolMessage):
+        # An empty tool result is valid and must remain an empty string. A list
+        # with no text blocks normalizes to None, which ChatNVIDIA rejects for
+        # tool messages when constructing the next request.
+        content = _normalize_content(message.content)
         message_dict = {
             "role": "tool",
-            "content": _normalize_content(message.content),
+            "content": "" if content is None else content,
             "tool_call_id": message.tool_call_id,
         }
     else:

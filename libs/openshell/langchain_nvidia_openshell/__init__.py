@@ -13,7 +13,7 @@ Quickstart::
     import openshell
     from langchain_nvidia_openshell import OpenShellSandbox
 
-    with openshell.Sandbox() as sb:
+    with openshell.Sandbox(workspace="default") as sb:
         backend = OpenShellSandbox(sandbox=sb)
         result = backend.execute("echo hello")
         print(result.output)

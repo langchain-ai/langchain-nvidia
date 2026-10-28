@@ -157,10 +157,9 @@ invented as compatible. An unavailable optional Manager lookup does not
 turn a working endpoint into a failed connectivity check. Do not put
 Manager tokens in command-line arguments or URLs.
 
-For a maintainer-reviewed, framework-level compatibility snapshot, see
-[NIM compatibility evidence](compatibility.md). The optional BCB
-review artifact separates verified framework status from unknown individual
-capabilities; it is not a live release approval or a public API.
+See [NIM compatibility and test coverage](compatibility.md) for the
+difference between model catalog metadata, deployment-specific validation,
+and offline connector regression tests.
 
 ## Further maintainer documentation
 

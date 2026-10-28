@@ -1,0 +1,127 @@
+{
+  "description": "Public-safe replay fixtures for connector parser tests. Approved real BCB captures may be mixed with synthetic scaffolds; every approved real capture must be sanitized and reviewed before public promotion.",
+  "fixtures": [
+    {
+      "approved_real_bcb_capture": false,
+      "category": "tool_call",
+      "coverage_surface": "tests/integration_tests/test_bind_tools.py",
+      "id": "chat_tool_call_completion",
+      "path": "chat_tool_call_completion.json",
+      "review_status": "not_reviewed_synthetic",
+      "source": "synthetic_public_shape"
+    },
+    {
+      "approved_real_bcb_capture": false,
+      "category": "streaming",
+      "coverage_surface": "tests/integration_tests/test_bind_tools.py",
+      "id": "chat_streaming_tool_call",
+      "path": "chat_streaming_tool_call.json",
+      "review_status": "not_reviewed_synthetic",
+      "source": "synthetic_public_shape"
+    },
+    {
+      "approved_real_bcb_capture": false,
+      "category": "structured_output_reasoning",
+      "coverage_surface": "tests/integration_tests/test_structured_output.py, tests/unit_tests/test_messages.py",
+      "id": "chat_structured_reasoning",
+      "path": "chat_structured_reasoning.json",
+      "review_status": "not_reviewed_synthetic",
+      "source": "synthetic_public_shape"
+    },
+    {
+      "approved_real_bcb_capture": false,
+      "category": "message_roundtrip",
+      "coverage_surface": "tests/unit_tests/test_messages.py",
+      "id": "chat_followup_answer",
+      "path": "chat_followup_answer.json",
+      "review_status": "not_reviewed_synthetic",
+      "source": "synthetic_public_shape"
+    },
+    {
+      "approved_real_bcb_capture": false,
+      "category": "embedding",
+      "coverage_surface": "tests/integration_tests/test_embeddings.py",
+      "id": "embedding_basic",
+      "path": "embedding_basic.json",
+      "review_status": "not_reviewed_synthetic",
+      "source": "synthetic_public_shape"
+    },
+    {
+      "approved_real_bcb_capture": false,
+      "category": "rerank",
+      "coverage_surface": "tests/integration_tests/test_ranking.py",
+      "id": "rerank_basic",
+      "path": "rerank_basic.json",
+      "review_status": "not_reviewed_synthetic",
+      "source": "synthetic_public_shape"
+    },
+    {
+      "approved_real_bcb_capture": false,
+      "category": "error",
+      "coverage_surface": "provider error handling",
+      "id": "provider_error_envelope",
+      "path": "negative-fixtures/provider_error_envelope.json",
+      "review_status": "not_reviewed_synthetic",
+      "source": "synthetic_public_shape"
+    },
+    {
+      "approved_real_bcb_capture": true,
+      "category": "tool_call",
+      "coverage_surface": "tests/integration_tests/test_bind_tools.py",
+      "id": "chat_tools_tool_call",
+      "path": "chat_tools_tool_call.json",
+      "review_status": "approved",
+      "source": "sanitized_bcb_wire_contract"
+    },
+    {
+      "approved_real_bcb_capture": true,
+      "category": "structured_output",
+      "coverage_surface": "tests/integration_tests/test_structured_output.py",
+      "id": "structured_output_structured_output",
+      "path": "structured_output_structured_output.json",
+      "review_status": "approved",
+      "source": "sanitized_bcb_wire_contract"
+    },
+    {
+      "approved_real_bcb_capture": true,
+      "category": "embedding",
+      "coverage_surface": "tests/integration_tests/test_embeddings.py",
+      "id": "embedding_basic_embedding",
+      "path": "embedding_basic_embedding.json",
+      "review_status": "approved",
+      "source": "sanitized_bcb_wire_contract"
+    },
+    {
+      "approved_real_bcb_capture": true,
+      "category": "rerank",
+      "coverage_surface": "tests/integration_tests/test_ranking.py",
+      "id": "rerank_basic_rerank",
+      "path": "rerank_basic_rerank.json",
+      "review_status": "approved",
+      "source": "sanitized_bcb_wire_contract"
+    }
+  ],
+  "sanitization_policy": {
+    "forbidden_fields": [
+      "authorization",
+      "cookie",
+      "prompt",
+      "request_id",
+      "requestId",
+      "trace_id",
+      "traceId",
+      "NVCF-REQID"
+    ],
+    "removed_values": [
+      "api keys",
+      "bearer tokens",
+      "request identifiers",
+      "timestamps",
+      "raw prompts",
+      "images",
+      "private endpoint URLs"
+    ]
+  },
+  "schema_version": 1,
+  "status": "bcb_replay_fixtures"
+}

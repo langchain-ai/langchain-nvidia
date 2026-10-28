@@ -127,7 +127,7 @@ def test_notebook_uses_nemotron_default_model(notebook: dict) -> None:
 def test_notebook_explains_named_sandbox_lifecycle(notebook: dict) -> None:
     joined = "\n".join(_cell_sources(notebook))
     assert "Create a named OpenShell sandbox with a policy" in joined
-    assert 'SandboxClient.get_session("openshell-demo")' in joined
+    assert 'SandboxClient.get_session("openshell-demo", workspace="default")' in joined
     assert "OpenShellSandbox` does not create or delete this sandbox" in joined
 
 

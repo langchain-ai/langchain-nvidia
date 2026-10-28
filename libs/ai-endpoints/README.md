@@ -131,6 +131,43 @@ print(result.content)
 ```
 
 
+### Nemotron 3.5 Super VL
+
+Nemotron 3.5 Super VL accepts text and images through `ChatNVIDIA`.
+
+The connector defaults this model to 8,192 completion tokens. Set a thinking
+preference as needed; pass `max_completion_tokens` to override the default:
+
+```python
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
+
+super_model = ChatNVIDIA(
+    model="nvidia/nemotron-3.5-super-vl-120b-a12b",
+    chat_template_kwargs={"enable_thinking": True},
+)
+result = super_model.invoke("Plan a three-step agentic workflow for competitive research.")
+print(result.content_blocks)
+```
+
+To describe an image, replace `photo.png` with a local PNG and pass a standard
+image content block:
+
+```python
+import base64
+from pathlib import Path
+
+from langchain_core.messages import HumanMessage
+
+image = base64.b64encode(Path("photo.png").read_bytes()).decode("ascii")
+response = super_model.invoke([
+    HumanMessage(content=[
+        {"type": "text", "text": "Describe this image."},
+        {"type": "image", "base64": image, "mime_type": "image/png"},
+    ])
+])
+print(response.content_blocks)
+```
+
 ### General Chat
 
 Models such as `nvidia/nemotron-3-super-120b-a12b` and `mistralai/mixtral-8x22b-instruct-v0.1`

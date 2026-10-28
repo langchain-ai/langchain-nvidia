@@ -82,6 +82,8 @@ _CallbackManager = Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun
 logger = logging.getLogger(__name__)
 
 _MODEL_PROFILES = cast(ModelProfileRegistry, _PROFILES)
+_NEMOTRON_SUPER_VL_MODEL = "nvidia/nemotron-3.5-super-vl-120b-a12b"
+_NEMOTRON_SUPER_VL_DEFAULT_MAX_TOKENS = 8192
 
 
 class _StructuredOutputFallbackRunnable(Runnable):
@@ -626,6 +628,14 @@ class ChatNVIDIA(BaseChatModel):
         self.model = self._client.mdl_name
         # same for base_url
         self.base_url = self._client.base_url
+
+        # Super VL reasoning can exhaust the generic 1,024-token default before
+        # producing a final answer. Preserve any caller-supplied token limit.
+        if (
+            self.model == _NEMOTRON_SUPER_VL_MODEL
+            and "max_tokens" not in self.model_fields_set
+        ):
+            self.max_tokens = _NEMOTRON_SUPER_VL_DEFAULT_MAX_TOKENS
 
         # set model profile after model name is finalized
         if self.profile is None and self.model:
