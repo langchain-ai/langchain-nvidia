@@ -1,0 +1,83 @@
+# Chat + embedding + rerank NVIDIA NIM trio for langchain-nvidia-ai-endpoints.
+# Usage and GPU sizing: ../self_hosting.md
+#
+#   export NGC_API_KEY=...            # from https://org.ngc.nvidia.com/account/api-keys
+#   export LOCAL_NIM_CACHE=~/.cache/nim && mkdir -p "$LOCAL_NIM_CACHE"
+#   export USERID=$(id -u)
+#   echo "$NGC_API_KEY" | docker login nvcr.io --username '$oauthtoken' --password-stdin
+#   docker compose -f docker-compose.yml up -d
+#
+# Defaults need two GPUs: chat on GPU 0, embedding + rerank share GPU 1.
+# Override CHAT_IMAGE / CHAT_MODEL and the *_GPU_ID variables to change that.
+
+x-nim: &nim
+  shm_size: 16gb
+  user: "${USERID:-1000}"
+  environment:
+    NGC_API_KEY: ${NGC_API_KEY:?Set NGC_API_KEY to your NGC API key}
+  volumes:
+    - ${LOCAL_NIM_CACHE:?Set LOCAL_NIM_CACHE to a writable host directory}:/opt/nim/.cache
+  restart: unless-stopped
+
+services:
+  nim-chat:
+    <<: *nim
+    image: ${CHAT_IMAGE:-nvcr.io/nim/nvidia/nemotron-3-nano:2.1.4}
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${CHAT_GPU_ID:-0}"]
+              capabilities: [gpu]
+    healthcheck:
+      # LLM NIM images ship Python; urlopen fails on any non-2xx response.
+      test:
+        - CMD
+        - python3
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:8000/v1/health/ready', timeout=5)
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60m
+
+  nim-embed:
+    <<: *nim
+    image: ${EMBED_IMAGE:-nvcr.io/nim/nvidia/llama-nemotron-embed-1b-v2:1.13.0}
+    ports:
+      - "8080:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${EMBED_GPU_ID:-1}"]
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20m
+
+  nim-rerank:
+    <<: *nim
+    image: ${RERANK_IMAGE:-nvcr.io/nim/nvidia/llama-nemotron-rerank-1b-v2:1.10.0}
+    ports:
+      - "2016:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${RERANK_GPU_ID:-1}"]
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20m

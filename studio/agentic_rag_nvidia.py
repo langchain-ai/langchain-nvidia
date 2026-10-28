@@ -33,7 +33,7 @@ doc_splits = text_splitter.split_documents(docs_list)
 # Add to vectorDB
 vectorstore = InMemoryVectorStore.from_documents(
     documents=doc_splits,
-    embedding=NVIDIAEmbeddings(model='NV-Embed-QA'),
+    embedding=NVIDIAEmbeddings(model='nvidia/nemotron-3-embed-1b'),
 )
 
 # Create retriever
