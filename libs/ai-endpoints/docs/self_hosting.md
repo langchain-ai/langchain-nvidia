@@ -215,12 +215,14 @@ Hosted code:
 from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings, NVIDIARerank
 
 llm = ChatNVIDIA(model="nvidia/nemotron-3-super-120b-a12b")
-embedder = NVIDIAEmbeddings(model="nvidia/llama-nemotron-embed-1b-v2")
-ranker = NVIDIARerank(model="nvidia/llama-nemotron-rerank-1b-v2")
+embedder = NVIDIAEmbeddings(model="nvidia/nemotron-3-embed-1b")
+ranker = NVIDIARerank(model="nvidia/llama-nemotron-rerank-vl-1b-v2")
 ```
 
-The same code against your NIMs. Only `base_url` changes, plus the chat model
-ID if you run Nano instead of Super:
+The same code against your NIMs. Add `base_url` and use the model IDs your NIMs
+serve. The Compose trio runs Nano and the downloadable-only embedding and
+rerank NIMs, which the hosted API Catalog no longer serves. To keep the hosted
+IDs, run their containers instead (see the table at the top):
 
 ```python
 from langchain_core.documents import Document
