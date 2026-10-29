@@ -235,7 +235,12 @@ def token_usage(value: Any) -> _TokenUsage:
             return _TokenUsage()
     if not isinstance(payload, Mapping):
         return _TokenUsage()
-    usage = payload.get("usage") or payload.get("usage_metadata")
+    # Streaming postprocess emits token_usage, while raw responses use usage.
+    usage = (
+        payload.get("usage")
+        or payload.get("usage_metadata")
+        or payload.get("token_usage")
+    )
     if not isinstance(usage, Mapping):
         return _TokenUsage()
     input_tokens = _nonnegative_int(
@@ -248,8 +253,8 @@ def token_usage(value: Any) -> _TokenUsage:
         if "completion_tokens" in usage
         else usage.get("output_tokens", usage.get("output_token_count"))
     )
-    found = any(
-        key in usage
+    supplied = [
+        usage[key]
         for key in (
             "prompt_tokens",
             "input_tokens",
@@ -258,7 +263,11 @@ def token_usage(value: Any) -> _TokenUsage:
             "output_tokens",
             "output_token_count",
         )
-    )
+        if key in usage
+    ]
+    # Key presence alone is not evidence of a measured value. Input-only usage
+    # remains valid for operations such as embeddings; malformed values do not.
+    found = bool(supplied) and all(_valid_token_count(value) for value in supplied)
     return _TokenUsage(input_tokens, output_tokens, found)
 
 
@@ -736,11 +745,17 @@ def _iso_timestamp(value: datetime) -> str:
     return value.strftime("%Y-%m-%dT%H:%M:%S.") + f"{value.microsecond // 1000:03d}Z"
 
 
+def _valid_token_count(value: Any) -> bool:
+    return (isinstance(value, int) and not isinstance(value, bool) and value >= 0) or (
+        isinstance(value, str)
+        and value.isascii()
+        and value.isdecimal()
+        and len(value) <= 20
+    )
+
+
 def _nonnegative_int(value: Any) -> int:
-    try:
-        return max(0, int(value))
-    except (TypeError, ValueError):
-        return 0
+    return int(value) if _valid_token_count(value) else 0
 
 
 def _zero_counts(keys: tuple[str, ...]) -> dict[str, int]:
