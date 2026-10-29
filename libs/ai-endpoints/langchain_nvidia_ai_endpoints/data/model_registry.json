@@ -7538,6 +7538,49 @@
           "url": null
         }
       }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "nvidia/nemotron-3-embed-1b",
+      "model": {
+        "id": "nvidia/nemotron-3-embed-1b",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings"
+      },
+      "served_names": [
+        "nvidia/nemotron-3-embed-1b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "current",
+          "url": "https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-embed-1b-infer"
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "hosted",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
     }
   ]
 }

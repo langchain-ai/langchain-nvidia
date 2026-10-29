@@ -32,3 +32,37 @@ For a reviewed model change, regenerate the Python tables, inspect both diffs,
 and run the registry, statics and telemetry unit tests. Preserve request IDs,
 legacy aliases and unknown capability states unless verified evidence supports
 a deliberate update. Changes still go through normal pull-request review.
+
+## Small hosted onboarding batch (2026-10-29)
+
+This batch adds only `nvidia/nemotron-3-embed-1b` to `NVIDIAEmbeddings` for
+text query and passage embeddings. The [API reference](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-embed-1b-infer)
+requires `input_type=query` for queries and `input_type=passage` for documents;
+the existing connector supplies both correctly.
+
+Live sync and async query/document calls returned HTTP 200, 2,048 finite,
+nonzero dimensions and parsed input-token usage. The initial process-local
+registration checks and repeated generated-default checks both passed. The
+sanitized record is `tests/data/qualified_hosted_models_20261029.json`.
+
+Tools, structured output and configurable thinking remain unknown. This batch
+makes no claim about multimodal input, downloadable NIM compatibility, model
+quality, latency SLOs or general availability for every account.
+
+`poolside/laguna-xs-2.1` passed initial chat/streaming checks but returned HTTP
+503 in the generated-default recheck and again in one bounded retry. It is held
+out of this addition. `nvidia/nemotron-3.5-bolt-e4b` is also held: its API
+reference specifies a staging-prefixed standalone request ID, which needs
+clarification before a default registry entry is appropriate.
+
+The earlier broad catalog proposal is not included. Deprecated free endpoints
+must not be added to active hosted tests solely for historical telemetry
+recognition. Hosted deprecation does not establish downloadable NIM deprecation.
+Discovery and model cards nominate candidates; exact served identity, compatible
+request/response contracts and live connector checks establish the limited scope
+of each addition. Edit the reviewed JSON registry, then regenerate `_statics.py`.
+
+The streaming-usage telemetry fix is reviewed separately and should merge first.
+It fixes an existing cancellation regression in the telemetry tests and allows
+the collector to retain usage from processed streaming chunks. Catalog and
+streaming changes have disjoint diffs; combined acceptance is checked separately.
