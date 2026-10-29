@@ -7581,6 +7581,178 @@
           "url": null
         }
       }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+      "model": {
+        "id": "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "nvidia/llama-3.1-nemotron-safety-guard-8b-v3"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "current",
+          "url": "https://docs.api.nvidia.com/nim/reference/nvidia-llama-3_1-nemotron-safety-guard-8b-v3-infer"
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "hosted",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "CHAT_MODEL_TABLE",
+      "id": "nvidia/riva-translate-4b-instruct-v2",
+      "model": {
+        "id": "nvidia/riva-translate-4b-instruct-v2",
+        "model_type": "chat",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "nvidia/riva-translate-4b-instruct-v2"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "current",
+          "url": "https://docs.api.nvidia.com/nim/reference/nvidia-riva-translate-4b-instruct-v2-infer"
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "hosted",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "VLM_MODEL_TABLE",
+      "id": "nvidia/ising-calibration-1.5-31b",
+      "model": {
+        "id": "nvidia/ising-calibration-1.5-31b",
+        "model_type": "vlm",
+        "client": "ChatNVIDIA"
+      },
+      "served_names": [
+        "nvidia/ising-calibration-1.5-31b"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "current",
+          "url": "https://docs.api.nvidia.com/nim/reference/nvidia-ising-calibration-1-5-31b-infer"
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "hosted",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
+    },
+    {
+      "table": "EMBEDDING_MODEL_TABLE",
+      "id": "nvidia/llama-nemotron-embed-vl-1b-v2",
+      "model": {
+        "id": "nvidia/llama-nemotron-embed-vl-1b-v2",
+        "model_type": "embedding",
+        "client": "NVIDIAEmbeddings"
+      },
+      "served_names": [
+        "nvidia/llama-nemotron-embed-vl-1b-v2"
+      ],
+      "capabilities": {
+        "supports_tools": "unknown",
+        "supports_structured_output": "unknown",
+        "supports_thinking": "unknown"
+      },
+      "provenance": {
+        "hosted": {
+          "state": "current",
+          "url": "https://docs.api.nvidia.com/nim/reference/nvidia-llama-nemotron-embed-vl-1b-v2-infer"
+        },
+        "downloadable": {
+          "state": "unknown",
+          "url": null
+        }
+      },
+      "stale": false,
+      "deployment_type": "hosted",
+      "capability_provenance": {
+        "supports_tools": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_structured_output": {
+          "source": "unknown",
+          "url": null
+        },
+        "supports_thinking": {
+          "source": "unknown",
+          "url": null
+        }
+      }
     }
   ]
 }
