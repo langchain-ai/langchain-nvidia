@@ -382,6 +382,7 @@ class _NVIDIABaseClient(BaseModel):
         latency_seconds: float,
         ttft_seconds: Optional[float] = None,
         partial: bool = False,
+        usage: Optional[_TokenUsage] = None,
     ) -> None:
         try:
             record_usage(
@@ -390,7 +391,7 @@ class _NVIDIABaseClient(BaseModel):
                 client_name=self.cls,
                 model_name=self.mdl_name,
                 success=False,
-                usage=_TokenUsage(),
+                usage=usage if usage is not None else _TokenUsage(),
                 error_category=classify_error(self.last_response, error),
                 execution_mode=execution_mode,
                 http_status=http_status_class(self.last_response),
@@ -779,6 +780,7 @@ class _NVIDIASyncClient(_NVIDIABaseClient):
                     latency_seconds=time.monotonic() - start_time,
                     ttft_seconds=ttft_seconds,
                     partial=ttft_seconds is not None,
+                    usage=usage,
                 )
                 raise
             finally:
@@ -790,7 +792,9 @@ class _NVIDIASyncClient(_NVIDIABaseClient):
                         ttft_seconds=ttft_seconds,
                     )
 
-        return (r for r in out_gen())
+        # Return the owned generator so close() reaches its cancellation handler
+        # immediately, rather than waiting for an inner generator to be collected.
+        return out_gen()
 
 
 class _NVIDIAAsyncClient(_NVIDIABaseClient):
@@ -1036,6 +1040,7 @@ class _NVIDIAAsyncClient(_NVIDIABaseClient):
                 latency_seconds=time.monotonic() - start_time,
                 ttft_seconds=ttft_seconds,
                 partial=ttft_seconds is not None,
+                usage=usage,
             )
             raise
         finally:
