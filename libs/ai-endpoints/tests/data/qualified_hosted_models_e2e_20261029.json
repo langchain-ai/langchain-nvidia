@@ -1,0 +1,757 @@
+{
+  "started_at": "2026-10-29T12:33:58.296437+00:00",
+  "connector_revision": "8a7097ba1baac991a411946c1ac3965295edd642",
+  "registry_mode": "Generated defaults; held Nano Omni entry removed after recheck; retained per-entry hashes unchanged",
+  "streaming_fix_included": true,
+  "scope": "Hosted text chat, synthetic single-image chat, text query/passage embeddings, text reranking. No video/audio/tools/structured/thinking certification, quality benchmark or Hive ingestion validation.",
+  "telemetry_delivery": "Real collector with local in-memory post sink; no telemetry sent to external services",
+  "models": [
+    {
+      "id": "nvidia/nemotron-3-embed-1b",
+      "type": "embedding",
+      "endpoint": "https://integrate.api.nvidia.com/v1/embeddings",
+      "registry_entry_sha256": "cce80c40ccf07a546c47ec22dea05d599e9dc4c1915ac2c344c41f6a40469d30",
+      "checks": [
+        {
+          "mode": "query",
+          "vector_count": 1,
+          "dimensions": 2048,
+          "finite_nonzero_vectors": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "input_type": "query",
+          "response_usage": {
+            "found": true,
+            "input_tokens": 6,
+            "output_tokens": 0
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/nemotron-3-embed-1b",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 6,
+              "outputTokenSum": 0
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.65
+        },
+        {
+          "mode": "documents",
+          "vector_count": 2,
+          "dimensions": 2048,
+          "finite_nonzero_vectors": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "input_type": "passage",
+          "response_usage": {
+            "found": true,
+            "input_tokens": 14,
+            "output_tokens": 0
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/nemotron-3-embed-1b",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 14,
+              "outputTokenSum": 0
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.71
+        },
+        {
+          "mode": "aquery",
+          "vector_count": 1,
+          "dimensions": 2048,
+          "finite_nonzero_vectors": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "input_type": "query",
+          "response_usage": {
+            "found": true,
+            "input_tokens": 6,
+            "output_tokens": 0
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/nemotron-3-embed-1b",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 6,
+              "outputTokenSum": 0
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.39
+        },
+        {
+          "mode": "adocuments",
+          "vector_count": 2,
+          "dimensions": 2048,
+          "finite_nonzero_vectors": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "input_type": "passage",
+          "response_usage": {
+            "found": true,
+            "input_tokens": 14,
+            "output_tokens": 0
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/nemotron-3-embed-1b",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 14,
+              "outputTokenSum": 0
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.47
+        }
+      ],
+      "qualified": true
+    },
+    {
+      "id": "nvidia/llama-nemotron-embed-vl-1b-v2",
+      "type": "embedding",
+      "endpoint": "https://integrate.api.nvidia.com/v1/embeddings",
+      "registry_entry_sha256": "683cedd0f0378f891bc88b771dfe8f5d7ea681de4723328e83e44f9bd84326d4",
+      "checks": [
+        {
+          "mode": "query",
+          "vector_count": 1,
+          "dimensions": 2048,
+          "finite_nonzero_vectors": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "input_type": "query",
+          "response_usage": {
+            "found": true,
+            "input_tokens": 6,
+            "output_tokens": 0
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/llama-nemotron-embed-vl-1b-v2",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 6,
+              "outputTokenSum": 0
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.75
+        },
+        {
+          "mode": "documents",
+          "vector_count": 2,
+          "dimensions": 2048,
+          "finite_nonzero_vectors": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "input_type": "passage",
+          "response_usage": {
+            "found": true,
+            "input_tokens": 18,
+            "output_tokens": 0
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/llama-nemotron-embed-vl-1b-v2",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 18,
+              "outputTokenSum": 0
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.6
+        },
+        {
+          "mode": "aquery",
+          "vector_count": 1,
+          "dimensions": 2048,
+          "finite_nonzero_vectors": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "input_type": "query",
+          "response_usage": {
+            "found": true,
+            "input_tokens": 6,
+            "output_tokens": 0
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/llama-nemotron-embed-vl-1b-v2",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 6,
+              "outputTokenSum": 0
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.76
+        },
+        {
+          "mode": "adocuments",
+          "vector_count": 2,
+          "dimensions": 2048,
+          "finite_nonzero_vectors": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "input_type": "passage",
+          "response_usage": {
+            "found": true,
+            "input_tokens": 18,
+            "output_tokens": 0
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/llama-nemotron-embed-vl-1b-v2",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 18,
+              "outputTokenSum": 0
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.65
+        }
+      ],
+      "qualified": true
+    },
+    {
+      "id": "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+      "type": "chat",
+      "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+      "registry_entry_sha256": "980150014db2e242eb1b283063b3745632d780819c971168e0c20405f9fc9d38",
+      "checks": [
+        {
+          "mode": "invoke",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 399,
+            "output_tokens": 9
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 399,
+              "outputTokenSum": 9
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.79
+        },
+        {
+          "mode": "ainvoke",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 399,
+            "output_tokens": 9
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 399,
+              "outputTokenSum": 9
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 1.25
+        },
+        {
+          "mode": "stream",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 399,
+            "output_tokens": 9
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 399,
+              "outputTokenSum": 9
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 1.17
+        },
+        {
+          "mode": "astream",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 399,
+            "output_tokens": 9
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 399,
+              "outputTokenSum": 9
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 2.04
+        }
+      ],
+      "qualified": true
+    },
+    {
+      "id": "nvidia/riva-translate-4b-instruct-v2",
+      "type": "chat",
+      "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+      "registry_entry_sha256": "788b07aaf591bb6e52fce930463f7ba347e89afa4959691e397839a43c13ad91",
+      "checks": [
+        {
+          "mode": "invoke",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 26,
+            "output_tokens": 20
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/riva-translate-4b-instruct-v2",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 26,
+              "outputTokenSum": 20
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 1.57
+        },
+        {
+          "mode": "ainvoke",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 26,
+            "output_tokens": 20
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/riva-translate-4b-instruct-v2",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 26,
+              "outputTokenSum": 20
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.9
+        },
+        {
+          "mode": "stream",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 26,
+            "output_tokens": 20
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/riva-translate-4b-instruct-v2",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 26,
+              "outputTokenSum": 20
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 1.47
+        },
+        {
+          "mode": "astream",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 26,
+            "output_tokens": 20
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/riva-translate-4b-instruct-v2",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 26,
+              "outputTokenSum": 20
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.89
+        }
+      ],
+      "qualified": true
+    },
+    {
+      "id": "nvidia/ising-calibration-1.5-31b",
+      "type": "vlm",
+      "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+      "registry_entry_sha256": "e0212a2618ed51bbe57c039114cfe1ad55b40eb10a0d1da9d0ae5fe27008fa9e",
+      "checks": [
+        {
+          "mode": "invoke",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 18,
+            "output_tokens": 3
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/ising-calibration-1.5-31b",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 18,
+              "outputTokenSum": 3
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 7.09
+        },
+        {
+          "mode": "ainvoke",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 18,
+            "output_tokens": 3
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/ising-calibration-1.5-31b",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 18,
+              "outputTokenSum": 3
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 1.01
+        },
+        {
+          "mode": "stream",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 18,
+            "output_tokens": 3
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/ising-calibration-1.5-31b",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 18,
+              "outputTokenSum": 3
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.65
+        },
+        {
+          "mode": "astream",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 18,
+            "output_tokens": 3
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/ising-calibration-1.5-31b",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 18,
+              "outputTokenSum": 3
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.73
+        },
+        {
+          "mode": "image_invoke",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "synthetic_color_identified": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 285,
+            "output_tokens": 2
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/ising-calibration-1.5-31b",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 285,
+              "outputTokenSum": 2
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.59
+        },
+        {
+          "mode": "image_ainvoke",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "synthetic_color_identified": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 285,
+            "output_tokens": 2
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/ising-calibration-1.5-31b",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 285,
+              "outputTokenSum": 2
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.85
+        },
+        {
+          "mode": "image_stream",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "synthetic_color_identified": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 285,
+            "output_tokens": 2
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/ising-calibration-1.5-31b",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 285,
+              "outputTokenSum": 2
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 0.74
+        },
+        {
+          "mode": "image_astream",
+          "parsed_content_nonempty": true,
+          "client_usage_present": true,
+          "synthetic_color_identified": true,
+          "http_status": 200,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "response_usage": {
+            "found": true,
+            "input_tokens": 285,
+            "output_tokens": 2
+          },
+          "telemetry": [
+            {
+              "nimId": "nvidia/ising-calibration-1.5-31b",
+              "requestCount": 1,
+              "successCount": 1,
+              "failureCount": 0,
+              "missingTokenCount": 0,
+              "inputTokenSum": 285,
+              "outputTokenSum": 2
+            }
+          ],
+          "telemetry_matches_response": true,
+          "token_measurements_present": true,
+          "status": "passed",
+          "elapsed_seconds": 1.65
+        }
+      ],
+      "qualified": true
+    }
+  ],
+  "finished_at": "2026-10-29T12:34:34.736288+00:00",
+  "tested_registry_sha256": "0a9d7d4dcff0966b288803f66f1d152ab3d95d85832b98b3428d0dbcc06f54ab",
+  "reviewed_registry_sha256": "024f679bd1fd168c5165336cdbc1159aa816c3321d5458e11b7d2764a53fc548",
+  "limitations": [
+    "Qualification used the separately reviewed streaming telemetry fix.",
+    "Synthetic content only; no inference responses, vectors, keys or headers retained.",
+    "Token counts are compared to returned measurements, not independently counted by a tokenizer.",
+    "No claims about every account, sustained availability, output quality, video/audio, tools, structured output or configurable thinking.",
+    "Real inference and connector-to-local-collector validation only; synthetic telemetry was not sent to Hive or production."
+  ]
+}

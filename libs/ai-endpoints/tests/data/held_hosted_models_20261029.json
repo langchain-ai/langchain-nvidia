@@ -1,0 +1,119 @@
+{
+  "checked_on": "2026-10-29",
+  "scope": "Hosted candidate qualification failures under bounded deadlines; not proof of model defects or all deployment availability",
+  "telemetry_delivery": "Local in-memory sink only",
+  "models": [
+    {
+      "id": "nvidia/llama-3.2-nemoretriever-500m-rerank-v2",
+      "type": "ranking",
+      "endpoint": "https://ai.api.nvidia.com/v1/retrieval/nvidia/llama-3_2-nemoretriever-500m-rerank-v2/reranking",
+      "qualified": false,
+      "failed_check": {
+        "mode": "rank",
+        "status": "failed",
+        "exception_type": "Exception",
+        "http_status": 410,
+        "elapsed_seconds": 0.38
+      }
+    },
+    {
+      "id": "z-ai/glm-5.3-flash",
+      "type": "chat",
+      "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+      "qualified": false,
+      "failed_check": {
+        "mode": "invoke",
+        "status": "failed",
+        "exception_type": "ReadTimeout",
+        "http_status": null,
+        "elapsed_seconds": 25.35
+      }
+    },
+    {
+      "id": "poolside/laguna-xs-2.1",
+      "type": "chat",
+      "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+      "qualified": false,
+      "failed_check": {
+        "mode": "invoke",
+        "status": "failed",
+        "exception_type": "Exception",
+        "http_status": 503,
+        "elapsed_seconds": 0.87
+      }
+    },
+    {
+      "id": "google/diffusiongemma-26b-a4b-it",
+      "type": "vlm",
+      "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+      "qualified": false,
+      "failed_check": {
+        "mode": "invoke",
+        "status": "failed",
+        "exception_type": "ReadTimeout",
+        "http_status": null,
+        "elapsed_seconds": 25.31
+      }
+    },
+    {
+      "id": "stepfun-ai/step-5-preview",
+      "type": "vlm",
+      "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+      "qualified": false,
+      "failed_check": {
+        "mode": "invoke",
+        "status": "failed",
+        "exception_type": "ReadTimeout",
+        "http_status": null,
+        "elapsed_seconds": 25.14
+      }
+    },
+    {
+      "id": "z-ai/glm-5.3",
+      "type": "chat",
+      "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+      "qualified": false,
+      "failed_check": {
+        "mode": "invoke",
+        "status": "failed",
+        "exception_type": "Exception",
+        "http_status": 410,
+        "elapsed_seconds": 2.66
+      }
+    },
+    {
+      "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+      "type": "vlm",
+      "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+      "qualified": false,
+      "failed_check": {
+        "mode": "astream",
+        "parsed_content_nonempty": false,
+        "client_usage_present": false,
+        "http_status": 200,
+        "request_model_matches": true,
+        "request_route_matches": true,
+        "response_usage": {
+          "found": false,
+          "input_tokens": 0,
+          "output_tokens": 0
+        },
+        "telemetry": [
+          {
+            "nimId": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+            "requestCount": 1,
+            "successCount": 1,
+            "failureCount": 0,
+            "missingTokenCount": 1,
+            "inputTokenSum": 0,
+            "outputTokenSum": 0
+          }
+        ],
+        "telemetry_matches_response": true,
+        "token_measurements_present": false,
+        "status": "failed",
+        "elapsed_seconds": 0.43
+      }
+    }
+  ]
+}

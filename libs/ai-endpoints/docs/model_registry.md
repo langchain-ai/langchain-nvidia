@@ -32,3 +32,49 @@ For a reviewed model change, regenerate the Python tables, inspect both diffs,
 and run the registry, statics and telemetry unit tests. Preserve request IDs,
 legacy aliases and unknown capability states unless verified evidence supports
 a deliberate update. Changes still go through normal pull-request review.
+
+## Hosted onboarding qualification (2026-10-29)
+
+The reviewed batch contains five qualified entries. It retains the earlier
+`nvidia/nemotron-3-embed-1b` addition and adds four more entries:
+
+| Model | Connector | Live scope verified |
+| --- | --- | --- |
+| `nvidia/nemotron-3-embed-1b` | `NVIDIAEmbeddings` | Sync/async query and passage embeddings |
+| `nvidia/llama-nemotron-embed-vl-1b-v2` | `NVIDIAEmbeddings` | Sync/async **text** query and passage embeddings |
+| `nvidia/llama-3.1-nemotron-safety-guard-8b-v3` | `ChatNVIDIA` | Text invoke, async invoke, stream and async stream |
+| `nvidia/riva-translate-4b-instruct-v2` | `ChatNVIDIA` | Text invoke, async invoke, stream and async stream |
+| `nvidia/ising-calibration-1.5-31b` | `ChatNVIDIA`, VLM table | Text and synthetic single-image input in all four modes |
+
+These entries use the standard NVIDIA hosted chat/embeddings routes. Their
+individual API references are linked in the registry's hosted provenance. The
+embedding API requires `input_type=query` for queries and `input_type=passage`
+for documents; the existing connector supplies both correctly. Both embedding
+models returned 2,048 finite, nonzero dimensions.
+
+The final generated-default acceptance record is
+`tests/data/qualified_hosted_models_e2e_20261029.json`: 24 successful real
+inference checks for the five retained entries. Each check verifies the exact
+request model and route, parsed response, and the real telemetry collector's
+model ID, success count and token counts against returned measurements. The
+collector posts to an in-memory sink; synthetic telemetry never reaches Hive or
+production. Per-entry hashes tie the evidence to reviewed defaults. The tested
+registry also contained Nano Omni, removed after its final check failed; retained
+entry hashes are unchanged.
+
+The image test uses a generated 64x64 red PNG, verifies the color response, and
+makes no general vision-quality claim. The embedding model with `vl` in its name
+is qualified for text only. Tools, structured output and configurable thinking
+remain unknown. No claims are made for audio/video, downloadable deployments,
+model quality, sustained availability or every account's access. Output usage is
+checked against what the provider returns, not an independent tokenizer.
+
+The earlier one-entry evidence remains in
+`tests/data/qualified_hosted_models_20261029.json`. The complete candidate
+review, including held and deprecated entries, is in
+[hosted_model_qualification_20261029.md](hosted_model_qualification_20261029.md).
+
+The streaming-usage telemetry fix is reviewed separately and should merge first.
+Live qualification used that fix locally. Catalog and streaming changes have
+disjoint diffs, and combined regression checks include both. A catalog listing
+or an API reference alone does not establish live availability.
