@@ -959,6 +959,16 @@ CHAT_MODEL_TABLE = {
         thinking_param_enable={'chat_template_kwargs': {'thinking_mode': 'enabled'}},
         thinking_param_disable={'chat_template_kwargs': {'thinking_mode': 'disabled'}},
     ),
+    'nvidia/llama-3.1-nemotron-safety-guard-8b-v3': Model(
+        id='nvidia/llama-3.1-nemotron-safety-guard-8b-v3',
+        model_type='chat',
+        client='ChatNVIDIA',
+    ),
+    'nvidia/riva-translate-4b-instruct-v2': Model(
+        id='nvidia/riva-translate-4b-instruct-v2',
+        model_type='chat',
+        client='ChatNVIDIA',
+    ),
 }
 
 QA_MODEL_TABLE = {
@@ -1118,6 +1128,11 @@ VLM_MODEL_TABLE = {
         client='ChatNVIDIA',
         supports_tools=True,
     ),
+    'nvidia/ising-calibration-1.5-31b': Model(
+        id='nvidia/ising-calibration-1.5-31b',
+        model_type='vlm',
+        client='ChatNVIDIA',
+    ),
 }
 
 EMBEDDING_MODEL_TABLE = {
@@ -1186,6 +1201,16 @@ EMBEDDING_MODEL_TABLE = {
     ),
     'nvidia/llama-nemotron-embed-1b-v2': Model(
         id='nvidia/llama-nemotron-embed-1b-v2',
+        model_type='embedding',
+        client='NVIDIAEmbeddings',
+    ),
+    'nvidia/nemotron-3-embed-1b': Model(
+        id='nvidia/nemotron-3-embed-1b',
+        model_type='embedding',
+        client='NVIDIAEmbeddings',
+    ),
+    'nvidia/llama-nemotron-embed-vl-1b-v2': Model(
+        id='nvidia/llama-nemotron-embed-vl-1b-v2',
         model_type='embedding',
         client='NVIDIAEmbeddings',
     ),

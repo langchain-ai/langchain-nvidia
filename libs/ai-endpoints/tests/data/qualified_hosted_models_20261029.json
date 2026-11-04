@@ -1,0 +1,116 @@
+{
+  "checked_on": "2026-10-29",
+  "endpoint": "https://integrate.api.nvidia.com/v1",
+  "validation_revision": "ccc2185d95d4185678be6184318e08b57ec4e215",
+  "registry_mode": "generated defaults",
+  "registry_entry_sha256": "cce80c40ccf07a546c47ec22dea05d599e9dc4c1915ac2c344c41f6a40469d30",
+  "qualified_models": [
+    {
+      "id": "nvidia/nemotron-3-embed-1b",
+      "type": "embedding",
+      "checks": [
+        {
+          "mode": "query",
+          "vector_count": 1,
+          "dimensions": 2048,
+          "finite_nonzero_vectors": true,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "input_type": "query",
+          "http_status": 200,
+          "telemetry_records": [
+            {
+              "success": true,
+              "execution_mode": "sync",
+              "usage_found": true,
+              "input_tokens": 6,
+              "output_tokens": 0
+            }
+          ],
+          "status": "passed",
+          "elapsed_seconds": 0.5
+        },
+        {
+          "mode": "documents",
+          "vector_count": 2,
+          "dimensions": 2048,
+          "finite_nonzero_vectors": true,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "input_type": "passage",
+          "http_status": 200,
+          "telemetry_records": [
+            {
+              "success": true,
+              "execution_mode": "sync",
+              "usage_found": true,
+              "input_tokens": 16,
+              "output_tokens": 0
+            }
+          ],
+          "status": "passed",
+          "elapsed_seconds": 0.46
+        },
+        {
+          "mode": "aquery",
+          "vector_count": 1,
+          "dimensions": 2048,
+          "finite_nonzero_vectors": true,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "input_type": "query",
+          "http_status": 200,
+          "telemetry_records": [
+            {
+              "success": true,
+              "execution_mode": "async",
+              "usage_found": true,
+              "input_tokens": 6,
+              "output_tokens": 0
+            }
+          ],
+          "status": "passed",
+          "elapsed_seconds": 0.43
+        },
+        {
+          "mode": "adocuments",
+          "vector_count": 2,
+          "dimensions": 2048,
+          "finite_nonzero_vectors": true,
+          "request_model_matches": true,
+          "request_route_matches": true,
+          "input_type": "passage",
+          "http_status": 200,
+          "telemetry_records": [
+            {
+              "success": true,
+              "execution_mode": "async",
+              "usage_found": true,
+              "input_tokens": 16,
+              "output_tokens": 0
+            }
+          ],
+          "status": "passed",
+          "elapsed_seconds": 0.5
+        }
+      ],
+      "qualified": true
+    }
+  ],
+  "scope": "Hosted text query/passage embeddings only; no inference output, vectors, credentials or user data retained",
+  "held_models": [
+    {
+      "id": "poolside/laguna-xs-2.1",
+      "reason": "Initial temporary-registration modes passed; generated-default check and one bounded retry returned HTTP 503; excluded"
+    },
+    {
+      "id": "nvidia/nemotron-3.5-bolt-e4b",
+      "reason": "Documented staging-prefixed standalone request ID; needs clarification; not tested or added"
+    }
+  ],
+  "telemetry_delivery": "intercepted locally, never published",
+  "limitations": [
+    "No tools, structured output, configurable thinking, multimodal or downloadable compatibility claims",
+    "Streaming fix evaluated separately; combined regression checks include it"
+  ]
+}
