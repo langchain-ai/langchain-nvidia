@@ -134,6 +134,21 @@ def test_token_usage_reads_only_known_aggregate_fields() -> None:
     assert token_usage({"usage": {}}) == _TokenUsage()
 
 
+@pytest.mark.parametrize("value", [None, True, False, -1, 1.5, float("inf"), "invalid"])
+def test_malformed_usage_is_not_reported_as_measured_zero(value: Any) -> None:
+    usage = token_usage({"usage": {"prompt_tokens": value, "completion_tokens": 3}})
+    assert usage.found is False
+    assert usage.input_tokens == 0
+    assert usage.output_tokens == 3
+
+
+def test_input_only_and_explicit_zero_usage_remain_valid() -> None:
+    assert token_usage({"usage": {"prompt_tokens": 12}}) == _TokenUsage(12, 0, True)
+    assert token_usage(
+        {"token_usage": {"prompt_tokens": 0, "completion_tokens": 0}}
+    ) == _TokenUsage(0, 0, True)
+
+
 def test_error_classification_uses_status_and_exception_type() -> None:
     assert (
         classify_error(SimpleNamespace(status_code=401), Exception("secret"))
@@ -413,22 +428,20 @@ def test_sync_stream_records_usage_and_cancellation() -> None:
     response = SimpleNamespace(
         status_code=200,
         raise_for_status=lambda: None,
-        iter_lines=lambda: iter([b"data: chunk", b"data: [DONE]"]),
+        iter_lines=lambda: iter(
+            [
+                b'data: {"choices":[{"delta":{"content":"hello"},'
+                b'"finish_reason":"stop"}]}',
+                b'data: {"choices":[],"usage":'
+                b'{"prompt_tokens":5,"completion_tokens":3}}',
+                b"data: [DONE]",
+            ]
+        ),
     )
     session = Mock()
     session.post.return_value = response
     client.get_session_fn = lambda: session
-    with (
-        patch.object(
-            _NVIDIASyncClient,
-            "postprocess",
-            return_value=(
-                {"usage": {"prompt_tokens": 5, "completion_tokens": 3}},
-                False,
-            ),
-        ),
-        patch("langchain_nvidia_ai_endpoints._common.record_usage") as record,
-    ):
+    with patch("langchain_nvidia_ai_endpoints._common.record_usage") as record:
         assert list(client.get_req_stream({"messages": []}))
     assert record.call_args.kwargs["success"] is True
     assert record.call_args.kwargs["usage"] == _TokenUsage(5, 3, True)
@@ -443,7 +456,14 @@ def test_sync_stream_records_usage_and_cancellation() -> None:
     )
     session.post.return_value = response
     with (
-        patch.object(_NVIDIASyncClient, "postprocess", return_value=({}, False)),
+        patch.object(
+            _NVIDIASyncClient,
+            "postprocess",
+            return_value=(
+                {"token_usage": {"prompt_tokens": 2, "completion_tokens": 1}},
+                False,
+            ),
+        ),
         patch("langchain_nvidia_ai_endpoints._common.record_usage") as record,
     ):
         stream = cast(
@@ -456,6 +476,7 @@ def test_sync_stream_records_usage_and_cancellation() -> None:
     assert record.call_args.kwargs["error_category"] == "cancelled"
     assert record.call_args.kwargs["execution_mode"] == "streaming"
     assert record.call_args.kwargs["partial"] is True
+    assert record.call_args.kwargs["usage"] == _TokenUsage(2, 1, True)
     assert record.call_args.kwargs["ttft_seconds"] is not None
 
 
@@ -497,21 +518,19 @@ async def test_async_stream_records_usage_and_cancellation() -> None:
     client = _async_client()
     response = SimpleNamespace(
         status=200,
-        content=Reader([b"data: chunk", b"data: [DONE]"]),
+        content=Reader(
+            [
+                b'data: {"choices":[{"delta":{"content":"hello"},'
+                b'"finish_reason":"stop"}]}',
+                b'data: {"choices":[],"usage":'
+                b'{"prompt_tokens":8,"completion_tokens":3}}',
+                b"data: [DONE]",
+            ]
+        ),
     )
     session = SimpleNamespace(post=AsyncMock(return_value=response), close=AsyncMock())
     client.get_async_session_fn = lambda: session
-    with (
-        patch.object(
-            _NVIDIAAsyncClient,
-            "postprocess",
-            return_value=(
-                {"usage": {"prompt_tokens": 8, "completion_tokens": 3}},
-                False,
-            ),
-        ),
-        patch("langchain_nvidia_ai_endpoints._common.record_usage") as record,
-    ):
+    with patch("langchain_nvidia_ai_endpoints._common.record_usage") as record:
         assert [item async for item in client.aget_req_stream({"messages": []})]
     assert record.call_args.kwargs["success"] is True
     assert record.call_args.kwargs["usage"] == _TokenUsage(8, 3, True)
@@ -525,7 +544,14 @@ async def test_async_stream_records_usage_and_cancellation() -> None:
     )
     session.post = AsyncMock(return_value=response)
     with (
-        patch.object(_NVIDIAAsyncClient, "postprocess", return_value=({}, False)),
+        patch.object(
+            _NVIDIAAsyncClient,
+            "postprocess",
+            return_value=(
+                {"token_usage": {"prompt_tokens": 2, "completion_tokens": 1}},
+                False,
+            ),
+        ),
         patch("langchain_nvidia_ai_endpoints._common.record_usage") as record,
     ):
         stream = cast(
@@ -538,6 +564,7 @@ async def test_async_stream_records_usage_and_cancellation() -> None:
     assert record.call_args.kwargs["error_category"] == "cancelled"
     assert record.call_args.kwargs["execution_mode"] == "streaming"
     assert record.call_args.kwargs["partial"] is True
+    assert record.call_args.kwargs["usage"] == _TokenUsage(2, 1, True)
     assert record.call_args.kwargs["ttft_seconds"] is not None
 
 
