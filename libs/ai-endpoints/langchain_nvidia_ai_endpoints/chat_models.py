@@ -93,22 +93,76 @@ class _StructuredOutputFallbackRunnable(Runnable):
     structured object. For stream/astream, buffer each fallback attempt until
     we know it ended with a non-None parsed object, so a failed attempt does not
     leak a None chunk before a later format succeeds.
+
+    When every format fails, the last exception is raised, and the outcome of
+    every attempt is attached to it as PEP 678 notes and logged, so the
+    earlier failures remain diagnosable.
     """
 
-    def __init__(self, chains: Sequence[Runnable]) -> None:
+    def __init__(
+        self,
+        chains: Sequence[Runnable],
+        names: Optional[Sequence[str]] = None,
+    ) -> None:
         self.chains = chains
+        self._names = (
+            list(names)
+            if names is not None
+            else [f"chain {i + 1}" for i in range(len(chains))]
+        )
+
+    def _name(self, index: int) -> str:
+        return self._names[index] if index < len(self._names) else f"chain {index + 1}"
+
+    def _report_failures(
+        self, last_exc: Optional[Exception], attempts: Sequence[str]
+    ) -> None:
+        """Log the outcome of every attempt and attach the record to the raised
+        exception.
+
+        Only the last exception is raised; without this record the earlier
+        attempts' failures and unparseable responses would be invisible to
+        callers (issue #412).
+        """
+        if not attempts:
+            return
+        if last_exc is not None and len(attempts) <= 1:
+            # A single chain raised: the exception is the whole story.
+            return
+        summary = (
+            "with_structured_output fallback attempts ("
+            + (
+                "only the last exception is raised; "
+                if last_exc is not None
+                else "no format produced a usable object"
+            )
+            + "):\n  "
+            + "\n  ".join(attempts)
+        )
+        logger.warning(summary)
+        if last_exc is None or len(attempts) <= 1:
+            return
+        if hasattr(last_exc, "add_note"):  # Python 3.11+
+            last_exc.add_note(summary)
+        else:
+            last_exc.__notes__ = [*(getattr(last_exc, "__notes__", [])), summary]
 
     def invoke(
         self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
     ) -> Any:
         last_exc: Optional[Exception] = None
-        for chain in self.chains:
+        attempts: list[str] = []
+        for i, chain in enumerate(self.chains):
             try:
                 result = chain.invoke(input, config, **kwargs)
-                if result is not None:
-                    return result
             except Exception as e:
                 last_exc = e
+                attempts.append(f"{self._name(i)}: {type(e).__name__}: {e}")
+                continue
+            if result is not None:
+                return result
+            attempts.append(f"{self._name(i)}: no usable object (unparseable output)")
+        self._report_failures(last_exc, attempts)
         if last_exc is not None:
             raise last_exc
         return None
@@ -117,13 +171,18 @@ class _StructuredOutputFallbackRunnable(Runnable):
         self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any
     ) -> Any:
         last_exc: Optional[Exception] = None
-        for chain in self.chains:
+        attempts: list[str] = []
+        for i, chain in enumerate(self.chains):
             try:
                 result = await chain.ainvoke(input, config, **kwargs)
-                if result is not None:
-                    return result
             except Exception as e:
                 last_exc = e
+                attempts.append(f"{self._name(i)}: {type(e).__name__}: {e}")
+                continue
+            if result is not None:
+                return result
+            attempts.append(f"{self._name(i)}: no usable object (unparseable output)")
+        self._report_failures(last_exc, attempts)
         if last_exc is not None:
             raise last_exc
         return None
@@ -133,16 +192,25 @@ class _StructuredOutputFallbackRunnable(Runnable):
     ) -> Iterator:
         last_exc: Optional[Exception] = None
         last_none_chunks: list[Any] = []
-        for chain in self.chains:
+        attempts: list[str] = []
+        for i, chain in enumerate(self.chains):
             try:
                 chunks = list(chain.stream(input, config, **kwargs))
-                if chunks and chunks[-1] is not None:
-                    yield from chunks
-                    return
-                if chunks:
-                    last_none_chunks = chunks
             except Exception as e:
                 last_exc = e
+                attempts.append(f"{self._name(i)}: {type(e).__name__}: {e}")
+                continue
+            if chunks and chunks[-1] is not None:
+                yield from chunks
+                return
+            if chunks:
+                last_none_chunks = chunks
+                attempts.append(
+                    f"{self._name(i)}: no usable object (unparseable output)"
+                )
+            else:
+                attempts.append(f"{self._name(i)}: no usable object (empty stream)")
+        self._report_failures(last_exc, attempts)
         if last_exc is not None:
             raise last_exc
         yield from last_none_chunks
@@ -152,19 +220,28 @@ class _StructuredOutputFallbackRunnable(Runnable):
     ) -> AsyncIterator:
         last_exc: Optional[Exception] = None
         last_none_chunks: list[Any] = []
-        for chain in self.chains:
+        attempts: list[str] = []
+        for i, chain in enumerate(self.chains):
             try:
                 chunks = []
                 async for chunk in chain.astream(input, config, **kwargs):
                     chunks.append(chunk)
-                if chunks and chunks[-1] is not None:
-                    for chunk in chunks:
-                        yield chunk
-                    return
-                if chunks:
-                    last_none_chunks = chunks
             except Exception as e:
                 last_exc = e
+                attempts.append(f"{self._name(i)}: {type(e).__name__}: {e}")
+                continue
+            if chunks and chunks[-1] is not None:
+                for chunk in chunks:
+                    yield chunk
+                return
+            if chunks:
+                last_none_chunks = chunks
+                attempts.append(
+                    f"{self._name(i)}: no usable object (unparseable output)"
+                )
+            else:
+                attempts.append(f"{self._name(i)}: no usable object (empty stream)")
+        self._report_failures(last_exc, attempts)
         if last_exc is not None:
             raise last_exc
         for chunk in last_none_chunks:
@@ -1550,8 +1627,14 @@ class ChatNVIDIA(BaseChatModel):
         # while legacy guided_json/nvext fields may be ignored by vLLM and
         # return free-form text with HTTP 200.
         chains = [openai_compat_chain] + guided_chains
+        guided_key = next(iter(nvext_param), "guided_json")
+        names = [
+            "response_format",
+            f"{guided_key} (top-level)",
+            f"{guided_key} (nvext)",
+        ]
 
-        return _StructuredOutputFallbackRunnable(chains)
+        return _StructuredOutputFallbackRunnable(chains, names)
 
     def with_thinking_mode(
         self,

@@ -1,4 +1,5 @@
 import enum
+import logging
 import sys
 import warnings
 from typing import Any, AsyncIterator, Callable, Iterator, List, Optional, Type
@@ -43,6 +44,27 @@ class _FakeStructuredOutputChain(Runnable):
     ) -> AsyncIterator[Any]:
         for chunk in self.chunks:
             yield chunk
+
+
+class _RaisingChain(Runnable):
+    def __init__(self, message: str) -> None:
+        self.message = message
+
+    def invoke(self, input: Any, config: Any = None, **kwargs: Any) -> Any:
+        raise Exception(self.message)
+
+    async def ainvoke(self, input: Any, config: Any = None, **kwargs: Any) -> Any:
+        raise Exception(self.message)
+
+    def stream(self, input: Any, config: Any = None, **kwargs: Any) -> Iterator[Any]:
+        raise Exception(self.message)
+        yield  # pragma: no cover
+
+    async def astream(
+        self, input: Any, config: Any = None, **kwargs: Any
+    ) -> AsyncIterator[Any]:
+        raise Exception(self.message)
+        yield  # pragma: no cover
 
 
 def test_method() -> None:
@@ -684,8 +706,110 @@ def test_all_formats_fail_raises_last_exception(
 
     warnings.filterwarnings("ignore", r".*not known to support structured output.*")
     llm = ChatNVIDIA(api_key="BOGUS").with_structured_output(Joke)
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as exc_info:
         llm.invoke("test")
+
+    # The last exception is raised, and every earlier failure rides along as a
+    # note so it stays diagnosable (issue #412).
+    notes = "\n".join(getattr(exc_info.value, "__notes__", []))
+    assert "response_format" in notes
+    assert "openai format failed" in notes
+    assert "guided_json (top-level)" in notes
+    assert "direct format failed" in notes
+    assert "guided_json (nvext)" in notes
+    assert "nvext format failed" in str(exc_info.value)
+
+
+# --- Fallback failures stay diagnosable (issue #412) ---
+
+
+def test_earlier_failure_attached_to_raised_exception() -> None:
+    runnable = _StructuredOutputFallbackRunnable(
+        [_RaisingChain("boom-1"), _RaisingChain("boom-2")],
+        names=["response_format", "guided_json (top-level)"],
+    )
+
+    with pytest.raises(Exception) as exc_info:
+        runnable.invoke("test")
+
+    assert "boom-2" in str(exc_info.value)  # the last one is raised
+    notes = "\n".join(getattr(exc_info.value, "__notes__", []))
+    assert "boom-1" in notes  # the earlier one is attached, not swallowed
+    assert "response_format" in notes
+    assert "guided_json (top-level)" in notes
+
+
+@pytest.mark.asyncio
+async def test_async_earlier_failure_attached_to_raised_exception() -> None:
+    runnable = _StructuredOutputFallbackRunnable(
+        [_RaisingChain("boom-1"), _RaisingChain("boom-2")],
+        names=["response_format", "guided_json (top-level)"],
+    )
+
+    with pytest.raises(Exception) as exc_info:
+        await runnable.ainvoke("test")
+
+    assert "boom-2" in str(exc_info.value)
+    notes = "\n".join(getattr(exc_info.value, "__notes__", []))
+    assert "boom-1" in notes
+
+
+def test_unparseable_attempt_reported_alongside_failure() -> None:
+    """Scenario A of issue #412: one silent None plus a distinct failure."""
+
+    runnable = _StructuredOutputFallbackRunnable(
+        [_FakeStructuredOutputChain([None]), _RaisingChain("boom-2")],
+        names=["response_format", "guided_json (top-level)"],
+    )
+
+    with pytest.raises(Exception) as exc_info:
+        runnable.invoke("test")
+
+    notes = "\n".join(getattr(exc_info.value, "__notes__", []))
+    assert "response_format: no usable object (unparseable output)" in notes
+    assert "boom-2" in notes
+
+
+def test_single_chain_failure_not_annotated() -> None:
+    """A lone chain raising has nothing masked, so no note is attached."""
+
+    runnable = _StructuredOutputFallbackRunnable([_RaisingChain("boom-1")])
+
+    with pytest.raises(Exception) as exc_info:
+        runnable.invoke("test")
+
+    assert "boom-1" in str(exc_info.value)
+    assert not getattr(exc_info.value, "__notes__", [])
+
+
+def test_all_none_logs_warning(caplog: pytest.LogCaptureFixture) -> None:
+    runnable = _StructuredOutputFallbackRunnable(
+        [_FakeStructuredOutputChain([None]), _FakeStructuredOutputChain([None])],
+        names=["response_format", "guided_json (top-level)"],
+    )
+
+    with caplog.at_level(
+        logging.WARNING, logger="langchain_nvidia_ai_endpoints.chat_models"
+    ):
+        assert runnable.invoke("test") is None
+
+    assert "response_format" in caplog.text
+    assert "guided_json (top-level)" in caplog.text
+    assert "no format produced a usable object" in caplog.text
+
+
+def test_stream_failure_attached_to_raised_exception() -> None:
+    runnable = _StructuredOutputFallbackRunnable(
+        [_RaisingChain("boom-1"), _RaisingChain("boom-2")],
+        names=["response_format", "guided_json (top-level)"],
+    )
+
+    with pytest.raises(Exception) as exc_info:
+        list(runnable.stream("test"))
+
+    assert "boom-2" in str(exc_info.value)
+    notes = "\n".join(getattr(exc_info.value, "__notes__", []))
+    assert "boom-1" in notes
 
 
 # --- None result triggers fallback ---
