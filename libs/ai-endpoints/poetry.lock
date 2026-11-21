@@ -314,6 +314,19 @@ files = [
 ]
 
 [[package]]
+name = "backports-asyncio-runner"
+version = "1.2.0"
+description = "Backport of asyncio.Runner, a context manager that controls event loop life cycle."
+optional = false
+python-versions = "<3.11,>=3.8"
+groups = ["test"]
+markers = "python_version < \"3.11\""
+files = [
+    {file = "backports_asyncio_runner-1.2.0-py3-none-any.whl", hash = "sha256:0da0a936a8aeb554eccb426dc55af3ba63bcdc69fa1a600b5bb305413a4477b5"},
+    {file = "backports_asyncio_runner-1.2.0.tar.gz", hash = "sha256:a5aa7b2b7d8f8bfcaa2b57313f70792df84e32a2a746f585213373f900b42162"},
+]
+
+[[package]]
 name = "certifi"
 version = "2026.10.23"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -1813,15 +1826,15 @@ files = [
 ]
 
 [[package]]
-name = "py-cpuinfo"
-version = "9.0.0"
+name = "py-cpuinfo2"
+version = "10.1.1"
 description = "Get CPU info with pure Python"
 optional = false
-python-versions = "*"
+python-versions = ">=3.9"
 groups = ["test"]
 files = [
-    {file = "py-cpuinfo-9.0.0.tar.gz", hash = "sha256:3cdbbf3fac90dc6f118bfd64384f309edeadd902d7c8fb17f02ffa1fc3f49690"},
-    {file = "py_cpuinfo-9.0.0-py3-none-any.whl", hash = "sha256:859625bc251f64e21f077d099d4162689c762b5d6a4c3c97553d56241c9674d5"},
+    {file = "py_cpuinfo2-10.1.1-py3-none-any.whl", hash = "sha256:adc53396bfb206e6498d078ec2ab407f85799ecd819584ac36a8f80a2d4d762d"},
+    {file = "py_cpuinfo2-10.1.1.tar.gz", hash = "sha256:7861133863663f16e06eca63b12904ef100b5760415e92372dac0162799a4771"},
 ]
 
 [[package]]
@@ -2034,38 +2047,40 @@ dev = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "requests
 
 [[package]]
 name = "pytest-asyncio"
-version = "0.21.2"
+version = "1.5.0"
 description = "Pytest support for asyncio"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.10"
 groups = ["test"]
 files = [
-    {file = "pytest_asyncio-0.21.2-py3-none-any.whl", hash = "sha256:ab664c88bb7998f711d8039cacd4884da6430886ae8bbd4eded552ed2004f16b"},
-    {file = "pytest_asyncio-0.21.2.tar.gz", hash = "sha256:d67738fc232b94b326b9d060750beb16e0074210b98dd8b58a5239fa2a154f45"},
+    {file = "pytest_asyncio-1.5.0-py3-none-any.whl", hash = "sha256:557f255ee03cc84f84a8d5f438bc9c6e0f714bf86970ae743c7ecb5a38d7e07d"},
+    {file = "pytest_asyncio-1.5.0.tar.gz", hash = "sha256:92c8fa83ca419fd0d4bd6a34df6520dae435841d3733c319343249492adf37f7"},
 ]
 
 [package.dependencies]
-pytest = ">=7.0.0"
+backports-asyncio-runner = {version = ">=1.1,<2", markers = "python_version < \"3.11\""}
+pytest = ">=8.4"
+typing-extensions = {version = ">=4.12", markers = "python_version < \"3.13\""}
 
 [package.extras]
-docs = ["sphinx (>=5.3)", "sphinx-rtd-theme (>=1.0)"]
-testing = ["coverage (>=6.2)", "flaky (>=3.5.0)", "hypothesis (>=5.7.1)", "mypy (>=0.931)", "pytest-trio (>=0.7.0)"]
+docs = ["sphinx (>=5.3)", "sphinx-rtd-theme (>=1)", "sphinx-tabs (>=3.5)"]
+testing = ["coverage (>=6.2)", "hypothesis (>=5.7.1)"]
 
 [[package]]
 name = "pytest-benchmark"
-version = "5.0.1"
+version = "5.3.1"
 description = "A ``pytest`` fixture for benchmarking code. It will group the tests into rounds that are calibrated to the chosen timer."
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["test"]
 files = [
-    {file = "pytest-benchmark-5.0.1.tar.gz", hash = "sha256:8138178618c85586ce056c70cc5e92f4283c2e6198e8422c2c825aeb3ace6afd"},
-    {file = "pytest_benchmark-5.0.1-py3-none-any.whl", hash = "sha256:d75fec4cbf0d4fd91e020f425ce2d845e9c127c21bae35e77c84db8ed84bfaa6"},
+    {file = "pytest_benchmark-5.3.1-py3-none-any.whl", hash = "sha256:d7732a9952b1c4a4a32277adc693739126eab37afc3a711847f53805ccadc020"},
+    {file = "pytest_benchmark-5.3.1.tar.gz", hash = "sha256:c1ee70a58f9bfb1ac955cc634247a340b0df7bcb949071cfca396f16c6fc3516"},
 ]
 
 [package.dependencies]
-py-cpuinfo = "*"
-pytest = ">=3.8"
+py-cpuinfo2 = ">=10.1"
+pytest = ">=8.1"
 
 [package.extras]
 aspect = ["aspectlib"]
@@ -2158,7 +2173,7 @@ files = [
 
 [package.dependencies]
 packaging = ">=17.1"
-pytest = ">=8.2,<8.2.2 || >8.2.2"
+pytest = ">=8.2,!=8.2.2"
 
 [[package]]
 name = "pytest-socket"
@@ -3274,4 +3289,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10.0,<4.0.0"
-content-hash = "6d1b378b896f7432201529f46f4afd7951873110b71c54633e5bc4bedebbee9b"
+content-hash = "6934752d231edf32bb53f1fc642d30772ece4f54a7152ac6cd58c3e472d5a55a"
